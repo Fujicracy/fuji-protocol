@@ -9,8 +9,14 @@ const main = async () => {
 
   console.log("\n\n 📡 Deploying...\n");
 
+  const deployerWallet = ethers.provider.getSigner();
 
-  const yourContract = await deploy("YourContract") // <-- add in constructor args like line 16 vvvv
+  const deployerAddress = await deployerWallet.getAddress();
+
+  const libUniERC20 = await deploy("UniERC20");
+  const aave = await deploy("ProviderAave");
+  await deploy("VaultETHDAI", ["0x3824461d7a62B1bb6AAED5426Ff5129060404507", aave.address]);
+  await deploy("ProviderCompound");
 
 
 
@@ -32,7 +38,6 @@ const main = async () => {
 
   //If you want to send value to an address from the deployer
 
-  const deployerWallet = ethers.provider.getSigner()
   await deployerWallet.sendTransaction({
     to: "0x34aA3F359A9D614239015126635CE7732c18fDF3",
     value: ethers.utils.parseEther("0.001")

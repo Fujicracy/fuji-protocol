@@ -111,13 +111,6 @@ contract ProviderAave is IProvider {
     }
 
 
-  function borrow(
-    address borrowAsset,
-    uint256 borrowAmount
-  ) external override payable {
-    // TODO
-  }
-
     function deposit(address collateralAsset, uint collateralAmount) external override payable {
 
         AaveInterface aave = AaveInterface(getAaveProvider().getLendingPool());
@@ -142,8 +135,22 @@ contract ProviderAave is IProvider {
         if (!getIsColl(aaveData, _token, address(this))) {
             aave.setUserUseReserveAsCollateral(_token, true);
         }
+
     }
-}
+      function borrow(address borrowAsset, uint256 borrowAmount) external override payable {
+
+        AaveInterface aave = AaveInterface(getAaveProvider().getLendingPool());
+
+        bool isEth = borrowAsset == getEthAddr();
+        address _token = isEth ? getWethAddr() : borrowAsset;
+
+        aave.borrow(_token, borrowAmount, 2, 0, address(this));
+        convertWethToEth(isEth, TokenInterface(_token), borrowAmount);
+
+    }
+
+  }
+
 
 
 

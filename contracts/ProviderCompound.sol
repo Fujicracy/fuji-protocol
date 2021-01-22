@@ -90,7 +90,7 @@ contract ProviderCompound {
     ADMIN = msg.sender;
 
     /*Compound Protocol mainnet cToken Mappings*/
-    /*this can be removed once testing face is done*/
+    /*this can be removed once testing fase is done*/
     erc20TocToken[address(0xc00e94Cb662C3520282E6f5717214004A7f26888)] = address(0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643); //cDAI
     erc20TocToken[address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)] = address(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5); //cETH
     erc20TocToken[address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48)] = address(0x39AA39c021dfbaE8faC545936693aC917d5E7563); //cUSDC
@@ -165,7 +165,7 @@ contract ProviderCompound {
     }
   }/*end of deposit function*/
 
-  function withdraw (address _collateralAsset, uint256 _collateralAmount) external virtual {
+  function withdraw (address _collateralAsset, uint256 _collateralAmount) external virtual payable{
     require(ismapped(_collateralAsset), "Missing mapping ERC20 to cToken");
 
     if(isETH(_collateralAsset)) { /*Compound Procedure to Withdraw ETH given ETH amount*/

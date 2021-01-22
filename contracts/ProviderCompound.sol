@@ -4,15 +4,14 @@ pragma solidity >=0.4.25 <0.7.5;
 
 import "./LibUniERC20.sol";
 import "./IProvider.sol";
-import "./SafeMath.sol";
 
-interface IERC20 {
+/*interface IERC20 {
     function allowance(address owner, address spender) external view returns (uint);
     function approve(address, uint256) external returns (bool);
     function balanceOf(address owner) external view returns (uint);
     function transfer(address, uint256) external returns (bool);
     function transferFrom(address src, address dst, uint256 amount) external returns (bool);
-}
+}*/
 
 interface gencToken{
     function redeem(uint) external returns (uint);
@@ -59,7 +58,7 @@ interface PriceFeed {
 contract ProviderCompound {
 
   using SafeMath for uint256;
-  /*using UniERC20 for IERC20;*/
+  using UniERC20 for IERC20;
 
   address payable private ADMIN;
   address payable public theVault;
@@ -86,8 +85,8 @@ contract ProviderCompound {
 
   //Contract Initializer
 
-  constructor(){
-    ADMIN = msg.sender;
+  constructor() internal {
+    ADMIN = 0x3BFf7fD5AACb1a22e1dd3ddbd8cfB8622A9E9A5B;
 
     /*Compound Protocol mainnet cToken Mappings*/
     /*this can be removed once testing fase is done*/

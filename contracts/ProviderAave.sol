@@ -94,7 +94,7 @@ contract ProviderAave is IProvider {
     }
 
     function convertEthToWeth(bool isEth, TokenInterface token, uint amount) internal {
-        if(isEth) token.deposit.value(amount)();
+        if(isEth) token.deposit{value: amount };
     }
 
     function convertWethToEth(bool isEth, TokenInterface token, uint amount) internal {

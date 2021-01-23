@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: MIT
 
 pragma solidity >=0.4.25 <0.7.0;
@@ -94,7 +95,7 @@ contract ProviderAave is IProvider {
     }
 
     function convertEthToWeth(bool isEth, TokenInterface token, uint amount) internal {
-        if(isEth) token.deposit{value: amount };
+        if(isEth) token.deposit{value : amount };
     }
 
     function convertWethToEth(bool isEth, TokenInterface token, uint amount) internal {
@@ -188,8 +189,3 @@ contract ProviderAave is IProvider {
     }
 
   }
-
-
-
-
-   

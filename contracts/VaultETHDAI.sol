@@ -181,6 +181,14 @@ contract VaultETHDAI {
     return IERC20(borrowAsset).balanceOf(address(this));
   }
 
+  function checkCollateralPosition(address addr) external view returns(uint256) {
+    return positions[addr].collateralAmount;
+  }
+
+  function checkBorrowPosition(address addr) external view returns(uint256) {
+    return positions[addr].borrowAmount;
+  }
+
   function execute(
     address _target,
     bytes memory _data
@@ -200,15 +208,5 @@ contract VaultETHDAI {
         revert(add(response, 0x20), size)
       }
     }
-  }
-
-  // DEBUG
-  function checkCollateralPosition(address addr) external view returns(uint256) {
-    return positions[addr].collateralAmount;
-  }
-
-  // DEBUG
-  function checkBorrowPosition(address addr) external view returns(uint256) {
-    return positions[addr].borrowAmount;
   }
 }

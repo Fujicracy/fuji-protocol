@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity >=0.4.25 <0.7.5;
 
 import "./LibUniERC20.sol";
@@ -62,13 +61,6 @@ contract ProviderCompound {
   address payable public theVault;
   address public comptroller;
   address public priceFeeder;
-
-  //This section is not required per Delegatecall
-  /*struct SFactor {  //Safety factor for collateral
-    uint256 a;  //  a divided by b represent Safetyfactor,
-    uint256 b; //example 1.2, or +20%, is (a/b)= 6/5
-  }
-  SFactor public safetyFactor;*/
 
   //CToken Address mapping to erc20
   mapping(address => address ) erc20TocToken;
@@ -133,101 +125,54 @@ contract ProviderCompound {
     address ctokenaddress = erc20TocToken[_depositAsset]; //Get cToken address from mapping
 
     if(isETH(_depositAsset)) { /*Compound Deposit Procedure for ETH*/
+
       require(msg.value != 0, "Missing msg.value");
       require(_Amount == msg.value, "Verify msg.value amount vs _collateralAmount indicated");
+
       CEth cToken = CEth(ctokenaddress); // Create a reference to the cToken contract
+
       cToken.mint{value:msg.value, gas:250000}(); //Compound protocol Mints cTokens, ETH method
       emit LogDeposit(_depositAsset, ctokenaddress, _Amount);
-
-      //This section is not required per Delegatecall
-      /*uint numcTokens = cToken.balanceOf(address(this)); //Transfer cTokens to Vault
-      cToken.transfer(msg.sender, numcTokens);*/
 
     } else { /*Compound Desposit Procedure for a ERC20 Token*/
 
       IERC20 ERC20token = IERC20(_depositAsset); // Create reference to the ERC20 contract
       CErc20 cToken = CErc20(ctokenaddress); // Create a reference to the cToken contract
+
       require(ERC20token.balanceOf(address(this)) >= _Amount, "Not enough Balance"); //Checks, Vault balance of ERC20 to make deposit
+
       ERC20token.approve(ctokenaddress, _Amount); //Approve to move ERC20tokens
       require(cToken.mint(_Amount)==0, "deposit-failed");  // Compound Protocol mints cTokens, trhow error if not
 
       emit LogDeposit(_depositAsset, ctokenaddress, _Amount);
 
-      //This section is not required per Delegatecall
-      /*require(ERC20token.allowance(msg.sender, address(this)) >= _collateralAmount, "Provide ERC20 Approve" );
-      ERC20token.transferFrom(msg.sender, address(this), _collateralAmount); //Transfer to Provider Contract
-      uint256 numcTokens = cToken.balanceOf(address(this));
-      cToken.transfer(msg.sender, numcTokens); //Transfer cTokens to Vault*/
     }
   }/*end of deposit function*/
 
   function withdraw (address _withdrawAsset, uint256 _Amount) external  payable{
     require(ismapped(_withdrawAsset), "Missing mapping ERC20 to cToken");
     address ctokenaddress = erc20TocToken[_withdrawAsset]; //Get cToken address from mapping
+
     gencToken cToken = gencToken(ctokenaddress); // Create a reference to the corresponding cToken contract
+
     require(cToken.redeemUnderlying(_Amount) == 0, "Withdraw-failed");//Compound Protocol Redeem Process, throw errow if not.
+
     emit LogWithdraw(_withdrawAsset, ctokenaddress, _Amount);
 
-    //This section is not required per Delegatecall
-    /*if(isETH(_collateralAsset)) { //Compound Procedure to Withdraw ETH given ETH amount
-      gencToken cToken = gencToken(ctokenaddress); // Create a reference to the corresponding cToken contract
-      require(cToken.redeemUnderlying(_collateralAmount) == 0, "Withdraw-failed");//Compound Protocol Redeem Process, throw errow if not.
-      uint256 exchangeRate = cToken.exchangeRateCurrent(); //Get exchange rate ctoken, and Calculate amount of cToken needed
-      uint256 cToken_amountneeded = _collateralAmount.mul(exchangeRate);
-      //Checks allowance to Provider Contract
-      require(cToken.allowance(msg.sender, address(this)) >= cToken_amountneeded, "Provide ERC20 Approve" );
-      cToken.transferFrom(msg.sender, address(this), cToken_amountneeded); //Send cTokens from Vault to ProviderContract
-      cToken.approve(erc20TocToken[_collateralAsset], cToken_amountneeded); // Approve moving cTokens from ProviderContract to ctoken Address
-      cToken.redeem(cToken_amountneeded); //Compound Protocol Redeem Process.
-      msg.sender.transfer(_collateralAmount); //Send all Eth funds to theVault, this function assumes Provider contract does not have lingering ETH
-    } else { //Compound Procedure to withdraw ERC20 Token given ERC20 token amount
-          IERC20 ERC20token = IERC20(_collateralAsset); // Create reference to the ERC20 contract
-          CErc20 cToken = CErc20(ctokenaddress); // Create a reference to the corresponding cToken contract
-          uint256 exchangeRate = cToken.exchangeRateCurrent(); //Get exchange rate ctoken, and Calculate amount of cToken needed
-          uint256 cToken_amountneeded = _collateralAmount * exchangeRate;
-          //Checks allowance to Provider Contract
-          require(cToken.allowance(msg.sender, address(this)) >= cToken_amountneeded, "Provide ERC20 Approve" );
-          cToken.transferFrom(msg.sender, address(this), cToken_amountneeded); //Send cTokens to ProviderContract
-          cToken.approve(erc20TocToken[_collateralAsset], cToken_amountneeded); // Approve moving cTokens from ProviderContract to ctoken Address
-          cToken.redeem(cToken_amountneeded); //Compound Protocol Redeem Process.
-          ERC20token.transfer(msg.sender, _collateralAmount); //Transfer erc20 tokens to Vault
-        }*/
     }/*end of withdraw function*/
 
     function borrow(address _borrowAsset, uint256 _Amount) external  payable{
       require(ismapped(_borrowAsset), "Missing mapping ERC20 to cToken");
       address ctokenaddress = erc20TocToken[_borrowAsset]; //Get cToken address from mapping
+
       gencToken cToken = gencToken(ctokenaddress); // Create a reference to the corresponding cToken contract
+
       _enterCollatMarket(ctokenaddress); //Enter and/or ensure collateral market is enacted
+
       require(cToken.borrow(_Amount) == 0, "borrow-failed"); //Compound Protocol Borrow Process, throw errow if not.
+
       emit LogBorrow(_borrowAsset, ctokenaddress, _Amount);
 
-      //This section is not required per Delegatecall
-      /*if(isETH(_borrowAsset)) {
-        CEth cToken = CEth(erc20TocToken[_borrowAsset]); // Create a reference to the corresponding cToken contract
-        uint256 exchangeRate = cToken.exchangeRateCurrent(); //Get exchange rate ctoken per underlying
-        (uint256 factorMantissa, uint256 base) = getCollateralFactor(erc20TocToken[_borrowAsset]);
-        //Calculate how many ctokens needed, + %Safety Factor to avoid liquidation
-        uint256 cToken_amountneeded = includeSafetyFactorCollateral(((_borrowAmount.mul(exchangeRate)).div(factorMantissa)).mul(base));
-        _enterCollatMarket(erc20TocToken[_borrowAsset]);
-        //checks before proceeding
-        require(cToken.allowance(msg.sender, address(this)) >= cToken_amountneeded, "Provide ERC20 Approve" );
-        cToken.transferFrom(msg.sender, address(this), cToken_amountneeded); //Send cTokens from Vault to ProviderContract
-        cToken.borrow(_borrowAmount); //Compound Protocol
-        msg.sender.transfer(_borrowAmount); //Transfer borrowed ETH to the Vault
-      } else {
-        IERC20 ERC20token = IERC20(_borrowAsset); // Create reference to the ERC20 contract
-        CErc20 cToken = CErc20(erc20TocToken[_borrowAsset]); // Create a reference to the corresponding cToken contract
-        uint256 exchangeRate = cToken.exchangeRateCurrent(); //Get exchange rate ctoken per underlying
-        (uint256 factorMantissa, uint256 base) = getCollateralFactor(erc20TocToken[_borrowAsset]);
-        //Calculate how many ctokens needed, + %Safety Factor to avoid liquidation
-        uint256 cToken_amountneeded = includeSafetyFactorCollateral(((_borrowAmount.mul(exchangeRate)).div(factorMantissa)).mul(base));
-        //checks before proceeding
-        require(cToken.allowance(msg.sender, address(this)) >= cToken_amountneeded, "Provide ERC20 Approve" );
-        cToken.transferFrom(msg.sender, address(this), cToken_amountneeded); //Send cTokens from Vault to ProviderContract
-        cToken.borrow(_borrowAmount); //Compound Protocol
-        ERC20token.transfer(msg.sender,_borrowAmount); //Transfer borrowed erc20 Tokens to the Vault
-      }*/
     }/*end of borrow function*/
 
     function payback(address _paybackAsset, uint256 _Amount) external  payable {
@@ -237,35 +182,29 @@ contract ProviderCompound {
       if(isETH(_paybackAsset)) { /*Compound payback Procedure for ETH*/
         require(msg.value != 0, "Missing msg.value");
         require(_Amount == msg.value, "Verify msg.value amount vs _borrowAmount indicated");
-        CEth cToken = CEth(ctokenaddress); // Create a reference to the corresponding cToken contract
-        cToken.repayBorrow{value:msg.value}();
-        emit LogPayback(_paybackAsset, ctokenaddress, _Amount);
 
-        //This section is not required per Delegatecall
-        /*//Calculate unlocked cTokens due to payback
-        uint256 exchangeRate = cToken.exchangeRateCurrent(); //Get exchange rate ctoken per underlying
-        uint256 cToken_unlocked = (msg.value).div(exchangeRate);
-        cToken.transfer(msg.sender, cToken_unlocked);  //Return unlocked ctokens back to the Vault*/
+        CEth cToken = CEth(ctokenaddress); // Create a reference to the corresponding cToken contract
+
+        cToken.repayBorrow{value:msg.value}();
+
+        emit LogPayback(_paybackAsset, ctokenaddress, _Amount);
 
       } else { /*Compound payback Procedure for a ERC20 Token*/
 
         IERC20 ERC20token = IERC20(_paybackAsset); // Create reference to the ERC20 contract
         CErc20 cToken = CErc20(ctokenaddress); // Create a reference to the corresponding cToken contract
+
         require(ERC20token.balanceOf(address(this)) >= _Amount, "not-enough-token"); // Check there is enough balance to pay
         ERC20token.approve(ctokenaddress, _Amount);
+
         cToken.repayBorrow(_Amount);
+
         emit LogPayback(_paybackAsset, ctokenaddress, _Amount);
 
-        //This section is not required per Delegatecall
-        /*//Calculate unlocked cTokens due to payback
-        uint256 exchangeRate = cToken.exchangeRateCurrent(); //Get exchange rate ctoken per underlying
-        uint256 cToken_unlocked = _borrowAmount.div(exchangeRate);
-        cToken.transfer(msg.sender, cToken_unlocked); //Return unlocked ctokens back to the Vault*/
       }
     } /*end of payback function*/
 
     //internal Functions
-
     function getCollateralFactor(address  _cTokenAddress) internal  returns(uint256, uint256) {
       Comptroller Cptrllr = Comptroller(comptroller); // Create a reference to the corresponding network Comptroller
       (bool isListed, uint factorMantissa) = Cptrllr.markets(_cTokenAddress); //Call comptroller for information
@@ -284,29 +223,19 @@ contract ProviderCompound {
         return true;
       }
     }
-    //This section is not required per Delegatecall
-    /*function includeSafetyFactorCollateral(uint256 _number) internal view returns(uint){
-      return (_number.mul(safetyFactor.a)).div(safetyFactor.a);
-    }*/
+
     receive() external payable {}
 
-    /* THESE ARE TEST ONLY FUNCTIONS*/
-      function manualETHwithdraw(uint amount) public payable OnlyAdmin returns(uint) {
-      //check balance of msg.sender is sufficient.
-      require(msg.sender == ADMIN, "You are not the Vault");
-      ADMIN.transfer(amount);
-      return address(this).balance;
-      }
-
-      function detroyme() public payable OnlyAdmin {
-        ADMIN.transfer(address(this).balance);
-        selfdestruct(ADMIN); //Send remaining ETh to theVault if any left.
+    /* THESE ARE TEST ONLY FUNCTIONS, TO AVOID FUND LOCK*/
+      function manualETHwithdrawtoVault(uint amount) public payable OnlyAdmin returns(uint) {
+        //check balance of msg.sender is sufficient.
+        theVault.transfer(amount);
+        return address(this).balance;
       }
 
       function manualtransferERC20(address _erc20Address, uint amountToken) public OnlyAdmin {
-        require(msg.sender == ADMIN, "You are not the Vault");
         IERC20 erc20Token = IERC20(_erc20Address);
-        erc20Token.transfer(ADMIN, amountToken);
+        erc20Token.transfer(theVault, amountToken);
       }
 
       function getPrice(address _priceFeedAddress, address _ctoken_address ) public view returns(uint256){

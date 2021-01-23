@@ -127,7 +127,7 @@ contract ProviderCompound {
     if(isETH(_depositAsset)) { /*Compound Deposit Procedure for ETH*/
 
       require(msg.value != 0, "Missing msg.value");
-      require(_Amount == msg.value, "Verify msg.value amount vs _collateralAmount indicated");
+      require(_Amount == msg.value, "Verify msg.value amount vs _Amount indicated");
 
       CEth cToken = CEth(ctokenaddress); // Create a reference to the cToken contract
 

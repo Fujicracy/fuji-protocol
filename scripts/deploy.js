@@ -15,8 +15,12 @@ const main = async () => {
 
   const libUniERC20 = await deploy("UniERC20");
   const aave = await deploy("ProviderAave");
-  await deploy("VaultETHDAI", ["0x3824461d7a62B1bb6AAED5426Ff5129060404507", aave.address]);
-  await deploy("ProviderCompound");
+  const compound = await deploy("ProviderCompound");
+  await deploy("VaultETHDAI", [
+    "0x3824461d7a62B1bb6AAED5426Ff5129060404507",
+    "0x773616E4d11A78F511299002da57A0a94577F1f4",
+    aave.address
+  ]);
 
 
 

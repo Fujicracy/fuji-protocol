@@ -9,7 +9,9 @@ contract ProviderCompound is IProvider {
   using SafeMath for uint256;
   using UniERC20 for IERC20;
 
-  function deposit(
+
+
+    function deposit(
     address collateralAsset,
     uint256 collateralAmount
   ) external override payable {
@@ -22,4 +24,18 @@ contract ProviderCompound is IProvider {
   ) external override payable {
     // TODO
   }
+
+function withdraw(
+  address collateralAsset, 
+  uint256 collateralAmount
+  ) external override payable {
+
 }
+function payback(
+  address borrowAsset,
+  uint256 borrowAmount
+  ) external override payable {
+}
+
+}
+

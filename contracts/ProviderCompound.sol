@@ -204,6 +204,18 @@ contract ProviderCompound {
       }
     } /*end of payback function*/
 
+    function getRedeemableAddress(address collateralAsset) external returns(address) {
+      return erc20TocToken[collateralAsset];
+    }
+
+    function getBorrowRateFor(address asset) external returns(uint256) {
+      gencToken cToken = gencToken(0x3FDA...);
+      uint borrowRateMantissa = cToken.borrowRatePerBlock();
+      return borrowRateMantissa;
+    }
+
+
+
     //internal Functions
     function getCollateralFactor(address  _cTokenAddress) internal  returns(uint256, uint256) {
       Comptroller Cptrllr = Comptroller(comptroller); // Create a reference to the corresponding network Comptroller

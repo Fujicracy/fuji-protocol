@@ -44,6 +44,9 @@ contract VaultETHDAI {
   // balance of all available collateral in ETH
   uint256 public collateralBalance;
 
+  // balance of outstanding DAI
+  uint256 public outstandingBalance;
+
   modifier isAuthorized() {
     require(msg.sender == controller || msg.sender == address(this), "!authorized");
     _;
@@ -99,6 +102,33 @@ contract VaultETHDAI {
 
   function withdraw(uint256 _withdrawAmount) public {
     // TODO
+    Position storage position = positions[msg.sender];
+
+    require(
+      position.collateralAmount >= _withdrawAmount,
+      "Withdrawal amount exceeds provided amount"
+    );
+    // get needed collateral for current position
+    // according current price
+    uint256 neededCollateral = getNeededCollateralFor(
+      position.borrowAmount
+    );
+
+    require(
+      position.collateralAmount.sub(_withdrawAmount) >= neededCollateral,
+      "Not enough collateral left"
+    );
+
+    bytes memory data = abi.encodeWithSignature(
+      "withdraw(address,uint256)",
+      collateralAsset,
+      _withdrawAmount
+    );
+    execute(address(activeProvider), data);
+
+    position.collateralAmount = position.collateralAmount.sub(_withdrawAmount);
+    IERC20(collateralAsset).uniTransfer(msg.sender, _withdrawAmount);
+    collateralBalance = collateralBalance.sub(_withdrawAmount);
   }
 
   function borrow(uint256 _borrowAmount) public {
@@ -121,12 +151,34 @@ contract VaultETHDAI {
     );
     execute(address(activeProvider), data);
 
+    outstandingBalance = outstandingBalance.add(_borrowAmount);
     position.borrowAmount = position.borrowAmount.add(_borrowAmount);
     IERC20(borrowAsset).uniTransfer(msg.sender, _borrowAmount);
   }
 
   function payback(uint256 _repayAmount) public payable {
     // TODO
+    Position storage position = positions[msg.sender];
+
+    require(
+      IERC20(borrowAsset).allowance(msg.sender, address(this)) >= _repayAmount,
+      "Not enough allowance"
+    );
+
+    outstandingBalance = outstandingBalance.sub(_repayAmount);
+    position.borrowAmount = position.borrowAmount.sub(_repayAmount);
+    IERC20(borrowAsset).transferFrom(msg.sender, address(this), _repayAmount);
+
+    bytes memory data = abi.encodeWithSignature(
+      "payback(address,uint256)",
+      borrowAsset,
+      _repayAmount
+    );
+    execute(address(activeProvider), data);
+  }
+
+  function paybackAll() public payable {
+
   }
 
   function addProvider(address _provider) external isAuthorized {
@@ -162,6 +214,7 @@ contract VaultETHDAI {
       share = providedCollateral.mul(BASE).div(collateralBalance);
     }
   }
+
 
   function getRedeemableAmountOf(address _user) public view returns(uint256 share) {
     uint256 collateralShare = getCollateralShareOf(_user);
@@ -209,4 +262,6 @@ contract VaultETHDAI {
       }
     }
   }
+
+  receive() external payable {}
 }

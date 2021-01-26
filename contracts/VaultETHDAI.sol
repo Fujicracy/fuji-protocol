@@ -44,6 +44,9 @@ contract VaultETHDAI {
   // balance of all available collateral in ETH
   uint256 public collateralBalance;
 
+  // balance of outstanding DAI
+  uint256 public outstandingBalance;
+
   modifier isAuthorized() {
     require(msg.sender == controller || msg.sender == address(this), "!authorized");
     _;
@@ -148,6 +151,7 @@ contract VaultETHDAI {
     );
     execute(address(activeProvider), data);
 
+    outstandingBalance = outstandingBalance.add(_borrowAmount);
     position.borrowAmount = position.borrowAmount.add(_borrowAmount);
     IERC20(borrowAsset).uniTransfer(msg.sender, _borrowAmount);
   }
@@ -161,6 +165,7 @@ contract VaultETHDAI {
       "Not enough allowance"
     );
 
+    outstandingBalance = outstandingBalance.sub(_repayAmount);
     position.borrowAmount = position.borrowAmount.sub(_repayAmount);
     IERC20(borrowAsset).transferFrom(msg.sender, address(this), _repayAmount);
   }
@@ -202,6 +207,7 @@ contract VaultETHDAI {
       share = providedCollateral.mul(BASE).div(collateralBalance);
     }
   }
+
 
   function getRedeemableAmountOf(address _user) public view returns(uint256 share) {
     uint256 collateralShare = getCollateralShareOf(_user);

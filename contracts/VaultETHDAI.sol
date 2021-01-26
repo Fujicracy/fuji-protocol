@@ -168,6 +168,13 @@ contract VaultETHDAI {
     outstandingBalance = outstandingBalance.sub(_repayAmount);
     position.borrowAmount = position.borrowAmount.sub(_repayAmount);
     IERC20(borrowAsset).transferFrom(msg.sender, address(this), _repayAmount);
+
+    bytes memory data = abi.encodeWithSignature(
+      "payback(address,uint256)",
+      borrowAsset,
+      _repayAmount
+    );
+    execute(address(activeProvider), data);
   }
 
   function paybackAll() public payable {

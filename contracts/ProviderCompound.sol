@@ -65,17 +65,10 @@ contract HelperFunct {
   }
 }
 
-
-contract ProviderCompound is HelperFunct {
+contract ProviderCompound is IProvider, HelperFunct {
 
   using SafeMath for uint256;
   using UniERC20 for IERC20;
-
-  //Events
-  event LogDeposit(address indexed token, address cToken, uint256 tokenAmt);
-  event LogWithdraw(address indexed token, address cToken, uint256 tokenAmt);
-  event LogBorrow(address indexed token, address cToken, uint256 tokenAmt);
-  event LogPayback(address indexed token, address cToken, uint256 tokenAmt);
 
   //Administrative functions
 
@@ -92,7 +85,7 @@ contract ProviderCompound is HelperFunct {
   }
 
   //Core Functions
-  function deposit(address _depositAsset, uint256 _Amount) external payable{
+  function deposit(address _depositAsset, uint256 _Amount) external override payable{
     address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_depositAsset); //Get cToken address from mapping
 
     if(isETH(_depositAsset)) { /*Compound Deposit Procedure for ETH*/
@@ -102,8 +95,6 @@ contract ProviderCompound is HelperFunct {
       CEth cToken = CEth(ctokenaddress); // Create a reference to the cToken contract
       cToken.mint{value:msg.value}(); //Compound protocol Mints cTokens, ETH method
 
-      emit LogDeposit(_depositAsset, ctokenaddress, _Amount);
-
     } else { /*Compound Desposit Procedure for a ERC20 Token*/
 
       IERC20 ERC20token = IERC20(_depositAsset); // Create reference to the ERC20 contract
@@ -112,31 +103,25 @@ contract ProviderCompound is HelperFunct {
       ERC20token.approve(ctokenaddress, _Amount); //Approve to move ERC20tokens
       require(cToken.mint(_Amount)==0, "deposit-failed");  // Compound Protocol mints cTokens, trhow error if not
 
-      emit LogDeposit(_depositAsset, ctokenaddress, _Amount);
-
     }
   }/*end of deposit function*/
 
-  function withdraw (address _withdrawAsset, uint256 _Amount) external  payable{
+  function withdraw (address _withdrawAsset, uint256 _Amount) external override payable{
     address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_withdrawAsset); //Get cToken address from mapping
     gencToken cToken = gencToken(ctokenaddress); // Create a reference to the corresponding cToken contract
     require(cToken.redeemUnderlying(_Amount) == 0, "Withdraw-failed");//Compound Protocol Redeem Process, throw errow if not.
 
-    emit LogWithdraw(_withdrawAsset, ctokenaddress, _Amount);
-
     }/*end of withdraw function*/
 
-    function borrow(address _borrowAsset, uint256 _Amount) external  payable{
+    function borrow(address _borrowAsset, uint256 _Amount) external override payable{
       address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_borrowAsset); //Get cToken address from mapping
       gencToken cToken = gencToken(ctokenaddress); // Create a reference to the corresponding cToken contract
       _enterCollatMarket(ctokenaddress); //Enter and/or ensure collateral market is enacted
       require(cToken.borrow(_Amount) == 0, "borrow-failed"); //Compound Protocol Borrow Process, throw errow if not.
 
-      emit LogBorrow(_borrowAsset, ctokenaddress, _Amount);
-
     }/*end of borrow function*/
 
-    function payback(address _paybackAsset, uint256 _Amount) external  payable {
+    function payback(address _paybackAsset, uint256 _Amount) external override  payable {
       address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_paybackAsset); //Get cToken address from mapping
 
       if(isETH(_paybackAsset)) { /*Compound payback Procedure for ETH*/
@@ -145,8 +130,6 @@ contract ProviderCompound is HelperFunct {
         CEth cToken = CEth(ctokenaddress); // Create a reference to the corresponding cToken contract
         cToken.repayBorrow{value:msg.value}();
 
-        emit LogPayback(_paybackAsset, ctokenaddress, _Amount);
-
       } else { /*Compound payback Procedure for a ERC20 Token*/
 
         IERC20 ERC20token = IERC20(_paybackAsset); // Create reference to the ERC20 contract
@@ -154,8 +137,6 @@ contract ProviderCompound is HelperFunct {
         require(ERC20token.balanceOf(address(this)) >= _Amount, "not-enough-token"); // Check there is enough balance to pay
         ERC20token.approve(ctokenaddress, _Amount);
         cToken.repayBorrow(_Amount);
-
-        emit LogPayback(_paybackAsset, ctokenaddress, _Amount);
 
       }
     } /*end of payback function*/

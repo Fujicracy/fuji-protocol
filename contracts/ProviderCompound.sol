@@ -77,36 +77,22 @@ contract ProviderCompound is HelperFunct {
   event LogBorrow(address indexed token, address cToken, uint256 tokenAmt);
   event LogPayback(address indexed token, address cToken, uint256 tokenAmt);
 
-  address payable private ADMIN;
-
-  //Modifiers
-  modifier OnlyAdmin() {
-    require( msg.sender == ADMIN || msg.sender == address(this), 'Admin Function Only');
-    _; //run function
-  }
-
-  //Contract Initializer
-  constructor(address payable _admin, address _comptroller,address _pricefeed) public {
-    ADMIN = _admin;
-  }
-
   //Administrative functions
 
-  function _enterCollatMarket(address _cTokenAddress) external {
-    Comptroller Cptrllr = Comptroller(comptroller); // Create a reference to the corresponding network Comptroller
+  function _enterCollatMarket(address _cTokenAddress) internal {
+    Comptroller Cptrllr = Comptroller(getComptrollerAddress()); // Create a reference to the corresponding network Comptroller
     address[] memory cTokenMarkets = new address[](1);
     cTokenMarkets[0] = _cTokenAddress;
     Cptrllr.enterMarkets(cTokenMarkets);
   }
 
-  function _exitCollatMarket(address  _cTokenAddress) external {
-    Comptroller Cptrllr = Comptroller(comptroller); // Create a reference to the corresponding network Comptroller
+  function _exitCollatMarket(address  _cTokenAddress) internal {
+    Comptroller Cptrllr = Comptroller(getComptrollerAddress()); // Create a reference to the corresponding network Comptroller
     Cptrllr.exitMarket(_cTokenAddress);
   }
 
   //Core Functions
   function deposit(address _depositAsset, uint256 _Amount) external payable{
-    require(ismapped(_depositAsset), "Missing mapping ERC20 to cToken");
     address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_depositAsset); //Get cToken address from mapping
 
     if(isETH(_depositAsset)) { /*Compound Deposit Procedure for ETH*/
@@ -114,7 +100,7 @@ contract ProviderCompound is HelperFunct {
       require(msg.value != 0, "Missing msg.value");
       require(_Amount == msg.value, "Verify msg.value amount vs _Amount indicated");
       CEth cToken = CEth(ctokenaddress); // Create a reference to the cToken contract
-      cToken.mint{value:msg.value, gas:250000}(); //Compound protocol Mints cTokens, ETH method
+      cToken.mint{value:msg.value}(); //Compound protocol Mints cTokens, ETH method
 
       emit LogDeposit(_depositAsset, ctokenaddress, _Amount);
 
@@ -132,7 +118,6 @@ contract ProviderCompound is HelperFunct {
   }/*end of deposit function*/
 
   function withdraw (address _withdrawAsset, uint256 _Amount) external  payable{
-    require(ismapped(_withdrawAsset), "Missing mapping ERC20 to cToken");
     address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_withdrawAsset); //Get cToken address from mapping
     gencToken cToken = gencToken(ctokenaddress); // Create a reference to the corresponding cToken contract
     require(cToken.redeemUnderlying(_Amount) == 0, "Withdraw-failed");//Compound Protocol Redeem Process, throw errow if not.
@@ -142,7 +127,6 @@ contract ProviderCompound is HelperFunct {
     }/*end of withdraw function*/
 
     function borrow(address _borrowAsset, uint256 _Amount) external  payable{
-      require(ismapped(_borrowAsset), "Missing mapping ERC20 to cToken");
       address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_borrowAsset); //Get cToken address from mapping
       gencToken cToken = gencToken(ctokenaddress); // Create a reference to the corresponding cToken contract
       _enterCollatMarket(ctokenaddress); //Enter and/or ensure collateral market is enacted
@@ -153,7 +137,6 @@ contract ProviderCompound is HelperFunct {
     }/*end of borrow function*/
 
     function payback(address _paybackAsset, uint256 _Amount) external  payable {
-      require(ismapped(_paybackAsset), "Missing mapping ERC20 to cToken");
       address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_paybackAsset); //Get cToken address from mapping
 
       if(isETH(_paybackAsset)) { /*Compound payback Procedure for ETH*/
@@ -181,9 +164,9 @@ contract ProviderCompound is HelperFunct {
       return InstaMapping(getMappingAddr()).cTokenMapping(collateralAsset);
     }
 
-    function getBorrowRateFor(address asset) external returns(uint256) {
-      gencToken cToken = gencToken(asset);
-      address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_paybackAsset);
+    function getBorrowRateFor(address _asset) external returns(uint256) {
+      gencToken cToken = gencToken(_asset);
+      address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_asset);
       return cToken.borrowRatePerBlock(ctokenaddress);
     }
 

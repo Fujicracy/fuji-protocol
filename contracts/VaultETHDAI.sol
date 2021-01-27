@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity >=0.4.25 <0.7.0;
-//pragma experimental ABIEncoderV2;
 
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "./LibUniERC20.sol";
@@ -10,7 +9,15 @@ import "./IProvider.sol";
 // DEBUG
 import "hardhat/console.sol";
 
-contract VaultETHDAI {
+interface IVault {
+  function collateralAsset() external view returns(address);
+  function borrowAsset() external view returns(address);
+  function providers(uint) external view returns(IProvider);
+  function activeProvider() external view returns(IProvider);
+  function outstandingBalance() external view returns(uint256);
+}
+
+contract VaultETHDAI is IVault {
   using SafeMath for uint256;
   using UniERC20 for IERC20;
 
@@ -33,11 +40,11 @@ contract VaultETHDAI {
 
   address public controller;
 
-  IProvider[] public providers;
-  IProvider public activeProvider;
+  IProvider[] public override providers;
+  IProvider public override activeProvider;
 
-  address public constant collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
-  address public constant borrowAsset = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
+  address public override collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
+  address public override borrowAsset = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
 
   mapping(address => Position) public positions;
 
@@ -45,7 +52,7 @@ contract VaultETHDAI {
   uint256 public collateralBalance;
 
   // balance of outstanding DAI
-  uint256 public outstandingBalance;
+  uint256 public override outstandingBalance;
 
   modifier isAuthorized() {
     require(msg.sender == controller || msg.sender == address(this), "!authorized");

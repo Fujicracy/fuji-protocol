@@ -177,8 +177,48 @@ contract VaultETHDAI {
     execute(address(activeProvider), data);
   }
 
-  function paybackAll() public payable {
+  function fujiSwitch(address _newProvider) public payable {
+    require(
+      IERC20(borrowAsset).allowance(msg.sender, address(this)) >= outstandingBalance,
+      "Not enough allowance"
+    );
 
+    IERC20(borrowAsset).transferFrom(msg.sender, address(this), outstandingBalance);
+
+    // payback current provider
+    bytes memory data = abi.encodeWithSignature(
+      "payback(address,uint256)",
+      borrowAsset,
+      outstandingBalance
+    );
+    execute(address(activeProvider), data);
+
+    // withdraw collateral from current provider
+    data = abi.encodeWithSignature(
+      "withdraw(address,uint256)",
+      collateralAsset,
+      collateralBalance
+    );
+    execute(address(activeProvider), data);
+
+    // deposit to the new provider
+    data = abi.encodeWithSignature(
+      "deposit(address,uint256)",
+      collateralAsset,
+      collateralBalance
+    );
+    execute(address(_newProvider), data);
+
+    // borrow from the new provider
+    data = abi.encodeWithSignature(
+      "borrow(address,uint256)",
+      borrowAsset,
+      outstandingBalance
+    );
+    execute(address(_newProvider), data);
+
+    // return borrowed amount to Flasher
+    IERC20(borrowAsset).uniTransfer(msg.sender, outstandingBalance);
   }
 
   function addProvider(address _provider) external isAuthorized {
@@ -226,7 +266,9 @@ contract VaultETHDAI {
   }
 
   function redeemableCollateralBalance() public view returns(uint256) {
-    return IERC20(0x030bA81f1c18d280636F32af80b9AAd02Cf0854e).balanceOf(address(this)); // AAVE aWETH
+    address redeemable = activeProvider.getRedeemableAddress(collateralAsset);
+    return IERC20(redeemable).balanceOf(address(this));
+    //return IERC20(0x030bA81f1c18d280636F32af80b9AAd02Cf0854e).balanceOf(address(this)); // AAVE aWETH
     //return IERC20(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5).balanceOf(address(this)); // Compound cETH
   }
 

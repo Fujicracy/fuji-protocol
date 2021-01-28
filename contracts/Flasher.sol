@@ -14,6 +14,10 @@ interface IFlashLoanReceiver {
   ) external returns (bool);
 }
 
+interface Ivault{
+  function fujiSwitch(address _newProvider) external payable;
+}
+
 contract Flasher is IFlashLoanReceiver {
   using SafeMath for uint256;
 
@@ -29,18 +33,20 @@ contract Flasher is IFlashLoanReceiver {
   ) external override returns (bool) {
 
     //decode params
-    //it contains:
+    //Contain:
     // 1. vault's address on which we should call fujiSwitch
     // 2. new provider's address which we pass on fujiSwitch
+    (address theVault, address newProvider) = abi.decode(params, (address,address));
 
     //approve vault to spend ERC20
+    IERC20(assets[0]).approve(address(THE_VAULT), amounts[0]);
 
     //call fujiSwitch
+    Ivault(theVault).fujiSwitch(newProvider);
 
-    for (uint i = 0; i < assets.length; i++) {
-      uint amountOwing = amounts[i].add(premiums[i]);
-      IERC20(assets[i]).approve(address(LENDING_POOL), amountOwing);
-    }
+    //Estimate flashloan payback + premium fee, and approve aaveLP to spend
+    uint amountOwing = amounts[0].add(premiums[0]);
+    IERC20(assets[0]).approve(address(LENDING_POOL), amountOwing);
 
     return true;
   }

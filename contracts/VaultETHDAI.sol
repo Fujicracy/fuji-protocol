@@ -15,6 +15,7 @@ interface IVault {
   function providers(uint) external view returns(IProvider);
   function activeProvider() external view returns(IProvider);
   function outstandingBalance() external view returns(uint256);
+  function fujiSwitch(address _newProvider) external payable;
 }
 
 contract VaultETHDAI is IVault {

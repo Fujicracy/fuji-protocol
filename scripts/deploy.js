@@ -14,12 +14,19 @@ const main = async () => {
   const deployerAddress = await deployerWallet.getAddress();
 
   const libUniERC20 = await deploy("UniERC20");
+  const flasher = await deploy("Flasher");
   const aave = await deploy("ProviderAave");
   const compound = await deploy("ProviderCompound");
-  await deploy("VaultETHDAI", [
+  const vault = await deploy("VaultETHDAI", [
     "0x3824461d7a62B1bb6AAED5426Ff5129060404507",
+    //controller.address,
     "0x773616E4d11A78F511299002da57A0a94577F1f4",
-    aave.address
+    compound.address
+  ]);
+  const controller = await deploy("Controller", [
+    "0x3824461d7a62B1bb6AAED5426Ff5129060404507",
+    flasher.address,
+    vault.address
   ]);
 
 

@@ -13,9 +13,9 @@ interface IProvider {
   // returns the address of the assets received from depositing a collateral;
   // for ex. for ETH as collateralAsset, AaveProvider should return the address of aWETH
   // and Compound should return the address of cETH.
-  //function getRedeemableAddress(address collateralAsset) external returns(address);
+  function getRedeemableAddress(address collateralAsset) external view returns(address);
 
   // returns the borrow annualized rate for an asset
-  //function getBorrowRateFor(address asset) external returns(uint256);
+  function getBorrowRateFor(address asset) external view returns(uint256);
 
 }

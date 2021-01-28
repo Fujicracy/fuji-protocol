@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.4.25 <0.7.0;
+pragma solidity >=0.4.25 <0.7.5;
 
 import "./LibUniERC20.sol";
 
@@ -39,7 +39,7 @@ contract Flasher is IFlashLoanReceiver {
     (address theVault, address newProvider) = abi.decode(params, (address,address));
 
     //approve vault to spend ERC20
-    IERC20(assets[0]).approve(address(THE_VAULT), amounts[0]);
+    IERC20(assets[0]).approve(address(theVault), amounts[0]);
 
     //call fujiSwitch
     Ivault(theVault).fujiSwitch(newProvider);

@@ -123,7 +123,7 @@ contract ProviderCompound is IProvider, HelperFunct {
     }
   }
 
-  function withdraw (address _withdrawAsset, uint256 _amount) external override payable {
+  function withdraw(address _withdrawAsset, uint256 _amount) external override payable {
     //Get cToken address from mapping
     address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_withdrawAsset);
 
@@ -180,5 +180,10 @@ contract ProviderCompound is IProvider, HelperFunct {
   function getBorrowRateFor(address _asset) external view override returns(uint256) {
     address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_asset);
     return gencToken(ctokenaddress).borrowRatePerBlock();
+  }
+
+  function getBorrowBalance(address _asset) external override returns(uint256) {
+    address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_asset);
+    return gencToken(ctokenaddress).borrowBalanceCurrent(msg.sender);
   }
 }

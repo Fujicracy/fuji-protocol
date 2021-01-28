@@ -85,11 +85,6 @@ contract ProviderAave is IProvider {
     return AaveDataProviderInterface(0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d); //mainnet
   }
 
-  function getPaybackBalance(AaveDataProviderInterface aaveData, address token, uint rateMode) internal view returns (uint) {
-    (, uint stableDebt, uint variableDebt, , , , , , ) = aaveData.getUserReserveData(token, address(this));
-    return rateMode == 1 ? stableDebt : variableDebt;
-  }
-
   function getWethAddr() internal pure returns (address) {
     return 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // Mainnet WETH Address
   }
@@ -134,6 +129,16 @@ contract ProviderAave is IProvider {
     (address aTokenAddress,,) = AaveDataProviderInterface(aaveData).getReserveTokensAddresses(token);
 
     return aTokenAddress;
+  }
+
+  function getBorrowBalance(address borrowAsset) external override returns(uint256) {
+    AaveDataProviderInterface aaveData = getAaveDataProvider();
+
+    bool isEth = borrowAsset == getEthAddr();
+    address _token = isEth ? getWethAddr() : borrowAsset;
+
+    (,, uint variableDebt, , , , , , ) = aaveData.getUserReserveData(_token, msg.sender);
+    return variableDebt;
   }
 
   function deposit(address collateralAsset, uint256 collateralAmount) external override payable {
@@ -202,7 +207,8 @@ contract ProviderAave is IProvider {
 
     TokenInterface tokenContract = TokenInterface(_token);
 
-    borrowAmount = borrowAmount == uint256(-1) ? getPaybackBalance(aaveData, _token, 2) : borrowAmount;
+    (,, uint variableDebt, , , , , , ) = aaveData.getUserReserveData(_token, address(this));
+    borrowAmount = borrowAmount == uint256(-1) ? variableDebt : borrowAmount;
 
     if (isEth) convertEthToWeth(isEth, tokenContract, borrowAmount);
 

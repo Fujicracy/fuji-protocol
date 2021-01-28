@@ -185,18 +185,20 @@ contract VaultETHDAI is IVault {
   }
 
   function fujiSwitch(address _newProvider) public payable {
+    uint256 borrowBalance = borrowBalance();
+
     require(
-      IERC20(borrowAsset).allowance(msg.sender, address(this)) >= outstandingBalance,
+      IERC20(borrowAsset).allowance(msg.sender, address(this)) >= borrowBalance,
       "Not enough allowance"
     );
 
-    IERC20(borrowAsset).transferFrom(msg.sender, address(this), outstandingBalance);
+    IERC20(borrowAsset).transferFrom(msg.sender, address(this), borrowBalance);
 
     // payback current provider
     bytes memory data = abi.encodeWithSignature(
       "payback(address,uint256)",
       borrowAsset,
-      outstandingBalance
+      borrowBalance
     );
     execute(address(activeProvider), data);
 
@@ -220,12 +222,12 @@ contract VaultETHDAI is IVault {
     data = abi.encodeWithSignature(
       "borrow(address,uint256)",
       borrowAsset,
-      outstandingBalance
+      borrowBalance
     );
     execute(address(_newProvider), data);
 
     // return borrowed amount to Flasher
-    IERC20(borrowAsset).uniTransfer(msg.sender, outstandingBalance);
+    IERC20(borrowAsset).uniTransfer(msg.sender, borrowBalance);
   }
 
   function addProvider(address _provider) external isAuthorized {
@@ -279,8 +281,8 @@ contract VaultETHDAI is IVault {
     //return IERC20(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5).balanceOf(address(this)); // Compound cETH
   }
 
-  function balanceOfBorrow() external view returns(uint256) {
-    return IERC20(borrowAsset).balanceOf(address(this));
+  function borrowBalance() public returns(uint256) {
+    return activeProvider.getBorrowBalance(borrowAsset);
   }
 
   function checkCollateralPosition(address addr) external view returns(uint256) {

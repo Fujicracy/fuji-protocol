@@ -20,6 +20,7 @@ interface gencToken{
   function getCash() external view returns (uint);
   function accrueInterest() external returns (uint);
   function seize(address liquidator, address borrower, uint seizeTokens) external returns (uint);
+  function borrowIndex() external view returns (uint);
 }
 
 interface CErc20 is IERC20, gencToken {
@@ -177,10 +178,19 @@ contract ProviderCompound is IProvider, HelperFunct {
     return InstaMapping(getMappingAddr()).cTokenMapping(collateralAsset);
   }
 
+  // -> TODO
+
   function getBorrowRateFor(address _asset) external view override returns(uint256) {
     address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_asset);
     return gencToken(ctokenaddress).borrowRatePerBlock();
   }
+
+  function getBorrowIndexFor(address _asset) external view override returns(uint256) {
+    address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_asset);
+    return gencToken(ctokenaddress).borrowIndex();
+  }
+
+  // TODO <-
 
   function getBorrowBalance(address _asset) external override returns(uint256) {
     address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_asset);

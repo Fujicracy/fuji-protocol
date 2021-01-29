@@ -9,11 +9,14 @@ const main = async () => {
 
   console.log("\n\n 📡 Deploying...\n");
 
+  const DAI_ADDR = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
+  const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
+
   const deployerWallet = ethers.provider.getSigner();
 
   const deployerAddress = await deployerWallet.getAddress();
 
-  const libUniERC20 = await deploy("UniERC20");
+  //const libUniERC20 = await deploy("UniERC20");
   const flasher = await deploy("Flasher");
   const aave = await deploy("ProviderAave");
   const compound = await deploy("ProviderCompound");
@@ -23,6 +26,15 @@ const main = async () => {
     "0x773616E4d11A78F511299002da57A0a94577F1f4",
     compound.address
   ]);
+  const debtToken = await deploy("VariableDebtToken", [
+    vault.address,
+    DAI_ADDR,
+    "Fuji DAI debt token",
+    "faDAI",
+    ZERO_ADDR
+  ]);
+  vault.setDebtToken(debtToken.address);
+
   const controller = await deploy("Controller", [
     "0x3824461d7a62B1bb6AAED5426Ff5129060404507",
     flasher.address,

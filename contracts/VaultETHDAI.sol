@@ -3,6 +3,8 @@
 pragma solidity >=0.4.25 <0.7.0;
 
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+import { WadRayMath } from "./aave-debt-token/WadRayMath.sol";
+import { VariableDebtToken } from "./aave-debt-token/VariableDebtToken.sol";
 import "./LibUniERC20.sol";
 import "./IProvider.sol";
 
@@ -19,14 +21,10 @@ interface IVault {
 
 contract VaultETHDAI is IVault {
   using SafeMath for uint256;
+  using WadRayMath for uint256;
   using UniERC20 for IERC20;
 
   AggregatorV3Interface public oracle;
-
-  struct Position {
-    uint256 collateralAmount;
-    uint256 borrowAmount;
-  }
 
   struct Factor {
     uint256 a;
@@ -46,12 +44,17 @@ contract VaultETHDAI is IVault {
   address public override collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
   address public override borrowAsset = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
 
-  mapping(address => Position) public positions;
+  VariableDebtToken debtToken;
+
+  uint256 public lastUpdateTimestamp;
+
+  mapping(address => uint256) public collaterals;
 
   // balance of all available collateral in ETH
   uint256 public collateralBalance;
 
   // balance of outstanding DAI
+  // TODO remove, use instead borrowBalance()
   uint256 public override outstandingBalance;
 
   modifier isAuthorized() {
@@ -103,26 +106,26 @@ contract VaultETHDAI is IVault {
 
     collateralBalance = collateralBalance.add(_collateralAmount);
 
-    Position storage position = positions[msg.sender];
-    position.collateralAmount = position.collateralAmount.add(_collateralAmount);
+    uint256 providedCollateral = collaterals[msg.sender];
+    collaterals[msg.sender] = providedCollateral.add(_collateralAmount);
   }
 
   function withdraw(uint256 _withdrawAmount) public {
     // TODO
-    Position storage position = positions[msg.sender];
+    uint256 providedCollateral = collaterals[msg.sender];
 
     require(
-      position.collateralAmount >= _withdrawAmount,
+      providedCollateral >= _withdrawAmount,
       "Withdrawal amount exceeds provided amount"
     );
     // get needed collateral for current position
     // according current price
     uint256 neededCollateral = getNeededCollateralFor(
-      position.borrowAmount
+      debtToken.balanceOf(msg.sender)
     );
 
     require(
-      position.collateralAmount.sub(_withdrawAmount) >= neededCollateral,
+      providedCollateral.sub(_withdrawAmount) >= neededCollateral,
       "Not enough collateral left"
     );
 
@@ -133,23 +136,24 @@ contract VaultETHDAI is IVault {
     );
     execute(address(activeProvider), data);
 
-    position.collateralAmount = position.collateralAmount.sub(_withdrawAmount);
+    collaterals[msg.sender] = providedCollateral.sub(_withdrawAmount);
     IERC20(collateralAsset).uniTransfer(msg.sender, _withdrawAmount);
     collateralBalance = collateralBalance.sub(_withdrawAmount);
   }
 
   function borrow(uint256 _borrowAmount) public {
     // TODO
-    Position storage position = positions[msg.sender];
+    lastUpdateTimestamp = block.timestamp;
+    uint256 providedCollateral = collaterals[msg.sender];
 
     // get needed collateral for already existing positions
     // together with the new position
     // according current price
     uint256 neededCollateral = getNeededCollateralFor(
-      _borrowAmount.add(position.borrowAmount)
+      _borrowAmount.add(debtToken.balanceOf(msg.sender))
     );
 
-    require(position.collateralAmount > neededCollateral, "Not enough collateral provided");
+    require(providedCollateral > neededCollateral, "Not enough collateral provided");
 
     bytes memory data = abi.encodeWithSignature(
       "borrow(address,uint256)",
@@ -158,22 +162,26 @@ contract VaultETHDAI is IVault {
     );
     execute(address(activeProvider), data);
 
-    outstandingBalance = outstandingBalance.add(_borrowAmount);
-    position.borrowAmount = position.borrowAmount.add(_borrowAmount);
     IERC20(borrowAsset).uniTransfer(msg.sender, _borrowAmount);
+
+    debtToken.mint(
+      msg.sender,
+      msg.sender,
+      _borrowAmount,
+      activeProvider.getBorrowIndexFor(borrowAsset)
+    );
   }
 
   function payback(uint256 _repayAmount) public payable {
     // TODO
-    Position storage position = positions[msg.sender];
+    lastUpdateTimestamp = block.timestamp;
+    uint256 providedCollateral = collaterals[msg.sender];
 
     require(
       IERC20(borrowAsset).allowance(msg.sender, address(this)) >= _repayAmount,
       "Not enough allowance"
     );
 
-    outstandingBalance = outstandingBalance.sub(_repayAmount);
-    position.borrowAmount = position.borrowAmount.sub(_repayAmount);
     IERC20(borrowAsset).transferFrom(msg.sender, address(this), _repayAmount);
 
     bytes memory data = abi.encodeWithSignature(
@@ -182,6 +190,12 @@ contract VaultETHDAI is IVault {
       _repayAmount
     );
     execute(address(activeProvider), data);
+
+    debtToken.burn(
+      msg.sender,
+      _repayAmount,
+      activeProvider.getBorrowIndexFor(borrowAsset)
+    );
   }
 
   function fujiSwitch(address _newProvider) public payable {
@@ -230,6 +244,11 @@ contract VaultETHDAI is IVault {
     IERC20(borrowAsset).uniTransfer(msg.sender, borrowBalance);
   }
 
+  // TODO isAuthorized
+  function setDebtToken(address _debtToken) external {
+    debtToken = VariableDebtToken(_debtToken);
+  }
+
   function addProvider(address _provider) external isAuthorized {
     IProvider provider = IProvider(_provider);
 
@@ -239,6 +258,24 @@ contract VaultETHDAI is IVault {
     if (providers.length == 1) {
       activeProvider = provider;
     }
+  }
+
+  function getReserveNormalizedVariableDebt(address _asset) external view returns(uint256) {
+    uint256 borrowIndex = activeProvider.getBorrowIndexFor(borrowAsset);
+    uint256 borrowRate = activeProvider.getBorrowRateFor(borrowAsset);
+
+    if (lastUpdateTimestamp == block.timestamp) {
+      //if the index was updated in the same block, no need to perform any calculation
+      return borrowIndex;
+    }
+
+    uint256 cumulated = calculateCompoundedInterest(
+      borrowRate,
+      lastUpdateTimestamp,
+      block.timestamp
+    ).rayMul(borrowIndex);
+
+    return cumulated;
   }
 
   function getNeededCollateralFor(uint256 _amount) public view returns(uint256) {
@@ -255,7 +292,7 @@ contract VaultETHDAI is IVault {
   }
 
   function getCollateralShareOf(address _user) public view returns(uint256 share) {
-    uint256 providedCollateral = positions[_user].collateralAmount;
+    uint256 providedCollateral = collaterals[_user];
     if (providedCollateral == 0) {
       share = 0;
     }
@@ -285,14 +322,6 @@ contract VaultETHDAI is IVault {
     return activeProvider.getBorrowBalance(borrowAsset);
   }
 
-  function checkCollateralPosition(address addr) external view returns(uint256) {
-    return positions[addr].collateralAmount;
-  }
-
-  function checkBorrowPosition(address addr) external view returns(uint256) {
-    return positions[addr].borrowAmount;
-  }
-
   function execute(
     address _target,
     bytes memory _data
@@ -312,6 +341,32 @@ contract VaultETHDAI is IVault {
         revert(add(response, 0x20), size)
       }
     }
+  }
+
+  function calculateCompoundedInterest(
+    uint256 rate,
+    uint256 lastUpdateTimestamp,
+    uint256 currentTimestamp
+  ) internal pure returns (uint256) {
+    uint256 exp = currentTimestamp.sub(lastUpdateTimestamp);
+
+    if (exp == 0) {
+      return WadRayMath.ray();
+    }
+
+    uint256 expMinusOne = exp - 1;
+
+    uint256 expMinusTwo = exp > 2 ? exp - 2 : 0;
+
+    uint256 ratePerSecond = rate / 365 days;
+
+    uint256 basePowerTwo = ratePerSecond.rayMul(ratePerSecond);
+    uint256 basePowerThree = basePowerTwo.rayMul(ratePerSecond);
+
+    uint256 secondTerm = exp.mul(expMinusOne).mul(basePowerTwo) / 2;
+    uint256 thirdTerm = exp.mul(expMinusOne).mul(expMinusTwo).mul(basePowerThree) / 6;
+
+    return WadRayMath.ray().add(ratePerSecond.mul(exp)).add(secondTerm).add(thirdTerm);
   }
 
   receive() external payable {}

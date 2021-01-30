@@ -12,7 +12,6 @@ import "hardhat/console.sol";
 interface IVault {
   function collateralAsset() external view returns(address);
   function borrowAsset() external view returns(address);
-  function providers(uint) external view returns(IProvider);
   function activeProvider() external view returns(IProvider);
   function outstandingBalance() external view returns(uint256);
   function fujiSwitch(address _newProvider) external payable;
@@ -41,9 +40,12 @@ contract VaultETHDAI is IVault {
 
   address public controller;
 
-  IProvider[] public override providers;
+  //State variables to control vault providers
+  IProvider[] public providers;
+  mapping (IProvider => bool) public ProviderIsIncluded;
   IProvider public override activeProvider;
 
+  //Vault Assets
   address public override collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
   address public override borrowAsset = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
 
@@ -62,8 +64,7 @@ contract VaultETHDAI is IVault {
 
   constructor(
     address _controller,
-    address _oracle,
-    address _provider
+    address _oracle
   ) public {
     oracle = AggregatorV3Interface(_oracle);
     controller = _controller;
@@ -75,9 +76,6 @@ contract VaultETHDAI is IVault {
     // 125%
     collatF.a = 5;
     collatF.b = 4;
-
-    // TODO remove
-    activeProvider = IProvider(_provider);
   }
 
   function depositAndBorrow(uint256 _collateralAmount, uint256 _borrowAmount) external payable {
@@ -185,7 +183,7 @@ contract VaultETHDAI is IVault {
     execute(address(activeProvider), data);
   }
 
-  function fujiSwitch(address _newProvider) public payable {
+  function fujiSwitch(address _newProvider) public override payable {
     uint256 borrowBalance = borrowBalance();
 
     require(
@@ -232,11 +230,14 @@ contract VaultETHDAI is IVault {
   }
 
   function addProvider(address _provider) external isAuthorized {
+    //Create a IProvider instance from address input
     IProvider provider = IProvider(_provider);
 
-    // TODO check if it's already added
+    //Check if Provider is not already included
     providers.push(provider);
+    ProviderIsIncluded[provider] = true;
 
+    //Asign an active provider if none existed
     if (providers.length == 1) {
       activeProvider = provider;
     }

@@ -15,7 +15,8 @@ interface IProvider {
   // and Compound should return the address of cETH.
   function getRedeemableAddress(address collateralAsset) external view returns(address);
 
-  // returns the borrow annualized rate for an asset
+  // returns the borrow annualized rate for an asset in ray (1e27)
+  //Example 8.5% annual interest = 0.085 x 10^27 = 85000000000000000000000000 or 85*(10**24)
   function getBorrowRateFor(address asset) external view returns(uint256);
   function getBorrowBalance(address _asset) external returns(uint256);
 }

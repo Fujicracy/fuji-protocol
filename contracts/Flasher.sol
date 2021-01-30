@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity >=0.4.25 <0.7.5;
+pragma experimental ABIEncoderV2;
 
 import "./LibUniERC20.sol";
 
@@ -19,6 +20,7 @@ interface Ivault{
 }
 
 contract Flasher is IFlashLoanReceiver {
+
   using SafeMath for uint256;
 
   address constant LENDING_POOL = 0x9FE532197ad76c5a68961439604C037EB79681F0;
@@ -32,8 +34,7 @@ contract Flasher is IFlashLoanReceiver {
     bytes calldata params
   ) external override returns (bool) {
 
-    //decode params
-    //Contain:
+    //Decoding Parameters
     // 1. vault's address on which we should call fujiSwitch
     // 2. new provider's address which we pass on fujiSwitch
     (address theVault, address newProvider) = abi.decode(params, (address,address));

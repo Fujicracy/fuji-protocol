@@ -17,19 +17,15 @@ const main = async () => {
   const flasher = await deploy("Flasher");
   const aave = await deploy("ProviderAave");
   const compound = await deploy("ProviderCompound");
-  const vault = await deploy("VaultETHDAI", [
-    "0x3824461d7a62B1bb6AAED5426Ff5129060404507",
-    //controller.address,
-    "0x773616E4d11A78F511299002da57A0a94577F1f4",
-    compound.address
-  ]);
   const controller = await deploy("Controller", [
-    "0x3824461d7a62B1bb6AAED5426Ff5129060404507",
-    flasher.address,
-    vault.address
+    "0x3BFf7fD5AACb1a22e1dd3ddbd8cfB8622A9E9A5B", //owner test wallet
+    flasher.address, //flasher
+     2*10^25 //changeThreshold percentagedecimal to ray (0.02 x 10^27)
   ]);
-
-
+  const vault = await deploy("VaultETHDAI", [
+    controller.address,
+    "0x773616E4d11A78F511299002da57A0a94577F1f4"
+  ]);
 
   // const exampleToken = await deploy("ExampleToken")
   // const examplePriceOracle = await deploy("ExamplePriceOracle")

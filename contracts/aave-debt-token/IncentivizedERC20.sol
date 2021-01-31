@@ -2,7 +2,7 @@
 pragma solidity 0.6.12;
 
 import {Context} from './Context.sol';
-import {IERC20} from './IERC20.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IERC20Detailed} from './IERC20Detailed.sol';
 import {SafeMath} from './SafeMath.sol';
 import {IAaveIncentivesController} from './IAaveIncentivesController.sol';

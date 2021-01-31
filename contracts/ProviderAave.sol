@@ -119,17 +119,6 @@ contract ProviderAave is IProvider {
     return variableBorrowRate;
   }
 
-  function getBorrowIndexFor(address asset) external view override returns(uint256) {
-
-    AaveDataProviderInterface aaveData = getAaveDataProvider();
-
-    bool isEth = asset == getEthAddr();
-    address botoken = isEth ? getWethAddr() : asset;
-
-    (, ,uint256 variableBorrowIndex, , , , , , ,) = AaveDataProviderInterface(aaveData).getReserveData(botoken);
-    return variableBorrowIndex;
-  }
-
   function getRedeemableAddress(address collateralAsset) external view override returns(address) {
 
     AaveDataProviderInterface aaveData = getAaveDataProvider();

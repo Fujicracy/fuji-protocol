@@ -17,6 +17,5 @@ interface IProvider {
 
   // returns the borrow annualized rate for an asset
   function getBorrowRateFor(address asset) external view returns(uint256);
-  function getBorrowIndexFor(address asset) external view returns(uint256);
   function getBorrowBalance(address _asset) external returns(uint256);
 }

@@ -181,8 +181,6 @@ contract ProviderCompound is IProvider, HelperFunct {
     return InstaMapping(getMappingAddr()).cTokenMapping(collateralAsset);
   }
 
-  // -> TODO
-
   function getBorrowRateFor(address _asset) external view override returns(uint256) {
     address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_asset);
 
@@ -193,13 +191,6 @@ contract ProviderCompound is IProvider, HelperFunct {
     uint256 blocksperYear = 2102400;
     return bRateperBlock.mul(blocksperYear);
   }
-
-  function getBorrowIndexFor(address _asset) external view override returns(uint256) {
-    address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_asset);
-    return gencToken(ctokenaddress).borrowIndex();
-  }
-
-  // TODO <-
 
   function getBorrowBalance(address _asset) external override returns(uint256) {
     address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_asset);

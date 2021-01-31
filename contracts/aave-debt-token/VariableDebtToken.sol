@@ -6,6 +6,9 @@ import {WadRayMath} from './WadRayMath.sol';
 import {Errors} from './Errors.sol';
 import {DebtTokenBase} from './DebtTokenBase.sol';
 
+// DEBUG
+import "hardhat/console.sol";
+
 /**
  * @title VariableDebtToken
  * @notice Implements a variable debt token to track the borrowing positions of users
@@ -17,13 +20,32 @@ contract VariableDebtToken is DebtTokenBase, IVariableDebtToken {
 
   uint256 public constant DEBT_TOKEN_REVISION = 0x1;
 
+  uint256 liquidityIndex;
+
   constructor(
     address pool,
     address underlyingAsset,
     string memory name,
     string memory symbol,
     address incentivesController
-  ) public DebtTokenBase(pool, underlyingAsset, name, symbol, incentivesController) {}
+  ) public DebtTokenBase(pool, underlyingAsset, name, symbol, incentivesController) {
+    liquidityIndex = uint128(WadRayMath.ray());
+  }
+
+  function updateState(
+    uint256 amount
+  ) external onlyLendingPool {
+    if (totalSupply() > 0) {
+      uint256 amountToLiquidityRatio = amount.wadToRay().rayDiv(totalSupply().wadToRay());
+
+      uint256 result = amountToLiquidityRatio.add(WadRayMath.ray());
+
+      result = result.rayMul(liquidityIndex);
+      require(result <= type(uint128).max, Errors.RL_LIQUIDITY_INDEX_OVERFLOW);
+
+      liquidityIndex = uint128(result);
+    }
+  }
 
   /**
    * @dev Gets the revision of the stable debt token implementation
@@ -44,7 +66,7 @@ contract VariableDebtToken is DebtTokenBase, IVariableDebtToken {
       return 0;
     }
 
-    return scaledBalance.rayMul(POOL.getReserveNormalizedVariableDebt(UNDERLYING_ASSET_ADDRESS));
+    return scaledBalance.rayMul(liquidityIndex);
   }
 
   /**
@@ -54,27 +76,27 @@ contract VariableDebtToken is DebtTokenBase, IVariableDebtToken {
    * of credit delegate, or same as `onBehalfOf` otherwise
    * @param onBehalfOf The address receiving the debt tokens
    * @param amount The amount of debt being minted
-   * @param index The variable debt index of the reserve
    * @return `true` if the the previous balance of the user is 0
    **/
   function mint(
     address user,
     address onBehalfOf,
-    uint256 amount,
-    uint256 index
+    uint256 amount
   ) external override onlyLendingPool returns (bool) {
     if (user != onBehalfOf) {
       _decreaseBorrowAllowance(onBehalfOf, user, amount);
     }
 
+    console.log("Mint - liquidityIndex:");
+    console.log(liquidityIndex);
     uint256 previousBalance = super.balanceOf(onBehalfOf);
-    uint256 amountScaled = amount.rayDiv(index);
+    uint256 amountScaled = amount.rayDiv(liquidityIndex);
     require(amountScaled != 0, Errors.CT_INVALID_MINT_AMOUNT);
 
     _mint(onBehalfOf, amountScaled);
 
     emit Transfer(address(0), onBehalfOf, amount);
-    emit Mint(user, onBehalfOf, amount, index);
+    emit Mint(user, onBehalfOf, amount, liquidityIndex);
 
     return previousBalance == 0;
   }
@@ -84,20 +106,18 @@ contract VariableDebtToken is DebtTokenBase, IVariableDebtToken {
    * - Only callable by the LendingPool
    * @param user The user whose debt is getting burned
    * @param amount The amount getting burned
-   * @param index The variable debt index of the reserve
    **/
   function burn(
     address user,
-    uint256 amount,
-    uint256 index
+    uint256 amount
   ) external override onlyLendingPool {
-    uint256 amountScaled = amount.rayDiv(index);
+    uint256 amountScaled = amount.rayDiv(liquidityIndex);
     require(amountScaled != 0, Errors.CT_INVALID_BURN_AMOUNT);
 
     _burn(user, amountScaled);
 
     emit Transfer(user, address(0), amount);
-    emit Burn(user, amount, index);
+    emit Burn(user, amount, liquidityIndex);
   }
 
   /**
@@ -113,8 +133,7 @@ contract VariableDebtToken is DebtTokenBase, IVariableDebtToken {
    * @return The total supply
    **/
   function totalSupply() public view virtual override returns (uint256) {
-    return
-      super.totalSupply().rayMul(POOL.getReserveNormalizedVariableDebt(UNDERLYING_ASSET_ADDRESS));
+    return super.totalSupply();
   }
 
   /**

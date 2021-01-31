@@ -46,8 +46,6 @@ contract VaultETHDAI is IVault {
 
   VariableDebtToken debtToken;
 
-  uint256 public lastUpdateTimestamp;
-
   mapping(address => uint256) public collaterals;
 
   // balance of all available collateral in ETH
@@ -143,7 +141,6 @@ contract VaultETHDAI is IVault {
 
   function borrow(uint256 _borrowAmount) public {
     // TODO
-    lastUpdateTimestamp = block.timestamp;
     uint256 providedCollateral = collaterals[msg.sender];
 
     // get needed collateral for already existing positions
@@ -154,6 +151,16 @@ contract VaultETHDAI is IVault {
     );
 
     require(providedCollateral > neededCollateral, "Not enough collateral provided");
+
+    console.log("Borrow Balance:");
+    console.log(borrowBalance());
+    console.log("Total supply");
+    console.log(debtToken.totalSupply());
+    if (debtToken.totalSupply() > 0 && borrowBalance() > 0) {
+      debtToken.updateState(
+        borrowBalance().sub(debtToken.totalSupply())
+      );
+    }
 
     bytes memory data = abi.encodeWithSignature(
       "borrow(address,uint256)",
@@ -167,19 +174,21 @@ contract VaultETHDAI is IVault {
     debtToken.mint(
       msg.sender,
       msg.sender,
-      _borrowAmount,
-      activeProvider.getBorrowIndexFor(borrowAsset)
+      _borrowAmount
     );
   }
 
   function payback(uint256 _repayAmount) public payable {
     // TODO
-    lastUpdateTimestamp = block.timestamp;
     uint256 providedCollateral = collaterals[msg.sender];
 
     require(
       IERC20(borrowAsset).allowance(msg.sender, address(this)) >= _repayAmount,
       "Not enough allowance"
+    );
+
+    debtToken.updateState(
+      borrowBalance().sub(debtToken.totalSupply())
     );
 
     IERC20(borrowAsset).transferFrom(msg.sender, address(this), _repayAmount);
@@ -193,8 +202,7 @@ contract VaultETHDAI is IVault {
 
     debtToken.burn(
       msg.sender,
-      _repayAmount,
-      activeProvider.getBorrowIndexFor(borrowAsset)
+      _repayAmount
     );
   }
 
@@ -260,24 +268,6 @@ contract VaultETHDAI is IVault {
     }
   }
 
-  function getReserveNormalizedVariableDebt(address _asset) external view returns(uint256) {
-    uint256 borrowIndex = activeProvider.getBorrowIndexFor(borrowAsset);
-    uint256 borrowRate = activeProvider.getBorrowRateFor(borrowAsset);
-
-    if (lastUpdateTimestamp == block.timestamp) {
-      //if the index was updated in the same block, no need to perform any calculation
-      return borrowIndex;
-    }
-
-    uint256 cumulated = calculateCompoundedInterest(
-      borrowRate,
-      lastUpdateTimestamp,
-      block.timestamp
-    ).rayMul(borrowIndex);
-
-    return cumulated;
-  }
-
   function getNeededCollateralFor(uint256 _amount) public view returns(uint256) {
     // get price of DAI in ETH
     (,int256 latestPrice,,,) = oracle.latestRoundData();
@@ -341,32 +331,6 @@ contract VaultETHDAI is IVault {
         revert(add(response, 0x20), size)
       }
     }
-  }
-
-  function calculateCompoundedInterest(
-    uint256 rate,
-    uint256 lastUpdateTimestamp,
-    uint256 currentTimestamp
-  ) internal pure returns (uint256) {
-    uint256 exp = currentTimestamp.sub(lastUpdateTimestamp);
-
-    if (exp == 0) {
-      return WadRayMath.ray();
-    }
-
-    uint256 expMinusOne = exp - 1;
-
-    uint256 expMinusTwo = exp > 2 ? exp - 2 : 0;
-
-    uint256 ratePerSecond = rate / 365 days;
-
-    uint256 basePowerTwo = ratePerSecond.rayMul(ratePerSecond);
-    uint256 basePowerThree = basePowerTwo.rayMul(ratePerSecond);
-
-    uint256 secondTerm = exp.mul(expMinusOne).mul(basePowerTwo) / 2;
-    uint256 thirdTerm = exp.mul(expMinusOne).mul(expMinusTwo).mul(basePowerThree) / 6;
-
-    return WadRayMath.ray().add(ratePerSecond.mul(exp)).add(secondTerm).add(thirdTerm);
   }
 
   receive() external payable {}

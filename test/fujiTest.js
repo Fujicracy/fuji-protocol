@@ -4,13 +4,20 @@ const { solidity } = require("ethereum-waffle");
 
 use(solidity);
 
-const daiAddr = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
-const ethAddr = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
-const awethAddr = "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e";
-//const cethAddr
+const CHAINLINK_ORACLE_ADDR = "0x773616E4d11A78F511299002da57A0a94577F1f4";
+const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
+const DAI_ADDR = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
+const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+const aWETH_ADDR = "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e";
+const cETH_ADDR = "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5";
 
 const ONE_ETH = ethers.utils.parseEther("1.0");
-const ONE_UNIT = ethers.utils.parseUnits("1", 18);
+const ONE_HOUR = 60 * 60;
+
+const timeTravel = async (seconds) => {
+  await ethers.provider.send("evm_increaseTime", [seconds]);
+  await ethers.provider.send("evm_mine");
+}
 
 describe("Fuji", () => {
   let vault;
@@ -19,18 +26,26 @@ describe("Fuji", () => {
 
   let dai;
   let aweth;
+  let ceth;
+  let debtToken;
   let users;
 
   before(async() => {
     users = await ethers.getSigners();
+
+    // unlock DAI so that we can make initial transfer
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [DAI_ADDR]
+    });
   });
 
-  //const convertToCurrencyDecimals = async (tokenAddr, amount) => {
-    //const token = await ethers.getContractAt("IERC20Detailed", tokenAddr);
-    //let decimals = (await token.decimals()).toString();
+  const convertToCurrencyDecimals = async (tokenAddr, amount) => {
+    const token = await ethers.getContractAt("IERC20Detailed", tokenAddr);
+    let decimals = (await token.decimals()).toString();
 
-    //return ethers.utils.parseUnits(`${amount}`, decimals);
-  //};
+    return ethers.utils.parseUnits(`${amount}`, decimals);
+  };
 
   const convertToWei = (amount) => ethers.utils.parseUnits(`${amount}`, 18);
 
@@ -38,29 +53,110 @@ describe("Fuji", () => {
     const VaultETHDAI = await ethers.getContractFactory("VaultETHDAI");
     const AAVE = await ethers.getContractFactory("ProviderAave");
     const Compound = await ethers.getContractFactory("ProviderCompound");
+    const DebtToken = await ethers.getContractFactory("VariableDebtToken");
     
-    dai = await ethers.getContractAt("IERC20", daiAddr);
-    aweth = await ethers.getContractAt("IERC20", awethAddr);
+    dai = await ethers.getContractAt("IERC20", DAI_ADDR);
+    aweth = await ethers.getContractAt("IERC20", aWETH_ADDR);
+    ceth = await ethers.getContractAt("CErc20", cETH_ADDR);
 
     aave = await AAVE.deploy();
     compound = await Compound.deploy();
     vault = await VaultETHDAI.deploy(
       users[0].address,
-      "0x773616E4d11A78F511299002da57A0a94577F1f4",
+      CHAINLINK_ORACLE_ADDR,
       aave.address
     );
+    debtToken = await DebtToken.deploy(
+      vault.address,
+      DAI_ADDR,
+      "Fuji DAI debt token",
+      "faDAI",
+      ZERO_ADDR
+    );
+    vault.setDebtToken(debtToken.address);
   });
 
   describe("VaultETHDAI -> Aave", () => {
 
-    it("User deposits 1 ETH and borrows 900 DAI", async () => {
+    it("User 1 deposits 1 ETH and borrows 900 DAI", async () => {
       await vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH });
-      expect(await aweth.balanceOf(vault.address)).to.equal(ONE_UNIT);
 
-      const daiAmount = convertToWei(900);
-      await vault.connect(users[1]).borrow(daiAmount);
-      expect(await dai.balanceOf(users[1].address)).to.equal(daiAmount);
+      // Vault balance
+      expect(await aweth.balanceOf(vault.address)).to.equal(ONE_ETH);
+
+      const daiAmount = await convertToCurrencyDecimals(DAI_ADDR, 400);
+
+      await expect(() => vault.connect(users[1]).borrow(daiAmount))
+        .to.changeTokenBalance(dai, users[1], daiAmount);
+
+      expect(await debtToken.balanceOf(users[1].address)).to.equal(daiAmount);
+
+      // debt tokens appreciate in time
+      await timeTravel(ONE_HOUR);
+      const newDaiAmount = await convertToCurrencyDecimals(DAI_ADDR, 500);
+      await vault.connect(users[1]).borrow(newDaiAmount);
+      const balance = await debtToken.balanceOf(users[1].address);
+      console.log(balance.toString());
+      //expect(balance).to.gt(daiAmount);
+    });
+
+    it("User 2 deposits 1 ETH and borrows 900 DAI", async () => {
+      await vault.connect(users[2]).deposit(ONE_ETH, { value: ONE_ETH });
+
+      const daiAmount = await convertToCurrencyDecimals(DAI_ADDR, 900);
+      await expect(() => vault.connect(users[2]).borrow(daiAmount))
+        .to.changeTokenBalance(dai, users[2], daiAmount);
+
+      const balance1 = await debtToken.balanceOf(users[1].address);
+      console.log(balance1.toString());
+      const balance2 = await debtToken.balanceOf(users[2].address);
+      //console.log(balance2.toString());
+
+      // user1 accumulates more debt than user2
+      expect(balance1).to.gt(balance2);
     });
 
   });
+
+  describe("VaultETHDAI -> Compound", () => {
+
+    it("Should change provider to Compound", async () => {
+      await vault.addProvider(compound.address);
+      await vault.setActiveProvider(compound.address);
+    });
+
+    //it("Check user 1 balance", async () => {
+      //const balance1 = await debtToken.balanceOf(users[1].address);
+      //console.log(balance1.toString());
+    //});
+
+    // IMPORTANT: Will work only after a flashloan
+
+    it("User 3 deposits 1 ETH and borrows 2 * 400 DAI", async () => {
+      await vault.connect(users[3]).deposit(ONE_ETH, { value: ONE_ETH });
+
+      // Vault balance
+      const rate = await ceth.exchangeRateStored();
+      const cethAmount = ONE_ETH.pow(2).div(rate);
+      expect(await ceth.balanceOf(vault.address)).to.equal(cethAmount);
+
+      const daiAmount = await convertToCurrencyDecimals(DAI_ADDR, 400);
+
+      await expect(() => vault.connect(users[3]).borrow(daiAmount))
+        .to.changeTokenBalance(dai, users[3], daiAmount);
+
+      expect(await debtToken.balanceOf(users[3].address)).to.equal(daiAmount);
+
+      // debt tokens appreciate in time
+      await timeTravel(ONE_HOUR);
+      await vault.connect(users[3]).borrow(daiAmount)
+      const balance2 = await debtToken.balanceOf(users[1].address);
+      console.log(balance2.toString());
+      const balance3 = await debtToken.balanceOf(users[3].address);
+      console.log(balance3.toString());
+      //expect(balance).to.gt(daiAmount);
+    });
+
+  });
+
 });

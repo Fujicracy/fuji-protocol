@@ -24,14 +24,12 @@ interface IVariableDebtToken is IScaledBalanceToken {
    * of credit delegate, or same as `onBehalfOf` otherwise
    * @param onBehalfOf The address receiving the debt tokens
    * @param amount The amount of debt being minted
-   * @param index The variable debt index of the reserve
    * @return `true` if the the previous balance of the user is 0
    **/
   function mint(
     address user,
     address onBehalfOf,
-    uint256 amount,
-    uint256 index
+    uint256 amount
   ) external returns (bool);
 
   /**
@@ -45,11 +43,9 @@ interface IVariableDebtToken is IScaledBalanceToken {
   /**
    * @dev Burns user variable debt
    * @param user The user which debt is burnt
-   * @param index The variable debt index of the reserve
    **/
   function burn(
     address user,
-    uint256 amount,
-    uint256 index
+    uint256 amount
   ) external;
 }

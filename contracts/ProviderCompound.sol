@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.4.25 <0.7.5;
 
+// DEBUG
+import "hardhat/console.sol";
+
 import "./LibUniERC20.sol";
 import "./IProvider.sol";
 
@@ -182,7 +185,13 @@ contract ProviderCompound is IProvider, HelperFunct {
 
   function getBorrowRateFor(address _asset) external view override returns(uint256) {
     address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_asset);
-    return gencToken(ctokenaddress).borrowRatePerBlock();
+
+    //Block Rate transformed for common mantissa for Fuji in ray (1e27), Compound uses 1e18
+    uint256 bRateperBlock = (gencToken(ctokenaddress).borrowRatePerBlock()).mul(10**9);
+
+    // The approximate number of blocks per year that is assumed by the Compound interest rate model
+    uint256 blocksperYear = 2102400;
+    return bRateperBlock.mul(blocksperYear);
   }
 
   function getBorrowIndexFor(address _asset) external view override returns(uint256) {

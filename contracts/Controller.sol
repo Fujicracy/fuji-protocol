@@ -21,7 +21,7 @@ contract Controller {
 
   address private owner;
   address public flasherAddr;
-  address constant LENDING_POOL = 0x9FE532197ad76c5a68961439604C037EB79681F0;
+  address constant LENDING_POOL = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
   //Change Threshold is the minimum percent in Borrowing Rates to trigger a provider change
   //Percentage Expressed in ray (1e27)
   uint256 public changeThreshold;

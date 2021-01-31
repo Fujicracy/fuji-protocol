@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.4.25 <0.7.0;
+pragma solidity >=0.4.25 <0.7.5;
+pragma experimental ABIEncoderV2;
 
 import "./LibUniERC20.sol";
+import "./VaultETHDAI.sol";
 
 interface IFlashLoanReceiver {
   function executeOperation(
@@ -15,6 +17,7 @@ interface IFlashLoanReceiver {
 }
 
 contract Flasher is IFlashLoanReceiver {
+
   using SafeMath for uint256;
 
   address constant LENDING_POOL = 0x9FE532197ad76c5a68961439604C037EB79681F0;
@@ -28,20 +31,26 @@ contract Flasher is IFlashLoanReceiver {
     bytes calldata params
   ) external override returns (bool) {
 
-    //decode params
-    //it contains:
+    //Decoding Parameters
     // 1. vault's address on which we should call fujiSwitch
     // 2. new provider's address which we pass on fujiSwitch
+    (address theVault, address newProvider) = abi.decode(params, (address,address));
 
     //approve vault to spend ERC20
+    IERC20(assets[0]).approve(address(theVault), amounts[0]);
+
+    //Estimate flashloan payback + premium fee,
+    uint amountOwing = amounts[0].add(premiums[0]);
 
     //call fujiSwitch
+    IVault(theVault).fujiSwitch(newProvider, amountOwing);
 
-    for (uint i = 0; i < assets.length; i++) {
-      uint amountOwing = amounts[i].add(premiums[i]);
-      IERC20(assets[i]).approve(address(LENDING_POOL), amountOwing);
-    }
+    //Approve aaveLP to spend to repay flashloan
+    IERC20(assets[0]).approve(address(LENDING_POOL), amountOwing);
 
     return true;
   }
+
+  receive() external payable {}
+
 }

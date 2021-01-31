@@ -12,18 +12,14 @@ interface gencToken{
   function redeemUnderlying(uint) external returns (uint);
   function borrow(uint borrowAmount) external returns (uint);
   function exchangeRateCurrent() external returns (uint256);
-  function supplyRatePerBlock() external returns (uint256);
+  function exchangeRateStored() external view returns (uint);
   function borrowRatePerBlock() external view returns (uint);
   function balanceOfUnderlying(address owner) external returns (uint);
   function getAccountSnapshot(address account) external view returns (uint, uint, uint, uint);
   function totalBorrowsCurrent() external returns (uint);
   function borrowBalanceCurrent(address account) external returns (uint);
   function borrowBalanceStored(address account) external view returns (uint);
-  function exchangeRateStored() external view returns (uint);
   function getCash() external view returns (uint);
-  function accrueInterest() external returns (uint);
-  function seize(address liquidator, address borrower, uint seizeTokens) external returns (uint);
-  function borrowIndex() external view returns (uint);
 }
 
 interface CErc20 is IERC20, gencToken {
@@ -68,6 +64,7 @@ contract HelperFunct {
   function getComptrollerAddress() internal pure returns (address) {
     return 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
   }
+
 }
 
 contract ProviderCompound is IProvider, HelperFunct {
@@ -196,4 +193,5 @@ contract ProviderCompound is IProvider, HelperFunct {
     address ctokenaddress = InstaMapping(getMappingAddr()).cTokenMapping(_asset);
     return gencToken(ctokenaddress).borrowBalanceCurrent(msg.sender);
   }
+
 }

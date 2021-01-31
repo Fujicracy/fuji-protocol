@@ -13,18 +13,23 @@ const main = async () => {
   const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 
   const deployerWallet = ethers.provider.getSigner();
-
   const deployerAddress = await deployerWallet.getAddress();
 
   //const libUniERC20 = await deploy("UniERC20");
   const flasher = await deploy("Flasher");
   const aave = await deploy("ProviderAave");
   const compound = await deploy("ProviderCompound");
+
+  const controller = await deploy("Controller", [
+    deployerAddress, //First Wallet address from forked network is the owner
+    flasher.address, //flasher
+    "20000000000000000000000000" //changeThreshold percentagedecimal to ray (0.02 x 10^27)
+  ]);
+
   const vault = await deploy("VaultETHDAI", [
-    "0x3824461d7a62B1bb6AAED5426Ff5129060404507",
-    //controller.address,
+    controller.address,
     "0x773616E4d11A78F511299002da57A0a94577F1f4",
-    compound.address
+    deployerAddress
   ]);
   const debtToken = await deploy("VariableDebtToken", [
     vault.address,
@@ -35,12 +40,11 @@ const main = async () => {
   ]);
   vault.setDebtToken(debtToken.address);
 
-  const controller = await deploy("Controller", [
-    "0x3824461d7a62B1bb6AAED5426Ff5129060404507",
-    flasher.address,
-    vault.address
-  ]);
-
+  //Set up the environment for testing Fuji contracts.
+  await vault.addProvider(aave.address);
+  await vault.addProvider(compound.address);
+  await controller.addVault(vault.address);
+  //await vault.depositAndBorrow("250000000000000000000", "500000000000000000000", {value: "250000000000000000000"});
 
 
   // const exampleToken = await deploy("ExampleToken")
@@ -57,15 +61,14 @@ const main = async () => {
   */
 
 
+
   /*
-
   //If you want to send value to an address from the deployer
-
   await deployerWallet.sendTransaction({
-    to: "0x34aA3F359A9D614239015126635CE7732c18fDF3",
-    value: ethers.utils.parseEther("0.001")
-  })
-  */
+    to: "",
+    value: ethers.utils.parseEther("10")
+  })*/
+
 
 
   console.log(

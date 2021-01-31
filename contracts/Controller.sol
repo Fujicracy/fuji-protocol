@@ -18,49 +18,102 @@ interface ILendingPool {
 }
 
 contract Controller {
+
+  address private owner;
+  address public flasherAddr;
   address constant LENDING_POOL = 0x9FE532197ad76c5a68961439604C037EB79681F0;
+  //Change Threshold is the minimum percent in Borrowing Rates to trigger a provider change
+  //Percentage Expressed in ray (1e27)
+  uint256 public changeThreshold;
 
-  IVault[] vaults;
+  //State variables to control vault providers
+  address[] public vaults;
 
-  address owner;
-  address flasherAddr;
-
+  //Modifiers
   modifier isAuthorized() {
     require(msg.sender == owner || msg.sender == address(this), "!authorized");
     _;
   }
 
-  constructor(
-    address _owner,
-    address _flasher,
-    // TODO remove
-    address _vault
-  ) public {
-    // TODO remove
-    vaults.push(IVault(_vault));
-
+  constructor(address _owner,address _flasher, uint256 _changeThreshold) public {
+    // Add initializer addresses
     owner = _owner;
     flasherAddr = _flasher;
+    changeThreshold = _changeThreshold;
   }
 
-  function addVault(address _vault) external isAuthorized {
-    vaults.push(IVault(_vault));
+  //Administrative functions
+  function addVault(address _vault) public isAuthorized {
+    bool alreadyincluded = false;
+
+    //Check if Vault is already included
+    for(uint i =0; i < vaults.length; i++ ){
+      if(vaults[i] == _vault){
+        alreadyincluded = true;
+      }
+    }
+    require(alreadyincluded== false, "Vault is already included in Controller");
+
+    //Loop to check if vault address is already there
+    vaults.push(_vault);
   }
 
-  function callFlash() public {
-    IVault vault = vaults[0];
+  function setChangeThreshold(uint256 newThreshold) public isAuthorized {
+    //Input should be decimal percentage-change in ray (decimal x 1e27)
+    changeThreshold = newThreshold;
+  }
 
-    // TODO
-    //vault.unlock();
+  function setflasher(address newflasher) public isAuthorized {
+    //Check if vault is already adde
+    flasherAddr = newflasher;
+  }
 
-    IProvider betterProvider = vault.providers(1);
+  //Controller Core functions
 
-    initiateFlashLoan(
-      address(vault),
-      address(betterProvider),
-      vault.borrowAsset(),
-      vault.outstandingBalance()
-    );
+  function doControllerRoutine(address _vault) public returns(bool) {
+    //Check if there is an opportunity to Change provider with a lower borrowing Rate
+    (bool opportunityTochange, address newProvider) = checkRates(_vault);
+    require(opportunityTochange, "There is no Better Borrowing Rate Provider at the time");
+
+    //Check how much borrowed balance along with accrued interest at current Provider
+    uint256 debtposition = IVault(_vault).borrowBalance();
+
+    //Initiate Flash Loan
+    initiateFlashLoan(address(_vault), address(newProvider), IVault(_vault).borrowAsset(), debtposition);
+
+    //Set the new provider in the Vault
+    setProvider(_vault, address(newProvider));
+  }
+
+  function checkRates(address _vault) public view returns(bool, address) {
+
+    //Get the array of Providers from _vault
+    address[] memory arrayOfProviders = IVault(_vault).getProviders();
+    address borrowingAsset = IVault(_vault).borrowAsset();
+    bool opportunityTochange = false;
+
+    //Call and check borrow rates for all Providers in array for _vault
+    uint256 currentRate = IProvider(IVault(_vault).activeProvider()).getBorrowRateFor(borrowingAsset);
+    uint256 differance;
+    address newProvider;
+
+    for(uint i=0; i<arrayOfProviders.length;i++) {
+      differance = (currentRate >= IProvider(arrayOfProviders[i]).getBorrowRateFor(borrowingAsset) ?
+      currentRate - IProvider(arrayOfProviders[i]).getBorrowRateFor(borrowingAsset) :
+      IProvider(arrayOfProviders[i]).getBorrowRateFor(borrowingAsset) - currentRate);
+      if(differance >= changeThreshold && IProvider(arrayOfProviders[i]).getBorrowRateFor(borrowingAsset) < currentRate){
+        currentRate = IProvider(arrayOfProviders[i]).getBorrowRateFor(borrowingAsset);
+        newProvider = arrayOfProviders[i];
+        opportunityTochange = true;
+      }
+    }
+    //Returns success or not, and the Iprovider with lower borrow rate
+    return (opportunityTochange, newProvider);
+  }
+
+  function setProvider(address _vault, address _newProviderAddr)internal returns(bool) {
+    //Create vault instance and call setActiveProvider method in that vault.
+    IVault(_vault).setActiveProvider(_newProviderAddr);
   }
 
   function initiateFlashLoan(

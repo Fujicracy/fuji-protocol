@@ -12,11 +12,13 @@ import "./IProvider.sol";
 import "hardhat/console.sol";
 
 interface IVault {
-  function collateralAsset() external view returns(address);
+  function activeProvider() external view returns(address);
   function borrowAsset() external view returns(address);
-  function providers(uint) external view returns(IProvider);
-  function activeProvider() external view returns(IProvider);
-  function outstandingBalance() external view returns(uint256);
+  function borrowBalance() external returns(uint256);
+  function collateralAsset() external view returns(address);
+  function fujiSwitch(address _newProvider, uint256 _flashLoanDebt) external payable;
+  function getProviders() external view returns(address[] memory);
+  function setActiveProvider(address _provider) external;
 }
 
 contract VaultETHDAI is IVault {
@@ -37,10 +39,13 @@ contract VaultETHDAI is IVault {
   uint256 internal constant BASE = 1e18;
 
   address public controller;
+  address private owner;
 
-  IProvider[] public override providers;
-  IProvider public override activeProvider;
+  //State variables to control vault providers
+  address[] public providers;
+  address public override activeProvider;
 
+  //Vault Assets
   address public override collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
   address public override borrowAsset = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
 
@@ -51,22 +56,21 @@ contract VaultETHDAI is IVault {
   // balance of all available collateral in ETH
   uint256 public collateralBalance;
 
-  // balance of outstanding DAI
-  // TODO remove, use instead borrowBalance()
-  uint256 public override outstandingBalance;
-
   modifier isAuthorized() {
-    require(msg.sender == controller || msg.sender == address(this), "!authorized");
+    require(msg.sender == controller || msg.sender == address(this) || msg.sender == owner, "!authorized");
     _;
   }
 
   constructor(
     address _controller,
     address _oracle,
-    address _provider
+    address _owner
   ) public {
-    oracle = AggregatorV3Interface(_oracle);
+
     controller = _controller;
+    oracle = AggregatorV3Interface(_oracle);
+    owner = _owner;
+
 
     // + 5%
     safetyF.a = 21;
@@ -75,9 +79,6 @@ contract VaultETHDAI is IVault {
     // 125%
     collatF.a = 5;
     collatF.b = 4;
-
-    // TODO remove
-    activeProvider = IProvider(_provider);
   }
 
   function depositAndBorrow(uint256 _collateralAmount, uint256 _borrowAmount) external payable {
@@ -206,7 +207,7 @@ contract VaultETHDAI is IVault {
     );
   }
 
-  function fujiSwitch(address _newProvider) public payable {
+  function fujiSwitch(address _newProvider, uint256 _flashLoanDebt) public override payable {
     uint256 borrowBalance = borrowBalance();
 
     require(
@@ -240,16 +241,16 @@ contract VaultETHDAI is IVault {
     );
     execute(address(_newProvider), data);
 
-    // borrow from the new provider
+    // borrow from the new provider, borrowBalance + premium = flashloandebt
     data = abi.encodeWithSignature(
       "borrow(address,uint256)",
       borrowAsset,
-      borrowBalance
+      _flashLoanDebt
     );
     execute(address(_newProvider), data);
 
     // return borrowed amount to Flasher
-    IERC20(borrowAsset).uniTransfer(msg.sender, borrowBalance);
+    IERC20(borrowAsset).uniTransfer(msg.sender, _flashLoanDebt);
   }
 
   // TODO isAuthorized
@@ -258,13 +259,22 @@ contract VaultETHDAI is IVault {
   }
 
   function addProvider(address _provider) external isAuthorized {
-    IProvider provider = IProvider(_provider);
+    bool alreadyincluded = false;
 
-    // TODO check if it's already added
-    providers.push(provider);
+    //Check if Provider is not already included
+    for(uint i =0; i < providers.length; i++ ){
+      if(providers[i] == _provider){
+        alreadyincluded = true;
+      }
+    }
+    require(alreadyincluded== false, "Provider is already included in Vault");
 
+    //Push new provider to provider array
+    providers.push(_provider);
+
+    //Asign an active provider if none existed
     if (providers.length == 1) {
-      activeProvider = provider;
+      activeProvider = _provider;
     }
   }
 
@@ -297,19 +307,23 @@ contract VaultETHDAI is IVault {
     share = redeemableCollateralBalance().mul(collateralShare).div(BASE);
   }
 
-  function setActiveProvider(address _provider) external isAuthorized {
-    activeProvider = IProvider(_provider);
+  function setActiveProvider(address _provider) external override isAuthorized {
+    activeProvider = _provider;
   }
 
   function redeemableCollateralBalance() public view returns(uint256) {
-    address redeemable = activeProvider.getRedeemableAddress(collateralAsset);
+    address redeemable = IProvider(activeProvider).getRedeemableAddress(collateralAsset);
     return IERC20(redeemable).balanceOf(address(this));
     //return IERC20(0x030bA81f1c18d280636F32af80b9AAd02Cf0854e).balanceOf(address(this)); // AAVE aWETH
     //return IERC20(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5).balanceOf(address(this)); // Compound cETH
   }
 
-  function borrowBalance() public returns(uint256) {
-    return activeProvider.getBorrowBalance(borrowAsset);
+  function borrowBalance() public override returns(uint256) {
+    return IProvider(activeProvider).getBorrowBalance(borrowAsset);
+  }
+
+  function getProviders() external view override returns(address[] memory) {
+    return providers;
   }
 
   function execute(

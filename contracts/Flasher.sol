@@ -4,6 +4,7 @@ pragma solidity >=0.4.25 <0.7.5;
 pragma experimental ABIEncoderV2;
 
 import "./LibUniERC20.sol";
+import "./VaultETHDAI.sol";
 
 interface IFlashLoanReceiver {
   function executeOperation(
@@ -13,10 +14,6 @@ interface IFlashLoanReceiver {
     address initiator,
     bytes calldata params
   ) external returns (bool);
-}
-
-interface Ivault{
-  function fujiSwitch(address _newProvider) external payable;
 }
 
 contract Flasher is IFlashLoanReceiver {
@@ -42,13 +39,18 @@ contract Flasher is IFlashLoanReceiver {
     //approve vault to spend ERC20
     IERC20(assets[0]).approve(address(theVault), amounts[0]);
 
-    //call fujiSwitch
-    Ivault(theVault).fujiSwitch(newProvider);
-
-    //Estimate flashloan payback + premium fee, and approve aaveLP to spend
+    //Estimate flashloan payback + premium fee,
     uint amountOwing = amounts[0].add(premiums[0]);
+
+    //call fujiSwitch
+    IVault(theVault).fujiSwitch(newProvider, amountOwing);
+
+    //Approve aaveLP to spend to repay flashloan
     IERC20(assets[0]).approve(address(LENDING_POOL), amountOwing);
 
     return true;
   }
+
+  receive() external payable {}
+
 }

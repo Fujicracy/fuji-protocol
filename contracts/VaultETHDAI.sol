@@ -10,11 +10,14 @@ import "./IProvider.sol";
 import "hardhat/console.sol";
 
 interface IVault {
-  function collateralAsset() external view returns(address);
+  function activeProvider() external view returns(address);
   function borrowAsset() external view returns(address);
-  function activeProvider() external view returns(IProvider);
-  function outstandingBalance() external view returns(uint256);
-  function fujiSwitch(address _newProvider) external payable;
+  function borrowBalance() external returns(uint256);
+  function collateralAsset() external view returns(address);
+  function fujiSwitch(address _newProvider, uint256 flashloandebt) external payable;
+  function getProviders() external view returns(address[] memory);
+  function outstandingCapitalBalance() external view returns(uint256);
+  function setActiveProvider(address _provider) external;
 }
 
 contract VaultETHDAI is IVault {
@@ -39,11 +42,11 @@ contract VaultETHDAI is IVault {
   uint256 internal constant BASE = 1e18;
 
   address public controller;
+  address private owner;
 
   //State variables to control vault providers
-  IProvider[] public providers;
-  mapping (IProvider => bool) public ProviderIsIncluded;
-  IProvider public override activeProvider;
+  address[] public providers;
+  address public override activeProvider;
 
   //Vault Assets
   address public override collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
@@ -55,19 +58,24 @@ contract VaultETHDAI is IVault {
   uint256 public collateralBalance;
 
   // balance of outstanding DAI
-  uint256 public override outstandingBalance;
+  //This does not consider the accrued debt interest
+  uint256 public override outstandingCapitalBalance;
 
   modifier isAuthorized() {
-    require(msg.sender == controller || msg.sender == address(this), "!authorized");
+    require(msg.sender == controller || msg.sender == address(this) || msg.sender == owner, "!authorized");
     _;
   }
 
   constructor(
     address _controller,
-    address _oracle
+    address _oracle,
+    address _owner
   ) public {
-    oracle = AggregatorV3Interface(_oracle);
+
     controller = _controller;
+    oracle = AggregatorV3Interface(_oracle);
+    owner = _owner;
+
 
     // + 5%
     safetyF.a = 21;
@@ -157,7 +165,7 @@ contract VaultETHDAI is IVault {
     );
     execute(address(activeProvider), data);
 
-    outstandingBalance = outstandingBalance.add(_borrowAmount);
+    outstandingCapitalBalance = outstandingCapitalBalance.add(_borrowAmount);
     position.borrowAmount = position.borrowAmount.add(_borrowAmount);
     IERC20(borrowAsset).uniTransfer(msg.sender, _borrowAmount);
   }
@@ -171,7 +179,7 @@ contract VaultETHDAI is IVault {
       "Not enough allowance"
     );
 
-    outstandingBalance = outstandingBalance.sub(_repayAmount);
+    outstandingCapitalBalance = outstandingCapitalBalance.sub(_repayAmount);
     position.borrowAmount = position.borrowAmount.sub(_repayAmount);
     IERC20(borrowAsset).transferFrom(msg.sender, address(this), _repayAmount);
 
@@ -183,7 +191,7 @@ contract VaultETHDAI is IVault {
     execute(address(activeProvider), data);
   }
 
-  function fujiSwitch(address _newProvider) public override payable {
+  function fujiSwitch(address _newProvider, uint256 flashloandebt) public override payable {
     uint256 borrowBalance = borrowBalance();
 
     require(
@@ -217,29 +225,35 @@ contract VaultETHDAI is IVault {
     );
     execute(address(_newProvider), data);
 
-    // borrow from the new provider
+    // borrow from the new provider, borrowBalance + premium = flashloandebt
     data = abi.encodeWithSignature(
       "borrow(address,uint256)",
       borrowAsset,
-      borrowBalance
+      flashloandebt
     );
     execute(address(_newProvider), data);
 
     // return borrowed amount to Flasher
-    IERC20(borrowAsset).uniTransfer(msg.sender, borrowBalance);
+    IERC20(borrowAsset).uniTransfer(msg.sender, flashloandebt);
   }
 
   function addProvider(address _provider) external isAuthorized {
-    //Create a IProvider instance from address input
-    IProvider provider = IProvider(_provider);
+    bool alreadyincluded = false;
 
     //Check if Provider is not already included
-    providers.push(provider);
-    ProviderIsIncluded[provider] = true;
+    for(uint i =0; i < providers.length; i++ ){
+      if(providers[i] == _provider){
+        alreadyincluded = true;
+      }
+    }
+    require(alreadyincluded== false, "Provider is already included in Vault");
+
+    //Push new provider to provider array
+    providers.push(_provider);
 
     //Asign an active provider if none existed
     if (providers.length == 1) {
-      activeProvider = provider;
+      activeProvider = _provider;
     }
   }
 
@@ -272,19 +286,19 @@ contract VaultETHDAI is IVault {
     share = redeemableCollateralBalance().mul(collateralShare).div(BASE);
   }
 
-  function setActiveProvider(address _provider) external isAuthorized {
-    activeProvider = IProvider(_provider);
+  function setActiveProvider(address _provider) external override isAuthorized {
+    activeProvider = _provider;
   }
 
   function redeemableCollateralBalance() public view returns(uint256) {
-    address redeemable = activeProvider.getRedeemableAddress(collateralAsset);
+    address redeemable = IProvider(activeProvider).getRedeemableAddress(collateralAsset);
     return IERC20(redeemable).balanceOf(address(this));
     //return IERC20(0x030bA81f1c18d280636F32af80b9AAd02Cf0854e).balanceOf(address(this)); // AAVE aWETH
     //return IERC20(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5).balanceOf(address(this)); // Compound cETH
   }
 
-  function borrowBalance() public returns(uint256) {
-    return activeProvider.getBorrowBalance(borrowAsset);
+  function borrowBalance() public override returns(uint256) {
+    return IProvider(activeProvider).getBorrowBalance(borrowAsset);
   }
 
   function checkCollateralPosition(address addr) external view returns(uint256) {
@@ -293,6 +307,10 @@ contract VaultETHDAI is IVault {
 
   function checkBorrowPosition(address addr) external view returns(uint256) {
     return positions[addr].borrowAmount;
+  }
+
+  function getProviders() external view override returns(address[] memory) {
+    return providers;
   }
 
   function execute(

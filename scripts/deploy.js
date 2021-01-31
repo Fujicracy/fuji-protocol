@@ -10,22 +10,35 @@ const main = async () => {
   console.log("\n\n 📡 Deploying...\n");
 
   const deployerWallet = ethers.provider.getSigner();
-
   const deployerAddress = await deployerWallet.getAddress();
+
+  console.log(`This is the Owner Waller Address: ${deployerAddress}`);
+  /* Add this wallet to your metamask to test.
+  Account #0: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266 (10000 ETH)
+  Private Key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+*/
 
   const libUniERC20 = await deploy("UniERC20");
   const flasher = await deploy("Flasher");
   const aave = await deploy("ProviderAave");
   const compound = await deploy("ProviderCompound");
   const controller = await deploy("Controller", [
-    "0x3BFf7fD5AACb1a22e1dd3ddbd8cfB8622A9E9A5B", //owner test wallet
+    deployerAddress, //First Wallet address from forked network is the owner
     flasher.address, //flasher
-     2*10^25 //changeThreshold percentagedecimal to ray (0.02 x 10^27)
+    "20000000000000000000000000" //changeThreshold percentagedecimal to ray (0.02 x 10^27)
   ]);
   const vault = await deploy("VaultETHDAI", [
     controller.address,
-    "0x773616E4d11A78F511299002da57A0a94577F1f4"
+    "0x773616E4d11A78F511299002da57A0a94577F1f4", // Oracle address
+    deployerAddress, //First Wallet address from Scaffold forked network is the owner
   ]);
+
+  //Set up the environment for testing Fuji contracts.
+  await vault.addProvider(aave.address);
+  await vault.addProvider(compound.address);
+  await controller.addVault(vault.address);
+  //await vault.depositAndBorrow("250000000000000000000", "500000000000000000000", {value: "250000000000000000000"});
+
 
   // const exampleToken = await deploy("ExampleToken")
   // const examplePriceOracle = await deploy("ExamplePriceOracle")
@@ -41,15 +54,14 @@ const main = async () => {
   */
 
 
+
   /*
-
   //If you want to send value to an address from the deployer
-
   await deployerWallet.sendTransaction({
-    to: "0x34aA3F359A9D614239015126635CE7732c18fDF3",
-    value: ethers.utils.parseEther("0.001")
-  })
-  */
+    to: "",
+    value: ethers.utils.parseEther("10")
+  })*/
+
 
 
   console.log(

@@ -17,26 +17,17 @@ interface ILendingPool {
   ) external;
 }
 
-interface Ivault {
-  function setActiveProvider(address _provider) external;
-  function providers() external view returns(IProvider[] memory);
-  function activeProvider() external view returns(IProvider);
-  function borrowAsset() external view returns(address);
-  function outstandingBalance() external view returns(uint256);
-}
-
 contract Controller {
 
   address private owner;
-  address flasherAddr;
+  address public flasherAddr;
   address constant LENDING_POOL = 0x9FE532197ad76c5a68961439604C037EB79681F0;
   //Change Threshold is the minimum percent in Borrowing Rates to trigger a provider change
   //Percentage Expressed in ray (1e27)
   uint256 public changeThreshold;
 
   //State variables to control vault providers
-  IVault[] vaults;
-  mapping (Ivault => bool) public VaultIsIncluded;
+  address[] public vaults;
 
   //Modifiers
   modifier isAuthorized() {
@@ -53,8 +44,18 @@ contract Controller {
 
   //Administrative functions
   function addVault(address _vault) public isAuthorized {
-    vaults.push(IVault(_vault));
-    VaultIsIncluded[IVault(_vault)]=true;
+    bool alreadyincluded = false;
+
+    //Check if Vault is already included
+    for(uint i =0; i < vaults.length; i++ ){
+      if(vaults[i] == _vault){
+        alreadyincluded = true;
+      }
+    }
+    require(alreadyincluded== false, "Vault is already included in Controller");
+
+    //Loop to check if vault address is already there
+    vaults.push(_vault);
   }
 
   function setChangeThreshold(uint256 newThreshold) public isAuthorized {
@@ -71,39 +72,42 @@ contract Controller {
 
   function doControllerRoutine(address _vault) public returns(bool) {
     //Check if there is an opportunity to Change provider with a lower borrowing Rate
-    (bool opportunityTochange, IProvider newProvider) = checkRates(_vault);
+    (bool opportunityTochange, address newProvider) = checkRates(_vault);
     require(opportunityTochange, "There is no Better Borrowing Rate Provider at the time");
 
+    //Check how much borrowed balance along with accrued interest at current Provider
+    uint256 debtposition = IVault(_vault).borrowBalance();
+
     //Initiate Flash Loan
-    initiateFlashLoan(address(_vault), address(newProvider), IVault(_vault).borrowAsset(), IVault(_vault).outstandingBalance());
+    initiateFlashLoan(address(_vault), address(newProvider), IVault(_vault).borrowAsset(), debtposition);
 
     //Set the new provider in the Vault
     setProvider(_vault, address(newProvider));
   }
 
-  function checkRates(address _vault) public returns(bool, IProvider) {
+  function checkRates(address _vault) public view returns(bool, address) {
 
     //Get the array of Providers from _vault
-    IProvider[] memory arrayOfProviders = IVault(_vault).providers();
+    address[] memory arrayOfProviders = IVault(_vault).getProviders();
     address borrowingAsset = IVault(_vault).borrowAsset();
     bool opportunityTochange = false;
 
     //Call and check borrow rates for all Providers in array for _vault
-    uint256 currentRate = (IVault(_vault).activeProvider()).getBorrowRateFor(borrowingAsset);
+    uint256 currentRate = IProvider(IVault(_vault).activeProvider()).getBorrowRateFor(borrowingAsset);
     uint256 differance;
-    IProvider newProvider;
+    address newProvider;
 
-    for(uint i=0; i<arrayOfProviders.lenght;i++) {
-      differance = (currentRate >= arrayOfProviders[i].getBorrowRateFor(borrowingAsset) ?
-      currentRate - arrayOfProviders[i].getBorrowRateFor(borrowingAsset) :
-      arrayOfProviders[i].getBorrowRateFor(borrowingAsset) - currentRate);
-      if(differance >= changeThreshold && arrayOfProviders[i].getBorrowRateFor(borrowingAsset) < currentRate){
-        currentRate = arrayOfProviders[i].getBorrowRateFor(borrowingAsset);
+    for(uint i=0; i<arrayOfProviders.length;i++) {
+      differance = (currentRate >= IProvider(arrayOfProviders[i]).getBorrowRateFor(borrowingAsset) ?
+      currentRate - IProvider(arrayOfProviders[i]).getBorrowRateFor(borrowingAsset) :
+      IProvider(arrayOfProviders[i]).getBorrowRateFor(borrowingAsset) - currentRate);
+      if(differance >= changeThreshold && IProvider(arrayOfProviders[i]).getBorrowRateFor(borrowingAsset) < currentRate){
+        currentRate = IProvider(arrayOfProviders[i]).getBorrowRateFor(borrowingAsset);
         newProvider = arrayOfProviders[i];
         opportunityTochange = true;
       }
     }
-    //Returns success, and the Iprovider with lower borrow rate
+    //Returns success or not, and the Iprovider with lower borrow rate
     return (opportunityTochange, newProvider);
   }
 

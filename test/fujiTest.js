@@ -20,6 +20,7 @@ const timeTravel = async (seconds) => {
 }
 
 describe("Fuji", () => {
+  let controller;
   let vault;
   let aave;
   let compound;
@@ -54,17 +55,26 @@ describe("Fuji", () => {
     const AAVE = await ethers.getContractFactory("ProviderAave");
     const Compound = await ethers.getContractFactory("ProviderCompound");
     const DebtToken = await ethers.getContractFactory("VariableDebtToken");
+    const Flasher = await ethers.getContractFactory("Flasher");
+    const Controller = await ethers.getContractFactory("Controller");
     
     dai = await ethers.getContractAt("IERC20", DAI_ADDR);
     aweth = await ethers.getContractAt("IERC20", aWETH_ADDR);
     ceth = await ethers.getContractAt("CErc20", cETH_ADDR);
 
+    const flasher = await Flasher.deploy();
+    controller = await Controller.deploy(
+      users[0].address,
+      flasher.address,
+      "20000000000000000000000000" //changeThreshold percentagedecimal to ray (0.02 x 10^27)
+    );
+
     aave = await AAVE.deploy();
     compound = await Compound.deploy();
     vault = await VaultETHDAI.deploy(
-      users[0].address,
+      controller.address,
       CHAINLINK_ORACLE_ADDR,
-      aave.address
+      users[0].address
     );
     debtToken = await DebtToken.deploy(
       vault.address,
@@ -73,7 +83,10 @@ describe("Fuji", () => {
       "faDAI",
       ZERO_ADDR
     );
-    vault.setDebtToken(debtToken.address);
+    await vault.setDebtToken(debtToken.address);
+    await vault.addProvider(aave.address);
+    await vault.addProvider(compound.address);
+    await controller.addVault(vault.address);
   });
 
   describe("VaultETHDAI -> Aave", () => {
@@ -118,17 +131,15 @@ describe("Fuji", () => {
 
   });
 
-  describe("VaultETHDAI -> Compound", () => {
+  describe("Flashloan and Switch", () => {
 
-    it("Should change provider to Compound", async () => {
-      await vault.addProvider(compound.address);
-      await vault.setActiveProvider(compound.address);
+    it("Should initiate a flash loan", async () => {
+      await controller.doControllerRoutine(vault.address);
     });
 
-    //it("Check user 1 balance", async () => {
-      //const balance1 = await debtToken.balanceOf(users[1].address);
-      //console.log(balance1.toString());
-    //});
+  });
+
+  describe("VaultETHDAI -> Compound", () => {
 
     // IMPORTANT: Will work only after a flashloan
 

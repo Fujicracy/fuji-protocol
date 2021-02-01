@@ -208,6 +208,7 @@ contract VaultETHDAI is IVault {
   }
 
   function fujiSwitch(address _newProvider, uint256 _flashLoanDebt) public override payable {
+    console.log("Starting fujiSwitch function");
     uint256 borrowBalance = borrowBalance();
 
     require(
@@ -216,7 +217,9 @@ contract VaultETHDAI is IVault {
     );
 
     IERC20(borrowAsset).transferFrom(msg.sender, address(this), borrowBalance);
+    console.log("In Fujiswitch, Flashloan assets are now transferred from Flasher to  vault ");
 
+    console.log("In Fujiswitch, start of payback");
     // payback current provider
     bytes memory data = abi.encodeWithSignature(
       "payback(address,uint256)",
@@ -224,7 +227,12 @@ contract VaultETHDAI is IVault {
       borrowBalance
     );
     execute(address(activeProvider), data);
+    console.log("In Fujiswitch, Payback complete to activeProvider ",activeProvider);
+    uint256 justfortestingnumber = IProvider(activeProvider).getBorrowBalance(borrowAsset);
+    console.log("debt in activeProvider ", justfortestingnumber);
 
+
+    console.log("In Fujiswitch, start of withdraw");
     // withdraw collateral from current provider
     data = abi.encodeWithSignature(
       "withdraw(address,uint256)",
@@ -232,7 +240,11 @@ contract VaultETHDAI is IVault {
       collateralBalance
     );
     execute(address(activeProvider), data);
+    justfortestingnumber = redeemableCollateralBalance();
+    console.log("In Fujiswitch, Removed collateral from activeProvider ",activeProvider);
+    console.log("collateral in activeProvider (should be zero) ",justfortestingnumber);
 
+    console.log("In Fujiswitch, start of deposit newprovider");
     // deposit to the new provider
     data = abi.encodeWithSignature(
       "deposit(address,uint256)",
@@ -240,7 +252,11 @@ contract VaultETHDAI is IVault {
       collateralBalance
     );
     execute(address(_newProvider), data);
+    justfortestingnumber = IERC20(address(IProvider(_newProvider).getRedeemableAddress(collateralAsset))).balanceOf(address(this));
+    console.log("In Fujiswitch, deposited collateral in new provider ", _newProvider);
+    console.log("collateral in newProvider (should not be zero) ",justfortestingnumber);
 
+    console.log("In Fujiswitch, start of borrow at newprovider");
     // borrow from the new provider, borrowBalance + premium = flashloandebt
     data = abi.encodeWithSignature(
       "borrow(address,uint256)",
@@ -248,7 +264,11 @@ contract VaultETHDAI is IVault {
       _flashLoanDebt
     );
     execute(address(_newProvider), data);
+    justfortestingnumber = IERC20(borrowAsset).balanceOf(address(this));
+    console.log("In Fujiswitch, borrowed from new provider ", _newProvider);
+    console.log("Borrowed amount should be the flashloan debt ", justfortestingnumber);
 
+    console.log("In Fujiswitch, start transfer of Dai back to flasher");
     // return borrowed amount to Flasher
     IERC20(borrowAsset).uniTransfer(msg.sender, _flashLoanDebt);
   }

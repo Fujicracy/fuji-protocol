@@ -23,7 +23,7 @@ const main = async () => {
   const controller = await deploy("Controller", [
     deployerAddress, //First Wallet address from forked network is the owner
     flasher.address, //flasher
-    "20000000000000000000000000" //changeThreshold percentagedecimal to ray (0.02 x 10^27)
+    "10000000000000000000000000" //changeThreshold percentagedecimal to ray (0.02 x 10^27)
   ]);
 
   const vault = await deploy("VaultETHDAI", [

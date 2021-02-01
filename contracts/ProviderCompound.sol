@@ -104,7 +104,7 @@ contract ProviderCompound is IProvider, HelperFunct {
       CEth cToken = CEth(ctokenaddress);
 
       //Compound protocol Mints cTokens, ETH method
-      cToken.mint{value: msg.value}();
+      cToken.mint{value: _amount}();
     }
     else {
       // Create reference to the ERC20 contract

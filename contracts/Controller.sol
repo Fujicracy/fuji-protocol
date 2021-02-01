@@ -4,6 +4,8 @@ pragma solidity >=0.4.25 <0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "./VaultETHDAI.sol";
+// DEBUG
+import "hardhat/console.sol";
 
 interface ILendingPool {
   function flashLoan(
@@ -71,22 +73,28 @@ contract Controller {
   //Controller Core functions
 
   function doControllerRoutine(address _vault) public returns(bool) {
+    console.log("Starting doControllerRoutine");
     //Check if there is an opportunity to Change provider with a lower borrowing Rate
     (bool opportunityTochange, address newProvider) = checkRates(_vault);
+    console.log("checkRates function returned values");
     require(opportunityTochange, "There is no Better Borrowing Rate Provider at the time");
 
     //Check how much borrowed balance along with accrued interest at current Provider
+    console.log("Obtaining vault debtposition");
     uint256 debtposition = IVault(_vault).borrowBalance();
+    require(debtposition >0, "Vault has no debt position");
 
     //Initiate Flash Loan
     initiateFlashLoan(address(_vault), address(newProvider), IVault(_vault).borrowAsset(), debtposition);
+    console.log("At controller flash loan routine complete");
 
     //Set the new provider in the Vault
     setProvider(_vault, address(newProvider));
+    console.log("New active provider set in vault, end of doControllerRoutine");
   }
 
   function checkRates(address _vault) public view returns(bool, address) {
-
+    console.log("Starting Checkrates function");
     //Get the array of Providers from _vault
     address[] memory arrayOfProviders = IVault(_vault).getProviders();
     address borrowingAsset = IVault(_vault).borrowAsset();
@@ -122,6 +130,7 @@ contract Controller {
     address _borrowAsset,
     uint256 _amount
   ) public isAuthorized {
+    console.log("Starting initiateFlashLoan function");
      //Initialize Instance of Aave Lending Pool
      ILendingPool aaveLp = ILendingPool(LENDING_POOL);
 
@@ -141,6 +150,7 @@ contract Controller {
      uint16 referralCode = 0;
 
     //Aave Flashloan initiated.
+    console.log("Begin of call to Aave Flashloan function");
     aaveLp.flashLoan(
             receiverAddress,
             assets,

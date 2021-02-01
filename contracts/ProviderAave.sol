@@ -107,7 +107,10 @@ contract ProviderAave is IProvider {
       token.withdraw(amount);
     }
   }
-
+      /**
+     * @dev Return the borrowing rate of ETH/ERC20_Token.
+     * @param asset to query the borrowing rate.
+    */
   function getBorrowRateFor(address asset) external view override returns(uint256) {
 
     AaveDataProviderInterface aaveData = getAaveDataProvider();
@@ -116,9 +119,14 @@ contract ProviderAave is IProvider {
     address botoken = isEth ? getWethAddr() : asset;
 
     (, ,, ,uint256 variableBorrowRate, , , , ,) = AaveDataProviderInterface(aaveData).getReserveData(botoken);
+
     return variableBorrowRate;
   }
 
+      /**
+     * @dev Return the interest bearing token of an underlying ETH/ERC20_Token.
+     * @param collateralAsset underlying asset.
+    */
   function getRedeemableAddress(address collateralAsset) external view override returns(address) {
 
     AaveDataProviderInterface aaveData = getAaveDataProvider();
@@ -131,6 +139,10 @@ contract ProviderAave is IProvider {
     return aTokenAddress;
   }
 
+      /**
+     * @dev Return borrow balance of ETH/ERC20_Token.
+     * @param borrowAsset token address to query the balance.
+    */
   function getBorrowBalance(address borrowAsset) external override returns(uint256) {
     AaveDataProviderInterface aaveData = getAaveDataProvider();
 
@@ -138,9 +150,15 @@ contract ProviderAave is IProvider {
     address _token = isEth ? getWethAddr() : borrowAsset;
 
     (,, uint variableDebt, , , , , , ) = aaveData.getUserReserveData(_token, msg.sender);
+
     return variableDebt;
   }
 
+      /**
+     * @dev Deposit ETH/ERC20_Token.
+     * @param collateralAsset token address to deposit.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+     * @param collateralAmount token amount to deposit.
+    */
   function deposit(address collateralAsset, uint256 collateralAmount) external override payable {
 
     AaveInterface aave = AaveInterface(getAaveProvider().getLendingPool());
@@ -168,6 +186,11 @@ contract ProviderAave is IProvider {
     }
   }
 
+      /**
+     * @dev Borrow ETH/ERC20_Token.
+     * @param borrowAsset token address to borrow.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+     * @param borrowAmount token amount to borrow.
+    */
   function borrow(address borrowAsset, uint256 borrowAmount) external override payable {
 
     AaveInterface aave = AaveInterface(getAaveProvider().getLendingPool());
@@ -179,6 +202,11 @@ contract ProviderAave is IProvider {
     convertWethToEth(isEth, TokenInterface(_token), borrowAmount);
   }
 
+    /**
+     * @dev Withdraw ETH/ERC20_Token.
+     * @param collateralAsset token address to withdraw.
+     * @param collateralAmount token amount to withdraw.
+    */
   function withdraw(address collateralAsset, uint256 collateralAmount) external override payable {
 
     AaveInterface aave = AaveInterface(getAaveProvider().getLendingPool());
@@ -187,15 +215,20 @@ contract ProviderAave is IProvider {
     address _token = isEth ? getWethAddr() : collateralAsset;
 
     TokenInterface tokenContract = TokenInterface(_token);
-
     uint256 initialBal = tokenContract.balanceOf(address(this));
+
     aave.withdraw(_token, collateralAmount, address(this));
     uint256 finalBal = tokenContract.balanceOf(address(this));
-
     collateralAmount = finalBal.sub(initialBal);
 
     convertWethToEth(isEth, tokenContract, collateralAmount);
   }
+
+      /**
+     * @dev Payback borrowed ETH/ERC20_Token.
+     * @param borrowAsset token address to payback.
+     * @param borrowAmount token amount to payback.
+    */
 
   function payback(address borrowAsset, uint256 borrowAmount) external override payable {
 

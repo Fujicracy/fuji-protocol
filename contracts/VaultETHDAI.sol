@@ -249,6 +249,10 @@ contract VaultETHDAI is IVault {
     );
     execute(address(_newProvider), data);
 
+    debtToken.updateState(
+      _flashLoanDebt.sub(debtToken.totalSupply())
+    );
+
     // return borrowed amount to Flasher
     IERC20(borrowAsset).uniTransfer(msg.sender, _flashLoanDebt);
   }

@@ -35,10 +35,10 @@ describe("Fuji", () => {
     users = await ethers.getSigners();
 
     // unlock DAI so that we can make initial transfer
-    await hre.network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [DAI_ADDR]
-    });
+    //await hre.network.provider.request({
+      //method: "hardhat_impersonateAccount",
+      //params: [DAI_ADDR]
+    //});
   });
 
   const convertToCurrencyDecimals = async (tokenAddr, amount) => {
@@ -66,7 +66,7 @@ describe("Fuji", () => {
     controller = await Controller.deploy(
       users[0].address,
       flasher.address,
-      "20000000000000000000000000" //changeThreshold percentagedecimal to ray (0.02 x 10^27)
+      "0" //changeThreshold percentagedecimal to ray (0.02 x 10^27)
     );
 
     aave = await AAVE.deploy();
@@ -134,6 +134,10 @@ describe("Fuji", () => {
   describe("Flashloan and Switch", () => {
 
     it("Should initiate a flash loan", async () => {
+      const balance1 = await debtToken.balanceOf(users[1].address);
+      const balance2 = await debtToken.balanceOf(users[2].address);
+      console.log(balance1.add(balance2).toString());
+
       await controller.doControllerRoutine(vault.address);
     });
 
@@ -144,12 +148,17 @@ describe("Fuji", () => {
     // IMPORTANT: Will work only after a flashloan
 
     it("User 3 deposits 1 ETH and borrows 2 * 400 DAI", async () => {
+      const balance1 = await debtToken.balanceOf(users[1].address);
+      const balance2 = await debtToken.balanceOf(users[2].address);
+      // should be + 0.09% paid premium for aave flashloan
+      console.log(balance1.add(balance2).toString());
+
       await vault.connect(users[3]).deposit(ONE_ETH, { value: ONE_ETH });
 
       // Vault balance
       const rate = await ceth.exchangeRateStored();
       const cethAmount = ONE_ETH.pow(2).div(rate);
-      expect(await ceth.balanceOf(vault.address)).to.equal(cethAmount);
+      expect(await ceth.balanceOf(vault.address)).to.gt(cethAmount);
 
       const daiAmount = await convertToCurrencyDecimals(DAI_ADDR, 400);
 
@@ -159,13 +168,10 @@ describe("Fuji", () => {
       expect(await debtToken.balanceOf(users[3].address)).to.equal(daiAmount);
 
       // debt tokens appreciate in time
-      await timeTravel(ONE_HOUR);
       await vault.connect(users[3]).borrow(daiAmount)
-      const balance2 = await debtToken.balanceOf(users[1].address);
-      console.log(balance2.toString());
-      const balance3 = await debtToken.balanceOf(users[3].address);
-      console.log(balance3.toString());
-      //expect(balance).to.gt(daiAmount);
+      const balance = await debtToken.balanceOf(users[3].address);
+      console.log(balance.toString());
+      expect(balance).to.gt(daiAmount.mul(2));
     });
 
   });

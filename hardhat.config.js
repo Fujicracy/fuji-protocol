@@ -120,6 +120,9 @@ module.exports = {
       }
     }
   },
+  mocha: {
+    timeout: 80000
+  }
 };
 
 const DEBUG = false;

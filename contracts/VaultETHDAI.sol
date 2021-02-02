@@ -268,7 +268,10 @@ contract VaultETHDAI is IVault {
     console.log("In Fujiswitch, borrowed from new provider ", _newProvider);
     console.log("Borrowed amount should be the flashloan debt ", justfortestingnumber);
 
-    console.log("In Fujiswitch, start transfer of Dai back to flasher");
+    debtToken.updateState(
+      _flashLoanDebt.sub(debtToken.totalSupply())
+    );
+
     // return borrowed amount to Flasher
     IERC20(borrowAsset).uniTransfer(msg.sender, _flashLoanDebt);
   }

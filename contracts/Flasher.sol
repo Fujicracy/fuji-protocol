@@ -6,9 +6,6 @@ pragma experimental ABIEncoderV2;
 import "./LibUniERC20.sol";
 import "./VaultETHDAI.sol";
 
-// DEBUG
-import "hardhat/console.sol";
-
 interface IFlashLoanReceiver {
   function executeOperation(
     address[] calldata assets,
@@ -25,7 +22,10 @@ contract Flasher is IFlashLoanReceiver {
 
   address constant LENDING_POOL = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
 
-  //This Operation is called and required by Aave FlashLoan
+  /**
+  * @dev Executes Aave Flashloan, this Operation is required and called by
+    Aaveflashloan, refer to Aave Flasloan Documentation
+  */
   function executeOperation(
     address[] calldata assets,
     uint256[] calldata amounts,
@@ -33,8 +33,6 @@ contract Flasher is IFlashLoanReceiver {
     address initiator,
     bytes calldata params
   ) external override returns (bool) {
-
-    console.log("Starting executeOperation from Aave Flashloan call");
 
     //Decoding Parameters
     // 1. vault's address on which we should call fujiSwitch
@@ -49,7 +47,6 @@ contract Flasher is IFlashLoanReceiver {
 
     //call fujiSwitch
     IVault(theVault).fujiSwitch(newProvider, amountOwing);
-    console.log("Flasher fujiSwitch routine complete");
 
     //Approve aaveLP to spend to repay flashloan
     IERC20(assets[0]).approve(address(LENDING_POOL), amountOwing);

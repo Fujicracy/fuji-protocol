@@ -4,8 +4,6 @@ pragma solidity >=0.4.25 <0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "./VaultETHDAI.sol";
-// DEBUG
-import "hardhat/console.sol";
 
 interface ILendingPool {
   function flashLoan(
@@ -32,6 +30,7 @@ contract Controller {
   address[] public vaults;
 
   //Modifiers
+
   modifier isAuthorized() {
     require(msg.sender == owner || msg.sender == address(this), "!authorized");
     _;
@@ -45,6 +44,11 @@ contract Controller {
   }
 
   //Administrative functions
+
+  /**
+  * @dev Adds a Vault to the controller.
+  * @param _vault: fuji address of a vault contract
+  */
   function addVault(address _vault) public isAuthorized {
     bool alreadyincluded = false;
 
@@ -60,11 +64,18 @@ contract Controller {
     vaults.push(_vault);
   }
 
+  /**
+  * @dev Changes the conditional Threshold for a provider switch
+  * @param newThreshold: percent decimal in ray (example 25% =.25 x10^27)
+  */
   function setChangeThreshold(uint256 newThreshold) public isAuthorized {
-    //Input should be decimal percentage-change in ray (decimal x 1e27)
     changeThreshold = newThreshold;
   }
 
+  /**
+  * @dev Changes the flasher contract address
+  * @param newflasher: percent decimal in ray (example 25% =.25 x10^27)
+  */
   function setflasher(address newflasher) public isAuthorized {
     //Check if vault is already adde
     flasherAddr = newflasher;
@@ -72,29 +83,37 @@ contract Controller {
 
   //Controller Core functions
 
+  /**
+  * @dev Performs full routine to check the borrowing Rates from the
+    various providers of a Vault, it swap the assets to the best provider,
+    and sets a new active provider for the called Vault, returns true on
+    success
+  * @param _vault: fuji Vault address
+  */
   function doControllerRoutine(address _vault) public returns(bool) {
-    console.log("Starting doControllerRoutine");
+
     //Check if there is an opportunity to Change provider with a lower borrowing Rate
     (bool opportunityTochange, address newProvider) = checkRates(_vault);
-    console.log("checkRates function returned values");
     require(opportunityTochange, "There is no Better Borrowing Rate Provider at the time");
 
     //Check how much borrowed balance along with accrued interest at current Provider
-    console.log("Obtaining vault debtposition");
     uint256 debtposition = IVault(_vault).borrowBalance();
     require(debtposition >0, "Vault has no debt position");
 
     //Initiate Flash Loan
     initiateFlashLoan(address(_vault), address(newProvider), IVault(_vault).borrowAsset(), debtposition);
-    console.log("At controller flash loan routine complete");
 
     //Set the new provider in the Vault
     setProvider(_vault, address(newProvider));
-    console.log("New active provider set in vault, end of doControllerRoutine");
+    return true;
   }
 
+  /**
+  * @dev Compares borrowing Rates from providers of a Vault, returns
+    true on success and fuji address of the provider with best borrowing rate
+  * @param _vault: fuji Vault address
+  */
   function checkRates(address _vault) public view returns(bool, address) {
-    console.log("Starting Checkrates function");
     //Get the array of Providers from _vault
     address[] memory arrayOfProviders = IVault(_vault).getProviders();
     address borrowingAsset = IVault(_vault).borrowAsset();
@@ -119,18 +138,25 @@ contract Controller {
     return (opportunityTochange, newProvider);
   }
 
+  /**
+  * @dev Sets a new provider to called Vault, returns true on success
+  * @param _vault: fuji Vault address to which active provider will change
+  * @param _newProviderAddr: fuji address of new Provider
+  */
   function setProvider(address _vault, address _newProviderAddr)internal returns(bool) {
     //Create vault instance and call setActiveProvider method in that vault.
     IVault(_vault).setActiveProvider(_newProviderAddr);
   }
 
+  /**
+  * @dev Aave Flashloan call, Refer to Aave Flashloan documentation.
+  */
   function initiateFlashLoan(
     address _vaultAddr,
     address _newProviderAddr,
     address _borrowAsset,
     uint256 _amount
-  ) public isAuthorized {
-    console.log("Starting initiateFlashLoan function");
+  ) internal isAuthorized {
      //Initialize Instance of Aave Lending Pool
      ILendingPool aaveLp = ILendingPool(LENDING_POOL);
 
@@ -150,7 +176,6 @@ contract Controller {
      uint16 referralCode = 0;
 
     //Aave Flashloan initiated.
-    console.log("Begin of call to Aave Flashloan function");
     aaveLp.flashLoan(
             receiverAddress,
             assets,

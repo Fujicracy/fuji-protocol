@@ -8,9 +8,6 @@ import { VariableDebtToken } from "./aave-debt-token/VariableDebtToken.sol";
 import "./LibUniERC20.sol";
 import "./IProvider.sol";
 
-// DEBUG
-import "hardhat/console.sol";
-
 interface IVault {
   function activeProvider() external view returns(address);
   function borrowAsset() external view returns(address);
@@ -22,19 +19,25 @@ interface IVault {
 }
 
 contract VaultETHDAI is IVault {
+
   using SafeMath for uint256;
   using WadRayMath for uint256;
   using UniERC20 for IERC20;
 
   AggregatorV3Interface public oracle;
 
+
+  //Base Struct Object to define Safety factor
+  //a divided by b represent the factor example 1.2, or +20%, is (a/b)= 6/5
   struct Factor {
     uint256 a;
     uint256 b;
   }
-  //  a divided by b represent Safety factor, example 1.2, or +20%, is (a/b)= 6/5
+
+  //Safety factor
   Factor public safetyF;
-  //  a divided by b represent collateralization factor
+
+  //Collateralization factor
   Factor public collatF;
   uint256 internal constant BASE = 1e18;
 
@@ -45,7 +48,7 @@ contract VaultETHDAI is IVault {
   address[] public providers;
   address public override activeProvider;
 
-  //Vault Assets
+  //Managed assets in this Vault
   address public override collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
   address public override borrowAsset = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
 
@@ -53,7 +56,7 @@ contract VaultETHDAI is IVault {
 
   mapping(address => uint256) public collaterals;
 
-  // balance of all available collateral in ETH
+  //Balance of all available collateral in ETH
   uint256 public collateralBalance;
 
   modifier isAuthorized() {
@@ -71,7 +74,6 @@ contract VaultETHDAI is IVault {
     oracle = AggregatorV3Interface(_oracle);
     owner = _owner;
 
-
     // + 5%
     safetyF.a = 21;
     safetyF.b = 20;
@@ -81,13 +83,22 @@ contract VaultETHDAI is IVault {
     collatF.b = 4;
   }
 
+  //Core functions
+
+  /**
+  * @dev Deposits collateral and borrows underlying in a single function call from activeProvider
+  * @param _collateralAmount to be deposited, and _borrowAmount of underlying
+  */
   function depositAndBorrow(uint256 _collateralAmount, uint256 _borrowAmount) external payable {
     deposit(_collateralAmount);
     borrow(_borrowAmount);
   }
 
+  /**
+  * @dev Deposit Vault's type collateral to activeProvider
+  * @param _collateralAmount: to be deposited
+  */
   function deposit(uint256 _collateralAmount) public payable {
-    // TODO
     require(msg.value == _collateralAmount, "Collateral amount not the same as sent amount");
 
     uint256 currentBalance = redeemableCollateralBalance();
@@ -109,8 +120,12 @@ contract VaultETHDAI is IVault {
     collaterals[msg.sender] = providedCollateral.add(_collateralAmount);
   }
 
+  /**
+  * @dev Withdraws Vault's type collateral from activeProvider
+  * @param _withdrawAmount: amount of collateral to withdraw
+  */
   function withdraw(uint256 _withdrawAmount) public {
-    // TODO
+
     uint256 providedCollateral = collaterals[msg.sender];
 
     require(
@@ -140,8 +155,12 @@ contract VaultETHDAI is IVault {
     collateralBalance = collateralBalance.sub(_withdrawAmount);
   }
 
+  /**
+  * @dev Borrows Vault's type underlying amount from activeProvider
+  * @param _borrowAmount: token amount of underlying to borrow
+  */
   function borrow(uint256 _borrowAmount) public {
-    // TODO
+
     uint256 providedCollateral = collaterals[msg.sender];
 
     // get needed collateral for already existing positions
@@ -153,10 +172,6 @@ contract VaultETHDAI is IVault {
 
     require(providedCollateral > neededCollateral, "Not enough collateral provided");
 
-    console.log("Borrow Balance:");
-    console.log(borrowBalance());
-    console.log("Total supply");
-    console.log(debtToken.totalSupply());
     if (debtToken.totalSupply() > 0 && borrowBalance() > 0) {
       debtToken.updateState(
         borrowBalance().sub(debtToken.totalSupply())
@@ -179,6 +194,10 @@ contract VaultETHDAI is IVault {
     );
   }
 
+  /**
+  * @dev Paybacks Vault's type underlying to activeProvider
+  * @param _repayAmount: token amount of underlying to repay
+  */
   function payback(uint256 _repayAmount) public payable {
     // TODO
     uint256 providedCollateral = collaterals[msg.sender];
@@ -207,8 +226,12 @@ contract VaultETHDAI is IVault {
     );
   }
 
+  /**
+  * @dev Changes Vault debt and collateral to a newProvider, called by Controller
+  * @param _newProvider new provider fuji address
+  * @param _flashLoanDebt amount of flashloan underlying to repay Flashloan
+  */
   function fujiSwitch(address _newProvider, uint256 _flashLoanDebt) public override payable {
-    console.log("Starting fujiSwitch function");
     uint256 borrowBalance = borrowBalance();
 
     require(
@@ -217,9 +240,7 @@ contract VaultETHDAI is IVault {
     );
 
     IERC20(borrowAsset).transferFrom(msg.sender, address(this), borrowBalance);
-    console.log("In Fujiswitch, Flashloan assets are now transferred from Flasher to  vault ");
 
-    console.log("In Fujiswitch, start of payback");
     // payback current provider
     bytes memory data = abi.encodeWithSignature(
       "payback(address,uint256)",
@@ -227,12 +248,7 @@ contract VaultETHDAI is IVault {
       borrowBalance
     );
     execute(address(activeProvider), data);
-    console.log("In Fujiswitch, Payback complete to activeProvider ",activeProvider);
-    uint256 justfortestingnumber = IProvider(activeProvider).getBorrowBalance(borrowAsset);
-    console.log("debt in activeProvider ", justfortestingnumber);
 
-
-    console.log("In Fujiswitch, start of withdraw");
     // withdraw collateral from current provider
     data = abi.encodeWithSignature(
       "withdraw(address,uint256)",
@@ -240,11 +256,7 @@ contract VaultETHDAI is IVault {
       collateralBalance
     );
     execute(address(activeProvider), data);
-    justfortestingnumber = redeemableCollateralBalance();
-    console.log("In Fujiswitch, Removed collateral from activeProvider ",activeProvider);
-    console.log("collateral in activeProvider (should be zero) ",justfortestingnumber);
 
-    console.log("In Fujiswitch, start of deposit newprovider");
     // deposit to the new provider
     data = abi.encodeWithSignature(
       "deposit(address,uint256)",
@@ -252,11 +264,7 @@ contract VaultETHDAI is IVault {
       collateralBalance
     );
     execute(address(_newProvider), data);
-    justfortestingnumber = IERC20(address(IProvider(_newProvider).getRedeemableAddress(collateralAsset))).balanceOf(address(this));
-    console.log("In Fujiswitch, deposited collateral in new provider ", _newProvider);
-    console.log("collateral in newProvider (should not be zero) ",justfortestingnumber);
 
-    console.log("In Fujiswitch, start of borrow at newprovider");
     // borrow from the new provider, borrowBalance + premium = flashloandebt
     data = abi.encodeWithSignature(
       "borrow(address,uint256)",
@@ -264,9 +272,6 @@ contract VaultETHDAI is IVault {
       _flashLoanDebt
     );
     execute(address(_newProvider), data);
-    justfortestingnumber = IERC20(borrowAsset).balanceOf(address(this));
-    console.log("In Fujiswitch, borrowed from new provider ", _newProvider);
-    console.log("Borrowed amount should be the flashloan debt ", justfortestingnumber);
 
     debtToken.updateState(
       _flashLoanDebt.sub(debtToken.totalSupply())
@@ -276,11 +281,20 @@ contract VaultETHDAI is IVault {
     IERC20(borrowAsset).uniTransfer(msg.sender, _flashLoanDebt);
   }
 
-  // TODO isAuthorized
+  //Administrative functions
+
+  /**
+  * @dev Sets the debtToken address to the Vault
+  * @param _debtToken: fuji debt token address
+  */
   function setDebtToken(address _debtToken) external {
     debtToken = VariableDebtToken(_debtToken);
   }
 
+  /**
+  * @dev Adds a provider to the Vault
+  * @param _provider: new provider fuji address
+  */
   function addProvider(address _provider) external isAuthorized {
     bool alreadyincluded = false;
 
@@ -301,6 +315,10 @@ contract VaultETHDAI is IVault {
     }
   }
 
+  /**
+  * @dev Returns the amount of collateral needed, including safety factors
+  * @param _amount: Vault underlying type intended to be borrowed
+  */
   function getNeededCollateralFor(uint256 _amount) public view returns(uint256) {
     // get price of DAI in ETH
     (,int256 latestPrice,,,) = oracle.latestRoundData();
@@ -314,6 +332,10 @@ contract VaultETHDAI is IVault {
         .div(BASE);
   }
 
+  /**
+  * @dev Returns the amount of collateral of a user address
+  * @param _user: address of the user
+  */
   function getCollateralShareOf(address _user) public view returns(uint256 share) {
     uint256 providedCollateral = collaterals[_user];
     if (providedCollateral == 0) {
@@ -324,16 +346,26 @@ contract VaultETHDAI is IVault {
     }
   }
 
-
+  /**
+  * @dev Returns the redeermable amount of collateral of a user address
+  * @param _user: address of the user
+  */
   function getRedeemableAmountOf(address _user) public view returns(uint256 share) {
     uint256 collateralShare = getCollateralShareOf(_user);
     share = redeemableCollateralBalance().mul(collateralShare).div(BASE);
   }
 
+  /**
+  * @dev Sets a new active provider for the Vault
+  * @param _provider: fuji address of the new provider
+  */
   function setActiveProvider(address _provider) external override isAuthorized {
     activeProvider = _provider;
   }
 
+  /**
+  * @dev Returns the amount of redeemable collateral from an active provider
+  */
   function redeemableCollateralBalance() public view returns(uint256) {
     address redeemable = IProvider(activeProvider).getRedeemableAddress(collateralAsset);
     return IERC20(redeemable).balanceOf(address(this));
@@ -341,14 +373,25 @@ contract VaultETHDAI is IVault {
     //return IERC20(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5).balanceOf(address(this)); // Compound cETH
   }
 
+  /**
+  * @dev Returns the total borrow balance of the Vault's type underlying at active provider
+  */
   function borrowBalance() public override returns(uint256) {
     return IProvider(activeProvider).getBorrowBalance(borrowAsset);
   }
 
+  /**
+  * @dev Returns an array of the Vault's providers
+  */
   function getProviders() external view override returns(address[] memory) {
     return providers;
   }
 
+  //Internal functions
+
+  /**
+  * @dev Returns byte response of delegatcalls
+  */
   function execute(
     address _target,
     bytes memory _data

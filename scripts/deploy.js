@@ -15,7 +15,10 @@ const main = async () => {
   const deployerWallet = ethers.provider.getSigner();
   const deployerAddress = await deployerWallet.getAddress();
 
-  //const libUniERC20 = await deploy("UniERC20");
+  const FujiMapping = await deploy("FujiMapping", [ //This contract has to be deployed first
+    deployerAddress,
+    "mainnet"
+  ]);
   const flasher = await deploy("Flasher");
   const aave = await deploy("ProviderAave");
   const compound = await deploy("ProviderCompound");
@@ -41,11 +44,16 @@ const main = async () => {
   vault.setDebtToken(debtToken.address);
 
   //Set up the environment for testing Fuji contracts.
+
+  await FujiMapping.addCtknMapping([
+    //Mainnet mappings for Compound Protocol ctoken
+    "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643" //cDAI
+    //Kovan mappings for Compound Protocol ctoken
+    //0xF0d0EB522cfa50B716B3b1604C4F0fA6f04376AD, //cDAI
+  ]);
   await vault.addProvider(aave.address);
   await vault.addProvider(compound.address);
   await controller.addVault(vault.address);
-  //await vault.depositAndBorrow("250000000000000000000", "500000000000000000000", {value: "250000000000000000000"});
-
 
   // const exampleToken = await deploy("ExampleToken")
   // const examplePriceOracle = await deploy("ExamplePriceOracle")

@@ -111,6 +111,7 @@ contract VaultETHDAI is IVault {
   /**
   * @dev Deposit Vault's type collateral to activeProvider
   * @param _collateralAmount: to be deposited
+  * Emits a {Deposit} event.
   */
   function deposit(uint256 _collateralAmount) public payable {
     require(msg.value == _collateralAmount, "Collateral amount not the same as sent amount");
@@ -133,13 +134,13 @@ contract VaultETHDAI is IVault {
     uint256 providedCollateral = collaterals[msg.sender];
     collaterals[msg.sender] = providedCollateral.add(_collateralAmount);
 
-    //Log Deposit amount
     emit Deposit(msg.sender, _collateralAmount);
   }
 
   /**
   * @dev Withdraws Vault's type collateral from activeProvider
   * @param _withdrawAmount: amount of collateral to withdraw
+  * Emits a {Withdraw} event.
   */
   function withdraw(uint256 _withdrawAmount) public {
 
@@ -170,13 +171,14 @@ contract VaultETHDAI is IVault {
     collaterals[msg.sender] = providedCollateral.sub(_withdrawAmount);
     IERC20(collateralAsset).uniTransfer(msg.sender, _withdrawAmount);
     collateralBalance = collateralBalance.sub(_withdrawAmount);
-    // Log Withdraw amount
+
     emit Withdraw(msg.sender, _withdrawAmount);
   }
 
   /**
   * @dev Borrows Vault's type underlying amount from activeProvider
   * @param _borrowAmount: token amount of underlying to borrow
+  * Emits a {Borrow} event.
   */
   function borrow(uint256 _borrowAmount) public {
 
@@ -211,13 +213,14 @@ contract VaultETHDAI is IVault {
       msg.sender,
       _borrowAmount
     );
-    //Log Borrow amount
+
     emit Borrow(msg.sender, _borrowAmount);
   }
 
   /**
   * @dev Paybacks Vault's type underlying to activeProvider
   * @param _repayAmount: token amount of underlying to repay
+  * Emits a {Repay} event.
   */
   function payback(uint256 _repayAmount) public payable {
     // TODO
@@ -245,7 +248,7 @@ contract VaultETHDAI is IVault {
       msg.sender,
       _repayAmount
     );
-    //Log Repay amount
+
     emit Repay(msg.sender, _repayAmount);
   }
 
@@ -253,6 +256,7 @@ contract VaultETHDAI is IVault {
   * @dev Changes Vault debt and collateral to a newProvider, called by Controller
   * @param _newProvider new provider fuji address
   * @param _flashLoanDebt amount of flashloan underlying to repay Flashloan
+  * Emits a {Switch} event.
   */
   function fujiSwitch(address _newProvider, uint256 _flashLoanDebt) public override payable {
     uint256 borrowBalance = borrowBalance();
@@ -302,7 +306,7 @@ contract VaultETHDAI is IVault {
 
     // return borrowed amount to Flasher
     IERC20(borrowAsset).uniTransfer(msg.sender, _flashLoanDebt);
-    // log Switch event
+
     emit Switch(activeProvider, _newProvider);
   }
 
@@ -383,11 +387,11 @@ contract VaultETHDAI is IVault {
   /**
   * @dev Sets a new active provider for the Vault
   * @param _provider: fuji address of the new provider
+  * Emits a {SetActiveProvider} event.
   */
   function setActiveProvider(address _provider) external override isAuthorized {
     activeProvider = _provider;
 
-    // Log NewProvider
     emit SetActiveProvider(_provider);
   }
 

@@ -133,6 +133,7 @@ contract VaultETHDAI is IVault {
     uint256 providedCollateral = collaterals[msg.sender];
     collaterals[msg.sender] = providedCollateral.add(_collateralAmount);
 
+    //Log Deposit amount
     emit Deposit(msg.sender, _collateralAmount);
   }
 
@@ -169,7 +170,7 @@ contract VaultETHDAI is IVault {
     collaterals[msg.sender] = providedCollateral.sub(_withdrawAmount);
     IERC20(collateralAsset).uniTransfer(msg.sender, _withdrawAmount);
     collateralBalance = collateralBalance.sub(_withdrawAmount);
-
+    // Log Withdraw amount
     emit Withdraw(msg.sender, _withdrawAmount);
   }
 
@@ -210,7 +211,7 @@ contract VaultETHDAI is IVault {
       msg.sender,
       _borrowAmount
     );
-
+    //Log Borrow amount
     emit Borrow(msg.sender, _borrowAmount);
   }
 
@@ -244,7 +245,7 @@ contract VaultETHDAI is IVault {
       msg.sender,
       _repayAmount
     );
-
+    //Log Repay amount
     emit Repay(msg.sender, _repayAmount);
   }
 
@@ -301,7 +302,7 @@ contract VaultETHDAI is IVault {
 
     // return borrowed amount to Flasher
     IERC20(borrowAsset).uniTransfer(msg.sender, _flashLoanDebt);
-
+    // log Switch event
     emit Switch(activeProvider, _newProvider);
   }
 
@@ -386,6 +387,7 @@ contract VaultETHDAI is IVault {
   function setActiveProvider(address _provider) external override isAuthorized {
     activeProvider = _provider;
 
+    // Log NewProvider
     emit SetActiveProvider(_provider);
   }
 

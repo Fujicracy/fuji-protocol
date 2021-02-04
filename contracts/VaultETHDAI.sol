@@ -54,6 +54,20 @@ contract VaultETHDAI is IVault {
 
   VariableDebtToken debtToken;
 
+  	// Log Users deposit
+	event Deposit(address userAddrs,uint256 amount);
+	// Log Users borrow
+	event Borrow(address userAddrs,uint256 amount);
+	// Log Users debt repay
+	event Repay(address userAddrs,uint256 amount);
+	// Log Users withdraw
+	event Withdraw(address userAddrs,uint256 amount);
+	// Log New active provider
+	event SetActiveProvider(address providerAddrs);
+	// Log Switch providers
+	event Switch(address fromProviderAddrs,address toProviderAddrs);
+
+
   mapping(address => uint256) public collaterals;
 
   //Balance of all available collateral in ETH
@@ -118,6 +132,8 @@ contract VaultETHDAI is IVault {
 
     uint256 providedCollateral = collaterals[msg.sender];
     collaterals[msg.sender] = providedCollateral.add(_collateralAmount);
+
+    emit Deposit(msg.sender, _collateralAmount);
   }
 
   /**
@@ -153,6 +169,8 @@ contract VaultETHDAI is IVault {
     collaterals[msg.sender] = providedCollateral.sub(_withdrawAmount);
     IERC20(collateralAsset).uniTransfer(msg.sender, _withdrawAmount);
     collateralBalance = collateralBalance.sub(_withdrawAmount);
+
+    emit Withdraw(msg.sender, _withdrawAmount);
   }
 
   /**
@@ -192,6 +210,8 @@ contract VaultETHDAI is IVault {
       msg.sender,
       _borrowAmount
     );
+
+    emit Borrow(msg.sender, _borrowAmount);
   }
 
   /**
@@ -224,6 +244,8 @@ contract VaultETHDAI is IVault {
       msg.sender,
       _repayAmount
     );
+
+    emit Repay(msg.sender, _repayAmount);
   }
 
   /**
@@ -279,6 +301,8 @@ contract VaultETHDAI is IVault {
 
     // return borrowed amount to Flasher
     IERC20(borrowAsset).uniTransfer(msg.sender, _flashLoanDebt);
+
+    emit Switch(activeProvider, _newProvider);
   }
 
   //Administrative functions
@@ -361,6 +385,8 @@ contract VaultETHDAI is IVault {
   */
   function setActiveProvider(address _provider) external override isAuthorized {
     activeProvider = _provider;
+
+    emit SetActiveProvider(_provider);
   }
 
   /**

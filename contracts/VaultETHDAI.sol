@@ -18,6 +18,10 @@ interface IVault {
   function setActiveProvider(address _provider) external;
 }
 
+interface IController {
+  function doControllerRoutine(address _vault) external returns(bool);
+}
+
 contract VaultETHDAI is IVault {
 
   using SafeMath for uint256;
@@ -110,6 +114,7 @@ contract VaultETHDAI is IVault {
 
   /**
   * @dev Deposit Vault's type collateral to activeProvider
+  * call Controller checkrates
   * @param _collateralAmount: to be deposited
   * Emits a {Deposit} event.
   */
@@ -135,10 +140,14 @@ contract VaultETHDAI is IVault {
     collaterals[msg.sender] = providedCollateral.add(_collateralAmount);
 
     emit Deposit(msg.sender, _collateralAmount);
+
+    IController fujiTroller = IController(controller);
+    fujiTroller.doControllerRoutine(address(this));
   }
 
   /**
   * @dev Withdraws Vault's type collateral from activeProvider
+  * call Controller checkrates
   * @param _withdrawAmount: amount of collateral to withdraw
   * Emits a {Withdraw} event.
   */
@@ -173,6 +182,9 @@ contract VaultETHDAI is IVault {
     collateralBalance = collateralBalance.sub(_withdrawAmount);
 
     emit Withdraw(msg.sender, _withdrawAmount);
+
+    IController fujiTroller = IController(controller);
+    fujiTroller.doControllerRoutine(address(this));
   }
 
   /**

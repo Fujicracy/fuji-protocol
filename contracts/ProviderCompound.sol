@@ -55,7 +55,7 @@ contract HelperFunct {
 
   function getMappingAddr() internal pure returns (address) {
     // FujiMapping Address, to be replaced
-    return 0x5FbDB2315678afecb367f032d93F642f64180aa3;
+    return 0xe81F70Cc7C0D46e12d70efc60607F16bbD617E88;
   }
 
   function getComptrollerAddress() internal pure returns (address) {

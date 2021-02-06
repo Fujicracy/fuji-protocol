@@ -15,10 +15,16 @@ const main = async () => {
   const deployerWallet = ethers.provider.getSigner();
   const deployerAddress = await deployerWallet.getAddress();
 
-  const FujiMapping = await deploy("FujiMapping", [ //This contract has to be deployed first
-    deployerAddress,
-    "mainnet"
-  ]);
+  //const FujiMapping = await deploy("FujiMapping", [ //This contract has to be deployed first
+    //deployerAddress,
+    //"mainnet"
+  //]);
+  //await FujiMapping.addCtknMapping([
+    ////Mainnet mappings for Compound Protocol ctoken
+    //"0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643" //cDAI
+    ////Kovan mappings for Compound Protocol ctoken
+    ////0xF0d0EB522cfa50B716B3b1604C4F0fA6f04376AD, //cDAI
+  //]);
   const flasher = await deploy("Flasher");
   const aave = await deploy("ProviderAave");
   const compound = await deploy("ProviderCompound");
@@ -45,12 +51,6 @@ const main = async () => {
 
   //Set up the environment for testing Fuji contracts.
 
-  await FujiMapping.addCtknMapping([
-    //Mainnet mappings for Compound Protocol ctoken
-    "0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643" //cDAI
-    //Kovan mappings for Compound Protocol ctoken
-    //0xF0d0EB522cfa50B716B3b1604C4F0fA6f04376AD, //cDAI
-  ]);
   await vault.addProvider(aave.address);
   await vault.addProvider(compound.address);
   await controller.addVault(vault.address);

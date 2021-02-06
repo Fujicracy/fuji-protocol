@@ -34,7 +34,7 @@ const main = async () => {
     "0x773616E4d11A78F511299002da57A0a94577F1f4",
     deployerAddress
   ]);
-  const debtToken = await deploy("VariableDebtToken", [
+  const debtToken = await deploy("DebtToken", [
     vault.address,
     DAI_ADDR,
     "Fuji DAI debt token",

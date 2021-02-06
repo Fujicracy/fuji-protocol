@@ -3,8 +3,7 @@
 pragma solidity >=0.4.25 <0.7.0;
 
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
-import { WadRayMath } from "./aave-debt-token/WadRayMath.sol";
-import { VariableDebtToken } from "./aave-debt-token/VariableDebtToken.sol";
+import { DebtToken } from "./DebtToken.sol";
 import "./LibUniERC20.sol";
 import "./IProvider.sol";
 
@@ -25,11 +24,9 @@ interface IController {
 contract VaultETHDAI is IVault {
 
   using SafeMath for uint256;
-  using WadRayMath for uint256;
   using UniERC20 for IERC20;
 
   AggregatorV3Interface public oracle;
-
 
   //Base Struct Object to define Safety factor
   //a divided by b represent the factor example 1.2, or +20%, is (a/b)= 6/5
@@ -56,7 +53,7 @@ contract VaultETHDAI is IVault {
   address public override collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
   address public override borrowAsset = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
 
-  VariableDebtToken debtToken;
+  DebtToken debtToken;
 
   	// Log Users deposit
 	event Deposit(address userAddrs,uint256 amount);
@@ -235,8 +232,6 @@ contract VaultETHDAI is IVault {
   * Emits a {Repay} event.
   */
   function payback(uint256 _repayAmount) public payable {
-    // TODO
-    uint256 providedCollateral = collaterals[msg.sender];
 
     require(
       IERC20(borrowAsset).allowance(msg.sender, address(this)) >= _repayAmount,
@@ -329,7 +324,7 @@ contract VaultETHDAI is IVault {
   * @param _debtToken: fuji debt token address
   */
   function setDebtToken(address _debtToken) external {
-    debtToken = VariableDebtToken(_debtToken);
+    debtToken = DebtToken(_debtToken);
   }
 
   /**

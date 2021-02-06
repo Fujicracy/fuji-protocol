@@ -94,18 +94,28 @@ contract Controller {
 
     //Check if there is an opportunity to Change provider with a lower borrowing Rate
     (bool opportunityTochange, address newProvider) = checkRates(_vault);
-    require(opportunityTochange, "There is no Better Borrowing Rate Provider at the time");
 
-    //Check how much borrowed balance along with accrued interest at current Provider
-    uint256 debtposition = IVault(_vault).borrowBalance();
-    require(debtposition >0, "Vault has no debt position");
+    if (opportunityTochange) {
+      //Check how much borrowed balance along with accrued interest at current Provider
+      uint256 debtposition = IVault(_vault).borrowBalance();
 
-    //Initiate Flash Loan
-    initiateFlashLoan(address(_vault), address(newProvider), IVault(_vault).borrowAsset(), debtposition);
+      if (debtposition > 0) {
+        //Initiate Flash Loan
+        initiateFlashLoan(
+          address(_vault),
+          address(newProvider),
+          IVault(_vault).borrowAsset(),
+          debtposition
+        );
+      }
 
-    //Set the new provider in the Vault
-    setProvider(_vault, address(newProvider));
-    return true;
+      //Set the new provider in the Vault
+      setProvider(_vault, address(newProvider));
+      return true;
+    }
+    else {
+      return false;
+    }
   }
 
   /**

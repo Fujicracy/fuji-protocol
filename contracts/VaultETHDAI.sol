@@ -118,6 +118,9 @@ contract VaultETHDAI is IVault {
   function deposit(uint256 _collateralAmount) public payable {
     require(msg.value == _collateralAmount, "Collateral amount not the same as sent amount");
 
+    IController fujiTroller = IController(controller);
+    fujiTroller.doControllerRoutine(address(this));
+
     uint256 currentBalance = redeemableCollateralBalance();
 
     bytes memory data = abi.encodeWithSignature(
@@ -137,9 +140,6 @@ contract VaultETHDAI is IVault {
     collaterals[msg.sender] = providedCollateral.add(_collateralAmount);
 
     emit Deposit(msg.sender, _collateralAmount);
-
-    IController fujiTroller = IController(controller);
-    fujiTroller.doControllerRoutine(address(this));
   }
 
   /**

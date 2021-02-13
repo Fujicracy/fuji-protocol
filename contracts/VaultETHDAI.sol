@@ -118,8 +118,8 @@ contract VaultETHDAI is IVault {
   function deposit(uint256 _collateralAmount) public payable {
     require(msg.value == _collateralAmount, "Collateral amount not the same as sent amount");
 
-    IController fujiTroller = IController(controller);
-    fujiTroller.doControllerRoutine(address(this));
+    //IController fujiTroller = IController(controller);
+    //fujiTroller.doControllerRoutine(address(this));
 
     uint256 currentBalance = redeemableCollateralBalance();
 
@@ -167,6 +167,10 @@ contract VaultETHDAI is IVault {
       "Not enough collateral left"
     );
 
+    collaterals[msg.sender] = providedCollateral.sub(_withdrawAmount);
+    IERC20(collateralAsset).uniTransfer(msg.sender, _withdrawAmount);
+    collateralBalance = collateralBalance.sub(_withdrawAmount);
+
     bytes memory data = abi.encodeWithSignature(
       "withdraw(address,uint256)",
       collateralAsset,
@@ -174,14 +178,10 @@ contract VaultETHDAI is IVault {
     );
     execute(address(activeProvider), data);
 
-    collaterals[msg.sender] = providedCollateral.sub(_withdrawAmount);
-    IERC20(collateralAsset).uniTransfer(msg.sender, _withdrawAmount);
-    collateralBalance = collateralBalance.sub(_withdrawAmount);
-
     emit Withdraw(msg.sender, _withdrawAmount);
 
-    IController fujiTroller = IController(controller);
-    fujiTroller.doControllerRoutine(address(this));
+    //IController fujiTroller = IController(controller);
+    //fujiTroller.doControllerRoutine(address(this));
   }
 
   /**
@@ -323,7 +323,7 @@ contract VaultETHDAI is IVault {
   * @dev Sets the debtToken address to the Vault
   * @param _debtToken: fuji debt token address
   */
-  function setDebtToken(address _debtToken) external {
+  function setDebtToken(address _debtToken) external isAuthorized {
     debtToken = DebtToken(_debtToken);
   }
 
@@ -332,15 +332,15 @@ contract VaultETHDAI is IVault {
   * @param _provider: new provider fuji address
   */
   function addProvider(address _provider) external isAuthorized {
-    bool alreadyincluded = false;
+    bool alreadyIncluded = false;
 
     //Check if Provider is not already included
     for(uint i =0; i < providers.length; i++ ){
       if(providers[i] == _provider){
-        alreadyincluded = true;
+        alreadyIncluded = true;
       }
     }
-    require(alreadyincluded== false, "Provider is already included in Vault");
+    require(!alreadyIncluded, "Provider is already included in Vault");
 
     //Push new provider to provider array
     providers.push(_provider);

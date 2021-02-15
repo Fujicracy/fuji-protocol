@@ -56,17 +56,17 @@ contract VaultETHDAI is IVault {
   DebtToken debtToken;
 
   	// Log Users deposit
-	event Deposit(address userAddrs,uint256 amount);
+	event Deposit(address userAddrs, uint256 amount);
 	// Log Users borrow
-	event Borrow(address userAddrs,uint256 amount);
+	event Borrow(address userAddrs, uint256 amount);
 	// Log Users debt repay
-	event Repay(address userAddrs,uint256 amount);
+	event Repay(address userAddrs, uint256 amount);
 	// Log Users withdraw
-	event Withdraw(address userAddrs,uint256 amount);
+	event Withdraw(address userAddrs, uint256 amount);
 	// Log New active provider
-	event SetActiveProvider(address providerAddrs);
+	event SetActiveProvider(address providerAddr);
 	// Log Switch providers
-	event Switch(address fromProviderAddrs,address toProviderAddrs);
+	event Switch(address fromProviderAddrs, address toProviderAddr);
 
 
   mapping(address => uint256) public collaterals;
@@ -202,11 +202,7 @@ contract VaultETHDAI is IVault {
 
     require(providedCollateral > neededCollateral, "Not enough collateral provided");
 
-    if (debtToken.totalSupply() > 0 && borrowBalance() > 0) {
-      debtToken.updateState(
-        borrowBalance().sub(debtToken.totalSupply())
-      );
-    }
+    debtToken.updateState(borrowBalance());
 
     bytes memory data = abi.encodeWithSignature(
       "borrow(address,uint256)",
@@ -238,9 +234,7 @@ contract VaultETHDAI is IVault {
       "Not enough allowance"
     );
 
-    debtToken.updateState(
-      borrowBalance().sub(debtToken.totalSupply())
-    );
+    debtToken.updateState(borrowBalance());
 
     IERC20(borrowAsset).transferFrom(msg.sender, address(this), _repayAmount);
 
@@ -307,9 +301,7 @@ contract VaultETHDAI is IVault {
     );
     execute(address(_newProvider), data);
 
-    debtToken.updateState(
-      _flashLoanDebt.sub(debtToken.totalSupply())
-    );
+    debtToken.updateState(_flashLoanDebt);
 
     // return borrowed amount to Flasher
     IERC20(borrowAsset).uniTransfer(msg.sender, _flashLoanDebt);
@@ -408,8 +400,6 @@ contract VaultETHDAI is IVault {
   function redeemableCollateralBalance() public view returns(uint256) {
     address redeemable = IProvider(activeProvider).getRedeemableAddress(collateralAsset);
     return IERC20(redeemable).balanceOf(address(this));
-    //return IERC20(0x030bA81f1c18d280636F32af80b9AAd02Cf0854e).balanceOf(address(this)); // AAVE aWETH
-    //return IERC20(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5).balanceOf(address(this)); // Compound cETH
   }
 
   /**

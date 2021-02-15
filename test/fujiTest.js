@@ -54,7 +54,7 @@ describe("Fuji", () => {
     const VaultETHDAI = await ethers.getContractFactory("VaultETHDAI");
     const AAVE = await ethers.getContractFactory("ProviderAave");
     const Compound = await ethers.getContractFactory("ProviderCompound");
-    const DebtToken = await ethers.getContractFactory("VariableDebtToken");
+    const DebtToken = await ethers.getContractFactory("DebtToken");
     const Flasher = await ethers.getContractFactory("Flasher");
     const Controller = await ethers.getContractFactory("Controller");
     

@@ -29,11 +29,17 @@ contract DebtToken is DebtTokenBase, IVariableDebtToken {
     liquidityIndex = uint128(WadRayMath.ray());
   }
 
+  /**
+   * @dev Updates liquidityIndex on debt changes
+   **/
   function updateState(
-    uint256 amount
+    uint256 newBalance
   ) external onlyLendingPool {
-    if (totalSupply() > 0) {
-      uint256 amountToLiquidityRatio = amount.wadToRay().rayDiv(totalSupply().wadToRay());
+    uint256 total = totalSupply();
+
+    if (newBalance > 0 && total > 0) {
+      uint256 diff = newBalance.sub(total);
+      uint256 amountToLiquidityRatio = diff.wadToRay().rayDiv(total.wadToRay());
 
       uint256 result = amountToLiquidityRatio.add(WadRayMath.ray());
 

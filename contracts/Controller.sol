@@ -4,6 +4,7 @@ pragma solidity >=0.4.25 <0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "./VaultETHDAI.sol";
+import { DebtToken } from "./DebtToken.sol";
 
 interface ILendingPool {
   function flashLoan(
@@ -21,6 +22,7 @@ contract Controller {
 
   address private owner;
   address public flasherAddr;
+  address public liquidatorAddr;
   address constant LENDING_POOL = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
   //Change Threshold is the minimum percent in Borrowing Rates to trigger a provider change
   //Percentage Expressed in ray (1e27)
@@ -36,10 +38,16 @@ contract Controller {
     _;
   }
 
-  constructor(address _owner,address _flasher, uint256 _changeThreshold) public {
+  constructor(
+    address _owner,
+    address _flasher,
+    address _liquidator,
+    uint256 _changeThreshold
+  ) public {
     // Add initializer addresses
     owner = _owner;
     flasherAddr = _flasher;
+    liquidatorAddr = _liquidator;
     changeThreshold = _changeThreshold;
   }
 
@@ -153,7 +161,7 @@ contract Controller {
   * @param _vault: fuji Vault address to which active provider will change
   * @param _newProviderAddr: fuji address of new Provider
   */
-  function setProvider(address _vault, address _newProviderAddr)internal returns(bool) {
+  function setProvider(address _vault, address _newProviderAddr) internal returns(bool) {
     //Create vault instance and call setActiveProvider method in that vault.
     IVault(_vault).setActiveProvider(_newProviderAddr);
   }
@@ -183,6 +191,60 @@ contract Controller {
 
      address onBehalfOf = address(this);
      bytes memory params = abi.encode(_vaultAddr, _newProviderAddr);
+     uint16 referralCode = 0;
+
+    //Aave Flashloan initiated.
+    aaveLp.flashLoan(
+            receiverAddress,
+            assets,
+            amounts,
+            modes,
+            onBehalfOf,
+            params,
+            referralCode
+          );
+  }
+
+  function initiateSelfLiquidation(
+    address _vaultAddr
+  ) external {
+    IVault theVault = IVault(_vaultAddr);
+    DebtToken debtToken = theVault.debtToken();
+    theVault.updateDebtTokenBalances();
+    uint256 userDebtBalance = debtToken.balanceOf(msg.sender);
+
+    require(userDebtBalance > 0, "No debt to liquidate");
+
+    initiateLiquidationInternal(
+      _vaultAddr,
+      msg.sender,
+      theVault.borrowAsset(),
+      userDebtBalance
+    );
+  }
+
+  function initiateLiquidationInternal(
+    address _vaultAddr,
+    address _userAddr,
+    address _borrowAsset,
+    uint256 _amount
+  ) internal {
+     //Initialize Instance of Aave Lending Pool
+     ILendingPool aaveLp = ILendingPool(LENDING_POOL);
+
+     //Passing arguments to construct Aave flashloan -limited to 1 asset type for now.
+     address receiverAddress = liquidatorAddr;
+     address[] memory assets = new address[](1);
+     assets[0] = address(_borrowAsset);
+     uint256[] memory amounts = new uint256[](1);
+     amounts[0] = _amount;
+
+     // 0 = no debt, 1 = stable, 2 = variable
+     uint256[] memory modes = new uint256[](1);
+     modes[0] = 0;
+
+     address onBehalfOf = address(this);
+     bytes memory params = abi.encode(_vaultAddr, _userAddr);
      uint16 referralCode = 0;
 
     //Aave Flashloan initiated.

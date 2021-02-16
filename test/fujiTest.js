@@ -5,6 +5,7 @@ const { solidity } = require("ethereum-waffle");
 use(solidity);
 
 const CHAINLINK_ORACLE_ADDR = "0x773616E4d11A78F511299002da57A0a94577F1f4";
+const UNISWAP_ROUTER_ADDR = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
 const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 const DAI_ADDR = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
 const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
@@ -56,6 +57,7 @@ describe("Fuji", () => {
     const Compound = await ethers.getContractFactory("ProviderCompound");
     const DebtToken = await ethers.getContractFactory("DebtToken");
     const Flasher = await ethers.getContractFactory("Flasher");
+    const Liquidator = await ethers.getContractFactory("Liquidator");
     const Controller = await ethers.getContractFactory("Controller");
     
     dai = await ethers.getContractAt("IERC20", DAI_ADDR);
@@ -63,9 +65,11 @@ describe("Fuji", () => {
     ceth = await ethers.getContractAt("CErc20", cETH_ADDR);
 
     const flasher = await Flasher.deploy();
+    const liquidator = await Liquidator.deploy();
     controller = await Controller.deploy(
       users[0].address,
       flasher.address,
+      liquidator.address,
       "0" //changeThreshold percentagedecimal to ray (0.02 x 10^27)
     );
 
@@ -74,6 +78,7 @@ describe("Fuji", () => {
     vault = await VaultETHDAI.deploy(
       controller.address,
       CHAINLINK_ORACLE_ADDR,
+      UNISWAP_ROUTER_ADDR,
       users[0].address
     );
     debtToken = await DebtToken.deploy(
@@ -172,6 +177,26 @@ describe("Fuji", () => {
       const balance = await debtToken.balanceOf(users[3].address);
       console.log(balance.toString());
       expect(balance).to.gt(daiAmount.mul(2));
+    });
+
+    it("User 4 deposits 1 ETH, borrows 1200 DAI and self-liquidates", async () => {
+      await vault.connect(users[4]).deposit(ONE_ETH, { value: ONE_ETH });
+
+      const daiAmount = await convertToCurrencyDecimals(DAI_ADDR, 1200);
+
+      await expect(() => vault.connect(users[4]).borrow(daiAmount))
+        .to.changeTokenBalance(dai, users[4], daiAmount);
+
+      expect(await debtToken.balanceOf(users[4].address)).to.equal(daiAmount);
+
+      const balanceBefore = await ethers.provider.getBalance(users[4].address);
+      await controller.connect(users[4]).initiateSelfLiquidation(vault.address);
+      const balanceAfter = await ethers.provider.getBalance(users[4].address);
+
+      expect(balanceAfter).to.gt(balanceBefore);
+
+      expect(await debtToken.balanceOf(users[4].address)).to.equal(0);
+
     });
 
   });

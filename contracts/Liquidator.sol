@@ -16,7 +16,7 @@ interface IFlashLoanReceiver {
   ) external returns (bool);
 }
 
-contract Flasher is IFlashLoanReceiver {
+contract Liquidator is IFlashLoanReceiver {
 
   using SafeMath for uint256;
 
@@ -36,9 +36,9 @@ contract Flasher is IFlashLoanReceiver {
     initiator;
 
     //Decoding Parameters
-    // 1. vault's address on which we should call fujiSwitch
-    // 2. new provider's address which we pass on fujiSwitch
-    (address theVault, address newProvider) = abi.decode(params, (address,address));
+    // 1. vault's address on which we should call selfLiquidate
+    // 2. user's address
+    (address theVault, address userAddr) = abi.decode(params, (address,address));
 
     //approve vault to spend ERC20
     IERC20(assets[0]).approve(address(theVault), amounts[0]);
@@ -47,7 +47,7 @@ contract Flasher is IFlashLoanReceiver {
     uint amountOwing = amounts[0].add(premiums[0]);
 
     //call fujiSwitch
-    IVault(theVault).fujiSwitch(newProvider, amountOwing);
+    IVault(theVault).selfLiquidate(userAddr, amountOwing);
 
     //Approve aaveLP to spend to repay flashloan
     IERC20(assets[0]).approve(address(LENDING_POOL), amountOwing);

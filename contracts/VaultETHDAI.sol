@@ -3,18 +3,24 @@
 pragma solidity >=0.4.25 <0.7.0;
 
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import { DebtToken } from "./DebtToken.sol";
 import "./LibUniERC20.sol";
 import "./IProvider.sol";
+
+import "hardhat/console.sol";
 
 interface IVault {
   function activeProvider() external view returns(address);
   function borrowAsset() external view returns(address);
   function borrowBalance() external returns(uint256);
+  function debtToken() external view returns(DebtToken);
   function collateralAsset() external view returns(address);
   function fujiSwitch(address _newProvider, uint256 _flashLoanDebt) external payable;
+  function selfLiquidate(address _userAddr, uint256 _flashLoanDebt) external payable;
   function getProviders() external view returns(address[] memory);
   function setActiveProvider(address _provider) external;
+  function updateDebtTokenBalances() external;
 }
 
 interface IController {
@@ -27,6 +33,7 @@ contract VaultETHDAI is IVault {
   using UniERC20 for IERC20;
 
   AggregatorV3Interface public oracle;
+  IUniswapV2Router02 public uniswap;
 
   //Base Struct Object to define Safety factor
   //a divided by b represent the factor example 1.2, or +20%, is (a/b)= 6/5
@@ -53,9 +60,9 @@ contract VaultETHDAI is IVault {
   address public override collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
   address public override borrowAsset = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
 
-  DebtToken debtToken;
+  DebtToken public override debtToken;
 
-  	// Log Users deposit
+  // Log Users deposit
 	event Deposit(address userAddrs, uint256 amount);
 	// Log Users borrow
 	event Borrow(address userAddrs, uint256 amount);
@@ -67,6 +74,8 @@ contract VaultETHDAI is IVault {
 	event SetActiveProvider(address providerAddr);
 	// Log Switch providers
 	event Switch(address fromProviderAddrs, address toProviderAddr);
+	// Log SelfLiquidation
+	event SelfLiquidate(address userAddr, uint256 amount);
 
 
   mapping(address => uint256) public collaterals;
@@ -82,11 +91,13 @@ contract VaultETHDAI is IVault {
   constructor(
     address _controller,
     address _oracle,
+    address _uniswap,
     address _owner
   ) public {
 
     controller = _controller;
     oracle = AggregatorV3Interface(_oracle);
+    uniswap = IUniswapV2Router02(_uniswap);
     owner = _owner;
 
     // + 5%
@@ -202,7 +213,7 @@ contract VaultETHDAI is IVault {
 
     require(providedCollateral > neededCollateral, "Not enough collateral provided");
 
-    debtToken.updateState(borrowBalance());
+    updateDebtTokenBalances();
 
     bytes memory data = abi.encodeWithSignature(
       "borrow(address,uint256)",
@@ -234,7 +245,7 @@ contract VaultETHDAI is IVault {
       "Not enough allowance"
     );
 
-    debtToken.updateState(borrowBalance());
+    updateDebtTokenBalances();
 
     IERC20(borrowAsset).transferFrom(msg.sender, address(this), _repayAmount);
 
@@ -260,6 +271,7 @@ contract VaultETHDAI is IVault {
   * Emits a {Switch} event.
   */
   function fujiSwitch(address _newProvider, uint256 _flashLoanDebt) public override payable {
+    // TODO make callable only from Flasher
     uint256 borrowBalance = borrowBalance();
 
     require(
@@ -301,12 +313,74 @@ contract VaultETHDAI is IVault {
     );
     execute(address(_newProvider), data);
 
-    debtToken.updateState(_flashLoanDebt);
+    updateDebtTokenBalances();
 
     // return borrowed amount to Flasher
     IERC20(borrowAsset).uniTransfer(msg.sender, _flashLoanDebt);
 
     emit Switch(activeProvider, _newProvider);
+  }
+
+  /**
+  * @dev Liquidate a single open debt position by using a flashloan
+  * @param _userAddr user addr to be liquidated
+  * @param _flashLoanDebt amount of flashloan underlying to repay Flashloan
+  * Emits a {SelfLiquidate} event.
+  */
+  function selfLiquidate(address _userAddr, uint256 _flashLoanDebt) external override payable {
+    // TODO make callable only from Liquidator
+    uint256 userCollateral = collaterals[_userAddr];
+    uint256 userDebtBalance = debtToken.balanceOf(_userAddr);
+
+    collaterals[_userAddr] = 0;
+    debtToken.burn(
+      _userAddr,
+      userDebtBalance
+    );
+
+    require(
+      IERC20(borrowAsset).allowance(msg.sender, address(this)) >= userDebtBalance,
+      "Not enough allowance"
+    );
+
+    IERC20(borrowAsset).transferFrom(msg.sender, address(this), userDebtBalance);
+
+    // payback current provider
+    bytes memory data = abi.encodeWithSignature(
+      "payback(address,uint256)",
+      borrowAsset,
+      userDebtBalance
+    );
+    execute(address(activeProvider), data);
+
+    // withdraw collateral from current provider
+    data = abi.encodeWithSignature(
+      "withdraw(address,uint256)",
+      collateralAsset,
+      userCollateral
+    );
+    execute(address(activeProvider), data);
+
+    // swap withdrawn ETH for DAI on uniswap
+    address[] memory path = new address[](2);
+    path[0] = uniswap.WETH();
+    path[1] = borrowAsset;
+    uint[] memory uniswapAmounts = uniswap.swapETHForExactTokens{ value: userCollateral }(
+      _flashLoanDebt,
+      path,
+      address(this),
+      block.timestamp
+    );
+
+    // return borrowed amount to Liquidator
+    IERC20(borrowAsset).uniTransfer(msg.sender, _flashLoanDebt);
+
+    // cast user addr to payable
+    address payable addr = address(uint160(_userAddr));
+    // transfer left ETH amount to user
+    IERC20(collateralAsset).uniTransfer(addr, userCollateral.sub(uniswapAmounts[0]));
+
+    emit SelfLiquidate(_userAddr, userDebtBalance);
   }
 
   //Administrative functions
@@ -414,6 +488,10 @@ contract VaultETHDAI is IVault {
   */
   function getProviders() external view override returns(address[] memory) {
     return providers;
+  }
+
+  function updateDebtTokenBalances() override public {
+    debtToken.updateState(borrowBalance());
   }
 
   //Internal functions

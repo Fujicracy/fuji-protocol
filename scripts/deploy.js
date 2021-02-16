@@ -26,18 +26,21 @@ const main = async () => {
     ////0xF0d0EB522cfa50B716B3b1604C4F0fA6f04376AD, //cDAI
   //]);
   const flasher = await deploy("Flasher");
+  const liquidator = await deploy("Liquidator");
   const aave = await deploy("ProviderAave");
   const compound = await deploy("ProviderCompound");
 
   const controller = await deploy("Controller", [
     deployerAddress, //First Wallet address from forked network is the owner
     flasher.address, //flasher
+    liquidator.address, //liquidator
     "10000000000000000000000000" //changeThreshold percentagedecimal to ray (0.02 x 10^27)
   ]);
 
   const vault = await deploy("VaultETHDAI", [
     controller.address,
-    "0x773616E4d11A78F511299002da57A0a94577F1f4",
+    "0x773616E4d11A78F511299002da57A0a94577F1f4", // oracle
+    "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", // uniswap
     deployerAddress
   ]);
   const debtToken = await deploy("DebtToken", [

@@ -55,38 +55,66 @@ contract Controller {
 
   /**
   * @dev Adds a Vault to the controller.
-  * @param _vault: fuji address of a vault contract
+  * @param _vaultAddr: fuji address of a vault contract
   */
-  function addVault(address _vault) public isAuthorized {
-    bool alreadyincluded = false;
+  function addVault(
+    address _vaultAddr
+  ) external isAuthorized {
+    bool alreadyIncluded = false;
 
     //Check if Vault is already included
     for(uint i =0; i < vaults.length; i++ ){
-      if(vaults[i] == _vault){
-        alreadyincluded = true;
+      if(vaults[i] == _vaultAddr){
+        alreadyIncluded = true;
       }
     }
-    require(alreadyincluded== false, "Vault is already included in Controller");
+    require(alreadyIncluded == false, "Vault is already included in Controller");
 
     //Loop to check if vault address is already there
-    vaults.push(_vault);
+    vaults.push(_vaultAddr);
   }
 
   /**
   * @dev Changes the conditional Threshold for a provider switch
-  * @param newThreshold: percent decimal in ray (example 25% =.25 x10^27)
+  * @param _newThreshold: percent decimal in ray (example 25% =.25 x10^27)
   */
-  function setChangeThreshold(uint256 newThreshold) public isAuthorized {
-    changeThreshold = newThreshold;
+  function setChangeThreshold(
+    uint256 _newThreshold
+  ) external isAuthorized {
+    changeThreshold = _newThreshold;
   }
 
   /**
   * @dev Changes the flasher contract address
-  * @param newflasher: percent decimal in ray (example 25% =.25 x10^27)
+  * @param _newFlasher: address of new flasher contract
   */
-  function setflasher(address newflasher) public isAuthorized {
-    //Check if vault is already adde
-    flasherAddr = newflasher;
+  function setFlasher(
+    address _newFlasher
+  ) external isAuthorized {
+    flasherAddr = _newFlasher;
+  }
+
+  /**
+  * @dev Changes the liquidator contract address
+  * @param _newLiquidator: address of new liquidator contract
+  */
+  function setLiquidator(
+    address _newLiquidator
+  ) external isAuthorized {
+    liquidatorAddr = _newLiquidator;
+  }
+
+  /**
+  * @dev Sets a new provider to called Vault, returns true on success
+  * @param _vaultAddr: fuji Vault address to which active provider will change
+  * @param _newProviderAddr: fuji address of new Provider
+  */
+  function setProvider(
+    address _vaultAddr,
+    address _newProviderAddr
+  ) internal isAuthorized returns(bool) {
+    //Create vault instance and call setActiveProvider method in that vault.
+    IVault(_vaultAddr).setActiveProvider(_newProviderAddr);
   }
 
   //Controller Core functions
@@ -96,29 +124,26 @@ contract Controller {
     various providers of a Vault, it swap the assets to the best provider,
     and sets a new active provider for the called Vault, returns true on
     success
-  * @param _vault: fuji Vault address
+  * @param _vaultAddr: fuji Vault address
   */
-  function doControllerRoutine(address _vault) public returns(bool) {
+  function doControllerRoutine(
+    address _vaultAddr
+  ) public returns(bool) {
 
     //Check if there is an opportunity to Change provider with a lower borrowing Rate
-    (bool opportunityTochange, address newProvider) = checkRates(_vault);
+    (bool opportunityTochange, address newProvider) = checkRates(_vaultAddr);
 
     if (opportunityTochange) {
       //Check how much borrowed balance along with accrued interest at current Provider
-      uint256 debtposition = IVault(_vault).borrowBalance();
 
-      if (debtposition > 0) {
         //Initiate Flash Loan
-        initiateFlashLoan(
-          address(_vault),
-          address(newProvider),
-          IVault(_vault).borrowAsset(),
-          debtposition
+        _initiateFlashLoan(
+          address(_vaultAddr),
+          address(newProvider)
         );
-      }
 
       //Set the new provider in the Vault
-      setProvider(_vault, address(newProvider));
+      setProvider(_vaultAddr, address(newProvider));
       return true;
     }
     else {
@@ -129,16 +154,18 @@ contract Controller {
   /**
   * @dev Compares borrowing Rates from providers of a Vault, returns
     true on success and fuji address of the provider with best borrowing rate
-  * @param _vault: fuji Vault address
+  * @param _vaultAddr: fuji Vault address
   */
-  function checkRates(address _vault) public view returns(bool, address) {
-    //Get the array of Providers from _vault
-    address[] memory arrayOfProviders = IVault(_vault).getProviders();
-    address borrowingAsset = IVault(_vault).borrowAsset();
+  function checkRates(
+    address _vaultAddr
+  ) public view returns(bool, address) {
+    //Get the array of Providers from _vaultAddr
+    address[] memory arrayOfProviders = IVault(_vaultAddr).getProviders();
+    address borrowingAsset = IVault(_vaultAddr).borrowAsset();
     bool opportunityTochange = false;
 
-    //Call and check borrow rates for all Providers in array for _vault
-    uint256 currentRate = IProvider(IVault(_vault).activeProvider()).getBorrowRateFor(borrowingAsset);
+    //Call and check borrow rates for all Providers in array for _vaultAddr
+    uint256 currentRate = IProvider(IVault(_vaultAddr).activeProvider()).getBorrowRateFor(borrowingAsset);
     uint256 differance;
     address newProvider;
 
@@ -156,84 +183,55 @@ contract Controller {
     return (opportunityTochange, newProvider);
   }
 
-  /**
-  * @dev Sets a new provider to called Vault, returns true on success
-  * @param _vault: fuji Vault address to which active provider will change
-  * @param _newProviderAddr: fuji address of new Provider
-  */
-  function setProvider(address _vault, address _newProviderAddr) internal returns(bool) {
-    //Create vault instance and call setActiveProvider method in that vault.
-    IVault(_vault).setActiveProvider(_newProviderAddr);
-  }
-
-  /**
-  * @dev Aave Flashloan call, Refer to Aave Flashloan documentation.
-  */
-  function initiateFlashLoan(
-    address _vaultAddr,
-    address _newProviderAddr,
-    address _borrowAsset,
-    uint256 _amount
-  ) internal isAuthorized {
-     //Initialize Instance of Aave Lending Pool
-     ILendingPool aaveLp = ILendingPool(LENDING_POOL);
-
-     //Passing arguments to construct Aave flashloan -limited to 1 asset type for now.
-     address receiverAddress = flasherAddr;
-     address[] memory assets = new address[](1);
-     assets[0] = address(_borrowAsset);
-     uint256[] memory amounts = new uint256[](1);
-     amounts[0] = _amount;
-
-     // 0 = no debt, 1 = stable, 2 = variable
-     uint256[] memory modes = new uint256[](1);
-     modes[0] = 0;
-
-     address onBehalfOf = address(this);
-     bytes memory params = abi.encode(_vaultAddr, _newProviderAddr);
-     uint16 referralCode = 0;
-
-    //Aave Flashloan initiated.
-    aaveLp.flashLoan(
-            receiverAddress,
-            assets,
-            amounts,
-            modes,
-            onBehalfOf,
-            params,
-            referralCode
-          );
-  }
-
   function initiateSelfLiquidation(
     address _vaultAddr
   ) external {
     IVault theVault = IVault(_vaultAddr);
     DebtToken debtToken = theVault.debtToken();
     theVault.updateDebtTokenBalances();
-    uint256 userDebtBalance = debtToken.balanceOf(msg.sender);
+    uint256 debtPosition = debtToken.balanceOf(msg.sender);
 
-    require(userDebtBalance > 0, "No debt to liquidate");
+    require(debtPosition > 0, "No debt to liquidate");
 
-    initiateLiquidationInternal(
+    _initiateAaveFlashLoan(
       _vaultAddr,
       msg.sender,
       theVault.borrowAsset(),
-      userDebtBalance
+      debtPosition,
+      liquidatorAddr
     );
   }
 
-  function initiateLiquidationInternal(
+  function _initiateFlashLoan(
     address _vaultAddr,
-    address _userAddr,
+    address _newProviderAddr
+  ) internal {
+    IVault theVault = IVault(_vaultAddr);
+    uint256 debtPosition = theVault.borrowBalance();
+
+    require(debtPosition > 0, "No debt to liquidate");
+
+    _initiateAaveFlashLoan(
+      _vaultAddr,
+      _newProviderAddr,
+      theVault.borrowAsset(),
+      debtPosition,
+      flasherAddr
+    );
+  }
+
+  function _initiateAaveFlashLoan(
+    address _vaultAddr,
+    address _otherAddr,
     address _borrowAsset,
-    uint256 _amount
+    uint256 _amount,
+    address _receiverAddr
   ) internal {
      //Initialize Instance of Aave Lending Pool
      ILendingPool aaveLp = ILendingPool(LENDING_POOL);
 
      //Passing arguments to construct Aave flashloan -limited to 1 asset type for now.
-     address receiverAddress = liquidatorAddr;
+     address receiverAddress = _receiverAddr;
      address[] memory assets = new address[](1);
      assets[0] = address(_borrowAsset);
      uint256[] memory amounts = new uint256[](1);
@@ -244,7 +242,7 @@ contract Controller {
      modes[0] = 0;
 
      address onBehalfOf = address(this);
-     bytes memory params = abi.encode(_vaultAddr, _userAddr);
+     bytes memory params = abi.encode(_vaultAddr, _otherAddr);
      uint16 referralCode = 0;
 
     //Aave Flashloan initiated.

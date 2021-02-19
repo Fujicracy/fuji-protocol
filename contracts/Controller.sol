@@ -3,7 +3,6 @@
 pragma solidity >=0.4.25 <0.7.0;
 pragma experimental ABIEncoderV2;
 
-import { DebtToken } from "./DebtToken.sol";
 import "./VaultETHDAI.sol";
 import "./flashloans/Flasher.sol";
 
@@ -163,28 +162,5 @@ contract Controller {
     }
     //Returns success or not, and the Iprovider with lower borrow rate
     return (opportunityTochange, newProvider);
-  }
-
-  /**
-  * @dev Initiates a flashloan used to repay a debt position of msg.sender
-  * @param _vaultAddr: Vault address where msg.sender has a debt position
-  */
-  function initiateSelfLiquidation(
-    address _vaultAddr
-  ) external {
-    IVault vault = IVault(_vaultAddr);
-    DebtToken debtToken = vault.debtToken();
-    vault.updateDebtTokenBalances();
-    uint256 debtPosition = debtToken.balanceOf(msg.sender);
-
-    require(debtPosition > 0, "No debt to liquidate");
-
-    Flasher(flasherAddr).initiateDyDxFlashLoan(
-      FlashLoan.CallType.SelfLiquidate,
-      _vaultAddr,
-      msg.sender,
-      vault.borrowAsset(),
-      debtPosition
-    );
   }
 }

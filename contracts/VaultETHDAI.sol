@@ -16,8 +16,8 @@ interface IVault {
   function borrowBalance() external returns(uint256);
   function debtToken() external view returns(DebtToken);
   function collateralAsset() external view returns(address);
-  function fujiSwitch(address _newProvider, uint256 _flashLoanDebt) external payable;
-  function selfLiquidate(address _userAddr, uint256 _flashLoanDebt) external payable;
+  function fujiSwitch(address _newProvider, uint256 _debtAmount) external payable;
+  function selfLiquidate(address _userAddr, uint256 _debtAmount) external payable;
   function getProviders() external view returns(address[] memory);
   function setActiveProvider(address _provider) external;
   function updateDebtTokenBalances() external;
@@ -271,7 +271,10 @@ contract VaultETHDAI is IVault {
   * @param _flashLoanDebt amount of flashloan underlying to repay Flashloan
   * Emits a {Switch} event.
   */
-  function fujiSwitch(address _newProvider, uint256 _flashLoanDebt) public override payable {
+  function fujiSwitch(
+    address _newProvider,
+    uint256 _flashLoanDebt
+  ) public override payable {
     // TODO make callable only from Flasher
     uint256 borrowBalance = borrowBalance();
 
@@ -325,11 +328,14 @@ contract VaultETHDAI is IVault {
   /**
   * @dev Liquidate a single open debt position by using a flashloan
   * @param _userAddr: user addr to be liquidated
-  * @param _flashLoanDebt: amount of flashloan underlying to repay Flashloan
+  * @param _debtAmount: amount of debt to be repaid
   * Emits a {SelfLiquidate} event.
   */
-  function selfLiquidate(address _userAddr, uint256 _flashLoanDebt) external override payable {
-    // TODO make callable only from Liquidator
+  function selfLiquidate(
+    address _userAddr,
+    uint256 _debtAmount
+  ) external override payable {
+    // TODO make callable only from Flasher
     uint256 userCollateral = collaterals[_userAddr];
     uint256 userDebtBalance = debtToken.balanceOf(_userAddr);
 
@@ -367,19 +373,22 @@ contract VaultETHDAI is IVault {
     path[0] = uniswap.WETH();
     path[1] = borrowAsset;
     uint[] memory uniswapAmounts = uniswap.swapETHForExactTokens{ value: userCollateral }(
-      _flashLoanDebt,
+      _debtAmount,
       path,
       address(this),
       block.timestamp
     );
 
-    // return borrowed amount to Liquidator
-    IERC20(borrowAsset).uniTransfer(msg.sender, _flashLoanDebt);
+    // return borrowed amount to Flasher
+    IERC20(borrowAsset).uniTransfer(msg.sender, _debtAmount);
 
     // cast user addr to payable
     address payable addr = address(uint160(_userAddr));
     // transfer left ETH amount to user
     IERC20(collateralAsset).uniTransfer(addr, userCollateral.sub(uniswapAmounts[0]));
+
+    // reduce collateralBalance
+    collateralBalance = collateralBalance.sub(userCollateral);
 
     emit SelfLiquidate(_userAddr, userDebtBalance);
   }
@@ -402,8 +411,8 @@ contract VaultETHDAI is IVault {
     bool alreadyIncluded = false;
 
     //Check if Provider is not already included
-    for(uint i =0; i < providers.length; i++ ){
-      if(providers[i] == _provider){
+    for (uint i = 0; i < providers.length; i++) {
+      if (providers[i] == _provider) {
         alreadyIncluded = true;
       }
     }

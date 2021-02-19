@@ -22,6 +22,7 @@ const timeTravel = async (seconds) => {
 
 describe("Fuji", () => {
   let controller;
+  let flasher;
   let vault;
   let aave;
   let compound;
@@ -65,7 +66,7 @@ describe("Fuji", () => {
     aweth = await ethers.getContractAt("IERC20", aWETH_ADDR);
     ceth = await ethers.getContractAt("CErc20", cETH_ADDR);
 
-    const flasher = await Flasher.deploy(deployerAddr);
+    flasher = await Flasher.deploy(deployerAddr);
     controller = await Controller.deploy(
       deployerAddr,
       flasher.address,
@@ -191,7 +192,7 @@ describe("Fuji", () => {
       expect(await debtToken.balanceOf(users[4].address)).to.equal(daiAmount);
 
       const balanceBefore = await ethers.provider.getBalance(users[4].address);
-      await controller.connect(users[4]).initiateSelfLiquidation(vault.address);
+      await flasher.connect(users[4]).initiateSelfLiquidation(vault.address);
       const balanceAfter = await ethers.provider.getBalance(users[4].address);
 
       expect(balanceAfter).to.gt(balanceBefore);

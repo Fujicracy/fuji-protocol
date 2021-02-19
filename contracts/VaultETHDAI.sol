@@ -113,7 +113,8 @@ contract VaultETHDAI is IVault {
 
   /**
   * @dev Deposits collateral and borrows underlying in a single function call from activeProvider
-  * @param _collateralAmount to be deposited, and _borrowAmount of underlying
+  * @param _collateralAmount: amount to be deposited
+  * @param _borrowAmount: amount to be borrowed
   */
   function depositAndBorrow(uint256 _collateralAmount, uint256 _borrowAmount) external payable {
     deposit(_collateralAmount);
@@ -323,8 +324,8 @@ contract VaultETHDAI is IVault {
 
   /**
   * @dev Liquidate a single open debt position by using a flashloan
-  * @param _userAddr user addr to be liquidated
-  * @param _flashLoanDebt amount of flashloan underlying to repay Flashloan
+  * @param _userAddr: user addr to be liquidated
+  * @param _flashLoanDebt: amount of flashloan underlying to repay Flashloan
   * Emits a {SelfLiquidate} event.
   */
   function selfLiquidate(address _userAddr, uint256 _flashLoanDebt) external override payable {

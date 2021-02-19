@@ -13,8 +13,32 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
 
   using SafeMath for uint256;
 
+  address controller;
+  address owner;
+
   address constant AAVE_LENDING_POOL = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
   address constant DYDX_SOLO_MARGIN = 0x1E0447b19BB6EcFdAe1e4AE1694b0C3659614e4e;
+
+  modifier isAuthorized() {
+    require(msg.sender == controller || msg.sender == owner, "!authorized");
+    _;
+  }
+
+  constructor(
+    address _owner
+  ) public {
+    owner = _owner;
+  }
+
+  /**
+  * @dev Sets new controller.
+  * @param _controller: Address of controller
+  */
+  function setController(
+    address _controller
+  ) external isAuthorized {
+    controller = _controller;
+  }
 
   // ===================== DyDx FlashLoan ===================================
 
@@ -38,7 +62,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
     address _otherAddr,
     address _borrowAsset,
     uint256 _amount
-  ) external {
+  ) external isAuthorized {
     ISoloMargin solo = ISoloMargin(DYDX_SOLO_MARGIN);
 
     // Get marketId from token address
@@ -129,7 +153,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
     address _otherAddr,
     address _borrowAsset,
     uint256 _amount
-  ) external {
+  ) external isAuthorized {
      //Initialize Instance of Aave Lending Pool
      ILendingPool aaveLp = ILendingPool(AAVE_LENDING_POOL);
 

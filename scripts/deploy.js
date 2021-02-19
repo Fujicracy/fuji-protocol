@@ -25,7 +25,7 @@ const main = async () => {
     ////Kovan mappings for Compound Protocol ctoken
     ////0xF0d0EB522cfa50B716B3b1604C4F0fA6f04376AD, //cDAI
   //]);
-  const flasher = await deploy("Flasher");
+  const flasher = await deploy("Flasher", [deployerAddress]);
   const aave = await deploy("ProviderAave");
   const compound = await deploy("ProviderCompound");
 
@@ -52,6 +52,7 @@ const main = async () => {
 
   //Set up the environment for testing Fuji contracts.
 
+  await flasher.setController(controller.address);
   await vault.addProvider(aave.address);
   await vault.addProvider(compound.address);
   await controller.addVault(vault.address);

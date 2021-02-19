@@ -26,14 +26,12 @@ const main = async () => {
     ////0xF0d0EB522cfa50B716B3b1604C4F0fA6f04376AD, //cDAI
   //]);
   const flasher = await deploy("Flasher");
-  const liquidator = await deploy("Liquidator");
   const aave = await deploy("ProviderAave");
   const compound = await deploy("ProviderCompound");
 
   const controller = await deploy("Controller", [
     deployerAddress, //First Wallet address from forked network is the owner
     flasher.address, //flasher
-    liquidator.address, //liquidator
     "10000000000000000000000000" //changeThreshold percentagedecimal to ray (0.02 x 10^27)
   ]);
 

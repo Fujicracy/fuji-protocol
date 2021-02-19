@@ -57,7 +57,6 @@ describe("Fuji", () => {
     const Compound = await ethers.getContractFactory("ProviderCompound");
     const DebtToken = await ethers.getContractFactory("DebtToken");
     const Flasher = await ethers.getContractFactory("Flasher");
-    const Liquidator = await ethers.getContractFactory("Liquidator");
     const Controller = await ethers.getContractFactory("Controller");
     
     dai = await ethers.getContractAt("IERC20", DAI_ADDR);
@@ -65,11 +64,9 @@ describe("Fuji", () => {
     ceth = await ethers.getContractAt("CErc20", cETH_ADDR);
 
     const flasher = await Flasher.deploy();
-    const liquidator = await Liquidator.deploy();
     controller = await Controller.deploy(
       users[0].address,
       flasher.address,
-      liquidator.address,
       "0" //changeThreshold percentagedecimal to ray (0.02 x 10^27)
     );
 

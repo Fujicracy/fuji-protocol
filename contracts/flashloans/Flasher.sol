@@ -18,6 +18,20 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
 
   // ===================== DyDx FlashLoan ===================================
 
+  /**
+  * @dev Initiates a DyDx flashloan.
+  * @param _callType: Used to determine which vault's function to call post-flashloan:
+  * - Switch for fujiSwitch(...)
+  * - SelfLiquidate for selfLiquidate(...)
+  * - Liquidate for liquidate(...)
+  * @param _vaultAddr: Vault's address on which the flashloan logic to be executed
+  * @param _otherAddr: An address to be passed on vault's function post-flashloan.
+  * - Switch - address of new provider 
+  * - SelfLiquidate - user's address
+  * - Liquidate - user's address
+  * @param _borrowAsset: Address of asset to be borrowed with flashloan
+  * @param _amount: Amount of asset to be borrowed with flashloan
+  */
   function initiateDyDxFlashLoan(
     FlashLoan.CallType _callType,
     address _vaultAddr,
@@ -56,7 +70,9 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
 
   /**
   * @dev Executes DyDx Flashloan, this operation is required
-  * and called by Solo post-loan
+  * and called by Solo when sending loaned amount
+  * @param sender: Not used
+  * @param account: Not used
   */
   function callFunction(
     address sender,
@@ -93,6 +109,20 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
 
   // ===================== Aave FlashLoan ===================================
 
+  /**
+  * @dev Initiates a Aave flashloan.
+  * @param _callType: Used to determine which vault's function to call post-flashloan:
+  * - Switch for fujiSwitch(...)
+  * - SelfLiquidate for selfLiquidate(...)
+  * - Liquidate for liquidate(...)
+  * @param _vaultAddr: Vault's address on which the flashloan logic to be executed
+  * @param _otherAddr: An address to be passed on vault's function post-flashloan.
+  * - Switch - address of new provider 
+  * - SelfLiquidate - user's address
+  * - Liquidate - user's address
+  * @param _borrowAsset: Address of asset to be borrowed with flashloan
+  * @param _amount: Amount of asset to be borrowed with flashloan
+  */
   function initiateAaveFlashLoan(
     FlashLoan.CallType _callType,
     address _vaultAddr,
@@ -131,8 +161,8 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
   }
 
   /**
-  * @dev Executes Aave Flashloan, this Operation is required and called by
-    Aaveflashloan, refer to Aave Flashloan Documentation
+  * @dev Executes Aave Flashloan, this operation is required
+  * and called by Aaveflashloan when sending loaned amount
   */
   function executeOperation(
     address[] calldata assets,
@@ -143,13 +173,19 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
   ) external override returns (bool) {
     initiator;
 
-    //Decoding Parameters
-    // 1. vault's address on which we should call fujiSwitch
-    // 2. new provider's address which we pass on fujiSwitch
+    // 1. callType: Used to determine which vault's function to call post-flashloan:
+    // - Switch for fujiSwitch(...)
+    // - SelfLiquidate for selfLiquidate(...)
+    // - Liquidate for liquidate(...)
+    // 2. vault: Vault's address on which the flashloan logic to be executed
+    // 3. otherAddr: An address to be passed on vault's function post-flashloan.
+    // - Switch - address of new provider 
+    // - SelfLiquidate - user's address
+    // - Liquidate - user's address
     (
       FlashLoan.CallType callType,
       address vault,
-      address userAddr
+      address otherAddr
     ) = abi.decode(params, (FlashLoan.CallType,address,address));
 
     //approve vault to spend ERC20
@@ -160,11 +196,11 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
 
     if (callType == FlashLoan.CallType.Switch) {
       //call fujiSwitch
-      IVault(vault).fujiSwitch(userAddr, amountOwing);
+      IVault(vault).fujiSwitch(otherAddr, amountOwing);
     }
     else if (callType == FlashLoan.CallType.SelfLiquidate) {
       //call selfLiquidate
-      IVault(vault).selfLiquidate(userAddr, amountOwing);
+      IVault(vault).selfLiquidate(otherAddr, amountOwing);
     }
     else {
       revert("Not implemented callType!");

@@ -265,8 +265,8 @@ contract VaultETHDAI is IVault {
   }
 
   /**
-  * @dev Changes Vault debt and collateral to a newProvider, called by Controller
-  * @param _newProvider new provider fuji address
+  * @dev Changes Vault debt and collateral to newProvider, called by Flasher
+  * @param _newProvider new provider's address
   * @param _flashLoanDebt amount of flashloan underlying to repay Flashloan
   * Emits a {Switch} event.
   */

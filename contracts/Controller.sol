@@ -19,7 +19,6 @@ contract Controller {
   address[] public vaults;
 
   //Modifiers
-
   modifier isAuthorized() {
     require(msg.sender == owner || msg.sender == address(this), "!authorized");
     _;
@@ -96,10 +95,10 @@ contract Controller {
 
   /**
   * @dev Performs full routine to check the borrowing Rates from the
-    various providers of a Vault, it swap the assets to the best provider,
-    and sets a new active provider for the called Vault, returns true on
-    success
+  * various providers of a Vault, it swap the assets to the best provider,
+  * and sets a new active provider for the called Vault
   * @param _vaultAddr: fuji Vault address
+  * @return true if provider got switched
   */
   function doControllerRoutine(
     address _vaultAddr
@@ -136,7 +135,7 @@ contract Controller {
 
   /**
   * @dev Compares borrowing Rates from providers of a Vault, returns
-    true on success and fuji address of the provider with best borrowing rate
+  * true on success and fuji address of the provider with best borrowing rate
   * @param _vaultAddr: fuji Vault address
   */
   function checkRates(
@@ -166,6 +165,10 @@ contract Controller {
     return (opportunityTochange, newProvider);
   }
 
+  /**
+  * @dev Initiates a flashloan used to repay a debt position of msg.sender
+  * @param _vaultAddr: Vault address where msg.sender has a debt position
+  */
   function initiateSelfLiquidation(
     address _vaultAddr
   ) external {

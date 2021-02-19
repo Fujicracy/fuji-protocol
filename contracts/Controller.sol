@@ -39,7 +39,7 @@ contract Controller {
 
   /**
   * @dev Adds a Vault to the controller.
-  * @param _vaultAddr: fuji address of a vault contract
+  * @param _vaultAddr: Address of vault to be added
   */
   function addVault(
     address _vaultAddr
@@ -98,7 +98,7 @@ contract Controller {
   * various providers of a Vault, it swap the assets to the best provider,
   * and sets a new active provider for the called Vault
   * @param _vaultAddr: fuji Vault address
-  * @return true if provider got switched
+  * @return true if provider got switched, false if no change
   */
   function doControllerRoutine(
     address _vaultAddr
@@ -134,9 +134,9 @@ contract Controller {
   }
 
   /**
-  * @dev Compares borrowing Rates from providers of a Vault, returns
-  * true on success and fuji address of the provider with best borrowing rate
-  * @param _vaultAddr: fuji Vault address
+  * @dev Compares borrowing rates from providers of a vault
+  * @param _vaultAddr: Fuji vault address
+  * @return true on success and address of provider with best borrowing rate
   */
   function checkRates(
     address _vaultAddr

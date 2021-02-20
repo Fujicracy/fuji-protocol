@@ -121,7 +121,7 @@ contract Controller {
         FlashLoan.CallType.Switch,
         _vaultAddr,
         newProvider,
-        vault.borrowAsset(),
+        vault.getBorrowAsset(),
         debtPosition
       );
 
@@ -144,7 +144,7 @@ contract Controller {
   ) public view returns(bool, address) {
     //Get the array of Providers from _vaultAddr
     address[] memory arrayOfProviders = IVault(_vaultAddr).getProviders();
-    address borrowingAsset = IVault(_vaultAddr).borrowAsset();
+    address borrowingAsset = IVault(_vaultAddr).getBorrowAsset();
     bool opportunityTochange = false;
 
     //Call and check borrow rates for all Providers in array for _vaultAddr

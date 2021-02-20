@@ -70,7 +70,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
       FlashLoan.CallType.SelfLiquidate,
       _vaultAddr,
       msg.sender,
-      vault.borrowAsset(),
+      vault.getBorrowAsset(),
       debtPosition
     );
   }

@@ -40,28 +40,13 @@ contract VaultETHDAI is IVault, VaultBase {
   Factor public collatF;
   uint256 internal constant BASE = 1e18;
 
-  address public controller;
-  address private owner;
-
   //State variables to control vault providers
   address[] public providers;
   address public override activeProvider;
 
-  //Managed assets in this Vault
-  address public override collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
-  address public override borrowAsset = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
-
   DebtToken public override debtToken;
 
   mapping(address => uint256) public collaterals;
-
-  //Balance of all available collateral in ETH
-  uint256 public collateralBalance;
-
-  modifier isAuthorized() {
-    require(msg.sender == controller || msg.sender == address(this) || msg.sender == owner, "!authorized");
-    _;
-  }
 
   constructor(
     address _controller,
@@ -82,6 +67,9 @@ contract VaultETHDAI is IVault, VaultBase {
     // 125%
     collatF.a = 5;
     collatF.b = 4;
+
+    collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
+    borrowAsset = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
   }
 
   //Core functions
@@ -403,6 +391,29 @@ contract VaultETHDAI is IVault, VaultBase {
   }
 
   /**
+  * @dev Returns an array of the Vault's providers
+  */
+  function getProviders() external view override returns(address[] memory) {
+    return providers;
+  }
+
+  /**
+  * @dev Getter for vault's collateral asset address.
+  * @return collateral asset address
+  */
+  function getCollateralAsset() external view override returns(address) {
+    return address(collateralAsset);
+  }
+
+  /**
+  * @dev Getter for vault's borrow asset address.
+  * @return borrow asset address
+  */
+  function getBorrowAsset() external view override returns(address) {
+    return address(borrowAsset);
+  }
+
+  /**
   * @dev Returns the amount of collateral needed, including safety factors
   * @param _amount: Vault underlying type intended to be borrowed
   */
@@ -466,13 +477,6 @@ contract VaultETHDAI is IVault, VaultBase {
   */
   function borrowBalance() public override returns(uint256) {
     return IProvider(activeProvider).getBorrowBalance(borrowAsset);
-  }
-
-  /**
-  * @dev Returns an array of the Vault's providers
-  */
-  function getProviders() external view override returns(address[] memory) {
-    return providers;
   }
 
   function updateDebtTokenBalances() override public {

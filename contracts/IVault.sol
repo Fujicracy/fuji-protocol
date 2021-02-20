@@ -21,9 +21,10 @@ interface IVault {
 	// Log SelfLiquidation
 	event SelfLiquidate(address userAddr, uint256 amount);
 
+  function getCollateralAsset() external view returns(address);
+  function getBorrowAsset() external view returns(address);
+
   function activeProvider() external view returns(address);
-  function collateralAsset() external view returns(address);
-  function borrowAsset() external view returns(address);
   function borrowBalance() external returns(uint256);
   function debtToken() external view returns(DebtToken);
 

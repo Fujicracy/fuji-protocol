@@ -11,6 +11,21 @@ abstract contract VaultBase {
   using SafeMath for uint256;
   using UniERC20 for IERC20;
 
+  //Managed assets in this Vault
+  address public collateralAsset;
+  address public borrowAsset;
+
+  address public controller;
+  address public owner;
+
+  //Balance of all available collateral in ETH
+  uint256 public collateralBalance;
+
+  modifier isAuthorized() {
+    require(msg.sender == controller || msg.sender == address(this) || msg.sender == owner, "!authorized");
+    _;
+  }
+
   //Internal functions
 
   /**

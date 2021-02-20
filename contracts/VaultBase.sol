@@ -29,6 +29,74 @@ abstract contract VaultBase {
   //Internal functions
 
   /**
+  * @dev Executes deposit operation with delegatecall.
+  * @param _amount: amount to be deposited
+  * @param _provider: address of provider to be used
+  */
+  function _deposit(
+    uint256 _amount,
+    address _provider
+  ) internal {
+    bytes memory data = abi.encodeWithSignature(
+      "deposit(address,uint256)",
+      collateralAsset,
+      _amount
+    );
+    _execute(_provider, data);
+  }
+
+  /**
+  * @dev Executes withdraw operation with delegatecall.
+  * @param _amount: amount to be withdrawn
+  * @param _provider: address of provider to be used
+  */
+  function _withdraw(
+    uint256 _amount,
+    address _provider
+  ) internal {
+    bytes memory data = abi.encodeWithSignature(
+      "withdraw(address,uint256)",
+      collateralAsset,
+      _amount
+    );
+    _execute(_provider, data);
+  }
+
+  /**
+  * @dev Executes borrow operation with delegatecall.
+  * @param _amount: amount to be borrowed
+  * @param _provider: address of provider to be used
+  */
+  function _borrow(
+    uint256 _amount,
+    address _provider
+  ) internal {
+    bytes memory data = abi.encodeWithSignature(
+      "borrow(address,uint256)",
+      borrowAsset,
+      _amount
+    );
+    _execute(_provider, data);
+  }
+
+  /**
+  * @dev Executes payback operation with delegatecall.
+  * @param _amount: amount to be paid back
+  * @param _provider: address of provider to be used
+  */
+  function _payback(
+    uint256 _amount,
+    address _provider
+  ) internal {
+    bytes memory data = abi.encodeWithSignature(
+      "payback(address,uint256)",
+      borrowAsset,
+      _amount
+    );
+    _execute(_provider, data);
+  }
+
+  /**
   * @dev Returns byte response of delegatcalls
   */
   function _execute(

@@ -54,11 +54,13 @@ contract VaultETHDAI is IVault, VaultBase {
     address _uniswap,
     address _owner
   ) public {
-
     controller = _controller;
     oracle = AggregatorV3Interface(_oracle);
     uniswap = IUniswapV2Router02(_uniswap);
     owner = _owner;
+
+    collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
+    borrowAsset = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
 
     // + 5%
     safetyF.a = 21;
@@ -67,9 +69,6 @@ contract VaultETHDAI is IVault, VaultBase {
     // 125%
     collatF.a = 5;
     collatF.b = 4;
-
-    collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
-    borrowAsset = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
   }
 
   //Core functions
@@ -98,12 +97,8 @@ contract VaultETHDAI is IVault, VaultBase {
 
     uint256 currentBalance = redeemableCollateralBalance();
 
-    bytes memory data = abi.encodeWithSignature(
-      "deposit(address,uint256)",
-      collateralAsset,
-      _collateralAmount
-    );
-    _execute(address(activeProvider), data);
+    // deposit to current provider
+    _deposit(_collateralAmount, address(activeProvider));
 
     uint256 newBalance = redeemableCollateralBalance();
 
@@ -146,12 +141,8 @@ contract VaultETHDAI is IVault, VaultBase {
     IERC20(collateralAsset).uniTransfer(msg.sender, _withdrawAmount);
     collateralBalance = collateralBalance.sub(_withdrawAmount);
 
-    bytes memory data = abi.encodeWithSignature(
-      "withdraw(address,uint256)",
-      collateralAsset,
-      _withdrawAmount
-    );
-    _execute(address(activeProvider), data);
+    // withdraw collateral from current provider
+    _withdraw(_withdrawAmount, address(activeProvider));
 
     emit Withdraw(msg.sender, _withdrawAmount);
 
@@ -179,12 +170,8 @@ contract VaultETHDAI is IVault, VaultBase {
 
     updateDebtTokenBalances();
 
-    bytes memory data = abi.encodeWithSignature(
-      "borrow(address,uint256)",
-      borrowAsset,
-      _borrowAmount
-    );
-    _execute(address(activeProvider), data);
+    // borrow from the current provider
+    _borrow(_borrowAmount, address(activeProvider));
 
     IERC20(borrowAsset).uniTransfer(msg.sender, _borrowAmount);
 
@@ -213,12 +200,8 @@ contract VaultETHDAI is IVault, VaultBase {
 
     IERC20(borrowAsset).transferFrom(msg.sender, address(this), _repayAmount);
 
-    bytes memory data = abi.encodeWithSignature(
-      "payback(address,uint256)",
-      borrowAsset,
-      _repayAmount
-    );
-    _execute(address(activeProvider), data);
+    // payback current provider
+    _payback(_repayAmount, address(activeProvider));
 
     debtToken.burn(
       msg.sender,
@@ -248,37 +231,17 @@ contract VaultETHDAI is IVault, VaultBase {
 
     IERC20(borrowAsset).transferFrom(msg.sender, address(this), borrowBalance);
 
-    // payback current provider
-    bytes memory data = abi.encodeWithSignature(
-      "payback(address,uint256)",
-      borrowAsset,
-      borrowBalance
-    );
-    _execute(address(activeProvider), data);
+    // 1. payback current provider
+    _payback(borrowBalance, address(activeProvider));
 
-    // withdraw collateral from current provider
-    data = abi.encodeWithSignature(
-      "withdraw(address,uint256)",
-      collateralAsset,
-      collateralBalance
-    );
-    _execute(address(activeProvider), data);
+    // 2. withdraw collateral from current provider
+    _withdraw(collateralBalance, address(activeProvider));
 
-    // deposit to the new provider
-    data = abi.encodeWithSignature(
-      "deposit(address,uint256)",
-      collateralAsset,
-      collateralBalance
-    );
-    _execute(address(_newProvider), data);
+    // 3. deposit to the new provider
+    _deposit(collateralBalance, address(_newProvider));
 
-    // borrow from the new provider, borrowBalance + premium = flashloandebt
-    data = abi.encodeWithSignature(
-      "borrow(address,uint256)",
-      borrowAsset,
-      _flashLoanDebt
-    );
-    _execute(address(_newProvider), data);
+    // 4. borrow from the new provider, borrowBalance + premium = flashloandebt
+    _borrow(_flashLoanDebt, address(_newProvider));
 
     updateDebtTokenBalances();
 
@@ -315,21 +278,11 @@ contract VaultETHDAI is IVault, VaultBase {
 
     IERC20(borrowAsset).transferFrom(msg.sender, address(this), userDebtBalance);
 
-    // payback current provider
-    bytes memory data = abi.encodeWithSignature(
-      "payback(address,uint256)",
-      borrowAsset,
-      userDebtBalance
-    );
-    _execute(address(activeProvider), data);
+    // 1. payback current provider
+    _payback(userDebtBalance, address(activeProvider));
 
-    // withdraw collateral from current provider
-    data = abi.encodeWithSignature(
-      "withdraw(address,uint256)",
-      collateralAsset,
-      userCollateral
-    );
-    _execute(address(activeProvider), data);
+    // 2. withdraw collateral from current provider
+    _withdraw(userCollateral, address(activeProvider));
 
     // swap withdrawn ETH for DAI on uniswap
     address[] memory path = new address[](2);

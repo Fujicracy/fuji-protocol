@@ -3,8 +3,10 @@
 pragma solidity >=0.4.25 <0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./LibUniERC20.sol";
-import "./IProvider.sol";
+import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
+import { UniERC20 } from "./LibUniERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IProvider } from "./IProvider.sol";
 
 interface TokenInterface {
   function approve(address, uint256) external;

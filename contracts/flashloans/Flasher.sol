@@ -3,11 +3,19 @@
 pragma solidity >=0.4.25 <0.7.5;
 pragma experimental ABIEncoderV2;
 
-import "./AaveFlashLoans.sol";
-import "./DyDxFlashLoans.sol";
-import "./LibFlashLoan.sol";
-import "../LibUniERC20.sol";
-import "../VaultETHDAI.sol";
+import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+import { ILendingPool, IFlashLoanReceiver } from "./AaveFlashLoans.sol";
+import {
+  Actions,
+  Account,
+  DyDxFlashloanBase,
+  ICallee,
+  ISoloMargin
+} from "./DyDxFlashLoans.sol";
+import { FlashLoan } from "./LibFlashLoan.sol";
+import { IVault } from "../IVault.sol";
 import { DebtToken } from "../DebtToken.sol";
 
 contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {

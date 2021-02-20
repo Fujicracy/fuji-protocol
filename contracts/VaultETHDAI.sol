@@ -2,35 +2,26 @@
 
 pragma solidity >=0.4.25 <0.7.0;
 
-import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
-import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import {
+  AggregatorV3Interface
+} from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+import {
+  IUniswapV2Router02
+} from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+
 import { DebtToken } from "./DebtToken.sol";
-import "./LibUniERC20.sol";
-import "./IProvider.sol";
+import { VaultBase } from "./VaultBase.sol";
+import { IVault } from "./IVault.sol";
+import { IProvider } from "./IProvider.sol";
 
 import "hardhat/console.sol";
-
-interface IVault {
-  function activeProvider() external view returns(address);
-  function borrowAsset() external view returns(address);
-  function borrowBalance() external returns(uint256);
-  function debtToken() external view returns(DebtToken);
-  function collateralAsset() external view returns(address);
-  function fujiSwitch(address _newProvider, uint256 _debtAmount) external payable;
-  function selfLiquidate(address _userAddr, uint256 _debtAmount) external payable;
-  function getProviders() external view returns(address[] memory);
-  function setActiveProvider(address _provider) external;
-  function updateDebtTokenBalances() external;
-}
 
 interface IController {
   function doControllerRoutine(address _vault) external returns(bool);
 }
 
-contract VaultETHDAI is IVault {
-
-  using SafeMath for uint256;
-  using UniERC20 for IERC20;
+contract VaultETHDAI is IVault, VaultBase {
 
   AggregatorV3Interface public oracle;
   IUniswapV2Router02 public uniswap;
@@ -61,22 +52,6 @@ contract VaultETHDAI is IVault {
   address public override borrowAsset = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
 
   DebtToken public override debtToken;
-
-  // Log Users deposit
-	event Deposit(address userAddrs, uint256 amount);
-	// Log Users borrow
-	event Borrow(address userAddrs, uint256 amount);
-	// Log Users debt repay
-	event Repay(address userAddrs, uint256 amount);
-	// Log Users withdraw
-	event Withdraw(address userAddrs, uint256 amount);
-	// Log New active provider
-	event SetActiveProvider(address providerAddr);
-	// Log Switch providers
-	event Switch(address fromProviderAddrs, address toProviderAddr);
-	// Log SelfLiquidation
-	event SelfLiquidate(address userAddr, uint256 amount);
-
 
   mapping(address => uint256) public collaterals;
 
@@ -140,7 +115,7 @@ contract VaultETHDAI is IVault {
       collateralAsset,
       _collateralAmount
     );
-    execute(address(activeProvider), data);
+    _execute(address(activeProvider), data);
 
     uint256 newBalance = redeemableCollateralBalance();
 
@@ -188,7 +163,7 @@ contract VaultETHDAI is IVault {
       collateralAsset,
       _withdrawAmount
     );
-    execute(address(activeProvider), data);
+    _execute(address(activeProvider), data);
 
     emit Withdraw(msg.sender, _withdrawAmount);
 
@@ -221,7 +196,7 @@ contract VaultETHDAI is IVault {
       borrowAsset,
       _borrowAmount
     );
-    execute(address(activeProvider), data);
+    _execute(address(activeProvider), data);
 
     IERC20(borrowAsset).uniTransfer(msg.sender, _borrowAmount);
 
@@ -255,7 +230,7 @@ contract VaultETHDAI is IVault {
       borrowAsset,
       _repayAmount
     );
-    execute(address(activeProvider), data);
+    _execute(address(activeProvider), data);
 
     debtToken.burn(
       msg.sender,
@@ -291,7 +266,7 @@ contract VaultETHDAI is IVault {
       borrowAsset,
       borrowBalance
     );
-    execute(address(activeProvider), data);
+    _execute(address(activeProvider), data);
 
     // withdraw collateral from current provider
     data = abi.encodeWithSignature(
@@ -299,7 +274,7 @@ contract VaultETHDAI is IVault {
       collateralAsset,
       collateralBalance
     );
-    execute(address(activeProvider), data);
+    _execute(address(activeProvider), data);
 
     // deposit to the new provider
     data = abi.encodeWithSignature(
@@ -307,7 +282,7 @@ contract VaultETHDAI is IVault {
       collateralAsset,
       collateralBalance
     );
-    execute(address(_newProvider), data);
+    _execute(address(_newProvider), data);
 
     // borrow from the new provider, borrowBalance + premium = flashloandebt
     data = abi.encodeWithSignature(
@@ -315,7 +290,7 @@ contract VaultETHDAI is IVault {
       borrowAsset,
       _flashLoanDebt
     );
-    execute(address(_newProvider), data);
+    _execute(address(_newProvider), data);
 
     updateDebtTokenBalances();
 
@@ -358,7 +333,7 @@ contract VaultETHDAI is IVault {
       borrowAsset,
       userDebtBalance
     );
-    execute(address(activeProvider), data);
+    _execute(address(activeProvider), data);
 
     // withdraw collateral from current provider
     data = abi.encodeWithSignature(
@@ -366,7 +341,7 @@ contract VaultETHDAI is IVault {
       collateralAsset,
       userCollateral
     );
-    execute(address(activeProvider), data);
+    _execute(address(activeProvider), data);
 
     // swap withdrawn ETH for DAI on uniswap
     address[] memory path = new address[](2);
@@ -502,32 +477,6 @@ contract VaultETHDAI is IVault {
 
   function updateDebtTokenBalances() override public {
     debtToken.updateState(borrowBalance());
-  }
-
-  //Internal functions
-
-  /**
-  * @dev Returns byte response of delegatcalls
-  */
-  function execute(
-    address _target,
-    bytes memory _data
-  ) internal returns (bytes memory response) {
-    assembly {
-      let succeeded := delegatecall(sub(gas(), 5000), _target, add(_data, 0x20), mload(_data), 0, 0)
-      let size := returndatasize()
-
-      response := mload(0x40)
-      mstore(0x40, add(response, and(add(add(size, 0x20), 0x1f), not(0x1f))))
-      mstore(response, size)
-      returndatacopy(add(response, 0x20), 0, size)
-
-      switch iszero(succeeded)
-      case 1 {
-        // throw if delegatecall failed
-        revert(add(response, 0x20), size)
-      }
-    }
   }
 
   receive() external payable {}

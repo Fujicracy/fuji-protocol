@@ -3,8 +3,10 @@
 pragma solidity >=0.4.25 <0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./VaultETHDAI.sol";
-import "./flashloans/Flasher.sol";
+import { IVault } from "./IVault.sol";
+import { IProvider } from "./IProvider.sol";
+import { Flasher } from "./flashloans/Flasher.sol";
+import { FlashLoan } from "./flashloans/LibFlashLoan.sol";
 
 contract Controller {
   address private owner;

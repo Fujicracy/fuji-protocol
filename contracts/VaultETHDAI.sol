@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.4.25 <0.7.0;
+pragma solidity >=0.4.25 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import {
@@ -55,13 +55,11 @@ contract VaultETHDAI is IVault, VaultBase {
   constructor(
     address _controller,
     address _oracle,
-    address _uniswap,
-    address _owner
+    address _uniswap
   ) public {
     controller = _controller;
     oracle = AggregatorV3Interface(_oracle);
     uniswap = IUniswapV2Router02(_uniswap);
-    owner = _owner;
 
     collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
     borrowAsset = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI

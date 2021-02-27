@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.4.25 <0.7.5;
+pragma solidity >=0.4.25 <0.8.0;
 pragma experimental ABIEncoderV2;
 
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -17,12 +18,16 @@ import {
 import { FlashLoan } from "./LibFlashLoan.sol";
 import { IVault } from "../IVault.sol";
 
-contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
+contract Flasher is
+  DyDxFlashloanBase,
+  IFlashLoanReceiver,
+  ICallee,
+  Ownable
+{
 
   using SafeMath for uint256;
 
   address controller;
-  address owner;
   mapping(address => bool) vaults;
 
   address constant AAVE_LENDING_POOL = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
@@ -31,7 +36,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
   modifier isAuthorized() {
 
     require(
-      msg.sender == controller || vaults[msg.sender] || msg.sender == owner,
+      msg.sender == controller || vaults[msg.sender] || msg.sender == owner(),
       "!authorized"
     );
     _;
@@ -43,10 +48,6 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
       "!authorized external"
     );
     _;
-  }
-
-  constructor(address _owner) public {
-    owner = _owner;
   }
 
   /**

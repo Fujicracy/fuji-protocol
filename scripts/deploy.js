@@ -13,8 +13,8 @@ const main = async () => {
   const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 
   const deployerWallet = ethers.provider.getSigner();
-  const deployerAddress = await deployerWallet.getAddress();
 
+  //const deployerAddress = await deployerWallet.getAddress();
   //const FujiMapping = await deploy("FujiMapping", [ //This contract has to be deployed first
     //deployerAddress,
     //"mainnet"
@@ -25,12 +25,11 @@ const main = async () => {
     ////Kovan mappings for Compound Protocol ctoken
     ////0xF0d0EB522cfa50B716B3b1604C4F0fA6f04376AD, //cDAI
   //]);
-  const flasher = await deploy("Flasher", [deployerAddress]);
+  const flasher = await deploy("Flasher");
   const aave = await deploy("ProviderAave");
   const compound = await deploy("ProviderCompound");
 
   const controller = await deploy("Controller", [
-    deployerAddress, //First Wallet address from forked network is the owner
     flasher.address, //flasher
     "10000000000000000000000000" //changeThreshold percentagedecimal to ray (0.02 x 10^27)
   ]);
@@ -39,7 +38,6 @@ const main = async () => {
     controller.address,
     "0x773616E4d11A78F511299002da57A0a94577F1f4", // oracle
     "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", // uniswap
-    deployerAddress
   ]);
   const debtToken = await deploy("DebtToken", [
     vault.address,

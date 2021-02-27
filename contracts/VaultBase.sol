@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.4.25 <0.7.0;
+pragma solidity >=0.4.25 <0.8.0;
 
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import { UniERC20 } from "./LibUniERC20.sol";
 
-abstract contract VaultBase {
+abstract contract VaultBase is Ownable {
 
   using SafeMath for uint256;
   using UniERC20 for IERC20;
@@ -16,13 +17,12 @@ abstract contract VaultBase {
   address public borrowAsset;
 
   address public controller;
-  address public owner;
 
   //Balance of all available collateral in ETH
   uint256 public collateralBalance;
 
   modifier isAuthorized() {
-    require(msg.sender == controller || msg.sender == address(this) || msg.sender == owner, "!authorized");
+    require(msg.sender == controller || msg.sender == address(this) || msg.sender == owner(), "!authorized");
     _;
   }
 

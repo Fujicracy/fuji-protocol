@@ -3,13 +3,13 @@
 pragma solidity >=0.4.25 <0.7.0;
 pragma experimental ABIEncoderV2;
 
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IVault } from "./IVault.sol";
 import { IProvider } from "./IProvider.sol";
 import { Flasher } from "./flashloans/Flasher.sol";
 import { FlashLoan } from "./flashloans/LibFlashLoan.sol";
 
-contract Controller {
-  address private owner;
+contract Controller is Ownable {
   address public flasherAddr;
 
   //Change Threshold is the minimum percent in Borrowing Rates to trigger a provider change
@@ -21,17 +21,15 @@ contract Controller {
 
   //Modifiers
   modifier isAuthorized() {
-    require(msg.sender == owner || msg.sender == address(this), "!authorized");
+    require(msg.sender == owner() || msg.sender == address(this), "!authorized");
     _;
   }
 
   constructor(
-    address _owner,
     address _flasher,
     uint256 _changeThreshold
   ) public {
     // Add initializer addresses
-    owner = _owner;
     flasherAddr = _flasher;
     changeThreshold = _changeThreshold;
   }

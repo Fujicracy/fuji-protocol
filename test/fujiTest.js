@@ -53,8 +53,6 @@ describe("Fuji", () => {
   const convertToWei = (amount) => ethers.utils.parseUnits(`${amount}`, 18);
 
   it("Should deploy contracts", async () => {
-    const deployerAddr = users[0].address;
-
     const VaultETHDAI = await ethers.getContractFactory("VaultETHDAI");
     const AAVE = await ethers.getContractFactory("ProviderAave");
     const Compound = await ethers.getContractFactory("ProviderCompound");
@@ -66,9 +64,8 @@ describe("Fuji", () => {
     aweth = await ethers.getContractAt("IERC20", aWETH_ADDR);
     ceth = await ethers.getContractAt("CErc20", cETH_ADDR);
 
-    flasher = await Flasher.deploy(deployerAddr);
+    flasher = await Flasher.deploy();
     controller = await Controller.deploy(
-      deployerAddr,
       flasher.address,
       "0" //changeThreshold percentagedecimal to ray (0.02 x 10^27)
     );
@@ -78,8 +75,7 @@ describe("Fuji", () => {
     vault = await VaultETHDAI.deploy(
       controller.address,
       CHAINLINK_ORACLE_ADDR,
-      UNISWAP_ROUTER_ADDR,
-      deployerAddr
+      UNISWAP_ROUTER_ADDR
     );
     debtToken = await DebtToken.deploy(
       vault.address,

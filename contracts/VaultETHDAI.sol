@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity >=0.4.25 <0.7.0;
+pragma experimental ABIEncoderV2;
 
 import {
   AggregatorV3Interface
@@ -14,12 +15,14 @@ import { DebtToken } from "./DebtToken.sol";
 import { VaultBase } from "./VaultBase.sol";
 import { IVault } from "./IVault.sol";
 import { IProvider } from "./IProvider.sol";
+import { Flasher } from "./flashloans/Flasher.sol";
+import { FlashLoan } from "./flashloans/LibFlashLoan.sol";
 
-import "hardhat/console.sol";
+//import "hardhat/console.sol";
 
-interface IController {
-  function doControllerRoutine(address _vault) external returns(bool);
-}
+//interface IController {
+  //function doControllerRoutine(address _vault) external returns(bool);
+//}
 
 contract VaultETHDAI is IVault, VaultBase {
 
@@ -44,6 +47,7 @@ contract VaultETHDAI is IVault, VaultBase {
   address[] public providers;
   address public override activeProvider;
 
+  Flasher flasher;
   DebtToken public override debtToken;
 
   mapping(address => uint256) public collaterals;
@@ -190,13 +194,15 @@ contract VaultETHDAI is IVault, VaultBase {
   * Emits a {Repay} event.
   */
   function payback(uint256 _repayAmount) public payable {
+    updateDebtTokenBalances();
+
+    uint256 userDebtBalance = debtToken.balanceOf(msg.sender);
+    require(userDebtBalance > 0, "No debt to repay");
 
     require(
       IERC20(borrowAsset).allowance(msg.sender, address(this)) >= _repayAmount,
       "Not enough allowance"
     );
-
-    updateDebtTokenBalances();
 
     IERC20(borrowAsset).transferFrom(msg.sender, address(this), _repayAmount);
 
@@ -212,15 +218,224 @@ contract VaultETHDAI is IVault, VaultBase {
   }
 
   /**
+  * @dev Liquidate an undercollaterized debt and get 5% bonus
+  * @param _userAddr: Address of user whose position is liquidatable
+  */
+  function liquidate(address _userAddr) external {
+    updateDebtTokenBalances();
+
+    uint256 userCollateral = collaterals[_userAddr];
+    uint256 userDebtBalance = debtToken.balanceOf(_userAddr);
+
+    // do checks user is liquidatable
+    uint256 neededCollateral = getNeededCollateralFor(userDebtBalance);
+    require(
+      userCollateral >= neededCollateral,
+      "Debt position is not liquidatable"
+    );
+
+    // transfer borrowAsset from liquidator to vault
+    require(
+      IERC20(borrowAsset).allowance(msg.sender, address(this)) >= userDebtBalance,
+      "Not enough allowance"
+    );
+    IERC20(borrowAsset).transferFrom(msg.sender, address(this), userDebtBalance);
+
+    // repay debt
+    _payback(userDebtBalance, address(activeProvider));
+
+    // withdraw collateral
+    _withdraw(userCollateral, address(activeProvider));
+
+    // get 5% of user debt
+    uint256 bonus = getLiquidationBonusFor(userDebtBalance, false);
+
+    // reduce collateralBalance
+    collateralBalance = collateralBalance.sub(userCollateral);
+    // update user collateral
+    collaterals[_userAddr] = 0;
+
+    // transfer 5% of debt position to liquidator
+    IERC20(collateralAsset).uniTransfer(msg.sender, bonus);
+    // cast user addr to payable
+    address payable user = address(uint160(_userAddr));
+    // transfer left collateral to user
+    uint256 leftover = userCollateral.sub(bonus);
+    IERC20(collateralAsset).uniTransfer(user, leftover);
+
+    // burn debt
+    debtToken.burn(
+      _userAddr,
+      userDebtBalance
+    );
+    emit Liquidate(_userAddr, msg.sender, userDebtBalance);
+  }
+
+  /**
+  * @dev Initiates a flashloan used to repay partially a debt position of msg.sender
+  * @param _amount: Amount to be repaid with a flashloan
+  */
+  function flashClosePartial(uint256 _amount) external {
+    updateDebtTokenBalances();
+
+    uint256 userDebtBalance = debtToken.balanceOf(msg.sender);
+    require(userDebtBalance > 0, "No debt to liquidate");
+    require(_amount <= userDebtBalance, "Debt is less than _amount");
+
+    FlashLoan.Info memory info = FlashLoan.Info({
+      callType: FlashLoan.CallType.Close,
+      asset: borrowAsset,
+      amount: _amount,
+      vault: address(this),
+      newProvider: address(0),
+      user: msg.sender,
+      liquidator: address(0)
+    });
+
+    flasher.initiateDyDxFlashLoan(info);
+  }
+
+  /**
+  * @dev Initiates a flashloan used to repay the total of msg.sender's debt position
+  */
+  function flashCloseTotal() external {
+    updateDebtTokenBalances();
+
+    uint256 userDebtBalance = debtToken.balanceOf(msg.sender);
+    require(userDebtBalance > 0, "No debt to liquidate");
+
+    FlashLoan.Info memory info = FlashLoan.Info({
+      callType: FlashLoan.CallType.Close,
+      asset: borrowAsset,
+      amount: userDebtBalance,
+      vault: address(this),
+      newProvider: address(0),
+      user: msg.sender,
+      liquidator: address(0)
+    });
+
+    flasher.initiateDyDxFlashLoan(info);
+  }
+
+  /**
+  * @dev Initiates a flashloan to liquidate an undercollaterized debt position,
+  * gets 4% bonus
+  * @param _userAddr: Address of user whose position is liquidatable
+  */
+  function flashLiquidate(address _userAddr) external {
+    updateDebtTokenBalances();
+
+    uint256 userCollateral = collaterals[_userAddr];
+    uint256 userDebtBalance = debtToken.balanceOf(_userAddr);
+
+    // do checks user is liquidatable
+    uint256 neededCollateral = getNeededCollateralFor(userDebtBalance);
+    require(
+      userCollateral >= neededCollateral,
+      "Debt position is not liquidatable"
+    );
+
+    FlashLoan.Info memory info = FlashLoan.Info({
+      callType: FlashLoan.CallType.Liquidate,
+      asset: borrowAsset,
+      amount: userDebtBalance,
+      vault: address(this),
+      newProvider: address(0),
+      user: _userAddr,
+      liquidator: msg.sender
+    });
+
+    flasher.initiateDyDxFlashLoan(info);
+  }
+
+  /**
+  * @dev Close user's debt position by using a flashloan
+  * @param _userAddr: user addr to be liquidated
+  * @param _debtAmount: amount of debt to be repaid
+  * Emits a {FlashClose} event.
+  */
+  function executeFlashClose(
+    address _userAddr,
+    uint256 _debtAmount
+  ) external override {
+    // TODO make callable only from Flasher
+    uint256 userCollateral = collaterals[_userAddr];
+    uint256 userDebtBalance = debtToken.balanceOf(_userAddr);
+
+    // reduce collateralBalance
+    collateralBalance = collateralBalance.sub(userCollateral);
+    // update user collateral
+    collaterals[_userAddr] = 0;
+
+    uint leftover = _repayAndSwap(userDebtBalance, userCollateral, _debtAmount);
+
+    // cast user addr to payable
+    address payable user = address(uint160(_userAddr));
+    // transfer left ETH amount to user
+    IERC20(collateralAsset).uniTransfer(user, userCollateral.sub(leftover));
+
+    // burn debt
+    debtToken.burn(
+      _userAddr,
+      userDebtBalance
+    );
+
+    emit FlashClose(_userAddr, userDebtBalance);
+  }
+
+  /**
+  * @dev Liquidate a debt position by using a flashloan
+  * @param _userAddr: user addr to be liquidated
+  * @param _liquidatorAddr: liquidator address
+  * @param _debtAmount: amount of debt to be repaid
+  * Emits a {FlashLiquidate} event.
+  */
+  function executeFlashLiquidation(
+    address _userAddr,
+    address _liquidatorAddr,
+    uint256 _debtAmount
+  ) external override {
+    // TODO make callable only from Flasher
+    uint256 userCollateral = collaterals[_userAddr];
+    uint256 userDebtBalance = debtToken.balanceOf(_userAddr);
+
+    // reduce collateralBalance
+    collateralBalance = collateralBalance.sub(userCollateral);
+    // update user collateral
+    collaterals[_userAddr] = 0;
+
+    uint256 leftover = _repayAndSwap(userDebtBalance, userCollateral, _debtAmount);
+
+    // get 4% of user debt
+    uint256 bonus = getLiquidationBonusFor(_debtAmount, true);
+    // cast user addr to payable
+    address payable liquidator = address(uint160(_liquidatorAddr));
+    // transfer 4% of debt position to liquidator
+    IERC20(collateralAsset).uniTransfer(liquidator, bonus);
+    // cast user addr to payable
+    address payable user = address(uint160(_userAddr));
+    // transfer left collateral to user deducted by bonus
+    IERC20(collateralAsset).uniTransfer(user, leftover.sub(bonus));
+
+    // burn debt
+    debtToken.burn(
+      _userAddr,
+      userDebtBalance
+    );
+
+    emit FlashLiquidate(_userAddr, _liquidatorAddr, userDebtBalance);
+  }
+
+  /**
   * @dev Changes Vault debt and collateral to newProvider, called by Flasher
   * @param _newProvider new provider's address
   * @param _flashLoanDebt amount of flashloan underlying to repay Flashloan
   * Emits a {Switch} event.
   */
-  function fujiSwitch(
+  function executeSwitch(
     address _newProvider,
     uint256 _flashLoanDebt
-  ) public override payable {
+  ) public override {
     // TODO make callable only from Flasher
     uint256 borrowBalance = borrowBalance();
 
@@ -251,44 +466,39 @@ contract VaultETHDAI is IVault, VaultBase {
     emit Switch(activeProvider, _newProvider);
   }
 
-  /**
-  * @dev Liquidate a single open debt position by using a flashloan
-  * @param _userAddr: user addr to be liquidated
-  * @param _debtAmount: amount of debt to be repaid
-  * Emits a {SelfLiquidate} event.
-  */
-  function selfLiquidate(
-    address _userAddr,
-    uint256 _debtAmount
-  ) external override payable {
-    // TODO make callable only from Flasher
-    uint256 userCollateral = collaterals[_userAddr];
-    uint256 userDebtBalance = debtToken.balanceOf(_userAddr);
+  //Internal functions
 
-    collaterals[_userAddr] = 0;
-    debtToken.burn(
-      _userAddr,
-      userDebtBalance
-    );
+  /**
+  * @dev Gets borrowAsset from flasher, repays a debt position,
+  * withdraws collateral, swaps it on Uniswap and repays flashloan
+  * @param _borrowAmount: Borrow amount of the position
+  * @param _collateralAmount: Collateral amount of the position
+  * @param _debtAmount: Amount of borrowAsset to be repaid to flasher
+  * @return leftover amount of collateral after swap
+  */
+  function _repayAndSwap(
+    uint256 _borrowAmount,
+    uint256 _collateralAmount,
+    uint256 _debtAmount
+  ) internal returns(uint) {
 
     require(
-      IERC20(borrowAsset).allowance(msg.sender, address(this)) >= userDebtBalance,
+      IERC20(borrowAsset).allowance(address(flasher), address(this)) >= _borrowAmount,
       "Not enough allowance"
     );
-
-    IERC20(borrowAsset).transferFrom(msg.sender, address(this), userDebtBalance);
+    IERC20(borrowAsset).transferFrom(address(flasher), address(this), _borrowAmount);
 
     // 1. payback current provider
-    _payback(userDebtBalance, address(activeProvider));
+    _payback(_borrowAmount, address(activeProvider));
 
     // 2. withdraw collateral from current provider
-    _withdraw(userCollateral, address(activeProvider));
+    _withdraw(_collateralAmount, address(activeProvider));
 
     // swap withdrawn ETH for DAI on uniswap
     address[] memory path = new address[](2);
     path[0] = uniswap.WETH();
     path[1] = borrowAsset;
-    uint[] memory uniswapAmounts = uniswap.swapETHForExactTokens{ value: userCollateral }(
+    uint[] memory uniswapAmounts = uniswap.swapETHForExactTokens{ value: _collateralAmount }(
       _debtAmount,
       path,
       address(this),
@@ -296,27 +506,27 @@ contract VaultETHDAI is IVault, VaultBase {
     );
 
     // return borrowed amount to Flasher
-    IERC20(borrowAsset).uniTransfer(msg.sender, _debtAmount);
+    IERC20(borrowAsset).uniTransfer(payable(address(flasher)), _debtAmount);
 
-    // cast user addr to payable
-    address payable addr = address(uint160(_userAddr));
-    // transfer left ETH amount to user
-    IERC20(collateralAsset).uniTransfer(addr, userCollateral.sub(uniswapAmounts[0]));
-
-    // reduce collateralBalance
-    collateralBalance = collateralBalance.sub(userCollateral);
-
-    emit SelfLiquidate(_userAddr, userDebtBalance);
+    return uniswapAmounts[0];
   }
 
   //Administrative functions
 
   /**
-  * @dev Sets the debtToken address to the Vault
+  * @dev Sets a debt token for this vault.
   * @param _debtToken: fuji debt token address
   */
   function setDebtToken(address _debtToken) external isAuthorized {
     debtToken = DebtToken(_debtToken);
+  }
+
+  /**
+  * @dev Sets the flasher for this vault.
+  * @param _flasher: flasher address
+  */
+  function setFlasher(address _flasher) external isAuthorized {
+    flasher = Flasher(_flasher);
   }
 
   /**
@@ -364,6 +574,29 @@ contract VaultETHDAI is IVault, VaultBase {
   */
   function getBorrowAsset() external view override returns(address) {
     return address(borrowAsset);
+  }
+
+  /**
+  * @dev Returns an amount to be paid as bonus for liquidation
+  * @param _amount: Vault underlying type intended to be liquidated
+  * @param _flash: Flash or classic type of liquidation, bonus differs
+  */
+  function getLiquidationBonusFor(
+    uint256 _amount,
+    bool _flash
+  ) public view returns(uint256) {
+    // get price of DAI in ETH
+    (,int256 latestPrice,,,) = oracle.latestRoundData();
+    uint256 p = _amount.mul(uint256(latestPrice));
+
+    if (_flash) {
+      // 1/25 or 4%
+      return p.mul(1).div(25).div(BASE);
+    }
+    else {
+      // 1/20 or 5%
+      return p.mul(1).div(20).div(BASE);
+    }
   }
 
   /**

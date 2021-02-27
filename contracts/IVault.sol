@@ -18,8 +18,12 @@ interface IVault {
 	event SetActiveProvider(address providerAddr);
 	// Log Switch providers
 	event Switch(address fromProviderAddrs, address toProviderAddr);
-	// Log SelfLiquidation
-	event SelfLiquidate(address userAddr, uint256 amount);
+	// Log Liquidation
+	event Liquidate(address userAddr, address liquidator, uint256 amount);
+	// Log FlashClose
+	event FlashClose(address userAddr, uint256 amount);
+	// Log Liquidation
+	event FlashLiquidate(address userAddr, address liquidator, uint256 amount);
 
   function getCollateralAsset() external view returns(address);
   function getBorrowAsset() external view returns(address);
@@ -28,8 +32,9 @@ interface IVault {
   function borrowBalance() external returns(uint256);
   function debtToken() external view returns(DebtToken);
 
-  function fujiSwitch(address _newProvider, uint256 _debtAmount) external payable;
-  function selfLiquidate(address _userAddr, uint256 _debtAmount) external payable;
+  function executeSwitch(address _newProvider, uint256 _debtAmount) external;
+  function executeFlashClose(address _userAddr, uint256 _debtAmount) external;
+  function executeFlashLiquidation(address _userAddr, address _liquidatorAddr, uint256 _debtAmount) external;
   function getProviders() external view returns(address[] memory);
   function setActiveProvider(address _provider) external;
   function updateDebtTokenBalances() external;

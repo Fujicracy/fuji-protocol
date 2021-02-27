@@ -3,14 +3,31 @@
 pragma solidity >=0.4.25 <0.7.5;
 
 library FlashLoan {
-  enum CallType { Switch, SelfLiquidate, Liquidate }
+  /**
+  * @dev Used to determine which vault's function to call post-flashloan:
+  * - Switch for executeSwitch(...)
+  * - Close for executeFlashClose(...)
+  * - Liquidate for executeFlashLiquidation(...)
+  */
+  enum CallType { Switch, Close, Liquidate }
+
+  /**
+  * @dev Struct of params to be passed between functions executing flashloan logic
+  * @param asset: Address of asset to be borrowed with flashloan
+  * @param amount: Amount of asset to be borrowed with flashloan
+  * @param vault: Vault's address on which the flashloan logic to be executed
+  * @param newProvider: New provider's address. Used when callType is Switch
+  * @param user: User's address. Used when callType is Close or Liquidate
+  * @param liquidator: Liquidator's address. Used when callType is Liquidate
+  */
   struct Info {
     CallType callType;
-    address vault;
-    address other;
     address asset;
     uint256 amount;
-    uint256 premium;
+    address vault;
+    address newProvider;
+    address user;
+    address liquidator;
   }
 }
 

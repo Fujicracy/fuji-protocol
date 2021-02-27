@@ -117,13 +117,17 @@ contract Controller {
 
       require(debtPosition > 0, "No debt to liquidate");
 
-      Flasher(flasherAddr).initiateDyDxFlashLoan(
-        FlashLoan.CallType.Switch,
-        _vaultAddr,
-        newProvider,
-        vault.getBorrowAsset(),
-        debtPosition
-      );
+      FlashLoan.Info memory info = FlashLoan.Info({
+        callType: FlashLoan.CallType.Switch,
+        asset: vault.getBorrowAsset(),
+        amount: debtPosition,
+        vault: _vaultAddr,
+        newProvider: newProvider,
+        user: address(0),
+        liquidator: address(0)
+      });
+
+      Flasher(flasherAddr).initiateDyDxFlashLoan(info);
 
       //Set the new provider in the Vault
       setProvider(_vaultAddr, address(newProvider));

@@ -48,11 +48,13 @@ const main = async () => {
     "faDAI",
     ZERO_ADDR
   ]);
-  vault.setDebtToken(debtToken.address);
 
   //Set up the environment for testing Fuji contracts.
 
+  vault.setDebtToken(debtToken.address);
   await flasher.setController(controller.address);
+  await flasher.setVaultAuthorization(vault.address, true);
+  await vault.setFlasher(flasher.address);
   await vault.addProvider(aave.address);
   await vault.addProvider(compound.address);
   await controller.addVault(vault.address);

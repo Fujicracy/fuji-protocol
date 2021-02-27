@@ -90,7 +90,9 @@ describe("Fuji", () => {
     );
 
     await flasher.setController(controller.address);
+    await flasher.setVaultAuthorization(vault.address, true);
     await vault.setDebtToken(debtToken.address);
+    await vault.setFlasher(flasher.address);
     await vault.addProvider(aave.address);
     await vault.addProvider(compound.address);
     await controller.addVault(vault.address);
@@ -134,6 +136,26 @@ describe("Fuji", () => {
 
       // user1 accumulates more debt than user2
       expect(balance1).to.gt(balance2);
+    });
+
+    it("User 4 deposits 1 ETH, borrows 1000 DAI and flash-close", async () => {
+      await vault.connect(users[4]).deposit(ONE_ETH, { value: ONE_ETH });
+
+      const daiAmount = await convertToCurrencyDecimals(DAI_ADDR, 700);
+
+      await expect(() => vault.connect(users[4]).borrow(daiAmount))
+        .to.changeTokenBalance(dai, users[4], daiAmount);
+
+      expect(await debtToken.balanceOf(users[4].address)).to.equal(daiAmount);
+
+      const balanceBefore = await ethers.provider.getBalance(users[4].address);
+      await vault.connect(users[4]).flashCloseTotal();
+      const balanceAfter = await ethers.provider.getBalance(users[4].address);
+
+      expect(balanceAfter).to.gt(balanceBefore);
+
+      expect(await debtToken.balanceOf(users[4].address)).to.equal(0);
+
     });
 
   });
@@ -192,7 +214,7 @@ describe("Fuji", () => {
       expect(await debtToken.balanceOf(users[4].address)).to.equal(daiAmount);
 
       const balanceBefore = await ethers.provider.getBalance(users[4].address);
-      await flasher.connect(users[4]).initiateSelfLiquidation(vault.address);
+      await vault.connect(users[4]).flashCloseTotal();
       const balanceAfter = await ethers.provider.getBalance(users[4].address);
 
       expect(balanceAfter).to.gt(balanceBefore);

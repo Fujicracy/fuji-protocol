@@ -16,7 +16,6 @@ import {
 } from "./DyDxFlashLoans.sol";
 import { FlashLoan } from "./LibFlashLoan.sol";
 import { IVault } from "../IVault.sol";
-import { DebtToken } from "../DebtToken.sol";
 
 contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
 
@@ -24,21 +23,29 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
 
   address controller;
   address owner;
+  mapping(address => bool) vaults;
 
   address constant AAVE_LENDING_POOL = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
   address constant DYDX_SOLO_MARGIN = 0x1E0447b19BB6EcFdAe1e4AE1694b0C3659614e4e;
 
   modifier isAuthorized() {
+
     require(
-      msg.sender == controller || msg.sender == owner || msg.sender == DYDX_SOLO_MARGIN || msg.sender == AAVE_LENDING_POOL,
+      msg.sender == controller || vaults[msg.sender] || msg.sender == owner,
       "!authorized"
     );
     _;
   }
 
-  constructor(
-    address _owner
-  ) public {
+  modifier isAuthorizedExternal() {
+    require(
+      msg.sender == DYDX_SOLO_MARGIN || msg.sender == AAVE_LENDING_POOL,
+      "!authorized external"
+    );
+    _;
+  }
+
+  constructor(address _owner) public {
     owner = _owner;
   }
 
@@ -46,82 +53,47 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
   * @dev Sets new controller.
   * @param _controller: Address of controller
   */
-  function setController(
-    address _controller
-  ) external isAuthorized {
+  function setController(address _controller) external isAuthorized {
     controller = _controller;
   }
 
   /**
-  * @dev Initiates a flashloan used to repay a debt position of msg.sender
-  * @param _vaultAddr: Vault address where msg.sender has a debt position
+  * @dev Set an authorization for a vault..
+  * @param _vault: Address of vault
+  * @param _authorization: true or false
   */
-  function initiateSelfLiquidation(
-    address _vaultAddr
-  ) external {
-    IVault vault = IVault(_vaultAddr);
-    DebtToken debtToken = vault.debtToken();
-    vault.updateDebtTokenBalances();
-    uint256 debtPosition = debtToken.balanceOf(msg.sender);
-
-    require(debtPosition > 0, "No debt to liquidate");
-
-    initiateDyDxFlashLoan(
-      FlashLoan.CallType.SelfLiquidate,
-      _vaultAddr,
-      msg.sender,
-      vault.getBorrowAsset(),
-      debtPosition
-    );
+  function setVaultAuthorization(
+    address _vault,
+    bool _authorization
+  ) external isAuthorized {
+    vaults[_vault] = _authorization;
   }
 
   // ===================== DyDx FlashLoan ===================================
 
   /**
   * @dev Initiates a DyDx flashloan.
-  * @param _callType: Used to determine which vault's function to call post-flashloan:
-  * - Switch for fujiSwitch(...)
-  * - SelfLiquidate for selfLiquidate(...)
-  * - Liquidate for liquidate(...)
-  * @param _vaultAddr: Vault's address on which the flashloan logic to be executed
-  * @param _otherAddr: An address to be passed on vault's function post-flashloan.
-  * - Switch - address of new provider 
-  * - SelfLiquidate - user's address
-  * - Liquidate - user's address
-  * @param _borrowAsset: Address of asset to be borrowed with flashloan
-  * @param _amount: Amount of asset to be borrowed with flashloan
+  * @param info: data to be passed between functions executing flashloan logic
   */
   function initiateDyDxFlashLoan(
-    FlashLoan.CallType _callType,
-    address _vaultAddr,
-    address _otherAddr,
-    address _borrowAsset,
-    uint256 _amount
-  ) public {
-    _checkAuth(_callType, _otherAddr, msg.sender);
+    FlashLoan.Info memory info
+  ) public isAuthorized {
 
     ISoloMargin solo = ISoloMargin(DYDX_SOLO_MARGIN);
 
     // Get marketId from token address
-    uint256 marketId = _getMarketIdFromTokenAddress(solo, _borrowAsset);
+    uint256 marketId = _getMarketIdFromTokenAddress(solo, info.asset);
 
     // 1. Withdraw $
     // 2. Call callFunction(...)
     // 3. Deposit back $
     Actions.ActionArgs[] memory operations = new Actions.ActionArgs[](3);
 
-    operations[0] = _getWithdrawAction(marketId, _amount);
-    FlashLoan.Info memory info = FlashLoan.Info({
-      callType: _callType,
-      vault: _vaultAddr,
-      other: _otherAddr,
-      asset: _borrowAsset,
-      amount: _amount,
-      premium: 2 // 2 wei
-    });
+    operations[0] = _getWithdrawAction(marketId, info.amount);
     // Encode FlashLoan.Info for callFunction
     operations[1] = _getCallAction(abi.encode(info));
-    operations[2] = _getDepositAction(marketId, _amount.add(2));
+    // add fee of 2 wei
+    operations[2] = _getDepositAction(marketId, info.amount.add(2));
 
     Account.Info[] memory accountInfos = new Account.Info[](1);
     accountInfos[0] = _getAccountInfo(address(this));
@@ -139,28 +111,26 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
     address sender,
     Account.Info memory account,
     bytes memory data
-  ) external override isAuthorized {
+  ) external override isAuthorizedExternal {
     sender;
     account;
 
     FlashLoan.Info memory info = abi.decode(data, (FlashLoan.Info));
 
-    //approve vault to spend ERC20
-    IERC20(info.asset).approve(info.vault, info.amount);
+    //Estimate flashloan payback + premium fee of 2 wei,
+    uint amountOwing = info.amount.add(2);
 
-    //Estimate flashloan payback + premium fee,
-    uint amountOwing = info.amount.add(info.premium);
+    //approve vault to spend ERC20
+    IERC20(info.asset).approve(info.vault, amountOwing);
 
     if (info.callType == FlashLoan.CallType.Switch) {
-      //call fujiSwitch
-      IVault(info.vault).fujiSwitch(info.other, amountOwing);
+      IVault(info.vault).executeSwitch(info.newProvider, amountOwing);
     }
-    else if (info.callType == FlashLoan.CallType.SelfLiquidate) {
-      //call selfLiquidate
-      IVault(info.vault).selfLiquidate(info.other, amountOwing);
+    else if (info.callType == FlashLoan.CallType.Close) {
+      IVault(info.vault).executeFlashClose(info.user, amountOwing);
     }
     else {
-      revert("Not implemented callType!");
+      IVault(info.vault).executeFlashLiquidation(info.user, info.liquidator, amountOwing);
     }
 
     //Approve solo to spend to repay flashloan
@@ -171,27 +141,12 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
   // ===================== Aave FlashLoan ===================================
 
   /**
-  * @dev Initiates a Aave flashloan.
-  * @param _callType: Used to determine which vault's function to call post-flashloan:
-  * - Switch for fujiSwitch(...)
-  * - SelfLiquidate for selfLiquidate(...)
-  * - Liquidate for liquidate(...)
-  * @param _vaultAddr: Vault's address on which the flashloan logic to be executed
-  * @param _otherAddr: An address to be passed on vault's function post-flashloan.
-  * - Switch - address of new provider 
-  * - SelfLiquidate - user's address
-  * - Liquidate - user's address
-  * @param _borrowAsset: Address of asset to be borrowed with flashloan
-  * @param _amount: Amount of asset to be borrowed with flashloan
+  * @dev Initiates an Aave flashloan.
+  * @param info: data to be passed between functions executing flashloan logic
   */
   function initiateAaveFlashLoan(
-    FlashLoan.CallType _callType,
-    address _vaultAddr,
-    address _otherAddr,
-    address _borrowAsset,
-    uint256 _amount
-  ) external {
-    _checkAuth(_callType, _otherAddr, msg.sender);
+    FlashLoan.Info memory info
+  ) external isAuthorized {
 
     //Initialize Instance of Aave Lending Pool
     ILendingPool aaveLp = ILendingPool(AAVE_LENDING_POOL);
@@ -199,16 +154,16 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
     //Passing arguments to construct Aave flashloan -limited to 1 asset type for now.
     address receiverAddress = address(this);
     address[] memory assets = new address[](1);
-    assets[0] = address(_borrowAsset);
+    assets[0] = address(info.asset);
     uint256[] memory amounts = new uint256[](1);
-    amounts[0] = _amount;
+    amounts[0] = info.amount;
 
     // 0 = no debt, 1 = stable, 2 = variable
     uint256[] memory modes = new uint256[](1);
     modes[0] = 0;
 
     address onBehalfOf = address(this);
-    bytes memory params = abi.encode(_callType, _vaultAddr, _otherAddr);
+    bytes memory params = abi.encode(info);
     uint16 referralCode = 0;
 
     //Aave Flashloan initiated.
@@ -233,64 +188,31 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICallee {
     uint256[] calldata premiums,
     address initiator,
     bytes calldata params
-  ) external override isAuthorized returns (bool) {
+  ) external override isAuthorizedExternal returns (bool) {
     initiator;
 
-    // 1. callType: Used to determine which vault's function to call post-flashloan:
-    // - Switch for fujiSwitch(...)
-    // - SelfLiquidate for selfLiquidate(...)
-    // - Liquidate for liquidate(...)
-    // 2. vault: Vault's address on which the flashloan logic to be executed
-    // 3. otherAddr: An address to be passed on vault's function post-flashloan.
-    // - Switch - address of new provider 
-    // - SelfLiquidate - user's address
-    // - Liquidate - user's address
-    (
-      FlashLoan.CallType callType,
-      address vault,
-      address otherAddr
-    ) = abi.decode(params, (FlashLoan.CallType,address,address));
-
-    //approve vault to spend ERC20
-    IERC20(assets[0]).approve(address(vault), amounts[0]);
+    FlashLoan.Info memory info = abi.decode(params, (FlashLoan.Info));
 
     //Estimate flashloan payback + premium fee,
     uint amountOwing = amounts[0].add(premiums[0]);
 
-    if (callType == FlashLoan.CallType.Switch) {
-      //call fujiSwitch
-      IVault(vault).fujiSwitch(otherAddr, amountOwing);
+    //approve vault to spend ERC20
+    IERC20(assets[0]).approve(info.vault, amountOwing);
+
+    if (info.callType == FlashLoan.CallType.Switch) {
+      IVault(info.vault).executeSwitch(info.newProvider, amountOwing);
     }
-    else if (callType == FlashLoan.CallType.SelfLiquidate) {
-      //call selfLiquidate
-      IVault(vault).selfLiquidate(otherAddr, amountOwing);
+    else if (info.callType == FlashLoan.CallType.Close) {
+      IVault(info.vault).executeFlashClose(info.user, amountOwing);
     }
     else {
-      revert("Not implemented callType!");
+      IVault(info.vault).executeFlashLiquidation(info.user, info.liquidator, amountOwing);
     }
 
     //Approve aaveLP to spend to repay flashloan
     IERC20(assets[0]).approve(address(AAVE_LENDING_POOL), amountOwing);
 
     return true;
-  }
-
-  // ========================= Helper Functions ====================
-
-  function _checkAuth(
-    FlashLoan.CallType _callType,
-    address _other,
-    address _sender
-  ) internal {
-    if (_callType == FlashLoan.CallType.Switch) {
-      require(_sender == controller, "Only Controller is authorized to switch");
-    }
-    else if (_callType == FlashLoan.CallType.SelfLiquidate) {
-      require(_sender == _other, "Only msg.sender is authorized to self-liquidate");
-    }
-    else {
-      require(_sender != _other, "Msg.sender cannot liquidate self. Call self-liquidate instead");
-    }
   }
 
   //receive() external payable {}

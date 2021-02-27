@@ -85,8 +85,7 @@ describe("Fuji", () => {
       vault.address,
       DAI_ADDR,
       "Fuji DAI debt token",
-      "faDAI",
-      ZERO_ADDR
+      "faDAI"
     );
 
     await flasher.setController(controller.address);

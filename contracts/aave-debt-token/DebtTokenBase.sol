@@ -3,9 +3,7 @@ pragma solidity 0.6.12;
 
 import {ILendingPool} from './ILendingPool.sol';
 import {ICreditDelegationToken} from './ICreditDelegationToken.sol';
-import {
-  VersionedInitializable
-} from './VersionedInitializable.sol';
+import {VersionedInitializable} from './VersionedInitializable.sol';
 import {IncentivizedERC20} from './IncentivizedERC20.sol';
 import {Errors} from './Errors.sol';
 
@@ -41,9 +39,8 @@ abstract contract DebtTokenBase is
     address pool,
     address underlyingAssetAddress,
     string memory name,
-    string memory symbol,
-    address incentivesController
-  ) public IncentivizedERC20(name, symbol, 18, incentivesController) {
+    string memory symbol
+  ) public IncentivizedERC20(name, symbol, 18) {
     POOL = ILendingPool(pool);
     UNDERLYING_ASSET_ADDRESS = underlyingAssetAddress;
   }

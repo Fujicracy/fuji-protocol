@@ -23,9 +23,8 @@ contract DebtToken is DebtTokenBase, IVariableDebtToken {
     address pool,
     address underlyingAsset,
     string memory name,
-    string memory symbol,
-    address incentivesController
-  ) public DebtTokenBase(pool, underlyingAsset, name, symbol, incentivesController) {
+    string memory symbol
+  ) public DebtTokenBase(pool, underlyingAsset, name, symbol) {
     liquidityIndex = uint128(WadRayMath.ray());
   }
 

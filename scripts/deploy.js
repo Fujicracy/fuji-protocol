@@ -45,8 +45,7 @@ const main = async () => {
     vault.address,
     DAI_ADDR,
     "Fuji DAI debt token",
-    "faDAI",
-    ZERO_ADDR
+    "faDAI"
   ]);
 
   //Set up the environment for testing Fuji contracts.

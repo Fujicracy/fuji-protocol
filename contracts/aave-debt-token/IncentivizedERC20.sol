@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity 0.6.12;
 
-import {Context} from './Context.sol';
+import {Context} from '@openzeppelin/contracts/utils/Context.sol';
+import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {IERC20Detailed} from './IERC20Detailed.sol';
-import {SafeMath} from './SafeMath.sol';
-import {IAaveIncentivesController} from './IAaveIncentivesController.sol';
 
 /**
  * @title ERC20
@@ -14,8 +13,6 @@ import {IAaveIncentivesController} from './IAaveIncentivesController.sol';
  **/
 contract IncentivizedERC20 is Context, IERC20, IERC20Detailed {
   using SafeMath for uint256;
-
-  IAaveIncentivesController internal immutable _incentivesController;
 
   mapping(address => uint256) internal _balances;
 
@@ -28,13 +25,11 @@ contract IncentivizedERC20 is Context, IERC20, IERC20Detailed {
   constructor(
     string memory name,
     string memory symbol,
-    uint8 decimals,
-    address incentivesController
+    uint8 decimals
   ) public {
     _name = name;
     _symbol = symbol;
     _decimals = decimals;
-    _incentivesController = IAaveIncentivesController(incentivesController);
   }
 
   /**
@@ -177,16 +172,7 @@ contract IncentivizedERC20 is Context, IERC20, IERC20Detailed {
 
     uint256 oldSenderBalance = _balances[sender];
     _balances[sender] = oldSenderBalance.sub(amount, 'ERC20: transfer amount exceeds balance');
-    uint256 oldRecipientBalance = _balances[recipient];
     _balances[recipient] = _balances[recipient].add(amount);
-
-    if (address(_incentivesController) != address(0)) {
-      uint256 currentTotalSupply = _totalSupply;
-      _incentivesController.handleAction(sender, currentTotalSupply, oldSenderBalance);
-      if (sender != recipient) {
-        _incentivesController.handleAction(recipient, currentTotalSupply, oldRecipientBalance);
-      }
-    }
   }
 
   function _mint(address account, uint256 amount) internal virtual {
@@ -199,10 +185,6 @@ contract IncentivizedERC20 is Context, IERC20, IERC20Detailed {
 
     uint256 oldAccountBalance = _balances[account];
     _balances[account] = oldAccountBalance.add(amount);
-
-    if (address(_incentivesController) != address(0)) {
-      _incentivesController.handleAction(account, oldTotalSupply, oldAccountBalance);
-    }
   }
 
   function _burn(address account, uint256 amount) internal virtual {
@@ -215,10 +197,6 @@ contract IncentivizedERC20 is Context, IERC20, IERC20Detailed {
 
     uint256 oldAccountBalance = _balances[account];
     _balances[account] = oldAccountBalance.sub(amount, 'ERC20: burn amount exceeds balance');
-
-    if (address(_incentivesController) != address(0)) {
-      _incentivesController.handleAction(account, oldTotalSupply, oldAccountBalance);
-    }
   }
 
   function _approve(

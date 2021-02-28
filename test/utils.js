@@ -85,6 +85,9 @@ const convertToCurrencyDecimals = async (tokenAddr, amount) => {
 
 const convertToWei = (amount) => ethers.utils.parseUnits(`${amount}`, 18);
 
+const evmSnapshot = async () => await ethers.provider.send('evm_snapshot', []);
+const evmRevert = async (id) => ethers.provider.send('evm_revert', [id]);
+
 module.exports = {
   fixture,
   timeTravel,
@@ -92,4 +95,6 @@ module.exports = {
   convertToWei,
   DAI_ADDR,
   ONE_ETH,
+  evmSnapshot,
+  evmRevert,
 }

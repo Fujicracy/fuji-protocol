@@ -6,6 +6,8 @@ const {
   fixture,
   convertToCurrencyDecimals,
   convertToWei,
+  evmSnapshot,
+  evmRevert,
   DAI_ADDR,
   ONE_ETH,
 } = require("./utils.js");
@@ -24,10 +26,17 @@ describe("Fuji", () => {
   let users;
 
   let loadFixture;
+  let evmSnapshotId;
 
   before(async() => {
     users = await ethers.getSigners();
     loadFixture = createFixtureLoader(users, ethers.provider);
+
+    evmSnapshotId = await evmSnapshot();
+  });
+
+  after(async() => {
+    evmRevert(evmSnapshotId);
   });
 
   beforeEach(async() => {

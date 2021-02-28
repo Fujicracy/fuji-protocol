@@ -6,6 +6,8 @@ const {
   fixture,
   convertToCurrencyDecimals,
   convertToWei,
+  evmSnapshot,
+  evmRevert,
   DAI_ADDR,
   ONE_ETH,
 } = require("./utils.js");
@@ -26,16 +28,23 @@ describe("Fuji", () => {
   let users;
 
   let loadFixture;
+  let evmSnapshotId;
 
   before(async() => {
     users = await ethers.getSigners();
     loadFixture = createFixtureLoader(users, ethers.provider);
+
+    evmSnapshotId = await evmSnapshot();
 
     // unlock DAI so that we can make initial transfer
     //await hre.network.provider.request({
       //method: "hardhat_impersonateAccount",
       //params: [DAI_ADDR]
     //});
+  });
+
+  after(async() => {
+    evmRevert(evmSnapshotId);
   });
 
   beforeEach(async() => {

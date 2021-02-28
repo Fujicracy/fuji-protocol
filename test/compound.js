@@ -30,10 +30,20 @@ describe("Fuji", () => {
     loadFixture = createFixtureLoader(users, ethers.provider);
   });
 
+  beforeEach(async() => {
+    const _fixture = await loadFixture(fixture);
+    dai = _fixture.dai;
+    vault = _fixture.vault;
+    ceth = _fixture.ceth;
+    debtToken = _fixture.debtToken;
+    compound = _fixture.compound;
+
+    await vault.setActiveProvider(compound.address);
+  });
+
   describe("VaultETHDAI -> Compound", () => {
 
     it("User 3 deposits 1 ETH and borrows 2 * 400 DAI", async () => {
-      const { dai, vault, ceth, debtToken } = await loadFixture(fixture);
 
       await vault.connect(users[3]).deposit(ONE_ETH, { value: ONE_ETH });
 
@@ -57,7 +67,6 @@ describe("Fuji", () => {
     });
 
     it("User 4 deposits 1 ETH, borrows 800 DAI and self-liquidates", async () => {
-      const { dai, vault, debtToken } = await loadFixture(fixture);
 
       await vault.connect(users[4]).deposit(ONE_ETH, { value: ONE_ETH });
 

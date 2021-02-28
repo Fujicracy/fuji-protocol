@@ -38,10 +38,20 @@ describe("Fuji", () => {
     //});
   });
 
+  beforeEach(async() => {
+    const _fixture = await loadFixture(fixture);
+    dai = _fixture.dai;
+    vault = _fixture.vault;
+    aweth = _fixture.aweth;
+    debtToken = _fixture.debtToken;
+    aave = _fixture.aave;
+
+    await vault.setActiveProvider(aave.address);
+  });
+
   describe("VaultETHDAI -> Aave", () => {
 
     it("User 1 deposits 1 ETH and borrows 900 DAI", async () => {
-      const { dai, vault, aweth, debtToken } = await loadFixture(fixture);
 
       await vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH });
 
@@ -64,7 +74,6 @@ describe("Fuji", () => {
     });
 
     it("User 2 deposits 1 ETH and borrows 900 DAI", async () => {
-      const { dai, vault, debtToken } = await loadFixture(fixture);
 
       await vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH });
       await vault.connect(users[2]).deposit(ONE_ETH, { value: ONE_ETH });
@@ -85,7 +94,7 @@ describe("Fuji", () => {
     });
 
     it("User 4 deposits 1 ETH, borrows 1000 DAI and flash-close", async () => {
-      const { dai, vault, debtToken } = await loadFixture(fixture);
+
       await vault.connect(users[4]).deposit(ONE_ETH, { value: ONE_ETH });
 
       const daiAmount = await convertToCurrencyDecimals(DAI_ADDR, 700);

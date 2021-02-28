@@ -30,6 +30,15 @@ describe("Fuji", () => {
     loadFixture = createFixtureLoader(users, ethers.provider);
   });
 
+  beforeEach(async() => {
+    const _fixture = await loadFixture(fixture);
+    dai = _fixture.dai;
+    vault = _fixture.vault;
+    aave = _fixture.aave;
+
+    await vault.setActiveProvider(aave.address);
+  });
+
   describe("Flashloan and Switch", () => {
 
     it("Should initiate a flashloan", async () => {

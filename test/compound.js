@@ -28,9 +28,6 @@ describe("Fuji", () => {
   before(async() => {
     users = await ethers.getSigners();
     loadFixture = createFixtureLoader(users, ethers.provider);
-
-    //const { vault, compound } = await loadFixture(fixture);
-    //await vault.setActiveProvider(compound.address);
   });
 
   describe("VaultETHDAI -> Compound", () => {

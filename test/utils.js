@@ -1,5 +1,4 @@
 const { ethers, waffle } = require("hardhat");
-const { expect } = require("chai");
 const { deployContract } = waffle;
 
 const CHAINLINK_ORACLE_ADDR = "0x773616E4d11A78F511299002da57A0a94577F1f4";

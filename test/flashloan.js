@@ -44,14 +44,24 @@ describe("Fuji", () => {
     dai = _fixture.dai;
     vault = _fixture.vault;
     aave = _fixture.aave;
+    compound = _fixture.compound;
+    ceth = _fixture.ceth;
+    controller = _fixture.controller;
 
-    await vault.setActiveProvider(aave.address);
+    const rateCompound = await compound.getBorrowRateFor(DAI_ADDR);
+    const rateAave = await aave.getBorrowRateFor(DAI_ADDR);
+
+    if (rateAave.gt(rateCompound)) {
+      await vault.setActiveProvider(aave.address);
+    }
+    else {
+      await vault.setActiveProvider(compound.address);
+    }
   });
 
   describe("Flashloan and Switch", () => {
 
     it("Should initiate a flashloan", async () => {
-      const { dai, vault, controller, ceth } = await loadFixture(fixture);
 
       await vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH });
       await vault.connect(users[2]).deposit(ONE_ETH, { value: ONE_ETH });

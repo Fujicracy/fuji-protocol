@@ -102,27 +102,5 @@ describe("Fuji", () => {
       expect(balance1).to.gt(balance2);
     });
 
-    it("User 4 deposits 1 ETH, borrows 1000 DAI and flash-close", async () => {
-
-      await vault.connect(users[4]).deposit(ONE_ETH, { value: ONE_ETH });
-
-      const daiAmount = await convertToCurrencyDecimals(DAI_ADDR, 700);
-
-      await expect(() => vault.connect(users[4]).borrow(daiAmount))
-        .to.changeTokenBalance(dai, users[4], daiAmount);
-
-      expect(await debtToken.balanceOf(users[4].address)).to.equal(daiAmount);
-
-      const balanceBefore = await ethers.provider.getBalance(users[4].address);
-      await vault.connect(users[4]).flashCloseTotal();
-      const balanceAfter = await ethers.provider.getBalance(users[4].address);
-
-      expect(await dai.balanceOf(users[4].address)).to.equal(daiAmount);
-      expect(balanceAfter).to.gt(balanceBefore);
-
-      expect(await debtToken.balanceOf(users[4].address)).to.equal(0);
-
-    });
-
   });
 });

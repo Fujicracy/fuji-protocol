@@ -28,6 +28,7 @@ const main = async () => {
   const flasher = await deploy("Flasher");
   const aave = await deploy("ProviderAave");
   const compound = await deploy("ProviderCompound");
+  const dydx = await deploy("ProviderDYDX");
 
   const controller = await deploy("Controller", [
     deployerAddress, //First Wallet address from forked network is the owner
@@ -52,9 +53,22 @@ const main = async () => {
 
   //Set up the environment for testing Fuji contracts.
 
-  await vault.addProvider(aave.address);
+  await vault.addProvider(dydx.address);
   await vault.addProvider(compound.address);
+  await vault.addProvider(aave.address);
+
+
   await controller.addVault(vault.address);
+
+  await vault.connect(deployerWallet).deposit('100000000000000000000', { value: '100000000000000000000' });
+  //await vault.connect(deployerWallet).borrow('50000000000000000000000');
+
+  //await controller.doControllerRoutine(vault.address);
+
+
+  //let checkratesgascost = await controller.estimateGas.checkRates(vault.address);
+  //console.log("checkRates gas Cost: ",checkratesgascost);
+
 
   // const exampleToken = await deploy("ExampleToken")
   // const examplePriceOracle = await deploy("ExamplePriceOracle")

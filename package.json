@@ -28,7 +28,7 @@
   },
   "scripts": {
     "chain": "hardhat node --hostname 0.0.0.0",
-    "fork": "hardhat node --fork https://eth-mainnet.alchemyapi.io/v2/kXCJNELs1PVaRNffous3Uytnw4A7BJUr",
+    "fork": "hardhat node --fork https://mainnet.infura.io/v3/4d5f1b5afb094856bd8dcd86c7bd8dc1",
     "test": "hardhat test --network localhost",
     "compile": "hardhat compile",
     "deploy": "hardhat run scripts/deploy.js && hardhat run scripts/publish.js",

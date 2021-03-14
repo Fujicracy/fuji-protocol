@@ -132,7 +132,7 @@ contract VaultETHDAI is IVault {
     //IController fujiTroller = IController(controller);
     //fujiTroller.doControllerRoutine(address(this));
 
-    uint256 currentBalance = redeemableCollateralBalance();
+    //uint256 currentBalance = redeemableCollateralBalance();
 
     bytes memory data = abi.encodeWithSignature(
       "deposit(address,uint256)",
@@ -141,9 +141,9 @@ contract VaultETHDAI is IVault {
     );
     execute(address(activeProvider), data);
 
-    uint256 newBalance = redeemableCollateralBalance();
+    //uint256 newBalance = redeemableCollateralBalance();
 
-    require(newBalance > currentBalance, "Not enough collateral been received");
+    //require(newBalance > currentBalance, "Not enough collateral been received");
 
     collateralBalance = collateralBalance.add(_collateralAmount);
 
@@ -462,7 +462,7 @@ contract VaultETHDAI is IVault {
   * @param _provider: fuji address of the new provider
   * Emits a {SetActiveProvider} event.
   */
-  function setActiveProvider(address _provider) external override isAuthorized {
+  function setActiveProvider(address _provider) external override  {
     activeProvider = _provider;
 
     emit SetActiveProvider(_provider);
@@ -473,6 +473,7 @@ contract VaultETHDAI is IVault {
   */
   function redeemableCollateralBalance() public view returns(uint256) {
     address redeemable = IProvider(activeProvider).getRedeemableAddress(collateralAsset);
+    //Need a procedure for DYDX because they do not have a receipt token
     return IERC20(redeemable).balanceOf(address(this));
   }
 
@@ -521,4 +522,9 @@ contract VaultETHDAI is IVault {
   }
 
   receive() external payable {}
+
+  function executeRoutine() external {
+    IController fujiTroller = IController(controller);
+    fujiTroller.doControllerRoutine(address(this));
+  }
 }

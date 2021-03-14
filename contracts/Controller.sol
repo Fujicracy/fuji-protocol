@@ -106,7 +106,13 @@ contract Controller {
   ) external returns(bool) {
 
     //Check if there is an opportunity to Change provider with a lower borrowing Rate
-    (bool opportunityTochange, address newProvider) = checkRates(_vaultAddr);
+    //bool opportunityTochange, address newProvider) = checkRates(_vaultAddr);
+    bool opportunityTochange = true;
+    address[] memory arrayOfProviders = IVault(_vaultAddr).getProviders();
+    address newProvider = arrayOfProviders[1];
+    console.log("forced to change:", opportunityTochange );
+    console.log("from provider: ", arrayOfProviders[0]);
+    console.log("to provider:", newProvider );
 
     if (opportunityTochange) {
       //Check how much borrowed balance along with accrued interest at current Provider
@@ -148,7 +154,9 @@ contract Controller {
     bool opportunityTochange = false;
 
     //Call and check borrow rates for all Providers in array for _vaultAddr
+    console.log("current provider:", IVault(_vaultAddr).activeProvider());
     uint256 currentRate = IProvider(IVault(_vaultAddr).activeProvider()).getBorrowRateFor(borrowingAsset);
+    console.log("current rate:", currentRate);
     uint256 differance;
     address newProvider;
 

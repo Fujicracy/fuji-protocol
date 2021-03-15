@@ -55,13 +55,6 @@ library Types {
   }
 }
 
-library Operators {
-  struct OperatorArg {
-    address operator;
-    bool trusted;
-  }
-}
-
 /**
  * @title ICallee
  * @author dYdX

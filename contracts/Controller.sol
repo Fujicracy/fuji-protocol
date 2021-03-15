@@ -3,12 +3,13 @@
 pragma solidity >=0.4.25 <0.7.0;
 pragma experimental ABIEncoderV2;
 
-import { DebtToken } from "./DebtToken.sol";
-import "./VaultETHDAI.sol";
-import "./flashloans/Flasher.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { IVault } from "./IVault.sol";
+import { IProvider } from "./IProvider.sol";
+import { Flasher } from "./flashloans/Flasher.sol";
+import { FlashLoan } from "./flashloans/LibFlashLoan.sol";
 
-contract Controller {
-  address private owner;
+contract Controller is Ownable {
   address public flasherAddr;
 
   //Change Threshold is the minimum percent in Borrowing Rates to trigger a provider change
@@ -19,19 +20,16 @@ contract Controller {
   address[] public vaults;
 
   //Modifiers
-
   modifier isAuthorized() {
-    require(msg.sender == owner || msg.sender == address(this), "!authorized");
+    require(msg.sender == owner() || msg.sender == address(this), "!authorized");
     _;
   }
 
   constructor(
-    address _owner,
     address _flasher,
     uint256 _changeThreshold
   ) public {
     // Add initializer addresses
-    owner = _owner;
     flasherAddr = _flasher;
     changeThreshold = _changeThreshold;
   }
@@ -40,7 +38,7 @@ contract Controller {
 
   /**
   * @dev Adds a Vault to the controller.
-  * @param _vaultAddr: fuji address of a vault contract
+  * @param _vaultAddr: Address of vault to be added
   */
   function addVault(
     address _vaultAddr
@@ -96,10 +94,10 @@ contract Controller {
 
   /**
   * @dev Performs full routine to check the borrowing Rates from the
-    various providers of a Vault, it swap the assets to the best provider,
-    and sets a new active provider for the called Vault, returns true on
-    success
+  * various providers of a Vault, it swap the assets to the best provider,
+  * and sets a new active provider for the called Vault
   * @param _vaultAddr: fuji Vault address
+  * @return true if provider got switched, false if no change
   */
   function doControllerRoutine(
     address _vaultAddr
@@ -123,13 +121,17 @@ contract Controller {
 
       require(debtPosition > 0, "No debt to liquidate");
 
-      Flasher(flasherAddr).initiateDyDxFlashLoan(
-        FlashLoan.CallType.Switch,
-        _vaultAddr,
-        newProvider,
-        vault.borrowAsset(),
-        debtPosition
-      );
+      FlashLoan.Info memory info = FlashLoan.Info({
+        callType: FlashLoan.CallType.Switch,
+        asset: vault.getBorrowAsset(),
+        amount: debtPosition,
+        vault: _vaultAddr,
+        newProvider: newProvider,
+        user: address(0),
+        liquidator: address(0)
+      });
+
+      Flasher(flasherAddr).initiateDyDxFlashLoan(info);
 
       //Set the new provider in the Vault
       setProvider(_vaultAddr, address(newProvider));
@@ -141,16 +143,16 @@ contract Controller {
   }
 
   /**
-  * @dev Compares borrowing Rates from providers of a Vault, returns
-    true on success and fuji address of the provider with best borrowing rate
-  * @param _vaultAddr: fuji Vault address
+  * @dev Compares borrowing rates from providers of a vault
+  * @param _vaultAddr: Fuji vault address
+  * @return true on success and address of provider with best borrowing rate
   */
   function checkRates(
     address _vaultAddr
   ) public view returns(bool, address) {
     //Get the array of Providers from _vaultAddr
     address[] memory arrayOfProviders = IVault(_vaultAddr).getProviders();
-    address borrowingAsset = IVault(_vaultAddr).borrowAsset();
+    address borrowingAsset = IVault(_vaultAddr).getBorrowAsset();
     bool opportunityTochange = false;
 
     //Call and check borrow rates for all Providers in array for _vaultAddr
@@ -172,24 +174,5 @@ contract Controller {
     }
     //Returns success or not, and the Iprovider with lower borrow rate
     return (opportunityTochange, newProvider);
-  }
-
-  function initiateSelfLiquidation(
-    address _vaultAddr
-  ) external {
-    IVault vault = IVault(_vaultAddr);
-    DebtToken debtToken = vault.debtToken();
-    vault.updateDebtTokenBalances();
-    uint256 debtPosition = debtToken.balanceOf(msg.sender);
-
-    require(debtPosition > 0, "No debt to liquidate");
-
-    Flasher(flasherAddr).initiateDyDxFlashLoan(
-      FlashLoan.CallType.SelfLiquidate,
-      _vaultAddr,
-      msg.sender,
-      vault.borrowAsset(),
-      debtPosition
-    );
   }
 }

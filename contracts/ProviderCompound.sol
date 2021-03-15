@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.4.25 <0.7.5;
 
-import "./LibUniERC20.sol";
-import "./IProvider.sol";
+import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
+import { UniERC20 } from "./LibUniERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IProvider } from "./IProvider.sol";
 
 interface gencToken{
   function redeem(uint) external returns (uint);

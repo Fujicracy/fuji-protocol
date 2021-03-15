@@ -50,15 +50,31 @@ const main = async () => {
   //Set up the environment for testing Fuji contracts.
 
   await vault.addProvider(dydx.address);
-  await vault.addProvider(compound.address);
   await vault.addProvider(aave.address);
-
+  await vault.addProvider(compound.address);
 
   await controller.addVault(vault.address);
 
-  await vault.connect(deployerWallet).deposit('100000000000000000000', { value: '100000000000000000000' });
-  //await vault.connect(deployerWallet).borrow('50000000000000000000000');
+  let thebalance = await deployerWallet.getBalance();
+  console.log(thebalance, 'before deposit');
 
+  //await vault.connect(deployerWallet).deposit('100000000000000000000', { value: '100000000000000000000' });
+  //thebalance = await deployerWallet.getBalance();
+  //console.log(thebalance, 'after deposit1');
+
+  //await vault.connect(deployerWallet).withdraw('100000000000000000000');
+  //thebalance = await deployerWallet.getBalance();
+  //console.log(thebalance, 'after withdrawal1');
+
+  //await vault.connect(deployerWallet).deposit('50000000000000000000', { value: '50000000000000000000' });
+  //thebalance = await deployerWallet.getBalance();
+  //console.log(thebalance, 'after deposit2');
+
+  //await vault.connect(deployerWallet).withdraw('25000000000000000000');
+  //thebalance = await deployerWallet.getBalance();
+  //console.log(thebalance, 'after withdrawal2');
+
+  await vault.connect(deployerWallet).borrow('13000000000000000000');
   //await controller.doControllerRoutine(vault.address);
 
 

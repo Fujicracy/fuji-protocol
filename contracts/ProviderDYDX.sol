@@ -237,7 +237,24 @@ contract ProviderDYDX is IProvider, HelperFunct {
  * @param _amount: token amount to borrow.
  */
   function borrow(address _borrowAsset, uint256 _amount) external override payable {
-    donothing = true;
+
+    SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
+
+    uint _marketId = getMarketId(dydxContract, _borrowAsset);
+
+    dydxContract.operate(getAccountArgs(), getActionsArgs(_marketId, _amount, false));
+
+    if (_borrowAsset == getEthAddr()) {
+
+      wethIERC20 tweth = wethIERC20(getWETHAddr());
+
+      tweth.approve(address(_borrowAsset), _amount);
+
+      tweth.withdraw(_amount);
+        }
+
+      (uint tokenBal, bool tokenSign) = getDydxPosition(dydxContract,_marketId); //test line
+      console.log(tokenBal, tokenSign, 'DYDX balance after borrow, marketID ', _marketId); //test line
   }
 
   /**

@@ -139,12 +139,12 @@ contract VaultETHDAI is IVault, VaultBase {
       "Not enough collateral left"
     );
 
+    // withdraw collateral from current provider
+    _withdraw(_withdrawAmount, address(activeProvider));
+
     collaterals[msg.sender] = providedCollateral.sub(_withdrawAmount);
     IERC20(collateralAsset).uniTransfer(msg.sender, _withdrawAmount);
     collateralBalance = collateralBalance.sub(_withdrawAmount);
-
-    // withdraw collateral from current provider
-    _withdraw(_withdrawAmount, address(activeProvider));
 
     emit Withdraw(msg.sender, _withdrawAmount);
 

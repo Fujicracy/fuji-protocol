@@ -18,7 +18,7 @@ import { IProvider } from "./IProvider.sol";
 import { Flasher } from "./flashloans/Flasher.sol";
 import { FlashLoan } from "./flashloans/LibFlashLoan.sol";
 
-import "hardhat/console.sol";
+import "hardhat/console.sol"; //test line
 
 //interface IController {
   //function doControllerRoutine(address _vault) external returns(bool);
@@ -112,6 +112,8 @@ contract VaultETHDAI is IVault, VaultBase {
     collaterals[msg.sender] = providedCollateral.add(_collateralAmount);
 
     emit Deposit(msg.sender, _collateralAmount);
+
+    console.log('Deposit, Vault Balance', address(this).balance);//Test Line
   }
 
   /**
@@ -147,6 +149,8 @@ contract VaultETHDAI is IVault, VaultBase {
     collateralBalance = collateralBalance.sub(_withdrawAmount);
 
     emit Withdraw(msg.sender, _withdrawAmount);
+
+    //console.log('Withdraw, Vault Balance', address(this).balance);//test line
 
     //IController fujiTroller = IController(controller);
     //fujiTroller.doControllerRoutine(address(this));
@@ -184,6 +188,8 @@ contract VaultETHDAI is IVault, VaultBase {
     );
 
     emit Borrow(msg.sender, _borrowAmount);
+    //console.log("User-DAI-balance", IERC20(borrowAsset).balanceOf(msg.sender));
+    //console.log("Debt Token", debtToken.balanceOf(msg.sender)); //Test Line
   }
 
   /**
@@ -213,6 +219,8 @@ contract VaultETHDAI is IVault, VaultBase {
     );
 
     emit Repay(msg.sender, _repayAmount);
+    console.log("User-DAI-balance", IERC20(borrowAsset).balanceOf(msg.sender));
+    //console.log("Debt Token", debtToken.balanceOf(msg.sender)); //Test Line
   }
 
   /**
@@ -669,9 +677,4 @@ contract VaultETHDAI is IVault, VaultBase {
   }
 
   receive() external payable {}
-
-  function executeRoutine() external {
-    IController fujiTroller = IController(controller);
-    fujiTroller.doControllerRoutine(address(this));
-  }
 }

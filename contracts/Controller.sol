@@ -9,6 +9,8 @@ import { IProvider } from "./IProvider.sol";
 import { Flasher } from "./flashloans/Flasher.sol";
 import { FlashLoan } from "./flashloans/LibFlashLoan.sol";
 
+import "hardhat/console.sol"; //test line
+
 contract Controller is Ownable {
   address public flasherAddr;
 
@@ -105,12 +107,14 @@ contract Controller is Ownable {
 
     //Check if there is an opportunity to Change provider with a lower borrowing Rate
     //bool opportunityTochange, address newProvider) = checkRates(_vaultAddr);
-    bool opportunityTochange = true;
     address[] memory arrayOfProviders = IVault(_vaultAddr).getProviders();
-    address newProvider = arrayOfProviders[1];
-    console.log("forced to change:", opportunityTochange );
-    console.log("from provider: ", arrayOfProviders[0]);
-    console.log("to provider:", newProvider );
+
+    bool opportunityTochange = true; //test line
+    address newProvider = arrayOfProviders[1];//test line
+
+    console.log("forced to change:", opportunityTochange ); //test line
+    console.log("from provider: ", arrayOfProviders[0]); //test line
+    console.log("to provider:", newProvider ); //test line
 
     if (opportunityTochange) {
       //Check how much borrowed balance along with accrued interest at current Provider

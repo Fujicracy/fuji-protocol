@@ -2,10 +2,12 @@
 pragma solidity >=0.4.25 <0.7.5;
 pragma experimental ABIEncoderV2;
 
-import "./LibUniERC20.sol";
-import "./IProvider.sol";
+import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
+import { UniERC20 } from "./LibUniERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IProvider } from "./IProvider.sol";
 
-import "hardhat/console.sol";
+import "hardhat/console.sol"; //test line
 
 interface wethIERC20 is IERC20 {
   function deposit() external payable;
@@ -205,6 +207,10 @@ contract ProviderDYDX is IProvider, HelperFunct {
 
     dydxContract.operate(getAccountArgs(), getActionsArgs(_marketId, _amount, true));
 
+    (uint tokenBal, bool tokenSign) = getDydxPosition(dydxContract,_marketId); //test line
+    console.log('Deposit, DYDX','marketID', _marketId);//test line
+    console.log('TokenBal', tokenBal,'TokenSign', tokenSign);//test line
+
   }
 
   /**
@@ -220,14 +226,18 @@ contract ProviderDYDX is IProvider, HelperFunct {
 
     dydxContract.operate(getAccountArgs(), getActionsArgs(_marketId, _amount, false));
 
-    if (token == getEthAddr()) {
+    if (_withdrawAsset == getEthAddr()) {
 
         wethIERC20 tweth = wethIERC20(getWETHAddr());
 
-        tweth.approve(address(tokenContract), _amount);
+        tweth.approve(address(tweth), _amount);
 
         tweth.withdraw(_amount);
     }
+
+    (uint tokenBal, bool tokenSign) = getDydxPosition(dydxContract,_marketId); //test line
+    console.log('Withdraw, DYDX','marketID', _marketId);//test line
+    console.log('TokenBal', tokenBal,'TokenSign', tokenSign);//test line
 
   }
 
@@ -251,10 +261,11 @@ contract ProviderDYDX is IProvider, HelperFunct {
       tweth.approve(address(_borrowAsset), _amount);
 
       tweth.withdraw(_amount);
-        }
+      }
 
       (uint tokenBal, bool tokenSign) = getDydxPosition(dydxContract,_marketId); //test line
-      console.log(tokenBal, tokenSign, 'DYDX balance after borrow, marketID ', _marketId); //test line
+      console.log('Borrow, DYDX','marketID', _marketId);//test line
+      console.log('TokenBal', tokenBal,'TokenSign', tokenSign);//test line
   }
 
   /**
@@ -263,7 +274,29 @@ contract ProviderDYDX is IProvider, HelperFunct {
   * @param _amount: token amount to payback.
   */
   function payback(address _paybackAsset, uint256 _amount) external override payable {
-    donothing = true;
+
+    SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
+
+    uint _marketId = getMarketId(dydxContract, _paybackAsset);
+
+    if (_paybackAsset == getEthAddr()) {
+
+        wethIERC20 tweth = wethIERC20(getWETHAddr());
+        tweth.deposit{value: _amount}();
+        tweth.approve(getDydxAddress(), _amount);
+
+    } else {
+
+        wethIERC20 tweth = wethIERC20(_paybackAsset);
+        tweth.approve(getDydxAddress(), _amount);
+    }
+
+    dydxContract.operate(getAccountArgs(), getActionsArgs(_marketId, _amount, true));
+
+    (uint tokenBal, bool tokenSign) = getDydxPosition(dydxContract,_marketId); //test line
+    console.log('Payback, DYDX','marketID', _marketId);//test line
+    console.log('TokenBal', tokenBal,'TokenSign', tokenSign);//test line
+
   }
 
   /**
@@ -287,11 +320,6 @@ contract ProviderDYDX is IProvider, HelperFunct {
   * @param _asset: token address to query the balance.
   */
   function getBorrowBalance(address _asset) external override returns(uint256) {
-
-    SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
-
-    Value memory response = dydxContract.getAccountValues()
-
     return 0;
   }
 

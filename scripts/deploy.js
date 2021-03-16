@@ -12,7 +12,12 @@ const main = async () => {
   const DAI_ADDR = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
   const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 
+
   const deployerWallet = ethers.provider.getSigner();
+
+  const daiAbi = [
+  "function approve(address usr, uint wad) external returns (bool)"];
+  const daiContract = new ethers.Contract(DAI_ADDR, daiAbi, deployerWallet);
 
   //const deployerAddress = await deployerWallet.getAddress();
   //const FujiMapping = await deploy("FujiMapping", [ //This contract has to be deployed first
@@ -44,37 +49,42 @@ const main = async () => {
     vault.address,
     DAI_ADDR,
     "Fuji DAI debt token",
-    "faDAI"
+    "fjDAI"
   ]);
 
   //Set up the environment for testing Fuji contracts.
 
+  await vault.setDebtToken(debtToken.address);
+
   await vault.addProvider(dydx.address);
-  await vault.addProvider(aave.address);
   await vault.addProvider(compound.address);
+  await vault.addProvider(aave.address);
 
   await controller.addVault(vault.address);
 
   let thebalance = await deployerWallet.getBalance();
-  console.log(thebalance, 'before deposit');
+  console.log(thebalance/1e18, 'before deposit');
 
-  //await vault.connect(deployerWallet).deposit('100000000000000000000', { value: '100000000000000000000' });
-  //thebalance = await deployerWallet.getBalance();
-  //console.log(thebalance, 'after deposit1');
+  await vault.connect(deployerWallet).deposit('100000000000000000000', { value: '100000000000000000000' });
+  thebalance = await deployerWallet.getBalance();
+  console.log(thebalance/1e18, 'after deposit1');
 
-  //await vault.connect(deployerWallet).withdraw('100000000000000000000');
-  //thebalance = await deployerWallet.getBalance();
-  //console.log(thebalance, 'after withdrawal1');
+  await vault.connect(deployerWallet).withdraw('50000000000000000000');
+  thebalance = await deployerWallet.getBalance();
+  console.log(thebalance/1e18, 'after withdrawal1');
 
-  //await vault.connect(deployerWallet).deposit('50000000000000000000', { value: '50000000000000000000' });
-  //thebalance = await deployerWallet.getBalance();
-  //console.log(thebalance, 'after deposit2');
+  await vault.connect(deployerWallet).borrow('50000000000000000000');
+  thebalance = await deployerWallet.getBalance();
+  console.log(thebalance/1e18, 'borrowed DAI');
 
-  //await vault.connect(deployerWallet).withdraw('25000000000000000000');
-  //thebalance = await deployerWallet.getBalance();
-  //console.log(thebalance, 'after withdrawal2');
+  apprv = daiContract.approve(vault.address, "23000000000000000000");
+  console.log("dai approval", apprv);
 
-  await vault.connect(deployerWallet).borrow('13000000000000000000');
+  await vault.connect(deployerWallet).payback('23000000000000000000');
+  thebalance = await deployerWallet.getBalance();
+  console.log(thebalance/1e18, 'after payback');
+
+  //await vault.connect(deployerWallet).borrow('13000000000000000000');
   //await controller.doControllerRoutine(vault.address);
 
 

@@ -96,6 +96,7 @@ abstract contract VaultBase is Ownable {
     _execute(_provider, data);
   }
 
+
   /**
   * @dev Returns byte response of delegatcalls
   */

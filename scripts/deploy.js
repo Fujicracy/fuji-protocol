@@ -16,7 +16,8 @@ const main = async () => {
   const deployerWallet = ethers.provider.getSigner();
 
   const daiAbi = [
-  "function approve(address usr, uint wad) external returns (bool)"];
+  "function approve(address usr, uint wad) external returns (bool)",
+  "function balanceOf() "];
   const daiContract = new ethers.Contract(DAI_ADDR, daiAbi, deployerWallet);
 
   //const deployerAddress = await deployerWallet.getAddress();
@@ -62,6 +63,8 @@ const main = async () => {
 
   await controller.addVault(vault.address);
 
+  //await vault.addmetowhitelist(); //DeployerWallet gets Whitelisted
+
   let thebalance = await deployerWallet.getBalance();
   console.log(thebalance/1e18, 'before deposit');
 
@@ -69,7 +72,7 @@ const main = async () => {
   thebalance = await deployerWallet.getBalance();
   console.log(thebalance/1e18, 'after deposit1');
 
-  await vault.connect(deployerWallet).withdraw('50000000000000000000');
+  await vault.connect(deployerWallet).withdraw('75000000000000000000');
   thebalance = await deployerWallet.getBalance();
   console.log(thebalance/1e18, 'after withdrawal1');
 
@@ -77,7 +80,7 @@ const main = async () => {
   thebalance = await deployerWallet.getBalance();
   console.log(thebalance/1e18, 'borrowed DAI');
 
-  apprv = daiContract.approve(vault.address, "23000000000000000000");
+  apprv = await daiContract.approve(vault.address, "23000000000000000000");
   console.log("dai approval", apprv);
 
   await vault.connect(deployerWallet).payback('23000000000000000000');

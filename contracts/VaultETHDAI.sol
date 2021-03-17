@@ -17,6 +17,7 @@ import { IVault } from "./IVault.sol";
 import { IProvider } from "./IProvider.sol";
 import { Flasher } from "./flashloans/Flasher.sol";
 import { FlashLoan } from "./flashloans/LibFlashLoan.sol";
+import { alphaWhitelist } from "./alphaWhitelist.sol";
 
 import "hardhat/console.sol"; //test line
 
@@ -24,7 +25,7 @@ import "hardhat/console.sol"; //test line
   //function doControllerRoutine(address _vault) external returns(bool);
 //}
 
-contract VaultETHDAI is IVault, VaultBase {
+contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
 
   AggregatorV3Interface public oracle;
   IUniswapV2Router02 public uniswap;
@@ -91,8 +92,9 @@ contract VaultETHDAI is IVault, VaultBase {
   * @param _collateralAmount: to be deposited
   * Emits a {Deposit} event.
   */
-  function deposit(uint256 _collateralAmount) public payable {
+  function deposit(uint256 _collateralAmount) public isWhitelisted payable {
     require(msg.value == _collateralAmount, "Collateral amount not the same as sent amount");
+    require(msg.value <= ETH_CAP_VALUE, "Alpha version Deposit Limit per Usr at 1 ETH");//Alpha
 
     //IController fujiTroller = IController(controller);
     //fujiTroller.doControllerRoutine(address(this));
@@ -113,7 +115,7 @@ contract VaultETHDAI is IVault, VaultBase {
 
     emit Deposit(msg.sender, _collateralAmount);
 
-    console.log('Deposit, Vault Balance', address(this).balance);//Test Line
+    //console.log('Deposit, Vault Balance', address(this).balance);//Test Line
   }
 
   /**
@@ -122,7 +124,7 @@ contract VaultETHDAI is IVault, VaultBase {
   * @param _withdrawAmount: amount of collateral to withdraw
   * Emits a {Withdraw} event.
   */
-  function withdraw(uint256 _withdrawAmount) public {
+  function withdraw(uint256 _withdrawAmount) public isWhitelisted {
 
     uint256 providedCollateral = collaterals[msg.sender];
 
@@ -161,7 +163,7 @@ contract VaultETHDAI is IVault, VaultBase {
   * @param _borrowAmount: token amount of underlying to borrow
   * Emits a {Borrow} event.
   */
-  function borrow(uint256 _borrowAmount) public {
+  function borrow(uint256 _borrowAmount) public isWhitelisted {
 
     uint256 providedCollateral = collaterals[msg.sender];
 
@@ -197,7 +199,7 @@ contract VaultETHDAI is IVault, VaultBase {
   * @param _repayAmount: token amount of underlying to repay
   * Emits a {Repay} event.
   */
-  function payback(uint256 _repayAmount) public payable {
+  function payback(uint256 _repayAmount) public isWhitelisted payable {
     updateDebtTokenBalances();
 
     uint256 userDebtBalance = debtToken.balanceOf(msg.sender);
@@ -219,7 +221,7 @@ contract VaultETHDAI is IVault, VaultBase {
     );
 
     emit Repay(msg.sender, _repayAmount);
-    console.log("User-DAI-balance", IERC20(borrowAsset).balanceOf(msg.sender));
+    //console.log("User-DAI-balance", IERC20(borrowAsset).balanceOf(msg.sender));
     //console.log("Debt Token", debtToken.balanceOf(msg.sender)); //Test Line
   }
 

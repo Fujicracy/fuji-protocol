@@ -300,7 +300,7 @@ contract ProviderDYDX is IProvider, HelperFunct {
   }
 
   /**
-  * @dev Returns the interest bearing ctoken address of an underlying ETH/ERC20_Token.
+  * @dev This function is not applicable to DYDX
   * @param collateralAsset: underlying asset address.
   */
   function getRedeemableAddress(address collateralAsset) external view override returns(address) {
@@ -320,7 +320,10 @@ contract ProviderDYDX is IProvider, HelperFunct {
   * @param _asset: token address to query the balance.
   */
   function getBorrowBalance(address _asset) external override returns(uint256) {
-    return 0;
+    SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
+    uint _marketId = getMarketId(dydxContract, _asset);
+    (uint tokenBal,) = getDydxPosition(dydxContract,_marketId);
+    return tokenBal;
   }
 
 }

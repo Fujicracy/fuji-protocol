@@ -3,20 +3,16 @@
 pragma solidity >=0.4.25 <0.8.0;
 pragma experimental ABIEncoderV2;
 
-import {
-  AggregatorV3Interface
-} from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
-import {
-  IUniswapV2Router02
-} from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+import {IUniswapV2Router02} from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
-import { DebtToken } from "./DebtToken.sol";
+import { IDebtToken } from "./IDebtToken.sol";
 import { VaultBase } from "./VaultBase.sol";
 import { IVault } from "./IVault.sol";
 import { IProvider } from "./IProvider.sol";
 import { Flasher } from "./flashloans/Flasher.sol";
-import { FlashLoan } from "./flashloans/LibFlashLoan.sol";
+import {Errors} from './Debt-token/Errors.sol';
 import { alphaWhitelist } from "./alphaWhitelist.sol";
 
 import "hardhat/console.sol"; //test line
@@ -38,10 +34,10 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
   }
 
   //Safety factor
-  Factor public safetyF;
+  Factor private safetyF;
 
   //Collateralization factor
-  Factor public collatF;
+  Factor private collatF;
   uint256 internal constant BASE = 1e18;
 
   //State variables to control vault providers
@@ -49,16 +45,18 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
   address public override activeProvider;
 
   Flasher flasher;
-  DebtToken public override debtToken;
+  address public override debtToken;
 
-  mapping(address => uint256) public collaterals;
+  mapping(address => uint256) public override collaterals;
 
   constructor(
     address _controller,
+    address _liquidator,
     address _oracle,
     address _uniswap
   ) public {
     controller = _controller;
+    liquidator =_liquidator;
     oracle = AggregatorV3Interface(_oracle);
     uniswap = IUniswapV2Router02(_uniswap);
 
@@ -93,8 +91,8 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
   * Emits a {Deposit} event.
   */
   function deposit(uint256 _collateralAmount) public isWhitelisted payable {
-    require(msg.value == _collateralAmount, "Collateral amount not the same as sent amount");
-    require(msg.value <= ETH_CAP_VALUE, "Alpha version Deposit Limit per Usr at 1 ETH");//Alpha
+    require(msg.value == _collateralAmount, Errors.VL_NOT_MATCH_MSG_VALUE);
+    require(msg.value <= ETH_CAP_VALUE, Errors.SP_ALPHA_ETH_CAP_VALUE);//Alpha
 
     //IController fujiTroller = IController(controller);
     //fujiTroller.doControllerRoutine(address(this));
@@ -115,7 +113,6 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
 
     emit Deposit(msg.sender, _collateralAmount);
 
-    //console.log('Deposit, Vault Balance', address(this).balance);//Test Line
   }
 
   /**
@@ -124,24 +121,16 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
   * @param _withdrawAmount: amount of collateral to withdraw
   * Emits a {Withdraw} event.
   */
-  function withdraw(uint256 _withdrawAmount) public isWhitelisted {
+  function withdraw(uint256 _withdrawAmount) public  {
 
     uint256 providedCollateral = collaterals[msg.sender];
 
-    require(
-      providedCollateral >= _withdrawAmount,
-      "Withdrawal amount exceeds provided amount"
-    );
+    require(providedCollateral >= _withdrawAmount, Errors.VL_INVALID_WITHDRAW_AMOUNT);
     // get needed collateral for current position
     // according current price
-    uint256 neededCollateral = getNeededCollateralFor(
-      debtToken.balanceOf(msg.sender)
-    );
+    uint256 neededCollateral = getNeededCollateralFor( IDebtToken(debtToken).balanceOf(msg.sender));
 
-    require(
-      providedCollateral.sub(_withdrawAmount) >= neededCollateral,
-      "Not enough collateral left"
-    );
+    require(providedCollateral.sub(_withdrawAmount) >= neededCollateral, Errors.VL_INVALID_WITHDRAW_AMOUNT);
 
     // withdraw collateral from current provider
     _withdraw(_withdrawAmount, address(activeProvider));
@@ -152,8 +141,6 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
 
     emit Withdraw(msg.sender, _withdrawAmount);
 
-    //console.log('Withdraw, Vault Balance', address(this).balance);//test line
-
     //IController fujiTroller = IController(controller);
     //fujiTroller.doControllerRoutine(address(this));
   }
@@ -163,7 +150,7 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
   * @param _borrowAmount: token amount of underlying to borrow
   * Emits a {Borrow} event.
   */
-  function borrow(uint256 _borrowAmount) public isWhitelisted {
+  function borrow(uint256 _borrowAmount) public isWhitelisted  {
 
     uint256 providedCollateral = collaterals[msg.sender];
 
@@ -171,10 +158,10 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
     // together with the new position
     // according current price
     uint256 neededCollateral = getNeededCollateralFor(
-      _borrowAmount.add(debtToken.balanceOf(msg.sender))
+      _borrowAmount.add(IDebtToken(debtToken).balanceOf(msg.sender))
     );
 
-    require(providedCollateral > neededCollateral, "Not enough collateral provided");
+    require(providedCollateral > neededCollateral, Errors.VL_INVALID_BORROW_AMOUNT);
 
     updateDebtTokenBalances();
 
@@ -183,15 +170,9 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
 
     IERC20(borrowAsset).uniTransfer(msg.sender, _borrowAmount);
 
-    debtToken.mint(
-      msg.sender,
-      msg.sender,
-      _borrowAmount
-    );
+    IDebtToken(debtToken).mint(msg.sender,msg.sender,_borrowAmount);
 
     emit Borrow(msg.sender, _borrowAmount);
-    //console.log("User-DAI-balance", IERC20(borrowAsset).balanceOf(msg.sender));
-    //console.log("Debt Token", debtToken.balanceOf(msg.sender)); //Test Line
   }
 
   /**
@@ -199,15 +180,16 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
   * @param _repayAmount: token amount of underlying to repay
   * Emits a {Repay} event.
   */
-  function payback(uint256 _repayAmount) public isWhitelisted payable {
+  function payback(uint256 _repayAmount) public payable {
     updateDebtTokenBalances();
 
-    uint256 userDebtBalance = debtToken.balanceOf(msg.sender);
-    require(userDebtBalance > 0, "No debt to repay");
+    uint256 userDebtBalance = IDebtToken(debtToken).balanceOf(msg.sender);
+    require(userDebtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
 
     require(
-      IERC20(borrowAsset).allowance(msg.sender, address(this)) >= _repayAmount,
-      "Not enough allowance"
+      IERC20(borrowAsset).allowance(msg.sender, address(this))
+      >= _repayAmount,
+      Errors.VL_MISSING_ERC20_ALLOWANCE
     );
 
     IERC20(borrowAsset).transferFrom(msg.sender, address(this), _repayAmount);
@@ -215,223 +197,9 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
     // payback current provider
     _payback(_repayAmount, address(activeProvider));
 
-    debtToken.burn(
-      msg.sender,
-      _repayAmount
-    );
+    IDebtToken(debtToken).burn(msg.sender,_repayAmount);
 
     emit Repay(msg.sender, _repayAmount);
-    //console.log("User-DAI-balance", IERC20(borrowAsset).balanceOf(msg.sender));
-    //console.log("Debt Token", debtToken.balanceOf(msg.sender)); //Test Line
-  }
-
-  /**
-  * @dev Liquidate an undercollaterized debt and get 5% bonus
-  * @param _userAddr: Address of user whose position is liquidatable
-  */
-  function liquidate(address _userAddr) external {
-    updateDebtTokenBalances();
-
-    uint256 userCollateral = collaterals[_userAddr];
-    uint256 userDebtBalance = debtToken.balanceOf(_userAddr);
-
-    // do checks user is liquidatable
-    uint256 neededCollateral = getNeededCollateralFor(userDebtBalance);
-    require(
-      userCollateral >= neededCollateral,
-      "Debt position is not liquidatable"
-    );
-
-    // transfer borrowAsset from liquidator to vault
-    require(
-      IERC20(borrowAsset).allowance(msg.sender, address(this)) >= userDebtBalance,
-      "Not enough allowance"
-    );
-    IERC20(borrowAsset).transferFrom(msg.sender, address(this), userDebtBalance);
-
-    // repay debt
-    _payback(userDebtBalance, address(activeProvider));
-
-    // withdraw collateral
-    _withdraw(userCollateral, address(activeProvider));
-
-    // get 5% of user debt
-    uint256 bonus = getLiquidationBonusFor(userDebtBalance, false);
-
-    // reduce collateralBalance
-    collateralBalance = collateralBalance.sub(userCollateral);
-    // update user collateral
-    collaterals[_userAddr] = 0;
-
-    // transfer 5% of debt position to liquidator
-    IERC20(collateralAsset).uniTransfer(msg.sender, bonus);
-    // cast user addr to payable
-    address payable user = address(uint160(_userAddr));
-    // transfer left collateral to user
-    uint256 leftover = userCollateral.sub(bonus);
-    IERC20(collateralAsset).uniTransfer(user, leftover);
-
-    // burn debt
-    debtToken.burn(
-      _userAddr,
-      userDebtBalance
-    );
-    emit Liquidate(_userAddr, msg.sender, userDebtBalance);
-  }
-
-  /**
-  * @dev Initiates a flashloan used to repay partially a debt position of msg.sender
-  * @param _amount: Amount to be repaid with a flashloan
-  */
-  function flashClosePartial(uint256 _amount) external {
-    updateDebtTokenBalances();
-
-    uint256 userDebtBalance = debtToken.balanceOf(msg.sender);
-    require(userDebtBalance > 0, "No debt to liquidate");
-    require(_amount <= userDebtBalance, "Debt is less than _amount");
-
-    FlashLoan.Info memory info = FlashLoan.Info({
-      callType: FlashLoan.CallType.Close,
-      asset: borrowAsset,
-      amount: _amount,
-      vault: address(this),
-      newProvider: address(0),
-      user: msg.sender,
-      liquidator: address(0)
-    });
-
-    flasher.initiateDyDxFlashLoan(info);
-  }
-
-  /**
-  * @dev Initiates a flashloan used to repay the total of msg.sender's debt position
-  */
-  function flashCloseTotal() external {
-    updateDebtTokenBalances();
-
-    uint256 userDebtBalance = debtToken.balanceOf(msg.sender);
-    require(userDebtBalance > 0, "No debt to liquidate");
-
-    FlashLoan.Info memory info = FlashLoan.Info({
-      callType: FlashLoan.CallType.Close,
-      asset: borrowAsset,
-      amount: userDebtBalance,
-      vault: address(this),
-      newProvider: address(0),
-      user: msg.sender,
-      liquidator: address(0)
-    });
-
-    flasher.initiateDyDxFlashLoan(info);
-  }
-
-  /**
-  * @dev Initiates a flashloan to liquidate an undercollaterized debt position,
-  * gets 4% bonus
-  * @param _userAddr: Address of user whose position is liquidatable
-  */
-  function flashLiquidate(address _userAddr) external {
-    updateDebtTokenBalances();
-
-    uint256 userCollateral = collaterals[_userAddr];
-    uint256 userDebtBalance = debtToken.balanceOf(_userAddr);
-
-    // do checks user is liquidatable
-    uint256 neededCollateral = getNeededCollateralFor(userDebtBalance);
-    require(
-      userCollateral >= neededCollateral,
-      "Debt position is not liquidatable"
-    );
-
-    FlashLoan.Info memory info = FlashLoan.Info({
-      callType: FlashLoan.CallType.Liquidate,
-      asset: borrowAsset,
-      amount: userDebtBalance,
-      vault: address(this),
-      newProvider: address(0),
-      user: _userAddr,
-      liquidator: msg.sender
-    });
-
-    flasher.initiateDyDxFlashLoan(info);
-  }
-
-  /**
-  * @dev Close user's debt position by using a flashloan
-  * @param _userAddr: user addr to be liquidated
-  * @param _debtAmount: amount of debt to be repaid
-  * Emits a {FlashClose} event.
-  */
-  function executeFlashClose(
-    address _userAddr,
-    uint256 _debtAmount
-  ) external override {
-    // TODO make callable only from Flasher
-    uint256 userCollateral = collaterals[_userAddr];
-    uint256 userDebtBalance = debtToken.balanceOf(_userAddr);
-
-    // reduce collateralBalance
-    collateralBalance = collateralBalance.sub(userCollateral);
-    // update user collateral
-    collaterals[_userAddr] = 0;
-
-    uint leftover = _repayAndSwap(userDebtBalance, userCollateral, _debtAmount);
-
-    // cast user addr to payable
-    address payable user = address(uint160(_userAddr));
-    // transfer left ETH amount to user
-    IERC20(collateralAsset).uniTransfer(user, userCollateral.sub(leftover));
-
-    // burn debt
-    debtToken.burn(
-      _userAddr,
-      userDebtBalance
-    );
-
-    emit FlashClose(_userAddr, userDebtBalance);
-  }
-
-  /**
-  * @dev Liquidate a debt position by using a flashloan
-  * @param _userAddr: user addr to be liquidated
-  * @param _liquidatorAddr: liquidator address
-  * @param _debtAmount: amount of debt to be repaid
-  * Emits a {FlashLiquidate} event.
-  */
-  function executeFlashLiquidation(
-    address _userAddr,
-    address _liquidatorAddr,
-    uint256 _debtAmount
-  ) external override {
-    // TODO make callable only from Flasher
-    uint256 userCollateral = collaterals[_userAddr];
-    uint256 userDebtBalance = debtToken.balanceOf(_userAddr);
-
-    // reduce collateralBalance
-    collateralBalance = collateralBalance.sub(userCollateral);
-    // update user collateral
-    collaterals[_userAddr] = 0;
-
-    uint256 leftover = _repayAndSwap(userDebtBalance, userCollateral, _debtAmount);
-
-    // get 4% of user debt
-    uint256 bonus = getLiquidationBonusFor(_debtAmount, true);
-    // cast user addr to payable
-    address payable liquidator = address(uint160(_liquidatorAddr));
-    // transfer 4% of debt position to liquidator
-    IERC20(collateralAsset).uniTransfer(liquidator, bonus);
-    // cast user addr to payable
-    address payable user = address(uint160(_userAddr));
-    // transfer left collateral to user deducted by bonus
-    IERC20(collateralAsset).uniTransfer(user, leftover.sub(bonus));
-
-    // burn debt
-    debtToken.burn(
-      _userAddr,
-      userDebtBalance
-    );
-
-    emit FlashLiquidate(_userAddr, _liquidatorAddr, userDebtBalance);
   }
 
   /**
@@ -440,16 +208,13 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
   * @param _flashLoanDebt amount of flashloan underlying to repay Flashloan
   * Emits a {Switch} event.
   */
-  function executeSwitch(
-    address _newProvider,
-    uint256 _flashLoanDebt
-  ) public override {
+  function executeSwitch(address _newProvider,uint256 _flashLoanDebt) public override {
     // TODO make callable only from Flasher
     uint256 borrowBalance = borrowBalance();
 
     require(
       IERC20(borrowAsset).allowance(msg.sender, address(this)) >= borrowBalance,
-      "Not enough allowance"
+      Errors.VL_MISSING_ERC20_ALLOWANCE
     );
 
     IERC20(borrowAsset).transferFrom(msg.sender, address(this), borrowBalance);
@@ -492,7 +257,7 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
 
     require(
       IERC20(borrowAsset).allowance(address(flasher), address(this)) >= _borrowAmount,
-      "Not enough allowance"
+      Errors.VL_MISSING_ERC20_ALLOWANCE
     );
     IERC20(borrowAsset).transferFrom(address(flasher), address(this), _borrowAmount);
 
@@ -519,6 +284,22 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
     return uniswapAmounts[0];
   }
 
+  /**
+  * @dev Get the collateral provided for a User.
+  * @param _user: Address of the user
+  */
+  function getUsercollateral(address _user) external view override returns(uint256){
+    return collaterals[_user];
+  }
+
+  /**
+  * @dev Get the collateral provided for a User.
+  * @param _user: Address of the user
+  */
+  function setUsercollateral(address _user, uint256 _newValue) external override isAuthorized {
+    collaterals[_user] = _newValue;
+  }
+
   //Administrative functions
 
   /**
@@ -526,7 +307,7 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
   * @param _debtToken: fuji debt token address
   */
   function setDebtToken(address _debtToken) external isAuthorized {
-    debtToken = DebtToken(_debtToken);
+    debtToken = _debtToken;
   }
 
   /**
@@ -550,7 +331,7 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
         alreadyIncluded = true;
       }
     }
-    require(!alreadyIncluded, "Provider is already included in Vault");
+    require(!alreadyIncluded, Errors.VL_PROVIDER_ALREADY_ADDED);
 
     //Push new provider to provider array
     providers.push(_provider);
@@ -611,7 +392,7 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
   * @dev Returns the amount of collateral needed, including safety factors
   * @param _amount: Vault underlying type intended to be borrowed
   */
-  function getNeededCollateralFor(uint256 _amount) public view returns(uint256) {
+  function getNeededCollateralFor(uint256 _amount) external view override returns(uint256) {
     // get price of DAI in ETH
     (,int256 latestPrice,,,) = oracle.latestRoundData();
     return _amount.mul(uint256(latestPrice))
@@ -642,10 +423,10 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
   * @dev Returns the redeermable amount of collateral of a user address
   * @param _user: address of the user
   */
-  function getRedeemableAmountOf(address _user) public view returns(uint256 share) {
-    uint256 collateralShare = getCollateralShareOf(_user);
-    share = redeemableCollateralBalance().mul(collateralShare).div(BASE);
-  }
+  //function getRedeemableAmountOf(address _user) public view returns(uint256 share) {
+  //  uint256 collateralShare = getCollateralShareOf(_user);
+  //  share = redeemableCollateralBalance().mul(collateralShare).div(BASE);
+  //}
 
   /**
   * @dev Sets a new active provider for the Vault
@@ -661,21 +442,20 @@ contract VaultETHDAI is IVault, VaultBase, alphaWhitelist {
   /**
   * @dev Returns the amount of redeemable collateral from an active provider
   */
-  function redeemableCollateralBalance() public view returns(uint256) {
-    address redeemable = IProvider(activeProvider).getRedeemableAddress(collateralAsset);
-    //Need a procedure for DYDX because they do not have a receipt token
-    return IERC20(redeemable).balanceOf(address(this));
-  }
+  //function redeemableCollateralBalance() public view returns(uint256) {
+  //  address redeemable = IProvider(activeProvider).getRedeemableAddress(collateralAsset);
+  //  return IERC20(redeemable).balanceOf(address(this));
+  //}
 
   /**
   * @dev Returns the total borrow balance of the Vault's type underlying at active provider
   */
-  function borrowBalance() public override returns(uint256) {
+  function borrowBalance() external override returns(uint256) {
     return IProvider(activeProvider).getBorrowBalance(borrowAsset);
   }
 
-  function updateDebtTokenBalances() override public {
-    debtToken.updateState(borrowBalance());
+  function updateDebtTokenBalances() external override {
+    IDebtToken(debtToken).updateState(borrowBalance());
   }
 
   receive() external payable {}

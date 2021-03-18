@@ -17,8 +17,12 @@ const main = async () => {
 
   const daiAbi = [
   "function approve(address usr, uint wad) external returns (bool)",
-  "function balanceOf() "];
-  const daiContract = new ethers.Contract(DAI_ADDR, daiAbi, deployerWallet);
+  "function balanceOf(address account) external view returns (uint256)"];
+  let daiContract = new ethers.Contract(DAI_ADDR, daiAbi, deployerWallet);
+
+  const debtTokenAbi = [
+  "function scaledTotalSupply() public view virtual returns (uint256)",
+  "function balanceOf(address user) external view returns (uint256)"];
 
   //const deployerAddress = await deployerWallet.getAddress();
   //const FujiMapping = await deploy("FujiMapping", [ //This contract has to be deployed first
@@ -55,37 +59,65 @@ const main = async () => {
 
   //Set up the environment for testing Fuji contracts.
 
+  let debtcontract = new ethers.Contract(debtToken.address, debtTokenAbi, deployerWallet);
+
   await vault.setDebtToken(debtToken.address);
 
-  await vault.addProvider(dydx.address);
   await vault.addProvider(compound.address);
+  await vault.addProvider(dydx.address);
   await vault.addProvider(aave.address);
 
   await controller.addVault(vault.address);
 
   //await vault.addmetowhitelist(); //DeployerWallet gets Whitelisted
 
-  let thebalance = await deployerWallet.getBalance();
-  console.log(thebalance/1e18, 'before deposit');
+  let ethbalance = await deployerWallet.getBalance();
+  console.log(ethbalance/1e18, 'User Balance pre transactions');
 
-  await vault.connect(deployerWallet).deposit('100000000000000000000', { value: '100000000000000000000' });
-  thebalance = await deployerWallet.getBalance();
-  console.log(thebalance/1e18, 'after deposit1');
+  console.log('Transaction 1, Deposit');
+  await vault.connect(deployerWallet).deposit('1000000000000000000', { value: '1000000000000000000' });
+  ethbalance = await deployerWallet.getBalance();
+  console.log(ethbalance/1e18, 'User ETH Balance');
 
-  await vault.connect(deployerWallet).withdraw('75000000000000000000');
-  thebalance = await deployerWallet.getBalance();
-  console.log(thebalance/1e18, 'after withdrawal1');
+  console.log('Transaction 2, Withdraw');
+  await vault.connect(deployerWallet).withdraw('600000000000000000');
+  ethbalance = await deployerWallet.getBalance();
+  console.log(ethbalance/1e18, 'User ETH Balance');
 
+  console.log('Transaction 3, Borrow');
   await vault.connect(deployerWallet).borrow('50000000000000000000');
-  thebalance = await deployerWallet.getBalance();
-  console.log(thebalance/1e18, 'borrowed DAI');
+  ethbalance = await deployerWallet.getBalance();
+  let daibalance = await daiContract.balanceOf('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266');
+  let debtbalance = await debtcontract.balanceOf('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266');
+  let debtTotal = await debtcontract.scaledTotalSupply();
+  console.log(ethbalance/1e18, 'User ETH Balance ');
+  console.log(daibalance/1e18, 'User Dai Balance ');
+  console.log(debtbalance/1e18, 'User Debt Token Balance ');
+  console.log(debtTotal/1e18, 'Total Supply Debt Token ');
 
-  apprv = await daiContract.approve(vault.address, "23000000000000000000");
-  console.log("dai approval", apprv);
+  console.log('Transaction 3, Approval');
+  await daiContract.approve(vault.address, "23000000000000000000");
 
+  console.log('Transaction 4, Payback');
   await vault.connect(deployerWallet).payback('23000000000000000000');
-  thebalance = await deployerWallet.getBalance();
-  console.log(thebalance/1e18, 'after payback');
+  ethbalance = await deployerWallet.getBalance();
+  daibalance = await daiContract.balanceOf('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266');
+  debtbalance = await debtcontract.balanceOf('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266');
+  debtTotal = await debtcontract.scaledTotalSupply();
+  console.log(ethbalance/1e18, 'User ETH Balance ');
+  console.log(daibalance/1e18, 'User Dai Balance ');
+  console.log(debtbalance/1e18, 'User Debt Token Balance ');
+  console.log(debtTotal/1e18, 'Total Supply Debt Token ');
+
+  console.log('Update Debt Token');
+  await vault.connect(deployerWallet).updateDebtTokenBalances();
+  let borrowbalance = await vault.connect(deployerWallet).borrowBalance();
+  console.log(borrowbalance/1e18, 'The borrow balance at Provider');
+  debtbalance = await debtcontract.balanceOf('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266');
+  debtTotal = await debtcontract.scaledTotalSupply();
+  console.log(debtbalance/1e18, 'User Debt Token Balance ');
+  console.log(debtTotal/1e18, 'Total Supply Debt Token ');
+
 
   //await vault.connect(deployerWallet).borrow('13000000000000000000');
   //await controller.doControllerRoutine(vault.address);

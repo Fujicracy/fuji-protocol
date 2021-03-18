@@ -9,7 +9,7 @@ import {IERC20Detailed} from './IERC20Detailed.sol';
 /**
  * @title ERC20
  * @notice Basic ERC20 implementation
- * @author Aave, inspired by the Openzeppelin ERC20 implementation
+ * @author Fuji, inspired by Aave, and the Openzeppelin ERC20 implementation
  **/
 contract IncentivizedERC20 is Context, IERC20, IERC20Detailed {
   using SafeMath for uint256;
@@ -63,7 +63,7 @@ contract IncentivizedERC20 is Context, IERC20, IERC20Detailed {
   /**
    * @return The balance of the token
    **/
-  function balanceOf(address account) public view virtual override returns (uint256) {
+  function balanceOf(address account) public view override virtual returns (uint256) {
     return _balances[account];
   }
 

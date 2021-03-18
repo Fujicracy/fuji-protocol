@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity >=0.4.25 <0.8.0;
-pragma experimental ABIEncoderV2;
 
 import { ReentrancyGuard } from "./@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Errors} from './Debt-token/Errors.sol';
 
 contract alphaWhitelist is ReentrancyGuard  {
 
@@ -26,7 +25,7 @@ contract alphaWhitelist is ReentrancyGuard  {
  * @dev Throws if called by any account that is not Whitelisted.
  */
   modifier isWhitelisted(){
-    require(reversedwhitelisted[msg.sender] != 0, "Address is not Whitelisted to use alpha version Fuji Protocol");
+    require(reversedwhitelisted[msg.sender] != 0, Errors.SP_ALPHA_ADDR_NOT_WHTLIST);
     _;
   }
 
@@ -37,9 +36,9 @@ contract alphaWhitelist is ReentrancyGuard  {
   */
   function addmetowhitelist() public nonReentrant {
 
-    require(reversedwhitelisted[msg.sender] == 0, "This address has already been Whitelisted!");
-    require(counter <= LIMIT_USERS, "Limit of whitelisted Users has been reached!");
-    require(block.number > timeblock + 50, "Block-lag to adding next user has not passed yet");
+    require(reversedwhitelisted[msg.sender] == 0, Errors.SP_ALPHA_ADDR_OK_WHTLIST);
+    require(counter <= LIMIT_USERS, Errors.SP_ALPHA_WHTLIST_FULL);
+    require(block.number > timeblock + 50, Errors.SP_ALPHA_WAIT_BLOCKLAG);
 
     whitelisted[counter] = msg.sender;
     reversedwhitelisted[msg.sender] = counter;

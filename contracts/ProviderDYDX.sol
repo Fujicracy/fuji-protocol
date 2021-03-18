@@ -131,6 +131,7 @@ contract HelperFunct {
   */
   function getAccountArgs() internal view returns (SoloMarginContract.Info[] memory) {
     SoloMarginContract.Info[] memory accounts = new SoloMarginContract.Info[](1);
+    console.log(address(this));
     accounts[0] = (SoloMarginContract.Info(address(this), 0));
     return accounts;
   }
@@ -164,7 +165,7 @@ contract HelperFunct {
   /**
   * @dev Get Dydx Position
   */
-  function getDydxPosition(SoloMarginContract solo, uint256 marketId) internal returns (uint tokenBal, bool tokenSign) {
+  function getDydxPosition(SoloMarginContract solo, uint256 marketId) internal returns (uint256 tokenBal, bool tokenSign) {
     SoloMarginContract.Wei memory tokenWeiBal = solo.getAccountWei(getAccountArgs()[0], marketId);
     tokenBal = tokenWeiBal.value;
     tokenSign = tokenWeiBal.sign;
@@ -322,7 +323,9 @@ contract ProviderDYDX is IProvider, HelperFunct {
   function getBorrowBalance(address _asset) external override returns(uint256) {
     SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
     uint _marketId = getMarketId(dydxContract, _asset);
-    (uint tokenBal,) = getDydxPosition(dydxContract,_marketId);
+    (uint256 tokenBal, bool tokenSign) = getDydxPosition(dydxContract,_marketId);
+    console.log('who call', msg.sender);//test line
+    console.log('TokenBal', tokenBal,'TokenSign', tokenSign);//test line
     return tokenBal;
   }
 

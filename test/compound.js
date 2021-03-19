@@ -12,7 +12,7 @@ const {
   ONE_ETH,
 } = require("./utils.js");
 
-describe("Fuji", () => {
+describe("Compound", () => {
   let controller;
   let flasher;
   let vault;

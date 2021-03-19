@@ -36,54 +36,10 @@ const main = async () => {
   await controller.addVault(vault.address);
 
   //Some tasks
+  for (var i = 0; i < 50; i++) {
+    await ethers.provider.send("evm_mine");
+  }
   await vault.addmetowhitelist(); //DeployerWallet gets Whitelisted
-
-  let ethbalance = await deployerWallet.getBalance();
-  console.log(ethbalance/1e18, 'User Balance pre transactions');
-
-  console.log('Transaction 1, Deposit');
-  await vault.connect(deployerWallet).deposit('1000000000000000000', { value: '1000000000000000000' });
-  ethbalance = await deployerWallet.getBalance();
-  console.log(ethbalance/1e18, 'User ETH Balance');
-
-  console.log('Transaction 2, Withdraw');
-  await vault.connect(deployerWallet).withdraw('600000000000000000');
-  ethbalance = await deployerWallet.getBalance();
-  console.log(ethbalance/1e18, 'User ETH Balance');
-
-  console.log('Transaction 3, Borrow');
-  await vault.connect(deployerWallet).borrow('50000000000000000000');
-  ethbalance = await deployerWallet.getBalance();
-  let daibalance = await daiContract.balanceOf('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266');
-  let debtbalance = await debtcontract.balanceOf('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266');
-  let debtTotal = await debtcontract.scaledTotalSupply();
-  console.log(ethbalance/1e18, 'User ETH Balance ');
-  console.log(daibalance/1e18, 'User Dai Balance ');
-  console.log(debtbalance/1e18, 'User Debt Token Balance ');
-  console.log(debtTotal/1e18, 'Total Supply Debt Token ');
-
-  console.log('Transaction 3, Approval');
-  await daiContract.approve(vault.address, "23000000000000000000");
-
-  console.log('Transaction 4, Payback');
-  await vault.connect(deployerWallet).payback('23000000000000000000');
-  ethbalance = await deployerWallet.getBalance();
-  daibalance = await daiContract.balanceOf('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266');
-  debtbalance = await debtcontract.balanceOf('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266');
-  debtTotal = await debtcontract.scaledTotalSupply();
-  console.log(ethbalance/1e18, 'User ETH Balance ');
-  console.log(daibalance/1e18, 'User Dai Balance ');
-  console.log(debtbalance/1e18, 'User Debt Token Balance ');
-  console.log(debtTotal/1e18, 'Total Supply Debt Token ');
-
-  console.log('Update Debt Token');
-  await vault.connect(deployerWallet).updateDebtTokenBalances();
-  let borrowbalance = await vault.connect(deployerWallet).borrowBalance();
-  console.log(borrowbalance/1e18, 'The borrow balance at Provider');
-  debtbalance = await debtcontract.balanceOf('0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266');
-  debtTotal = await debtcontract.scaledTotalSupply();
-  console.log(debtbalance/1e18, 'User Debt Token Balance ');
-  console.log(debtTotal/1e18, 'Total Supply Debt Token ');
 
   // const exampleToken = await deploy("ExampleToken")
   // const examplePriceOracle = await deploy("ExamplePriceOracle")

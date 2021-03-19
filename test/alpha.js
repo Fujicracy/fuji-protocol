@@ -53,56 +53,39 @@ describe("Alpha", () => {
     dai = _fixture.dai;
     vault = _fixture.vault;
     aweth = _fixture.aweth;
+    ceth = _fixture.ceth;
     debtToken = _fixture.debtToken;
     aave = _fixture.aave;
-
-    await vault.setActiveProvider(aave.address);
+    compound = _fixture.compound;
 
   });
 
-  describe("VaultETHDAI -> Aave", () => {
+  describe("Alpha Whitelisting Functionality", () => {
 
-    it("User 1 deposits 1 ETH and borrows 900 DAI", async () => {
+    it("User 1: tries deposits but not Whitelisted", async () => {
 
-      await vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH });
-
-      // Vault balance
-      expect(await aweth.balanceOf(vault.address)).to.equal(ONE_ETH);
-
-      const daiAmount = await convertToCurrencyDecimals(DAI_ADDR, 400);
-
-      await expect(() => vault.connect(users[1]).borrow(daiAmount))
-        .to.changeTokenBalance(dai, users[1], daiAmount);
-
-      expect(await debtToken.balanceOf(users[1].address)).to.equal(daiAmount);
-
-      // debt tokens appreciate after another tx
-      const newDaiAmount = await convertToCurrencyDecimals(DAI_ADDR, 500);
-      await vault.connect(users[1]).borrow(newDaiAmount);
-      const balance = await debtToken.balanceOf(users[1].address);
-      //console.log(balance.toString());
-      expect(balance).to.gt(daiAmount);
+      await expect(vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH })).to.be.revertedWith('902');
     });
 
-    it("User 2 deposits 1 ETH and borrows 900 DAI", async () => {
+    it("User 1: tries to get Whitelisted, but not enough block-lag", async () => {
 
-      await vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH });
-      await vault.connect(users[2]).deposit(ONE_ETH, { value: ONE_ETH });
-
-      const daiAmount = await convertToCurrencyDecimals(DAI_ADDR, 900);
-      await expect(() => vault.connect(users[1]).borrow(daiAmount))
-        .to.changeTokenBalance(dai, users[1], daiAmount);
-      await expect(() => vault.connect(users[2]).borrow(daiAmount))
-        .to.changeTokenBalance(dai, users[2], daiAmount);
-
-      const balance1 = await debtToken.balanceOf(users[1].address);
-      console.log("User 1 debt balance: " + balance1.toString());
-      const balance2 = await debtToken.balanceOf(users[2].address);
-      console.log("User 2 debt balance: " + balance2.toString());
-
-      // user1 accumulates more debt than user2
-      expect(balance1).to.gt(balance2);
+      await expect(vault.connect(users[1]).addmetowhitelist()).to.be.revertedWith('905');
     });
+
+    it("User 1: succeeds to get whitelisted, and deposits 1 ETH", async () => {
+
+      await vault.setActiveProvider(compound.address);
+
+      for (var i = 0; i < 50; i++) {
+        await ethers.provider.send("evm_mine");
+      }
+      await vault.connect(users[1]).addmetowhitelist();
+      await vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH });
+      const rate = await ceth.exchangeRateStored();
+      const cethAmount = ONE_ETH.pow(2).div(rate);
+      await expect(await ceth.balanceOf(vault.address)).to.equal(cethAmount);
+    });
+
 
   });
 });

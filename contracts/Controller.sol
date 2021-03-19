@@ -12,7 +12,9 @@ import { FlashLoan } from "./flashloans/LibFlashLoan.sol";
 import "hardhat/console.sol"; //test line
 
 contract Controller is Ownable {
+
   address public flasherAddr;
+  address public fliquidator;
 
   //Change Threshold is the minimum percent in Borrowing Rates to trigger a provider change
   //Percentage Expressed in ray (1e27)
@@ -29,10 +31,12 @@ contract Controller is Ownable {
 
   constructor(
     address _flasher,
+    address _fliquidator,
     uint256 _changeThreshold
   ) public {
     // Add initializer addresses
     flasherAddr = _flasher;
+    fliquidator = _fliquidator;
     changeThreshold = _changeThreshold;
   }
 
@@ -132,7 +136,8 @@ contract Controller is Ownable {
         vault: _vaultAddr,
         newProvider: newProvider,
         user: address(0),
-        liquidator: address(0)
+        userliquidator: address(0),
+        fliquidator: fliquidator
       });
 
       Flasher(flasherAddr).initiateDyDxFlashLoan(info);

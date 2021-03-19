@@ -18,6 +18,13 @@ import {
 import { FlashLoan } from "./LibFlashLoan.sol";
 import { IVault } from "../IVault.sol";
 
+interface IFliquidator {
+
+  function executeFlashClose(address _userAddr, uint256 _debtAmount, address vault) external;
+
+  function executeFlashLiquidation(address _userAddr,address _liquidatorAddr,uint256 _debtAmount, address vault) external;
+}
+
 contract Flasher is
   DyDxFlashloanBase,
   IFlashLoanReceiver,
@@ -128,10 +135,10 @@ contract Flasher is
       IVault(info.vault).executeSwitch(info.newProvider, amountOwing);
     }
     else if (info.callType == FlashLoan.CallType.Close) {
-      IVault(info.vault).executeFlashClose(info.user, amountOwing);
+      IFliquidator(info.fliquidator).executeFlashClose(info.user, amountOwing, info.vault);
     }
     else {
-      IVault(info.vault).executeFlashLiquidation(info.user, info.liquidator, amountOwing);
+      IFliquidator(info.fliquidator).executeFlashLiquidation(info.user, info.userliquidator, amountOwing, info.vault);
     }
 
     //Approve solo to spend to repay flashloan
@@ -204,10 +211,10 @@ contract Flasher is
       IVault(info.vault).executeSwitch(info.newProvider, amountOwing);
     }
     else if (info.callType == FlashLoan.CallType.Close) {
-      IVault(info.vault).executeFlashClose(info.user, amountOwing);
+      IFliquidator(info.fliquidator).executeFlashClose(info.user, amountOwing, info.vault);
     }
     else {
-      IVault(info.vault).executeFlashLiquidation(info.user, info.liquidator, amountOwing);
+      IFliquidator(info.fliquidator).executeFlashLiquidation(info.user, info.userliquidator, amountOwing,info.vault);
     }
 
     //Approve aaveLP to spend to repay flashloan

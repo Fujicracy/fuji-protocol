@@ -14,7 +14,7 @@ const {
 
 //use(solidity);
 
-describe("Aave", () => {
+describe("Alpha", () => {
   let dai;
   let aweth;
   let ceth;
@@ -38,21 +38,17 @@ describe("Aave", () => {
   before(async() => {
     users = await ethers.getSigners();
     loadFixture = createFixtureLoader(users, ethers.provider);
-
     evmSnapshotId = await evmSnapshot();
 
-    // unlock DAI so that we can make initial transfer
-    //await hre.network.provider.request({
-      //method: "hardhat_impersonateAccount",
-      //params: [DAI_ADDR]
-    //});
   });
 
   after(async() => {
     evmRevert(evmSnapshotId);
+
   });
 
   beforeEach(async() => {
+
     const _fixture = await loadFixture(fixture);
     dai = _fixture.dai;
     vault = _fixture.vault;
@@ -61,6 +57,7 @@ describe("Aave", () => {
     aave = _fixture.aave;
 
     await vault.setActiveProvider(aave.address);
+
   });
 
   describe("VaultETHDAI -> Aave", () => {
@@ -105,18 +102,6 @@ describe("Aave", () => {
 
       // user1 accumulates more debt than user2
       expect(balance1).to.gt(balance2);
-    });
-
-    it("User 1 deposits 1 ETH", async () => {
-
-      let ibalance = users[1].balance;
-      await vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH });
-      let fbalance = users[1].balance;
-
-      await expect(fbalance).to.lt(ibalance);
-
-      console.log("User 1 Initial balance: " + ibalance);
-      console.log("User 1 Final  balance: " + fbalance);
     });
 
   });

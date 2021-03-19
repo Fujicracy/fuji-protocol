@@ -11,9 +11,11 @@ const cETH_ADDR = "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5";
 
 const ONE_ETH = ethers.utils.parseEther("1.0");
 
+const FLIQUIDATOR = require("../artifacts/contracts/Fliquidator.sol/Fliquidator.json")
 const VaultETHDAI = require("../artifacts/contracts/VaultETHDAI.sol/VaultETHDAI.json");
 const AAVE = require("../artifacts/contracts/ProviderAave.sol/ProviderAave.json");
 const Compound = require("../artifacts/contracts/ProviderCompound.sol/ProviderCompound.json");
+const DYDX = require("../artifacts/contracts/ProviderDYDX.sol/ProviderDYDX.json")
 const DebtToken = require("../artifacts/contracts/DebtToken.sol/DebtToken.json");
 const Flasher = require("../artifacts/contracts/flashloans/Flasher.sol/Flasher.json");
 const Controller = require("../artifacts/contracts/Controller.sol/Controller.json");
@@ -24,31 +26,14 @@ const fixture = async ([wallet, other], provider) => {
   const aweth = await ethers.getContractAt("IERC20", aWETH_ADDR);
   const ceth = await ethers.getContractAt("CErc20", cETH_ADDR);
 
+  const fliquidator = await deployContract(wallet, FLIQUIDATOR, [UNISWAP_ROUTER_ADDR]);
   const flasher = await deployContract(wallet, Flasher, []);
-  //console.log("Flasher: " + flasher.address);
-  const controller = await deployContract(wallet, Controller, [
-    flasher.address,
-    "0" //changeThreshold percentagedecimal to ray (0.02 x 10^27)
-  ]);
-  //console.log("Controller: " + controller.address);
-
+  const controller = await deployContract(wallet, Controller, [flasher.address, fliquidator.address,"0"]);//changeThreshold percentagedecimal to ray (0.02 x 10^27)
   const aave = await deployContract(wallet, AAVE, []);
-  //console.log("Aave: " + aave.address);
   const compound = await deployContract(wallet, Compound, []);
-  //console.log("Compound: " + compound.address);
-  const vault = await deployContract(wallet, VaultETHDAI, [
-    controller.address,
-    CHAINLINK_ORACLE_ADDR,
-    UNISWAP_ROUTER_ADDR
-  ]);
-  //console.log("Vault: " + vault.address);
-  const debtToken = await deployContract(wallet, DebtToken, [
-    vault.address,
-    DAI_ADDR,
-    "Fuji DAI debt token",
-    "faDAI"
-  ]);
-  //console.log("Debt token: " + debtToken.address);
+  const dydx = await deployContract(wallet, DYDX, []);
+  const vault = await deployContract(wallet, VaultETHDAI, [controller.address,fliquidator.address,CHAINLINK_ORACLE_ADDR]);
+  const debtToken = await deployContract(wallet, DebtToken, [vault.address,DAI_ADDR,"Fuji DAI debt token","fjDAI"]);
 
   await flasher.setController(controller.address);
   await flasher.setVaultAuthorization(vault.address, true);
@@ -56,18 +41,21 @@ const fixture = async ([wallet, other], provider) => {
   await vault.setFlasher(flasher.address);
   await vault.addProvider(aave.address);
   await vault.addProvider(compound.address);
+  await vault.addProvider(dydx.address);
   await controller.addVault(vault.address);
 
   return {
-    controller,
-    flasher,
-    vault,
-    aave,
-    compound,
     dai,
     aweth,
     ceth,
-    debtToken,
+    fliquidator,
+    flasher,
+    controller,
+    aave,
+    compound,
+    dydx,
+    vault,
+    debtToken
   }
 }
 

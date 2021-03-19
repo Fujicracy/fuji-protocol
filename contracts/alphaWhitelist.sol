@@ -4,7 +4,7 @@ pragma solidity >=0.4.25 <0.8.0;
 import { ReentrancyGuard } from "./@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Errors} from './Debt-token/Errors.sol';
 
-contract alphaWhitelist is ReentrancyGuard  {
+contract AlphaWhitelist is ReentrancyGuard  {
 
   uint256 public ETH_CAP_VALUE = 10**18;
   uint256 public LIMIT_USERS = 100;

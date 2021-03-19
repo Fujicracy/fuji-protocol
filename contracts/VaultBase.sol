@@ -17,13 +17,13 @@ abstract contract VaultBase is Ownable {
   address public borrowAsset;
 
   address public controller;
-  address public liquidator;
+  address public fliquidator;
 
   //Balance of all available collateral in ETH
-  uint256 public override collateralBalance;
+  uint256 public collateralBalance;
 
   modifier isAuthorized() {
-    require(msg.sender == controller || msg.sender == liquidator || msg.sender == address(this) || msg.sender == owner(), "!authorized");
+    require(msg.sender == controller || msg.sender == fliquidator || msg.sender == address(this) || msg.sender == owner(), "!authorized");
     _;
   }
 
@@ -37,7 +37,7 @@ abstract contract VaultBase is Ownable {
   function _deposit(
     uint256 _amount,
     address _provider
-  ) external override isAuthorized {
+  ) internal {
     bytes memory data = abi.encodeWithSignature(
       "deposit(address,uint256)",
       collateralAsset,
@@ -54,7 +54,7 @@ abstract contract VaultBase is Ownable {
   function _withdraw(
     uint256 _amount,
     address _provider
-  ) external override isAuthorized{
+  ) internal {
     bytes memory data = abi.encodeWithSignature(
       "withdraw(address,uint256)",
       collateralAsset,
@@ -71,7 +71,7 @@ abstract contract VaultBase is Ownable {
   function _borrow(
     uint256 _amount,
     address _provider
-  ) external override isAuthorized {
+  ) internal {
     bytes memory data = abi.encodeWithSignature(
       "borrow(address,uint256)",
       borrowAsset,
@@ -88,7 +88,7 @@ abstract contract VaultBase is Ownable {
   function _payback(
     uint256 _amount,
     address _provider
-  ) external override isAuthorized{
+  ) internal {
     bytes memory data = abi.encodeWithSignature(
       "payback(address,uint256)",
       borrowAsset,
@@ -96,15 +96,6 @@ abstract contract VaultBase is Ownable {
     );
     _execute(_provider, data);
   }
-
-  /**
-  * @dev Sets new value for the collateral balance
-  * @param _newCollateralBalance: amount to be paid back
-  */
-  function setVaultCollateralBalance(uint256 _newCollateralBalance) external override isAuthorized {
-    collateralBalance = _newCollateralBalance;
-  }
-
 
   /**
   * @dev Returns byte response of delegatcalls

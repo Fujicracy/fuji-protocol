@@ -11,65 +11,32 @@ const main = async () => {
 
   const DAI_ADDR = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
   const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
-
+  const UNISWAP_ROUTER_ADDR = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
+  const CHAINLINK_ORACLE_ADDR = "0x773616E4d11A78F511299002da57A0a94577F1f4";
 
   const deployerWallet = ethers.provider.getSigner();
 
-  const daiAbi = [
-  "function approve(address usr, uint wad) external returns (bool)",
-  "function balanceOf(address account) external view returns (uint256)"];
-  let daiContract = new ethers.Contract(DAI_ADDR, daiAbi, deployerWallet);
-
-  const debtTokenAbi = [
-  "function scaledTotalSupply() public view virtual returns (uint256)",
-  "function balanceOf(address user) external view returns (uint256)"];
-
-  //const deployerAddress = await deployerWallet.getAddress();
-  //const FujiMapping = await deploy("FujiMapping", [ //This contract has to be deployed first
-    //deployerAddress,
-    //"mainnet"
-  //]);
-  //await FujiMapping.addCtknMapping([
-    ////Mainnet mappings for Compound Protocol ctoken
-    //"0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643" //cDAI
-    ////Kovan mappings for Compound Protocol ctoken
-    ////0xF0d0EB522cfa50B716B3b1604C4F0fA6f04376AD, //cDAI
-  //]);
+  const fliquidator = await deploy("Fliquidator", [UNISWAP_ROUTER_ADDR]);
   const flasher = await deploy("Flasher");
+  const controller = await deploy("Controller", [flasher.address, fliquidator.address, "10000000000000000000000000"]);
   const aave = await deploy("ProviderAave");
   const compound = await deploy("ProviderCompound");
   const dydx = await deploy("ProviderDYDX");
+  const vault = await deploy("VaultETHDAI", [controller.address,fliquidator.address,CHAINLINK_ORACLE_ADDR]);
+  const debtToken = await deploy("DebtToken", [vault.address, DAI_ADDR,"Fuji DAI debt token","fjDAI"]);
 
-  const controller = await deploy("Controller", [
-    flasher.address, //flasher
-    "10000000000000000000000000" //changeThreshold percentagedecimal to ray (0.02 x 10^27)
-  ]);
-
-  const vault = await deploy("VaultETHDAI", [
-    controller.address,
-    "0x773616E4d11A78F511299002da57A0a94577F1f4", // oracle
-    "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", // uniswap
-  ]);
-  const debtToken = await deploy("DebtToken", [
-    vault.address,
-    DAI_ADDR,
-    "Fuji DAI debt token",
-    "fjDAI"
-  ]);
-
-  //Set up the environment for testing Fuji contracts.
-
-  let debtcontract = new ethers.Contract(debtToken.address, debtTokenAbi, deployerWallet);
-
+  //Set up the environment
+  await flasher.setController(controller.address);
+  await flasher.setVaultAuthorization(vault.address, true);
   await vault.setDebtToken(debtToken.address);
-
+  await vault.setFlasher(flasher.address);
   await vault.addProvider(compound.address);
-  await vault.addProvider(dydx.address);
   await vault.addProvider(aave.address);
-
+  await vault.addProvider(dydx.address);
   await controller.addVault(vault.address);
 
-  //await vault.addmetowhitelist(); //DeployerWallet gets Whitelisted
+  //Some tasks
+  await vault.addmetowhitelist(); //DeployerWallet gets Whitelisted
 
   let ethbalance = await deployerWallet.getBalance();
   console.log(ethbalance/1e18, 'User Balance pre transactions');
@@ -117,15 +84,6 @@ const main = async () => {
   debtTotal = await debtcontract.scaledTotalSupply();
   console.log(debtbalance/1e18, 'User Debt Token Balance ');
   console.log(debtTotal/1e18, 'Total Supply Debt Token ');
-
-
-  //await vault.connect(deployerWallet).borrow('13000000000000000000');
-  //await controller.doControllerRoutine(vault.address);
-
-
-  //let checkratesgascost = await controller.estimateGas.checkRates(vault.address);
-  //console.log("checkRates gas Cost: ",checkratesgascost);
-
 
   // const exampleToken = await deploy("ExampleToken")
   // const examplePriceOracle = await deploy("ExamplePriceOracle")

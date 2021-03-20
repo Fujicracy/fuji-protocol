@@ -26,6 +26,7 @@ library Errors {
   string public constant VL_USER_NOT_LIQUIDATABLE = '108'; //User debt position is not liquidatable
   string public constant VL_DEBT_LESS_THAN_AMOUNT = '109'; //User debt is less than amount to partial close
   string public constant VL_PROVIDER_ALREADY_ADDED = '110'; // Provider is already added in Provider Array
+  string public constant VL_NOT_AUTHORIZED = '111'; //Not authorized
 
   string public constant MATH_DIVISION_BY_ZERO = '201';
   string public constant MATH_ADDITION_OVERFLOW = '202';

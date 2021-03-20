@@ -16,16 +16,8 @@ abstract contract VaultBase is Ownable {
   address public collateralAsset;
   address public borrowAsset;
 
-  address public controller;
-  address public fliquidator;
-
   //Balance of all available collateral in ETH
   uint256 public collateralBalance;
-
-  modifier isAuthorized() {
-    require(msg.sender == controller || msg.sender == fliquidator || msg.sender == address(this) || msg.sender == owner(), "!authorized");
-    _;
-  }
 
   //Internal functions
 

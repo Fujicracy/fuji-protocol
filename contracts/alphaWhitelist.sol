@@ -7,7 +7,7 @@ import {Errors} from './Debt-token/Errors.sol';
 contract AlphaWhitelist is ReentrancyGuard  {
 
   uint256 public ETH_CAP_VALUE = 10**18;
-  uint256 public LIMIT_USERS = 100;
+  uint256 public LIMIT_USERS;
   uint256 private counter = 1;
   uint256 public timeblock;
 

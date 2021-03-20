@@ -10,8 +10,8 @@ import { VaultBase } from "./VaultBase.sol";
 import { IVault } from "./IVault.sol";
 import { IProvider } from "./IProvider.sol";
 import { Flasher } from "./flashloans/Flasher.sol";
-import {Errors} from './Debt-token/Errors.sol';
 import { AlphaWhitelist } from "./AlphaWhitelist.sol";
+import {Errors} from './Debt-token/Errors.sol';
 
 import "hardhat/console.sol"; //test line
 
@@ -37,20 +37,34 @@ contract VaultETHDAI is IVault, VaultBase, AlphaWhitelist {
   Factor private collatF;
   uint256 internal constant BASE = 1e18;
 
-  //State variables to control vault providers
+  //State variables
   address[] public providers;
   address public override activeProvider;
 
-  Flasher flasher;
   address public override debtToken;
+
+  address public controller;
+  address public fliquidator;
+  Flasher flasher;
 
   mapping(address => uint256) public collaterals;
 
+  modifier isAuthorized() {
+    require(msg.sender == controller ||
+      msg.sender == fliquidator ||
+      msg.sender == address(this) ||
+      msg.sender == address(flasher) ||
+      msg.sender == owner(),
+      Errors.VL_NOT_AUTHORIZED);
+    _;
+  }
+
   constructor (
-    
+
     address _controller,
     address _fliquidator,
-    address _oracle
+    address _oracle,
+    uint256 _limitusers
 
   ) public {
 
@@ -71,6 +85,8 @@ contract VaultETHDAI is IVault, VaultBase, AlphaWhitelist {
     // 125%
     collatF.a = 5;
     collatF.b = 4;
+
+    LIMIT_USERS = _limitusers; //alpha
 
 
   }
@@ -211,9 +227,9 @@ contract VaultETHDAI is IVault, VaultBase, AlphaWhitelist {
   * @param _flashLoanDebt amount of flashloan underlying to repay Flashloan
   * Emits a {Switch} event.
   */
-  function executeSwitch(address _newProvider,uint256 _flashLoanDebt) public override {
+  function executeSwitch(address _newProvider,uint256 _flashLoanDebt) public override isAuthorized {
     // TODO make callable only from Flasher
-    uint256 borrowBalance = borrowBalance();
+    uint256 borrowBalance = borrowBalance(activeProvider);
 
     require(
       IERC20(borrowAsset).allowance(msg.sender, address(this)) >= borrowBalance,
@@ -314,7 +330,7 @@ contract VaultETHDAI is IVault, VaultBase, AlphaWhitelist {
   }
 
   function updateDebtTokenBalances() public override {
-    IDebtToken(debtToken).updateState(borrowBalance());
+    IDebtToken(debtToken).updateState(borrowBalance(activeProvider));
   }
 
 
@@ -437,10 +453,19 @@ contract VaultETHDAI is IVault, VaultBase, AlphaWhitelist {
   //}
 
   /**
-  * @dev Returns the total borrow balance of the Vault's type underlying at active provider
+  * @dev Returns the total borrow balance of the Vault's  underlying at provider
+  * @param _provider: address of a provider
   */
-  function borrowBalance() public override returns(uint256) {
-    return IProvider(activeProvider).getBorrowBalance(borrowAsset);
+  function borrowBalance(address _provider) public override returns(uint256) {
+    return IProvider(_provider).getBorrowBalance(borrowAsset);
+  }
+
+  /**
+  * @dev Returns the total deposit balance of the Vault's type collateral at provider
+  * @param _provider: address of a provider
+  */
+  function depositBalance(address _provider) public override returns(uint256) {
+    return IProvider(_provider).getDepositBalance(collateralAsset);
   }
 
   receive() external payable {}

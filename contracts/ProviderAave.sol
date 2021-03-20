@@ -157,6 +157,21 @@ contract ProviderAave is IProvider {
   }
 
       /**
+     * @dev Return deposit balance of ETH/ERC20_Token.
+     * @param collateralAsset token address to query the balance.
+    */
+    function getDepositBalance(address collateralAsset) external override returns(uint256) {
+    AaveDataProviderInterface aaveData = getAaveDataProvider();
+
+    bool isEth = collateralAsset == getEthAddr();
+    address _token = isEth ? getWethAddr() : collateralAsset;
+
+    (uint256 atokenBal,, , , , , , , ) = aaveData.getUserReserveData(_token, msg.sender);
+
+    return atokenBal;
+    }
+
+      /**
      * @dev Deposit ETH/ERC20_Token.
      * @param collateralAsset token address to deposit.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
      * @param collateralAmount token amount to deposit.

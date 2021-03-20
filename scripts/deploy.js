@@ -22,7 +22,7 @@ const main = async () => {
   const aave = await deploy("ProviderAave");
   const compound = await deploy("ProviderCompound");
   const dydx = await deploy("ProviderDYDX");
-  const vault = await deploy("VaultETHDAI", [controller.address,fliquidator.address,CHAINLINK_ORACLE_ADDR]);
+  const vault = await deploy("VaultETHDAI", [controller.address,fliquidator.address,CHAINLINK_ORACLE_ADDR,"15"]);
   const debtToken = await deploy("DebtToken", [vault.address, DAI_ADDR,"Fuji DAI debt token","fjDAI"]);
 
   //Set up the environment

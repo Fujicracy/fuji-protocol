@@ -125,7 +125,7 @@ contract Controller is Ownable {
 
       //Initiate Flash Loan
       IVault vault = IVault(_vaultAddr);
-      uint256 debtPosition = vault.borrowBalance();
+      uint256 debtPosition = vault.borrowBalance(vault.activeProvider());
 
       require(debtPosition > 0, "No debt to liquidate");
 

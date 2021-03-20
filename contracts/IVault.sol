@@ -21,7 +21,8 @@ interface IVault {
   function getBorrowAsset() external view returns(address);
 
   function activeProvider() external view returns(address);
-  function borrowBalance() external returns(uint256);
+  function borrowBalance(address _provider) external returns(uint256);
+	function depositBalance(address _provider) external returns(uint256);
   function debtToken() external view returns(address);
 	function getcollateralBalance() external view returns(uint256);
 	function getUsercollateral(address _user) external view returns(uint256);

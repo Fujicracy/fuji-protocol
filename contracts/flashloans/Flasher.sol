@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Errors} from '../Debt-token/Errors.sol';
 
 import { ILendingPool, IFlashLoanReceiver } from "./AaveFlashLoans.sol";
 import {
@@ -44,7 +45,7 @@ contract Flasher is
 
     require(
       msg.sender == controller || vaults[msg.sender] || msg.sender == owner(),
-      "!authorized"
+      Errors.VL_NOT_AUTHORIZED
     );
     _;
   }
@@ -52,7 +53,7 @@ contract Flasher is
   modifier isAuthorizedExternal() {
     require(
       msg.sender == DYDX_SOLO_MARGIN || msg.sender == AAVE_LENDING_POOL,
-      "!authorized external"
+      Errors.VL_NOT_AUTHORIZED
     );
     _;
   }

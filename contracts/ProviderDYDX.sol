@@ -324,8 +324,17 @@ contract ProviderDYDX is IProvider, HelperFunct {
     SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
     uint _marketId = getMarketId(dydxContract, _asset);
     (uint256 tokenBal, bool tokenSign) = getDydxPosition(dydxContract,_marketId);
-    console.log('who call', msg.sender);//test line
-    console.log('TokenBal', tokenBal,'TokenSign', tokenSign);//test line
+    return tokenBal;
+  }
+
+  /**
+  * @dev Returns the borrow balance of a ETH/ERC20_Token.
+  * @param _asset: token address to query the balance.
+  */
+  function getDepositBalance(address _asset) external override returns(uint256) {
+    SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
+    uint _marketId = getMarketId(dydxContract, _asset);
+    (uint256 tokenBal, bool tokenSign) = getDydxPosition(dydxContract,_marketId);
     return tokenBal;
   }
 

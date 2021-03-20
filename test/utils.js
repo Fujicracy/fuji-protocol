@@ -32,7 +32,7 @@ const fixture = async ([wallet, other], provider) => {
   const aave = await deployContract(wallet, AAVE, []);
   const compound = await deployContract(wallet, Compound, []);
   const dydx = await deployContract(wallet, DYDX, []);
-  const vault = await deployContract(wallet, VaultETHDAI, [controller.address,fliquidator.address,CHAINLINK_ORACLE_ADDR]);
+  const vault = await deployContract(wallet, VaultETHDAI, [controller.address,fliquidator.address,CHAINLINK_ORACLE_ADDR,"15"]);
   const debtToken = await deployContract(wallet, DebtToken, [vault.address,DAI_ADDR,"Fuji DAI debt token","fjDAI"]);
 
   await flasher.setController(controller.address);
@@ -64,6 +64,12 @@ const timeTravel = async (seconds) => {
   await ethers.provider.send("evm_mine");
 }
 
+const advanceblocks = async (blocks) => {
+  for (var i = 0; i < blocks; i++) {
+    await ethers.provider.send("evm_mine");
+  }
+}
+
 const convertToCurrencyDecimals = async (tokenAddr, amount) => {
   const token = await ethers.getContractAt("IERC20Detailed", tokenAddr);
   let decimals = (await token.decimals()).toString();
@@ -79,6 +85,7 @@ const evmRevert = async (id) => ethers.provider.send('evm_revert', [id]);
 module.exports = {
   fixture,
   timeTravel,
+  advanceblocks,
   convertToCurrencyDecimals,
   convertToWei,
   DAI_ADDR,

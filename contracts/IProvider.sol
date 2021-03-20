@@ -19,4 +19,5 @@ interface IProvider {
   //Example 8.5% annual interest = 0.085 x 10^27 = 85000000000000000000000000 or 85*(10**24)
   function getBorrowRateFor(address asset) external view returns(uint256);
   function getBorrowBalance(address _asset) external returns(uint256);
+  function getDepositBalance(address _asset) external returns(uint256);
 }

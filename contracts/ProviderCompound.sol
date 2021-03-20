@@ -6,7 +6,7 @@ import { UniERC20 } from "./LibUniERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IProvider } from "./IProvider.sol";
 
-interface gencToken{
+interface gencToken is IERC20{
   function redeem(uint) external returns (uint);
   function redeemUnderlying(uint) external returns (uint);
   function borrow(uint borrowAmount) external returns (uint);
@@ -21,14 +21,14 @@ interface gencToken{
   function getCash() external view returns (uint);
 }
 
-interface CErc20 is IERC20, gencToken {
+interface CErc20 is gencToken {
   function mint(uint256) external returns (uint256);
   function repayBorrow(uint repayAmount) external returns (uint);
   function repayBorrowBehalf(address borrower, uint repayAmount) external returns (uint);
   function _addReserves(uint addAmount) external returns (uint);
 }
 
-interface CEth is IERC20, gencToken {
+interface CEth is gencToken {
   function mint() external payable;
   function repayBorrow() external payable;
   function repayBorrowBehalf(address borrower) external payable;
@@ -231,6 +231,15 @@ contract ProviderCompound is IProvider, HelperFunct {
   function getBorrowBalance(address _asset) external override returns(uint256) {
     address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_asset);
     return gencToken(ctokenaddress).borrowBalanceCurrent(msg.sender);
+  }
+
+  /**
+  * @dev Returns the borrow balance of a ETH/ERC20_Token.
+  * @param _asset: token address to query the balance.
+  */
+  function getDepositBalance(address _asset) external override returns(uint256) {
+    address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_asset);
+    return gencToken(ctokenaddress).balanceOf(msg.sender);
   }
 
 }

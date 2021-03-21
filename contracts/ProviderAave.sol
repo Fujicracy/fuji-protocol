@@ -126,26 +126,10 @@ contract ProviderAave is IProvider {
   }
 
       /**
-     * @dev Return the interest bearing token of an underlying ETH/ERC20_Token.
-     * @param collateralAsset underlying asset.
-    */
-  function getRedeemableAddress(address collateralAsset) external view override returns(address) {
-
-    AaveDataProviderInterface aaveData = getAaveDataProvider();
-
-    bool isEth = collateralAsset == getEthAddr();
-    address token = isEth ? getWethAddr() : collateralAsset;
-
-    (address aTokenAddress,,) = AaveDataProviderInterface(aaveData).getReserveTokensAddresses(token);
-
-    return aTokenAddress;
-  }
-
-      /**
      * @dev Return borrow balance of ETH/ERC20_Token.
      * @param borrowAsset token address to query the balance.
     */
-  function getBorrowBalance(address borrowAsset) external override returns(uint256) {
+  function getBorrowBalance(address borrowAsset) external view override returns(uint256) {
     AaveDataProviderInterface aaveData = getAaveDataProvider();
 
     bool isEth = borrowAsset == getEthAddr();
@@ -160,7 +144,7 @@ contract ProviderAave is IProvider {
      * @dev Return deposit balance of ETH/ERC20_Token.
      * @param collateralAsset token address to query the balance.
     */
-    function getDepositBalance(address collateralAsset) external override returns(uint256) {
+    function getDepositBalance(address collateralAsset) external view override returns(uint256) {
     AaveDataProviderInterface aaveData = getAaveDataProvider();
 
     bool isEth = collateralAsset == getEthAddr();

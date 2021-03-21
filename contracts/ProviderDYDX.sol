@@ -76,7 +76,7 @@ struct Wei {
 
   function operate(Info[] calldata accounts, ActionArgs[] calldata actions) external;
 
-  function getAccountWei(Info calldata account, uint256 marketId) external returns (Wei memory);
+  function getAccountWei(Info calldata account, uint256 marketId) external view returns (Wei memory);
 
   function getNumMarkets() external view returns (uint256);
 
@@ -165,7 +165,7 @@ contract HelperFunct {
   /**
   * @dev Get Dydx Position
   */
-  function getDydxPosition(SoloMarginContract solo, uint256 marketId) internal returns (uint256 tokenBal, bool tokenSign) {
+  function getDydxPosition(SoloMarginContract solo, uint256 marketId) internal view returns (uint256 tokenBal, bool tokenSign) {
     SoloMarginContract.Wei memory tokenWeiBal = solo.getAccountWei(getAccountArgs()[0], marketId);
     tokenBal = tokenWeiBal.value;
     tokenSign = tokenWeiBal.sign;
@@ -300,13 +300,6 @@ contract ProviderDYDX is IProvider, HelperFunct {
 
   }
 
-  /**
-  * @dev This function is not applicable to DYDX
-  * @param collateralAsset: underlying asset address.
-  */
-  function getRedeemableAddress(address collateralAsset) external view override returns(address) {
-    return getDydxAddress();
-  }
 
   /**
   * @dev Returns the current borrowing rate (APR) of a ETH/ERC20_Token, in ray(1e27).
@@ -320,7 +313,7 @@ contract ProviderDYDX is IProvider, HelperFunct {
   * @dev Returns the borrow balance of a ETH/ERC20_Token.
   * @param _asset: token address to query the balance.
   */
-  function getBorrowBalance(address _asset) external override returns(uint256) {
+  function getBorrowBalance(address _asset) external view override returns(uint256) {
     SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
     uint _marketId = getMarketId(dydxContract, _asset);
     (uint256 tokenBal, bool tokenSign) = getDydxPosition(dydxContract,_marketId);
@@ -331,11 +324,16 @@ contract ProviderDYDX is IProvider, HelperFunct {
   * @dev Returns the borrow balance of a ETH/ERC20_Token.
   * @param _asset: token address to query the balance.
   */
-  function getDepositBalance(address _asset) external override returns(uint256) {
+  function getDepositBalance(address _asset) external view override returns(uint256) {
     SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
     uint _marketId = getMarketId(dydxContract, _asset);
-    (uint256 tokenBal, bool tokenSign) = getDydxPosition(dydxContract,_marketId);
-    return tokenBal;
+    SoloMarginContract.Info memory account = SoloMarginContract.Info({
+      owner: msg.sender,
+      number: 0
+    });
+    SoloMarginContract.Wei memory structbalance = dydxContract.getAccountWei(account,_marketId);
+    uint256 balance = structbalance.value;
+    return balance;
   }
 
 }

@@ -11,6 +11,7 @@ const {
   evmRevert,
   DAI_ADDR,
   ONE_ETH,
+  ETH_ADDR,
 } = require("./utils.js");
 
 //use(solidity);
@@ -73,9 +74,9 @@ describe("Alpha", () => {
     it("User 1: deposits 1 ETH, checks Vault has cETH balance Ok", async () => {
 
       await vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH });
+      let vaultbal = await ceth.balanceOf(vault.address);
       const rate = await ceth.exchangeRateStored();
       const cethAmount = (ethers.utils.parseEther("1.0")).pow(2).div(rate);
-      let vaultbal = await ceth.balanceOf(vault.address);
       await expect(vaultbal).to.equal(cethAmount);
 
     });

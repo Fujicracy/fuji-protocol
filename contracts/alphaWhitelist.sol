@@ -9,16 +9,14 @@ contract AlphaWhitelist is ReentrancyGuard  {
   uint256 public ETH_CAP_VALUE = 10**18;
   uint256 public LIMIT_USERS;
   uint256 private counter = 1;
-  uint256 public timeblock;
 
   mapping(uint256 => address) public whitelisted;
   mapping(address => uint256) public reversedwhitelisted;
 
   // Log Users entered
-	event userWhitelisted(address _userAddrs, uint256 _counter, uint256 _blocknumber);
+	event userWhitelisted(address _userAddrs, uint256 _counter);
 
   constructor() public {
-    timeblock = block.number;
   }
 
   /**
@@ -38,16 +36,13 @@ contract AlphaWhitelist is ReentrancyGuard  {
 
     require(reversedwhitelisted[msg.sender] == 0, Errors.SP_ALPHA_ADDR_OK_WHTLIST);
     require(counter <= LIMIT_USERS, Errors.SP_ALPHA_WHTLIST_FULL);
-    require(block.number > timeblock + 50, Errors.SP_ALPHA_WAIT_BLOCKLAG);
 
     whitelisted[counter] = msg.sender;
     reversedwhitelisted[msg.sender] = counter;
 
     counter += 1;
 
-    timeblock = block.number;
-
-    emit userWhitelisted(msg.sender, counter, block.number);
+    emit userWhitelisted(msg.sender, counter);
   }
 
 }

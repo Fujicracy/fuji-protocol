@@ -18,7 +18,7 @@ library Errors {
   string public constant VL_LIQUIDITY_INDEX_OVERFLOW = '100'; //  Liquidity index overflows uint128
   string public constant VL_INVALID_MINT_AMOUNT = '101'; //invalid amount to mint
   string public constant VL_INVALID_BURN_AMOUNT = '102'; //invalid amount to burn
-  string public constant VL_NOT_MATCH_MSG_VALUE = '103'; //Input value and function and the msg.value does not match
+  string public constant VL_AMOUNT_ERROR = '103'; //Input value >0, and for ETH msg.value and amount shall match
   string public constant VL_INVALID_WITHDRAW_AMOUNT = '104'; //Withdraw amount exceeds provided collateral, or falls undercollaterized
   string public constant VL_INVALID_BORROW_AMOUNT = '105'; //Borrow amount does not meet collaterization
   string public constant VL_NO_DEBT_TO_PAYBACK = '106'; //Msg sender has no debt amount to be payback
@@ -27,6 +27,8 @@ library Errors {
   string public constant VL_DEBT_LESS_THAN_AMOUNT = '109'; //User debt is less than amount to partial close
   string public constant VL_PROVIDER_ALREADY_ADDED = '110'; // Provider is already added in Provider Array
   string public constant VL_NOT_AUTHORIZED = '111'; //Not authorized
+  string public constant VL_INVALID_COLLATERAL = '112'; //Collateral is not in active in vault
+  string public constant VL_NO_ERC20_BALANCE = '113'; //User does not have ERC20 balance
 
   string public constant MATH_DIVISION_BY_ZERO = '201';
   string public constant MATH_ADDITION_OVERFLOW = '202';

@@ -71,21 +71,20 @@ describe("Alpha", () => {
 
   describe("Alpha DYDX Basic Functionality", () => {
 
-    it("User 1: deposits 1 ETH, checks DYDX deposit balance Ok", async () => {
+    it("User 1: deposits 1 ETH, checks @DYDXsolo by Vault deposit balance Ok", async () => {
 
       await vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH });
-      let vaultbal = await vault.getBorrowBalance(dydx.address);
-      await expect(vaultbal).to.equal(ONE_ETH);
+      let vaultdepositsbal = await vault.connect(users[1]).depositBalance(dydx.address);
+      await expect(vaultdepositsbal/1).to.be.closeTo(ONE_ETH/1, 100);
 
     });
 
-    it("User 1 and 2: both deposit 1 ETH, checks Vault has all aWETH balance Ok", async () => {
+    it("User 1 and 2: both deposit 1 ETH, checks @DYDX@solo by Vault deposit balance Ok", async () => {
 
       await vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH });
       await vault.connect(users[2]).deposit(ONE_ETH, { value: ONE_ETH });
-      let vaultbal = await aweth.balanceOf(vault.address);
-      vaultbal = vaultbal/1;
-      await expect(vaultbal).to.be.closeTo(ethers.utils.parseEther("2")/1, 200000000);
+      let vaultdepositsbal = await vault.connect(users[1]).depositBalance(dydx.address);
+      await expect(vaultdepositsbal/1).to.be.closeTo(ethers.utils.parseEther("2")/1, 2000000);
 
     });
 
@@ -94,11 +93,12 @@ describe("Alpha", () => {
       await vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH });
       await expect(await vault.connect(users[1]).withdraw(ethers.utils.parseEther("0.5")))
       .to.changeEtherBalance(users[1], ethers.utils.parseEther("0.5"));
-      let vaultbal = await aweth.balanceOf(vault.address);
-      await expect(vaultbal).to.be.closeTo(ethers.utils.parseEther("0.5")/1, 200000000);
+      let vaultdepositsbal = await vault.connect(users[1]).depositBalance(dydx.address);
+      await expect(vaultdepositsbal/1).to.be.closeTo(ethers.utils.parseEther("0.5")/1, 2000000);
+
     });
 
-    it("User 1: deposits 1 ETH and borrows 1000 dai", async () => {
+    it("User 1: deposits 1 ETH and borrows 1000 dai, check user dai balance", async () => {
 
       await vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH });
       await vault.connect(users[1]).borrow(ethers.utils.parseEther("1000"));
@@ -115,8 +115,6 @@ describe("Alpha", () => {
       await expect(await dai.balanceOf(users[2].address))
       .to.equal(ethers.utils.parseEther("875"));
     });
-
-
 
 
   });

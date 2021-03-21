@@ -2,16 +2,16 @@
 
 pragma solidity >=0.4.25 <0.7.0;
 
-interface IVault {
+interface IMultiVault {
 
   // Log Users deposit
-	event Deposit(address userAddrs, uint256 amount);
+	event Deposit(address userAddrs, uint256 amount, address indexed collateralAsset );
 	// Log Users borrow
-	event Borrow(address userAddrs, uint256 amount);
+	event Borrow(address userAddrs, uint256 amount, address indexed borrowAsset);
 	// Log Users debt repay
-	event Repay(address userAddrs, uint256 amount);
+	event Repay(address userAddrs, uint256 amount, address indexed borrowAsset);
 	// Log Users withdraw
-	event Withdraw(address userAddrs, uint256 amount);
+	event Withdraw(address userAddrs, uint256 amount, address indexed borrowAsset);
 	// Log New active provider
 	event SetActiveProvider(address providerAddr);
 	// Log Switch providers

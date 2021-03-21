@@ -41,10 +41,6 @@ interface Comptroller {
   function getAccountLiquidity(address) external view returns (uint256, uint256, uint256);
 }
 
-interface PriceFeed {
-  function getUnderlyingPrice(address cToken) external view returns (uint);
-}
-
 interface FujiMappings {
   function cTokenMapping(address) external view returns (address);
 }
@@ -64,14 +60,7 @@ contract HelperFunct {
     return 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
   }
 
-}
-
-contract ProviderCompound is IProvider, HelperFunct {
-
-  using SafeMath for uint256;
-  using UniERC20 for IERC20;
-
-  //Administrative functions
+  //Compound functions
 
   /**
   * @dev Approves vault's assets as collateral for Compound Protocol.
@@ -96,6 +85,13 @@ contract ProviderCompound is IProvider, HelperFunct {
 
     Cptrllr.exitMarket(_cTokenAddress);
   }
+
+}
+
+contract ProviderCompound is IProvider, HelperFunct {
+
+  using SafeMath for uint256;
+  using UniERC20 for IERC20;
 
   //Provider Core Functions
 
@@ -202,14 +198,6 @@ contract ProviderCompound is IProvider, HelperFunct {
   }
 
   /**
-  * @dev Returns the interest bearing ctoken address of an underlying ETH/ERC20_Token.
-  * @param collateralAsset: underlying asset address.
-  */
-  function getRedeemableAddress(address collateralAsset) external view override returns(address) {
-    return FujiMappings(getMappingAddr()).cTokenMapping(collateralAsset);
-  }
-
-  /**
   * @dev Returns the current borrowing rate (APR) of a ETH/ERC20_Token, in ray(1e27).
   * @param _asset: token address to query the current borrowing rate.
   */
@@ -228,18 +216,21 @@ contract ProviderCompound is IProvider, HelperFunct {
   * @dev Returns the borrow balance of a ETH/ERC20_Token.
   * @param _asset: token address to query the balance.
   */
-  function getBorrowBalance(address _asset) external override returns(uint256) {
+  function getBorrowBalance(address _asset) external view override returns(uint256) {
     address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_asset);
-    return gencToken(ctokenaddress).borrowBalanceCurrent(msg.sender);
+    return gencToken(ctokenaddress).borrowBalanceStored(msg.sender);
   }
 
   /**
-  * @dev Returns the borrow balance of a ETH/ERC20_Token.
+  * @dev Returns the deposit balance of a ETH/ERC20_Token.
   * @param _asset: token address to query the balance.
   */
-  function getDepositBalance(address _asset) external override returns(uint256) {
+  function getDepositBalance(address _asset) external view override returns(uint256) {
     address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_asset);
-    return gencToken(ctokenaddress).balanceOf(msg.sender);
+    uint256 cTokenbal = gencToken(ctokenaddress).balanceOf(msg.sender);
+    uint256 exRate = gencToken(ctokenaddress).exchangeRateStored();
+    uint256 depositBal = (cTokenbal.mul(exRate)).div(1e18);
+    return depositBal;
   }
 
 }

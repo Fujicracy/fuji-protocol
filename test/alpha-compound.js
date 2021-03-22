@@ -5,32 +5,34 @@ const { solidity, createFixtureLoader } = require("ethereum-waffle");
 const {
   fixture,
   convertToCurrencyDecimals,
-  convertToWei,
   advanceblocks,
+  convertToWei,
   evmSnapshot,
   evmRevert,
   DAI_ADDR,
-  ONE_ETH,
-  ETH_ADDR,
-} = require("./utils.js");
+  USDC_ADDR,
+  ONE_ETH
+} = require("./utils-alpha.js");
 
 //use(solidity);
 
 describe("Alpha", () => {
+
   let dai;
+  let usdc;
   let aweth;
   let ceth;
-
   let fliquidator;
   let flasher;
   let controller;
-
   let aave;
   let compound;
   let dydx;
-
-  let vault;
-  let debtToken;
+  let aWhitelist;
+  let vaultdai;
+  let vaultusdc;
+  let debtTokendai;
+  let debtTokenusdc;
 
   let users;
 
@@ -53,69 +55,117 @@ describe("Alpha", () => {
 
     const _fixture = await loadFixture(fixture);
     dai = _fixture.dai;
-    vault = _fixture.vault;
+    usdc = _fixture.usdc;
+    aWhitelist = _fixture.aWhitelist;
+    vaultdai = _fixture.vaultdai;
+    vaultusdc = _fixture.vaultusdc;
     aweth = _fixture.aweth;
     ceth = _fixture.ceth;
-    debtToken = _fixture.debtToken;
+    debtTokendai = _fixture.debtTokendai;
+    debtTokenusdc = _fixture.debtTokenusdc;
+    aave = _fixture.aave;
     compound = _fixture.compound;
+    dydx = _fixture.dydx;
 
-    await vault.setActiveProvider(compound.address);
-
-    //Users 1 and 2 are whitelisted before every test
-    await advanceblocks(50);
-    await vault.connect(users[1]).addmetowhitelist();
-    await advanceblocks(50);
-    await vault.connect(users[2]).addmetowhitelist();
+    await vaultdai.setActiveProvider(compound.address);
+    await vaultusdc.setActiveProvider(compound.address);
 
   });
 
   describe("Alpha Compound Basic Functionality", () => {
 
-    it("User 1: deposits 1 ETH, checks Vault has cETH balance Ok", async () => {
+    it("Users[1]: deposit 0.75 ETH to Vaultdai, check Vaultdai cETH balance Ok", async () => {
 
-      await vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH });
-      let vaultbal = await ceth.balanceOf(vault.address);
-      const rate = await ceth.exchangeRateStored();
-      const cethAmount = (ethers.utils.parseEther("1.0")).pow(2).div(rate);
+      await expect(await vaultdai.connect(users[1])
+            .deposit(ethers.utils.parseEther("0.75"),
+            { value: ethers.utils.parseEther("0.75") })).to
+            .changeEtherBalance(users[1], ethers.utils.parseEther("-0.75"));
+      let vaultbal = await ceth.balanceOf(vaultdai.address);
+      vaultbal = vaultbal/1;
+      let rate = await ceth.exchangeRateStored();
+      let cethAmount = .75*(ethers.utils.parseEther("1.0")).pow(2).div(rate);
+      await expect(vaultbal).to.be.closeTo(cethAmount, 200);
+
+    });
+
+    it("Users[1]: deposit 1 ETH to Vaultusdc, check Vaultusdc cETH balance Ok", async () => {
+
+      await expect(await vaultusdc.connect(users[1])
+            .deposit(ethers.utils.parseEther("1"),{ value: ethers.utils.parseEther("1")})).to
+            .changeEtherBalance(users[1], ethers.utils.parseEther("-1"));
+      let vaultbal = await ceth.balanceOf(vaultusdc.address);
+      let rate = await ceth.exchangeRateStored();
+      let cethAmount = (ethers.utils.parseEther("1.0")).pow(2).div(rate);
       await expect(vaultbal).to.equal(cethAmount);
 
     });
 
-    it("User 1 and 2: both deposit 1 ETH, checks Vault has all cETH balance Ok", async () => {
+    it("Users[2,4]: both deposit 1 ETH to Vaultusdc, checks Vaultusdc cETH balance Ok", async () => {
 
-      await vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH });
-      await vault.connect(users[2]).deposit(ONE_ETH, { value: ONE_ETH });
-      const rate = await ceth.exchangeRateStored();
-      const cethAmount = 2*(ethers.utils.parseEther("1.0")).pow(2).div(rate);
-      let vaultbal = await ceth.balanceOf(vault.address);
+      await advanceblocks(50);
+      await aWhitelist.connect(users[4]).addmetowhitelist();
+      await expect(await aWhitelist.isAddrWhitelisted(users[4].address)).to.equal(true);
+
+      await expect(await vaultusdc.connect(users[2])
+            .deposit(ethers.utils.parseEther("1"), { value: ethers.utils.parseEther("1") })).to
+            .changeEtherBalance(users[2], ethers.utils.parseEther("-1"));
+      await expect(await vaultusdc.connect(users[4])
+            .deposit(ethers.utils.parseEther("1"), { value: ethers.utils.parseEther("1") })).to
+            .changeEtherBalance(users[4], ethers.utils.parseEther("-1"));
+
+      let rate = await ceth.exchangeRateStored();
+      let cethAmount = 2*(ethers.utils.parseEther("1.0")).pow(2).div(rate);
+      let vaultbal = await ceth.balanceOf(vaultusdc.address);
       vaultbal = vaultbal/1;
       await expect(vaultbal).to.be.closeTo(cethAmount, 200);
 
     });
 
-    it("User 1: deposits 1 ETH and then withdraws 0.5 ETH", async () => {
+    it("Users[1]: deposit 1 ETH in Vaultdai and then withdraws 0.5 ETH, check VaulDai ceth balance ok", async () => {
 
-      await vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH });
-      await expect(await vault.connect(users[1]).withdraw(ethers.utils.parseEther("0.5")))
-      .to.changeEtherBalance(users[1], ethers.utils.parseEther("0.5"));
+      await expect(await vaultdai.connect(users[1])
+            .deposit(ethers.utils.parseEther("1"),{ value: ethers.utils.parseEther("1")})).to
+            .changeEtherBalance(users[1], ethers.utils.parseEther("-1"));
+      await expect(await vaultdai.connect(users[1])
+            .withdraw(ethers.utils.parseEther("0.5"))).to
+            .changeEtherBalance(users[1], ethers.utils.parseEther("0.5"));
+
+      let rate = await ceth.exchangeRateStored();
+      let cethAmount = 0.5*(ethers.utils.parseEther("1.0")).pow(2).div(rate);
+      let vaultbal = await ceth.balanceOf(vaultdai.address);
+      vaultbal = vaultbal/1;
+
+      await expect(vaultbal).to.be.closeTo(cethAmount, 1e9);
+
     });
 
-    it("User 1: deposits 1 ETH and borrows 1000 dai", async () => {
+    it("Users[3]: deposits 1 ETH to vaultusdc and borrows 1000 usdc", async () => {
 
-      await vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH });
-      await vault.connect(users[1]).borrow(ethers.utils.parseEther("1000"));
-      await expect(await dai.balanceOf(users[1].address))
-      .to.equal(ethers.utils.parseEther("1000"));
+      await expect(await vaultusdc.connect(users[3])
+            .deposit(ethers.utils.parseEther("1"),{ value: ethers.utils.parseEther("1")})).to
+            .changeEtherBalance(users[3], ethers.utils.parseEther("-1"));
+      await vaultusdc.connect(users[3]).borrow(ethers.utils.parseUnits("1000",6));
+      await expect(await usdc.balanceOf(users[3].address))
+      .to.equal(ethers.utils.parseUnits("1000", 6));
+
     });
 
-    it("User 2: deposits 1 ETH, borrows 1000 dai, then paybacks 125 dai", async () => {
+    it("Users[4]: deposits 1 ETH to vaultdai, borrows 250 dai, then paybacks 125 dai", async () => {
 
-      await vault.connect(users[2]).deposit(ONE_ETH, { value: ONE_ETH });
-      await vault.connect(users[2]).borrow(ethers.utils.parseEther("1000"));
-      await dai.connect(users[2]).approve(vault.address, ethers.utils.parseEther("125"));
-      await vault.connect(users[2]).payback(ethers.utils.parseEther("125"));
-      await expect(await dai.balanceOf(users[2].address))
-      .to.equal(ethers.utils.parseEther("875"));
+      await advanceblocks(50);
+      await aWhitelist.connect(users[4]).addmetowhitelist();
+      await expect(await aWhitelist.isAddrWhitelisted(users[4].address)).to.equal(true);
+
+      await expect(await vaultdai.connect(users[4])
+            .deposit(ethers.utils.parseEther("1"),{ value: ethers.utils.parseEther("1")})).to
+            .changeEtherBalance(users[4], ethers.utils.parseEther("-1"));
+      await vaultdai.connect(users[4]).borrow(ethers.utils.parseEther("250"));
+      await expect(await dai.balanceOf(users[4].address))
+            .to.equal(ethers.utils.parseEther("250"));
+      await dai.connect(users[4]).approve(vaultdai.address, ethers.utils.parseEther("125"));
+      await vaultdai.connect(users[4]).payback(ethers.utils.parseEther("125"));
+      await expect(await dai.balanceOf(users[4].address))
+      .to.equal(ethers.utils.parseEther("125"));
     });
 
 

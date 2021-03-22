@@ -10,16 +10,18 @@ import { VaultBase } from "./VaultBase.sol";
 import { IVault } from "./IVault.sol";
 import { IProvider } from "./IProvider.sol";
 import { Flasher } from "./flashloans/Flasher.sol";
-import { AlphaWhitelist } from "./AlphaWhitelist.sol";
 import {Errors} from './Debt-token/Errors.sol';
 
 import "hardhat/console.sol"; //test line
 
-//interface IController {
-  //function doControllerRoutine(address _vault) external returns(bool);
-//}
+interface IAlphaWhitelist {
 
-contract VaultETHDAI is IVault, VaultBase, AlphaWhitelist {
+  function ETH_CAP_VALUE() external view returns(uint256);
+  function isAddrWhitelisted(address _usrAddrs) external view returns(bool);
+
+}
+
+contract VaultETHDAI is IVault, VaultBase {
 
   AggregatorV3Interface public oracle;
 
@@ -46,6 +48,7 @@ contract VaultETHDAI is IVault, VaultBase, AlphaWhitelist {
   address public controller;
   address public fliquidator;
   Flasher flasher;
+  IAlphaWhitelist aWhitelist;
 
   mapping(address => uint256) public collaterals;
 
@@ -64,14 +67,13 @@ contract VaultETHDAI is IVault, VaultBase, AlphaWhitelist {
     address _controller,
     address _fliquidator,
     address _oracle,
-    uint256 _limitusers
+    address _aWhitelist
 
   ) public {
 
     controller = _controller;
     fliquidator =_fliquidator;
-    whitelisted[101] = fliquidator;
-    reversedwhitelisted[fliquidator] = 101;
+    aWhitelist = IAlphaWhitelist(_aWhitelist);
 
     oracle = AggregatorV3Interface(_oracle);
 
@@ -85,10 +87,6 @@ contract VaultETHDAI is IVault, VaultBase, AlphaWhitelist {
     // 125%
     collatF.a = 5;
     collatF.b = 4;
-
-    LIMIT_USERS = _limitusers; //alpha
-
-
   }
 
   //Core functions
@@ -109,9 +107,11 @@ contract VaultETHDAI is IVault, VaultBase, AlphaWhitelist {
   * @param _collateralAmount: to be deposited
   * Emits a {Deposit} event.
   */
-  function deposit(uint256 _collateralAmount) public override isWhitelisted payable {
-    require(msg.value == _collateralAmount, Errors.VL_NOT_MATCH_MSG_VALUE);
-    require(msg.value <= ETH_CAP_VALUE, Errors.SP_ALPHA_ETH_CAP_VALUE);//Alpha
+  function deposit(uint256 _collateralAmount) public override payable {
+
+    require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST);
+    require(msg.value == _collateralAmount, Errors.VL_AMOUNT_ERROR);
+    require(msg.value <= aWhitelist.ETH_CAP_VALUE(), Errors.SP_ALPHA_ETH_CAP_VALUE);//Alpha
 
     // deposit to current provider
     _deposit(_collateralAmount, address(activeProvider));
@@ -131,7 +131,9 @@ contract VaultETHDAI is IVault, VaultBase, AlphaWhitelist {
   * @param _withdrawAmount: amount of collateral to withdraw
   * Emits a {Withdraw} event.
   */
-  function withdraw(uint256 _withdrawAmount) public override isWhitelisted {
+  function withdraw(uint256 _withdrawAmount) public override {
+
+    require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST); //alpha
 
     uint256 providedCollateral = collaterals[msg.sender];
 
@@ -158,7 +160,9 @@ contract VaultETHDAI is IVault, VaultBase, AlphaWhitelist {
   * @param _borrowAmount: token amount of underlying to borrow
   * Emits a {Borrow} event.
   */
-  function borrow(uint256 _borrowAmount) public override isWhitelisted  {
+  function borrow(uint256 _borrowAmount) public override {
+
+    require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST); //alpha
 
     uint256 providedCollateral = collaterals[msg.sender];
 
@@ -188,7 +192,10 @@ contract VaultETHDAI is IVault, VaultBase, AlphaWhitelist {
   * @param _repayAmount: token amount of underlying to repay
   * Emits a {Repay} event.
   */
-  function payback(uint256 _repayAmount) public override isWhitelisted payable {
+  function payback(uint256 _repayAmount) public override payable {
+
+    require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST); //alpha
+
     updateDebtTokenBalances();
 
     uint256 userDebtBalance = IDebtToken(debtToken).balanceOf(msg.sender);

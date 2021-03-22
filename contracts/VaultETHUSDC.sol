@@ -6,20 +6,22 @@ pragma experimental ABIEncoderV2;
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import { IDebtToken } from "./IDebtToken.sol";
-import { MultiVaultBase } from "./MultiVaultBase.sol";
-import { IMultiVault } from "./IMultiVault.sol";
+import { VaultBase } from "./VaultBase.sol";
+import { IVault } from "./IVault.sol";
 import { IProvider } from "./IProvider.sol";
 import { Flasher } from "./flashloans/Flasher.sol";
-import { AlphaWhitelist } from "./AlphaWhitelist.sol";
 import {Errors} from './Debt-token/Errors.sol';
 
 import "hardhat/console.sol"; //test line
 
-//interface IController {
-  //function doControllerRoutine(address _vault) external returns(bool);
-//}
+interface IAlphaWhitelist {
 
-contract MultiVault is IMultiVault, MultiVaultBase, AlphaWhitelist {
+  function ETH_CAP_VALUE() external view returns(uint256);
+  function isAddrWhitelisted(address _usrAddrs) external view returns(bool);
+
+}
+
+contract VaultETHUSDC is IVault, VaultBase {
 
   AggregatorV3Interface public oracle;
 
@@ -37,19 +39,18 @@ contract MultiVault is IMultiVault, MultiVaultBase, AlphaWhitelist {
   Factor private collatF;
   uint256 internal constant BASE = 1e18;
 
-  //Managing Lending Protocol Providers
+  //State variables
   address[] public providers;
   address public override activeProvider;
 
-  //BorrowAsset to Debt Token mapping
-  mapping (address => address) public override debtToken;
+  address public override debtToken;
 
   address public controller;
   address public fliquidator;
   Flasher flasher;
+  IAlphaWhitelist aWhitelist;
 
-  //Mapping of User Collaterals, user => collateral asset => balance
-  mapping(address => mapping(address => uint256)) public UserBalcollaterals;
+  mapping(address => uint256) public collaterals;
 
   modifier isAuthorized() {
     require(msg.sender == controller ||
@@ -66,26 +67,18 @@ contract MultiVault is IMultiVault, MultiVaultBase, AlphaWhitelist {
     address _controller,
     address _fliquidator,
     address _oracle,
-    uint256 _limitusers
+    address _aWhitelist
 
   ) public {
 
-    LIMIT_USERS = _limitusers; //alpha
-
     controller = _controller;
     fliquidator =_fliquidator;
-
-    whitelisted[101] = fliquidator; //alpha
-    reversedwhitelisted[fliquidator] = 101; //alpha
+    aWhitelist = IAlphaWhitelist(_aWhitelist);
 
     oracle = AggregatorV3Interface(_oracle);
 
-    collateralAssets[address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)] = true; // ETH
-    //collateralAssets[address(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599)] = true; // WBTC
-    numCollateralsAssets = 2;
-    borrowAssets[address(0x6B175474E89094C44Da98b954EedeAC495271d0F)] = true; // DAI
-    borrowAssets[address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48)] = true; // USDC
-    numBorrowAssets = 2;
+    collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
+    borrowAsset = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48); // USDC
 
     // + 5%
     safetyF.a = 21;
@@ -103,75 +96,51 @@ contract MultiVault is IMultiVault, MultiVaultBase, AlphaWhitelist {
   * @param _collateralAmount: amount to be deposited
   * @param _borrowAmount: amount to be borrowed
   */
-  function depositAndBorrow(
-    uint256 _collateralAsset,
-    uint256 _collateralAmount,
-    uint256 _borrowAsset,
-    uint256 _borrowAmount
-  ) external payable {
-    deposit(_collateralAsset, _collateralAmount);
-    borrow(_borrowAsset, _borrowAmount);
+  function depositAndBorrow(uint256 _collateralAmount, uint256 _borrowAmount) external payable {
+    deposit(_collateralAmount);
+    borrow(_borrowAmount);
   }
 
   /**
-  * @dev Deposit a collateral type to activeProvider
-  * @param _collateralAsset: ERC20 address of collateral to be deposited
+  * @dev Deposit Vault's type collateral to activeProvider
+  * call Controller checkrates
   * @param _collateralAmount: to be deposited
   * Emits a {Deposit} event.
   */
-  function deposit(address _collateralAsset, uint256 _collateralAmount) public override isWhitelisted payable {
+  function deposit(uint256 _collateralAmount) public override payable {
 
-    require(collateralAssets[_collateralAsset] = true, Errors.VL_INVALID_COLLATERAL);
-    require(_collateralAmount > 0, Errors.VL_AMOUNT_ERROR);
+    require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST);
+    require(msg.value == _collateralAmount, Errors.VL_AMOUNT_ERROR);
+    require(msg.value <= aWhitelist.ETH_CAP_VALUE(), Errors.SP_ALPHA_ETH_CAP_VALUE);//Alpha
 
-    if (isETH(IERC20(_collateralAsset))) {
+    // deposit to current provider
+    _deposit(_collateralAmount, address(activeProvider));
 
-      require(msg.value == _collateralAmount, Errors.VL_AMOUNT_ERROR);
-      require(msg.value <= ETH_CAP_VALUE, Errors.SP_ALPHA_ETH_CAP_VALUE);//Alpha
+    collateralBalance = collateralBalance.add(_collateralAmount);
 
-    } else {
+    uint256 providedCollateral = collaterals[msg.sender];
+    collaterals[msg.sender] = providedCollateral.add(_collateralAmount);
 
-      require(
-        IERC20(_collateralAsset).balanceOf(msg.sender)
-        >= _collateralAmount,
-        Errors.VL_NO_ERC20_BALANCE
-      );
-
-      require(
-        IERC20(_collateralAsset).allowance(msg.sender, address(this))
-        >= _repayAmount,
-        Errors.VL_MISSING_ERC20_ALLOWANCE
-      );
-    }
-
-    //Deposit to current provider
-    _deposit(_collateralAmount, address(activeProvider), _collateralAsset);
-
-    balanceCollateralMarket[_collateralAsset] = (balanceCollateralMarket[_collateralAsset]).add(_collateralAmount);
-
-    uint256 providedCollateral = UserBalcollaterals[msg.sender][_collateralAsset];
-    collaterals[msg.sender][_collateralAsset] = providedCollateral.add(_collateralAmount);
-
-    emit Deposit(msg.sender, _collateralAmount, _collateralAsset);
+    emit Deposit(msg.sender, _collateralAmount);
 
   }
 
   /**
-  * @dev Withdraws a collateral type
+  * @dev Withdraws Vault's type collateral from activeProvider
   * call Controller checkrates
   * @param _withdrawAmount: amount of collateral to withdraw
   * Emits a {Withdraw} event.
   */
-  function withdraw(address _collateralAsset, uint256 _withdrawAmount) public override isWhitelisted {
+  function withdraw(uint256 _withdrawAmount) public override {
 
-    uint256 providedCollateral = UserBalcollaterals[msg.sender][_collateralAsset];
+    require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST); //alpha
+
+    uint256 providedCollateral = collaterals[msg.sender];
 
     require(providedCollateral >= _withdrawAmount, Errors.VL_INVALID_WITHDRAW_AMOUNT);
     // get needed collateral for current position
     // according current price
-    uint256 neededCollateral = getNeededCollateralFor(
-      IDebtToken(debtToken).balanceOf(msg.sender)
-    );
+    uint256 neededCollateral = getNeededCollateralFor( IDebtToken(debtToken).balanceOf(msg.sender));
 
     require(providedCollateral.sub(_withdrawAmount) >= neededCollateral, Errors.VL_INVALID_WITHDRAW_AMOUNT);
 
@@ -191,7 +160,9 @@ contract MultiVault is IMultiVault, MultiVaultBase, AlphaWhitelist {
   * @param _borrowAmount: token amount of underlying to borrow
   * Emits a {Borrow} event.
   */
-  function borrow(uint256 _borrowAmount) public override isWhitelisted  {
+  function borrow(uint256 _borrowAmount) public override {
+
+    require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST); //alpha
 
     uint256 providedCollateral = collaterals[msg.sender];
 
@@ -221,7 +192,10 @@ contract MultiVault is IMultiVault, MultiVaultBase, AlphaWhitelist {
   * @param _repayAmount: token amount of underlying to repay
   * Emits a {Repay} event.
   */
-  function payback(uint256 _repayAmount) public override isWhitelisted payable {
+  function payback(uint256 _repayAmount) public override payable {
+
+    require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST); //alpha
+
     updateDebtTokenBalances();
 
     uint256 userDebtBalance = IDebtToken(debtToken).balanceOf(msg.sender);
@@ -294,24 +268,21 @@ contract MultiVault is IMultiVault, MultiVaultBase, AlphaWhitelist {
   }
 
   /**
-  * @dev Set the collateral balance provided by a User.
+  * @dev Get the collateral provided for a User.
   * @param _user: Address of the user
-  * @param _collateralasset: Address of the collateral asset
-  * @param _newValue: new value
   */
-  function setUsercollateral(address _user, address _collateralasset, uint256 _newValue) external override isAuthorized {
-    Usercollaterals[_user][_collateralasset] = _newValue;
+  function setUsercollateral(address _user, uint256 _newValue) external override isAuthorized {
+    collaterals[_user] = _newValue;
   }
 
   //Administrative functions
 
   /**
-  * @dev Sets the debt token address for a borrowAsset.
-  * @param _borrowAsset: borrow asset address
+  * @dev Sets a debt token for this vault.
   * @param _debtToken: fuji debt token address
   */
-  function setDebtToken(address _borrowAsset,address _debtToken) external isAuthorized {
-    debtToken[_borrowAsset] = _debtToken;
+  function setDebtToken(address _debtToken) external isAuthorized {
+    debtToken = _debtToken;
   }
 
   /**
@@ -326,8 +297,8 @@ contract MultiVault is IMultiVault, MultiVaultBase, AlphaWhitelist {
   * @dev Sets the Collateral balance for this vault, after a change.
   * @param _newCollateralBalance: New balance value
   */
-  function setVaultCollateralBalance(address _collateralasset, uint256 _newCollateralBalance) external override isAuthorized {
-    balanceCollateralMarket[_collateralasset] = _newCollateralBalance;
+  function setVaultCollateralBalance(uint256 _newCollateralBalance) external override isAuthorized {
+    collateralBalance = _newCollateralBalance;
   }
 
   /**
@@ -354,13 +325,8 @@ contract MultiVault is IMultiVault, MultiVaultBase, AlphaWhitelist {
     }
   }
 
-  /**
-  * @dev Update the Debt Token Balances
-  * @param _borrowAsset: borrow asset
-  */
-  function updateDebtTokenBalances(address _borrowAsset) public override {
-    address debtTok = debtToken[_borrowAsset];
-    IDebtToken(debtTok).updateState(borrowBalance(activeProvider));
+  function updateDebtTokenBalances() public override {
+    IDebtToken(debtToken).updateState(borrowBalance(activeProvider));
   }
 
 
@@ -370,8 +336,8 @@ contract MultiVault is IMultiVault, MultiVaultBase, AlphaWhitelist {
   * @dev Get the collateral provided for a User.
   * @param _user: Address of the user
   */
-  function getUsercollateral(address _user, address _collateralasset) external view override returns(uint256){
-    return UserBalcollaterals[_user][_collateralasset];
+  function getUsercollateral(address _user) external view override returns(uint256){
+    return collaterals[_user];
   }
 
   /**

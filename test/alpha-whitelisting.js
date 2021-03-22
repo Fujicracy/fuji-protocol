@@ -10,26 +10,28 @@ const {
   evmSnapshot,
   evmRevert,
   DAI_ADDR,
-  ONE_ETH,
-} = require("./utils.js");
+  USDC_ADDR,
+  ONE_ETH
+} = require("./utils-alpha.js");
 
 //use(solidity);
 
 describe("Alpha", () => {
   let dai;
+  let usdc;
   let aweth;
   let ceth;
-
   let fliquidator;
   let flasher;
   let controller;
-
   let aave;
   let compound;
   let dydx;
-
-  let vault;
-  let debtToken;
+  let aWhitelist;
+  let vaultdai;
+  let vaultusdc;
+  let debtTokendai;
+  let debtTokenusdc;
 
   let users;
 
@@ -37,6 +39,7 @@ describe("Alpha", () => {
   let evmSnapshotId;
 
   before(async() => {
+
     users = await ethers.getSigners();
     loadFixture = createFixtureLoader(users, ethers.provider);
     evmSnapshotId = await evmSnapshot();
@@ -52,91 +55,89 @@ describe("Alpha", () => {
 
     const _fixture = await loadFixture(fixture);
     dai = _fixture.dai;
-    vault = _fixture.vault;
+    usdc = _fixture.usdc;
+    aWhitelist = _fixture.aWhitelist;
+    vaultdai = _fixture.vaultdai;
+    vaultusdc = _fixture.vaultusdc;
     aweth = _fixture.aweth;
     ceth = _fixture.ceth;
-    debtToken = _fixture.debtToken;
+    debtTokendai = _fixture.debtTokendai;
+    debtTokenusdc = _fixture.debtTokenusdc;
     aave = _fixture.aave;
     compound = _fixture.compound;
+    dydx = _fixture.dydx;
+
+    await vaultdai.setActiveProvider(compound.address);
+    await vaultusdc.setActiveProvider(compound.address);
 
   });
 
   describe("Alpha Whitelisting Functionality", () => {
 
-    it("User 1: tries deposits but not Whitelisted, then reverts", async () => {
+    it("Users[0,1,2,3] added to whitelist at deploy are in fact whitelisted", async () => {
 
-      await expect(vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH }))
+      await expect(await aWhitelist.isAddrWhitelisted(users[0].address)).to.equal(true);
+      await expect(await aWhitelist.isAddrWhitelisted(users[1].address)).to.equal(true);
+      await expect(await aWhitelist.isAddrWhitelisted(users[2].address)).to.equal(true);
+      await expect(await aWhitelist.isAddrWhitelisted(users[3].address)).to.equal(true);
+
+    });
+
+    it("Users[4,5,6,7] NOT in whitelist at deploy are in fact NOT whitelisted", async () => {
+
+      await expect(await aWhitelist.isAddrWhitelisted(users[4].address)).to.equal(false);
+      await expect(await aWhitelist.isAddrWhitelisted(users[5].address)).to.equal(false);
+      await expect(await aWhitelist.isAddrWhitelisted(users[6].address)).to.equal(false);
+      await expect(await aWhitelist.isAddrWhitelisted(users[7].address)).to.equal(false);
+
+    });
+    it("Users[4], does NOT wait 50 blocks, then tries addmetowhitelist, reverts", async () => {
+
+      await expect(aWhitelist.connect(users[4]).addmetowhitelist()).to.be.revertedWith('905');
+
+    });
+
+    it("Users[4], waits 50 blocks, then tries addmetowhitelist, succeeds", async () => {
+
+      await advanceblocks(50);
+      await aWhitelist.connect(users[4]).addmetowhitelist();
+      await expect(await aWhitelist.isAddrWhitelisted(users[4].address)).to.equal(true);
+
+    });
+
+    it("Users[5], waits 50 blocks, then tries addmetowhitelist, list full then reverts", async () => {
+
+      await advanceblocks(50);
+      await aWhitelist.connect(users[4]).addmetowhitelist();
+      await advanceblocks(50);
+      await expect(aWhitelist.connect(users[5]).addmetowhitelist()).to.be.revertedWith('904');
+
+    });
+
+    it("Users[3], whitelisted, tries a 0.5ETH deposit in vaultusdc, succeeds", async () => {
+
+      await expect(await vaultusdc.connect(users[3])
+      .deposit(ethers.utils.parseEther("0.5"), {value: ethers.utils.parseEther("0.5")}))
+      .to.changeEtherBalance(users[3],ethers.utils.parseEther("-0.5"));
+      await expect(await ceth.balanceOf(vaultusdc.address)).to.be.gt(0);
+
+    });
+
+    it("Users[6], NOT whitelisted, tries a 0.5ETH deposit in vaultusdc, reverts", async () => {
+
+      await expect(vaultusdc.connect(users[6])
+      .deposit(ethers.utils.parseEther("0.5"), {value: ethers.utils.parseEther("0.5")}))
       .to.be.revertedWith('902');
+      await expect(await ceth.balanceOf(vaultusdc.address)).to.equal(0);
 
     });
 
-    it("User 1: tries to get Whitelisted, but not enough block-lag, then reverts", async () => {
+    it("Users[2], whitelisted, tries a 5 ETH deposit in vaultdai, reverts", async () => {
 
-      await expect(vault.connect(users[1]).addmetowhitelist())
-      .to.be.revertedWith('905');
-
-    });
-
-    it("User 1: succeeds to get whitelisted, and deposits 1 ETH, checks cETH balance Ok", async () => {
-
-      await vault.setActiveProvider(compound.address);
-
-      await advanceblocks(50);
-
-      await vault.connect(users[1]).addmetowhitelist();
-      await vault.connect(users[1]).deposit(ONE_ETH, { value: ONE_ETH });
-      const rate = await ceth.exchangeRateStored();
-      const cethAmount = ONE_ETH.pow(2).div(rate);
-      await expect(await ceth.balanceOf(vault.address)).to.equal(cethAmount);
-
-    });
-
-    it("User 2: deposit but not Whitelisted", async () => {
-
-      await expect(vault.connect(users[2]).deposit(ONE_ETH, { value: ONE_ETH })).to.be.revertedWith('902');
-
-    });
-
-    it("User 2: succeeds to get whitelisted, but tries deposits > 1ETH and then reverts ", async () => {
-
-      await advanceblocks(50);
-
-      await vault.connect(users[1]).addmetowhitelist();
-
-      await advanceblocks(50);
-
-      await vault.connect(users[2]).addmetowhitelist();
-
-      await expect(vault.connect(users[2])
-      .deposit("2000000000000000000", { value: "2000000000000000000" }))
+      await expect(vaultdai.connect(users[2])
+      .deposit(ethers.utils.parseEther("5"), {value: ethers.utils.parseEther("5")}))
       .to.be.revertedWith('901');
-
-    });
-
-    it("User[15]: tries to get whitelisted, but already Limit Reached, then reverts ", async () => {
-
-      await vault.setActiveProvider(compound.address);
-
-      for (var i = 0; i < 15; i++) {
-        await advanceblocks(50);
-        await vault.connect(users[i]).addmetowhitelist();
-      }
-
-      await advanceblocks(50);
-
-      await expect(vault.connect(users[16]).addmetowhitelist()).to.be.revertedWith('904');
-
-    });
-
-    it("User 2: tries to get whitelisted twice, then reverts ", async () => {
-
-      await advanceblocks(50);
-
-      await vault.connect(users[2]).addmetowhitelist();
-
-      await advanceblocks(50);
-
-      await expect(vault.connect(users[2]).addmetowhitelist()).to.be.revertedWith('903');
+      await expect(await ceth.balanceOf(vaultdai.address)).to.equal(0);
 
     });
 

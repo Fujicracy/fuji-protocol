@@ -21,6 +21,13 @@ interface IAlphaWhitelist {
 
 }
 
+interface IAccountant {
+
+  function ETH_CAP_VALUE() external view returns(uint256);
+  function isAddrWhitelisted(address _usrAddrs) external view returns(bool);
+
+}
+
 contract VaultETHDAI is IVault, VaultBase {
 
   AggregatorV3Interface public oracle;
@@ -48,7 +55,9 @@ contract VaultETHDAI is IVault, VaultBase {
   address public controller;
   address public fliquidator;
   Flasher flasher;
+
   IAlphaWhitelist aWhitelist;
+  IAccountant accountant;
 
   mapping(address => uint256) public collaterals;
 
@@ -67,7 +76,8 @@ contract VaultETHDAI is IVault, VaultBase {
     address _controller,
     address _fliquidator,
     address _oracle,
-    address _aWhitelist
+    address _aWhitelist,
+    address _accountant
 
   ) public {
 
@@ -445,7 +455,6 @@ contract VaultETHDAI is IVault, VaultBase {
   */
   function depositBalance(address _provider) public view override returns(uint256) {
     uint256 balance = IProvider(_provider).getDepositBalance(collateralAsset);
-    console.log("at vaul", balance);
     return balance;
   }
 

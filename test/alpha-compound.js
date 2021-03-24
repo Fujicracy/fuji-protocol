@@ -1,4 +1,4 @@
-const { ethers, BigNumber } = require("hardhat");
+const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { solidity, createFixtureLoader } = require("ethereum-waffle");
 
@@ -84,7 +84,7 @@ describe("Alpha", () => {
       vaultbal = vaultbal/1;
       let rate = await ceth.exchangeRateStored();
       let cethAmount = .75*(ethers.utils.parseEther("1.0")).pow(2).div(rate);
-      await expect(vaultbal).to.be.closeTo(cethAmount, 200);
+      await expect(vaultbal).to.be.closeTo(cethAmount, 100);
 
     });
 
@@ -94,9 +94,10 @@ describe("Alpha", () => {
             .deposit(ethers.utils.parseEther("1"),{ value: ethers.utils.parseEther("1")})).to
             .changeEtherBalance(users[1], ethers.utils.parseEther("-1"));
       let vaultbal = await ceth.balanceOf(vaultusdc.address);
+      vaultbal = vaultbal/1;
       let rate = await ceth.exchangeRateStored();
-      let cethAmount = (ethers.utils.parseEther("1.0")).pow(2).div(rate);
-      await expect(vaultbal).to.equal(cethAmount);
+      let cethAmount = 1*(ethers.utils.parseEther("1.0")).pow(2).div(rate);
+      await expect(vaultbal).to.be.closeTo(cethAmount, 200);
 
     });
 
@@ -168,8 +169,23 @@ describe("Alpha", () => {
       .to.equal(ethers.utils.parseEther("125"));
     });
 
+    it("Users[2]: deposits 1 ETH to vaultusdc, tries borrows 5000 usdc , reverts", async () => {
 
+      await expect(await vaultusdc.connect(users[2])
+            .deposit(ethers.utils.parseEther("1"),{ value: ethers.utils.parseEther("1")})).to
+            .changeEtherBalance(users[2], ethers.utils.parseEther("-1"));
+      await expect(vaultusdc.connect(users[2]).borrow(ethers.utils.parseUnits("5000")))
+            .to.be.revertedWith('105');
+    });
 
+    it("Users[2]: deposits 0.25 ETH collateral to vaultdai, and Users[0] tries to withdraw 0.125 ETH , reverts", async () => {
+
+      await expect(await vaultdai.connect(users[2])
+            .deposit(ethers.utils.parseEther("0.25"),{ value: ethers.utils.parseEther("0.25")})).to
+            .changeEtherBalance(users[2], ethers.utils.parseEther("-0.25"));
+      await expect(vaultdai.connect(users[0]).withdraw(ethers.utils.parseEther("0.125"))).to
+            .be.revertedWith('104');
+    });
 
   });
 });

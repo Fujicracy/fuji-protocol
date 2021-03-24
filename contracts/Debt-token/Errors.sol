@@ -29,6 +29,10 @@ library Errors {
   string public constant VL_NOT_AUTHORIZED = '111'; //Not authorized
   string public constant VL_INVALID_COLLATERAL = '112'; //Collateral is not in active in vault
   string public constant VL_NO_ERC20_BALANCE = '113'; //User does not have ERC20 balance
+  string public constant VL_INPUT_ERROR = '114';
+  string public constant VL_ASSET_EXISTS ='115';  //Asset intended to be added already exists in FujiERC1155
+  string public constant VL_ZERO_ADDR_1155 ='116'; //ERC1155: balance query for the zero address
+  string public constant VL_NOT_A_CONTRACT = '117'; //Address is not a contract.
 
   string public constant MATH_DIVISION_BY_ZERO = '201';
   string public constant MATH_ADDITION_OVERFLOW = '202';

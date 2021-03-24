@@ -1,35 +1,38 @@
-const { ethers, BigNumber } = require("hardhat");
+const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { solidity, createFixtureLoader } = require("ethereum-waffle");
 
 const {
   fixture,
   convertToCurrencyDecimals,
-  convertToWei,
   advanceblocks,
+  convertToWei,
   evmSnapshot,
   evmRevert,
   DAI_ADDR,
-  ONE_ETH,
-} = require("./utils.js");
+  USDC_ADDR,
+  ONE_ETH
+} = require("./utils-alpha.js");
 
 //use(solidity);
 
 describe("Alpha", () => {
+
   let dai;
+  let usdc;
   let aweth;
   let ceth;
-
   let fliquidator;
   let flasher;
   let controller;
-
   let aave;
   let compound;
   let dydx;
-
-  let vault;
-  let debtToken;
+  let aWhitelist;
+  let vaultdai;
+  let vaultusdc;
+  let debtTokendai;
+  let debtTokenusdc;
 
   let users;
 
@@ -52,20 +55,20 @@ describe("Alpha", () => {
 
     const _fixture = await loadFixture(fixture);
     dai = _fixture.dai;
-    vault = _fixture.vault;
+    usdc = _fixture.usdc;
+    aWhitelist = _fixture.aWhitelist;
+    vaultdai = _fixture.vaultdai;
+    vaultusdc = _fixture.vaultusdc;
     aweth = _fixture.aweth;
     ceth = _fixture.ceth;
-    dydx = _fixture.dydx;
-    debtToken = _fixture.debtToken;
+    debtTokendai = _fixture.debtTokendai;
+    debtTokenusdc = _fixture.debtTokenusdc;
     aave = _fixture.aave;
+    compound = _fixture.compound;
+    dydx = _fixture.dydx;
 
-    await vault.setActiveProvider(dydx.address);
-
-    //Users 1 and 2 are whitelisted before every test
-    await advanceblocks(50);
-    await vault.connect(users[1]).addmetowhitelist();
-    await advanceblocks(50);
-    await vault.connect(users[2]).addmetowhitelist();
+    await vaultdai.setActiveProvider(dydx.address);
+    await vaultusdc.setActiveProvider(dydx.address);
 
   });
 

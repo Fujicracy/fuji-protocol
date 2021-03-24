@@ -16,9 +16,6 @@ abstract contract VaultBase is Ownable {
   address public collateralAsset;
   address public borrowAsset;
 
-  //Balance of all available collateral in ETH
-  uint256 public collateralBalance;
-
   //Internal functions
 
   /**

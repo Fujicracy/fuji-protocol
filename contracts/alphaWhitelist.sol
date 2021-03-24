@@ -2,9 +2,12 @@
 pragma solidity >=0.4.25 <0.8.0;
 
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import {Errors} from './Debt-token/Errors.sol';
 
 contract AlphaWhitelist is ReentrancyGuard  {
+
+  using SafeMath for uint256;
 
   uint256 public ETH_CAP_VALUE;
   uint256 public LIMIT_USERS;
@@ -34,7 +37,7 @@ contract AlphaWhitelist is ReentrancyGuard  {
 
       whitelisted[confirmedUsrAddrs[i]] = counter;
 
-      counter += 1;
+      counter = counter.add(1);
     }
 
     whitelisted[_fliquidator] = LIMIT_USERS+1;
@@ -63,7 +66,7 @@ contract AlphaWhitelist is ReentrancyGuard  {
     require(block.number > timeblock + 50, Errors.SP_ALPHA_WAIT_BLOCKLAG);
 
     whitelisted[msg.sender] = counter;
-    counter += 1;
+    counter = counter.add(1);
 
     timeblock = block.number;
 

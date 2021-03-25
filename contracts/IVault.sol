@@ -23,8 +23,6 @@ interface IVault {
   function activeProvider() external view returns(address);
   function borrowBalance(address _provider) external view returns(uint256);
 	function depositBalance(address _provider) external view returns(uint256);
-  function debtToken() external view returns(address);
-	function getcollateralBalance() external view returns(uint256);
 	function getUsercollateral(address _user) external view returns(uint256);
 	function getNeededCollateralFor(uint256 _amount) external view returns(uint256);
 	function getProviders() external view returns(address[] memory);
@@ -32,9 +30,8 @@ interface IVault {
 
   function executeSwitch(address _newProvider, uint256 _debtAmount) external;
   function setActiveProvider(address _provider) external;
-	function setVaultCollateralBalance(uint256 _newCollateralBalance) external;
 	function setUsercollateral(address _user, uint256 _newValue) external;
-  function updateDebtTokenBalances() external;
+  //function updateDebtTokenBalances() external;
 	function getLiquidationBonusFor(uint256 _amount,bool _flash) external view returns(uint256);
 
 	function deposit(uint256 _collateralAmount) external payable;

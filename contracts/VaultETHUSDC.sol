@@ -3,18 +3,25 @@
 pragma solidity >=0.4.25 <0.8.0;
 pragma experimental ABIEncoderV2;
 
-import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import { IDebtToken } from "./IDebtToken.sol";
+import { IFujiERC1155 } from "./IFujiERC1155.sol";
 import { VaultBase } from "./VaultBase.sol";
 import { IVault } from "./IVault.sol";
 import { IProvider } from "./IProvider.sol";
 import { Flasher } from "./flashloans/Flasher.sol";
-import {Errors} from './Debt-token/Errors.sol';
+import { Errors } from './Debt-token/Errors.sol';
 
 import "hardhat/console.sol"; //test line
 
 interface IAlphaWhitelist {
+
+  function ETH_CAP_VALUE() external view returns(uint256);
+  function isAddrWhitelisted(address _usrAddrs) external view returns(bool);
+
+}
+
+interface IAccountant {
 
   function ETH_CAP_VALUE() external view returns(uint256);
   function isAddrWhitelisted(address _usrAddrs) external view returns(bool);
@@ -43,11 +50,12 @@ contract VaultETHUSDC is IVault, VaultBase {
   address[] public providers;
   address public override activeProvider;
 
-  address public override debtToken;
+  address public FujiERC1155;
 
   address public controller;
   address public fliquidator;
   Flasher flasher;
+
   IAlphaWhitelist aWhitelist;
 
   mapping(address => uint256) public collaterals;
@@ -116,10 +124,9 @@ contract VaultETHUSDC is IVault, VaultBase {
     // deposit to current provider
     _deposit(_collateralAmount, address(activeProvider));
 
-    collateralBalance = collateralBalance.add(_collateralAmount);
+    uint256 id = IFujiERC1155(FujiERC1155).getAssetID(0, collateralAsset);
 
-    uint256 providedCollateral = collaterals[msg.sender];
-    collaterals[msg.sender] = providedCollateral.add(_collateralAmount);
+    IFujiERC1155(FujiERC1155).mint(msg.sender, id, _collateralAmount, "");
 
     emit Deposit(msg.sender, _collateralAmount);
 
@@ -135,21 +142,24 @@ contract VaultETHUSDC is IVault, VaultBase {
 
     require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST); //alpha
 
-    uint256 providedCollateral = collaterals[msg.sender];
+    uint256 idcollateral = IFujiERC1155(FujiERC1155).getAssetID(0, collateralAsset);
+    uint256 idborrow = IFujiERC1155(FujiERC1155).getAssetID(1, borrowAsset);
+
+    uint256 providedCollateral = IFujiERC1155(FujiERC1155).balanceOf(msg.sender, idcollateral);
 
     require(providedCollateral >= _withdrawAmount, Errors.VL_INVALID_WITHDRAW_AMOUNT);
     // get needed collateral for current position
     // according current price
-    uint256 neededCollateral = getNeededCollateralFor( IDebtToken(debtToken).balanceOf(msg.sender));
+    uint256 neededCollateral = getNeededCollateralFor(IFujiERC1155(FujiERC1155).balanceOf(msg.sender,idborrow));
 
     require(providedCollateral.sub(_withdrawAmount) >= neededCollateral, Errors.VL_INVALID_WITHDRAW_AMOUNT);
 
     // withdraw collateral from current provider
     _withdraw(_withdrawAmount, address(activeProvider));
 
-    collaterals[msg.sender] = providedCollateral.sub(_withdrawAmount);
+    IFujiERC1155(FujiERC1155).burn(msg.sender, idborrow, _withdrawAmount);
+
     IERC20(collateralAsset).uniTransfer(msg.sender, _withdrawAmount);
-    collateralBalance = collateralBalance.sub(_withdrawAmount);
 
     emit Withdraw(msg.sender, _withdrawAmount);
 
@@ -164,25 +174,28 @@ contract VaultETHUSDC is IVault, VaultBase {
 
     require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST); //alpha
 
-    uint256 providedCollateral = collaterals[msg.sender];
+    uint256 idcollateral = IFujiERC1155(FujiERC1155).getAssetID(0, collateralAsset);
+    uint256 idborrow = IFujiERC1155(FujiERC1155).getAssetID(1, borrowAsset);
+
+    uint256 providedCollateral = IFujiERC1155(FujiERC1155).balanceOf(msg.sender, idcollateral);
 
     // get needed collateral for already existing positions
     // together with the new position
     // according current price
     uint256 neededCollateral = getNeededCollateralFor(
-      _borrowAmount.add(IDebtToken(debtToken).balanceOf(msg.sender))
+      _borrowAmount.add(IFujiERC1155(FujiERC1155).balanceOf(msg.sender,idborrow))
     );
 
     require(providedCollateral > neededCollateral, Errors.VL_INVALID_BORROW_AMOUNT);
 
-    updateDebtTokenBalances();
+    //updateFujiERC1155Balances(); to implement soon
 
     // borrow from the current provider
     _borrow(_borrowAmount, address(activeProvider));
 
     IERC20(borrowAsset).uniTransfer(msg.sender, _borrowAmount);
 
-    IDebtToken(debtToken).mint(msg.sender,msg.sender,_borrowAmount);
+    IFujiERC1155(FujiERC1155).mint(msg.sender, idborrow, _borrowAmount, "");
 
     emit Borrow(msg.sender, _borrowAmount);
   }
@@ -196,9 +209,11 @@ contract VaultETHUSDC is IVault, VaultBase {
 
     require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST); //alpha
 
-    updateDebtTokenBalances();
+    //updateFujiERC1155Balances();to implement soon
 
-    uint256 userDebtBalance = IDebtToken(debtToken).balanceOf(msg.sender);
+    uint256 idborrow = IFujiERC1155(FujiERC1155).getAssetID(1, borrowAsset);
+
+    uint256 userDebtBalance = IFujiERC1155(FujiERC1155).balanceOf(msg.sender,idborrow);
     require(userDebtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
 
     require(
@@ -212,7 +227,7 @@ contract VaultETHUSDC is IVault, VaultBase {
     // payback current provider
     _payback(_repayAmount, address(activeProvider));
 
-    IDebtToken(debtToken).burn(msg.sender,_repayAmount);
+    IFujiERC1155(FujiERC1155).burn(msg.sender,idborrow,_repayAmount);
 
     emit Repay(msg.sender, _repayAmount);
   }
@@ -238,6 +253,7 @@ contract VaultETHUSDC is IVault, VaultBase {
     _payback(borrowBalance, address(activeProvider));
 
     // 2. withdraw collateral from current provider
+    uint256 collateralBalance = depositBalance(activeProvider);
     _withdraw(collateralBalance, address(activeProvider));
 
     // 3. deposit to the new provider
@@ -246,7 +262,7 @@ contract VaultETHUSDC is IVault, VaultBase {
     // 4. borrow from the new provider, borrowBalance + premium = flashloandebt
     _borrow(_flashLoanDebt, address(_newProvider));
 
-    updateDebtTokenBalances();
+    //updateFujiERC1155Balances(); to be implemented soon
 
     // return borrowed amount to Flasher
     IERC20(borrowAsset).uniTransfer(msg.sender, _flashLoanDebt);
@@ -278,11 +294,11 @@ contract VaultETHUSDC is IVault, VaultBase {
   //Administrative functions
 
   /**
-  * @dev Sets a debt token for this vault.
-  * @param _debtToken: fuji debt token address
+  * @dev Sets a fujiERC1155 Colalterl and Borrow manager for this vault.
+  * @param _FujiERC1155: fuji ERC1155 address
   */
-  function setDebtToken(address _debtToken) external isAuthorized {
-    debtToken = _debtToken;
+  function setFujiERC1155(address _FujiERC1155) external isAuthorized {
+    FujiERC1155 = _FujiERC1155;
   }
 
   /**
@@ -297,9 +313,9 @@ contract VaultETHUSDC is IVault, VaultBase {
   * @dev Sets the Collateral balance for this vault, after a change.
   * @param _newCollateralBalance: New balance value
   */
-  function setVaultCollateralBalance(uint256 _newCollateralBalance) external override isAuthorized {
-    collateralBalance = _newCollateralBalance;
-  }
+  //function setVaultCollateralBalance(uint256 _newCollateralBalance) external override isAuthorized {
+  //  collateralBalance = _newCollateralBalance;
+  //}
 
   /**
   * @dev Adds a provider to the Vault
@@ -325,9 +341,9 @@ contract VaultETHUSDC is IVault, VaultBase {
     }
   }
 
-  function updateDebtTokenBalances() public override {
-    IDebtToken(debtToken).updateState(borrowBalance(activeProvider));
-  }
+  //function updateFujiERC1155Balances() public override {
+  //  IFujiERC1155(FujiERC1155).updateState(borrowBalance(activeProvider));
+  //} to implement soon
 
 
   //Getter Functions
@@ -366,9 +382,9 @@ contract VaultETHUSDC is IVault, VaultBase {
   /**
   * @dev Gets the collateral balance
   */
-  function getcollateralBalance() external override view returns(uint256) {
-    return collateralBalance;
-  }
+  //function getcollateralBalance() external override view returns(uint256) {
+  //  return collateralBalance;
+  //}
 
   /**
   * @dev Get the flasher for this vault.
@@ -421,15 +437,15 @@ contract VaultETHUSDC is IVault, VaultBase {
   * @dev Returns the amount of collateral of a user address
   * @param _user: address of the user
   */
-  function getCollateralShareOf(address _user) public view returns(uint256 share) {
-    uint256 providedCollateral = collaterals[_user];
-    if (providedCollateral == 0) {
-      share = 0;
-    }
-    else {
-      share = providedCollateral.mul(BASE).div(collateralBalance);
-    }
-  }
+  //function getCollateralShareOf(address _user) public view returns(uint256 share) {
+  //  uint256 providedCollateral = collaterals[_user];
+  //  if (providedCollateral == 0) {
+  //    share = 0;
+  //  }
+  //  else {
+  //    share = providedCollateral.mul(BASE).div(collateralBalance);
+  //  }
+  //}
 
   /**
   * @dev Returns the total borrow balance of the Vault's  underlying at provider
@@ -445,7 +461,6 @@ contract VaultETHUSDC is IVault, VaultBase {
   */
   function depositBalance(address _provider) public view override returns(uint256) {
     uint256 balance = IProvider(_provider).getDepositBalance(collateralAsset);
-    console.log("at vaul", balance);
     return balance;
   }
 

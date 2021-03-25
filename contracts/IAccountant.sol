@@ -7,7 +7,7 @@ interface IAccountant {
 
   function getUserCollateralTypeBal(address _user, address _collateralAsset) external returns(uint256);
 
-  function getUserCollateralGlobalBal(address _user) external returns(uint256);
+  function getUserCollateralGlobalBal(address _FujiERC1155, address _user) external returns(uint256);
 
   function getTVLCollateralType(address _collateralAsset) external returns(uint256);
 

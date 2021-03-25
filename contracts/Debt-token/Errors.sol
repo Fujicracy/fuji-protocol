@@ -33,6 +33,9 @@ library Errors {
   string public constant VL_ASSET_EXISTS ='115';  //Asset intended to be added already exists in FujiERC1155
   string public constant VL_ZERO_ADDR_1155 ='116'; //ERC1155: balance query for the zero address
   string public constant VL_NOT_A_CONTRACT = '117'; //Address is not a contract.
+  string public constant VL_INVALID_ASSETID_1155 = '118';
+  string public constant VL_NO_ERC1155_BALANCE ='119';//ERC1155: insufficient balance for transfer
+  string public constant VL_MISSING_ERC1155_APPROVAL = '120'; //ERC1155: transfer caller is not owner nor approved
 
   string public constant MATH_DIVISION_BY_ZERO = '201';
   string public constant MATH_ADDITION_OVERFLOW = '202';

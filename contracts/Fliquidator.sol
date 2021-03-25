@@ -38,8 +38,8 @@ contract Fliquidator {
   */
   function liquidate(address _userAddr, address vault) external {
 
-    IVault(vault).updateDebtTokenBalances();
-    address debtToken = IVault(vault).debtToken();
+    //IVault(vault).updateDebtTokenBalances(); fix
+    address debtToken = address(0); //IVault(vault).debtToken(); fix
 
     uint256 userCollateral = IVault(vault).getUsercollateral(_userAddr);
     uint256 userDebtBalance = IDebtToken(debtToken).balanceOf(_userAddr);
@@ -68,10 +68,10 @@ contract Fliquidator {
     uint256 bonus = IVault(vault).getLiquidationBonusFor(userDebtBalance, false);
 
     // Reduce collateralBalance
-    uint256 newcollateralBalance = (IVault(vault).getcollateralBalance()).sub(userCollateral);
-    IVault(vault).setVaultCollateralBalance(newcollateralBalance);
+    uint256 newcollateralBalance = 0; //(IVault(vault).getcollateralBalance()).sub(userCollateral); fix
+    //IVault(vault).setVaultCollateralBalance(newcollateralBalance); fix
     // update user collateral
-    IVault(vault).setUsercollateral(_userAddr, 0);
+    //IVault(vault).setUsercollateral(_userAddr, 0); fix
 
     // transfer 5% of debt position to liquidator
     IERC20(IVault(vault).getCollateralAsset()).uniTransfer(msg.sender, bonus);
@@ -94,8 +94,8 @@ contract Fliquidator {
   */
   function flashClose(uint256 _amount, address vault) external {
 
-    IVault(vault).updateDebtTokenBalances();
-    address debtToken = IVault(vault).debtToken();
+    //IVault(vault).updateDebtTokenBalances();
+    address debtToken = address(0); //IVault(vault).debtToken(); fix
 
     uint256 userDebtBalance = IDebtToken(debtToken).balanceOf(msg.sender);
     require(userDebtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
@@ -142,11 +142,11 @@ contract Fliquidator {
   */
   function flashLiquidate(address _userAddr, address vault) external {
 
-    IVault(vault).updateDebtTokenBalances();
-    address debtToken = IVault(vault).debtToken();
+    //IVault(vault).updateDebtTokenBalances();
+    address debtToken = address(0);//IVault(vault).debtToken(); fix
 
-    uint256 userCollateral = IVault(vault).getUsercollateral(_userAddr);
-    uint256 userDebtBalance = IDebtToken(debtToken).balanceOf(_userAddr);
+    uint256 userCollateral = 0; //IVault(vault).getUsercollateral(_userAddr); fix
+    uint256 userDebtBalance = 0; //IDebtToken(debtToken).balanceOf(_userAddr); fix
 
     // do checks user is liquidatable
     uint256 neededCollateral = IVault(vault).getNeededCollateralFor(userDebtBalance);
@@ -178,17 +178,17 @@ contract Fliquidator {
   */
   function executeFlashClose(address _userAddr, uint256 _debtAmount, address vault) external {
 
-    address debtToken = IVault(vault).debtToken();
+    address debtToken = address(0);//IVault(vault).debtToken(); fix
 
     // TODO make callable only from Flasher
     uint256 userCollateral = IVault(vault).getUsercollateral(_userAddr);
     uint256 userDebtBalance = IDebtToken(debtToken).balanceOf(_userAddr);
 
     // reduce collateralBalance
-    uint256 newcollateralBalance = (IVault(vault).getcollateralBalance()).sub(userCollateral);
-    IVault(vault).setVaultCollateralBalance(newcollateralBalance);
+    uint256 newcollateralBalance = 0; //(IVault(vault).getcollateralBalance()).sub(userCollateral); fix
+    //IVault(vault).setVaultCollateralBalance(newcollateralBalance); fix
     // update user collateral
-    IVault(vault).setUsercollateral(_userAddr, 0);
+    //IVault(vault).setUsercollateral(_userAddr, 0); fix
 
     uint leftover = _repayAndSwap(userDebtBalance, userCollateral, _debtAmount, vault);
 
@@ -198,7 +198,7 @@ contract Fliquidator {
     IERC20(IVault(vault).getCollateralAsset()).uniTransfer(user, userCollateral.sub(leftover));
 
     // burn debt
-    IDebtToken(debtToken).burn(_userAddr,userDebtBalance);
+    //IDebtToken(debtToken).burn(_userAddr,userDebtBalance); fix
 
     emit FlashClose(_userAddr, userDebtBalance);
   }
@@ -212,17 +212,17 @@ contract Fliquidator {
   */
   function executeFlashLiquidation(address _userAddr,address _liquidatorAddr,uint256 _debtAmount, address vault) external {
 
-    address debtToken = IVault(vault).debtToken();
+    address debtToken = address(0);//IVault(vault).debtToken(); fix
 
     // TODO make callable only from Flasher
     uint256 userCollateral = IVault(vault).getUsercollateral(_userAddr);
-    uint256 userDebtBalance = IDebtToken(debtToken).balanceOf(_userAddr);
+    uint256 userDebtBalance = 0; //IDebtToken(debtToken).balanceOf(_userAddr); fix
 
     // reduce collateralBalance
-    uint256 newcollateralBalance = (IVault(vault).getcollateralBalance()).sub(userCollateral);
-    IVault(vault).setVaultCollateralBalance(newcollateralBalance);
+    uint256 newcollateralBalance = 0; //(IVault(vault).getcollateralBalance()).sub(userCollateral); fix
+    //IVault(vault).setVaultCollateralBalance(newcollateralBalance); fix
     // update user collateral
-    IVault(vault).setUsercollateral(_userAddr, 0);
+    //IVault(vault).setUsercollateral(_userAddr, 0); fix
 
     uint256 leftover = _repayAndSwap(userDebtBalance, userCollateral, _debtAmount, vault);
 
@@ -238,7 +238,7 @@ contract Fliquidator {
     IERC20(IVault(vault).getCollateralAsset()).uniTransfer(user, leftover.sub(bonus));
 
     // burn debt
-    IDebtToken(debtToken).burn(_userAddr,userDebtBalance);
+    //IDebtToken(debtToken).burn(_userAddr,userDebtBalance); fix
 
     emit FlashLiquidate(_userAddr, _liquidatorAddr, userDebtBalance);
   }

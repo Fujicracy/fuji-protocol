@@ -4,41 +4,38 @@ pragma solidity >=0.4.25 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import {IAccountant} from "./IAccountant.sol";
+import { IFujiERC1155 } from "./IFujiERC1155.sol";
+import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract AccountantAlpha is IAccountant {
+contract HelperFunct {
+
+  function isETH(address token) internal pure returns (bool) {
+    return (token == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE));
+  }
+
+}
+
+contract AccountantAlpha is IAccountant, HelperFunct {
 
   using SafeMath for uint256;
-
-  //Authorized Vaults
-  mapping (address => bool ) vaultRegistry;
-
-  //Balance per collateral asset in native underlying
-  mapping (address => uint256) balanceCollateralMarket;
-
-
-  modifier onlyVault() {
-    require(
-      isVault(msg.sender),
-      Errors.VL_NOT_AUTHORIZED);
-    _;
-  }
-
-
-  function addCollateraltoUser(address _user, address _collateralAsset, uint256 _AmounttoAdd) external override onlyVault {
-    //TODO
-  }
-
-  function subCollateraltoUser(address _user, address _collateralAsset, uint256 _AmountoSub) external override onlyVault {
-    //TODO
-  }
 
   function getUserCollateralTypeBal(address _user, address _collateralAsset) external override returns(uint256) {
     //TODO
   }
 
-  function getUserCollateralGlobalBal(address _user) external override returns(uint256) {
+  /**
+  * @dev Returns the Global User Collateral in ETH
+  * @param _FujiERC1155: address of the FujiERC1155
+  * @param _user: address of the user
+  */
+  function getUserCollateralGlobalBal(address _FujiERC1155, address _user) external override returns(uint256) {
+
+    uint256[] memory collateralAssets = IFujiERC1155(_FujiERC1155).IDsCollateralsAssets();
+
+    for(uint i = 0; i < collateralAssets.length ; ++i) {
+      IFujiERC1155(_FujiERC1155).balanceOf(_user,collateralAssets[i]);
+    }
 
   }
 
@@ -48,20 +45,6 @@ contract AccountantAlpha is IAccountant {
 
   function getTVLCollateralGlobal() external override returns(uint256) {
     //TODO
-  }
-
-  //Administrative Functions
-
-  function addVault(address _vaultaddr) public onlyOwner {
-
-  }
-
-  function isVault(address _addr) internal view returns(bool ){
-    if(vaultRegistry[_addr]) {
-      return vaultRegistry[_addr];
-    } else {
-      return false;
-    }
   }
 
 }

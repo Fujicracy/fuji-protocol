@@ -15,13 +15,16 @@ abstract contract DebtTokenBase is IncentivizedERC20, VersionedInitializable {
 
   address public immutable UNDERLYING_ASSET_ADDRESS;
   address public immutable VAULT;
-
+  address public fliquidator;
 
   /**
-   * @dev Only lending pool can call functions marked by this modifier
+   * @dev Only vault and fliquidator can call functions marked by this modifier
    **/
   modifier onlyVault {
-    require(_msgSender() == VAULT, Errors.VLT_CALLER_MUST_BE_VAULT);
+    require(
+      _msgSender() == VAULT ||
+      _msgSender() == fliquidator
+    , Errors.VLT_CALLER_MUST_BE_VAULT);
     _;
   }
 
@@ -31,12 +34,14 @@ abstract contract DebtTokenBase is IncentivizedERC20, VersionedInitializable {
    */
   constructor(
     address _vault,
+    address _fliquidator,
     address underlyingAssetAddress,
     string memory name,
     string memory symbol
   ) public IncentivizedERC20(name, symbol, 18) {
     VAULT = _vault;
     UNDERLYING_ASSET_ADDRESS = underlyingAssetAddress;
+    fliquidator =_fliquidator;
   }
 
   /**

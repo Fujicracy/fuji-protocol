@@ -15,7 +15,7 @@ pragma solidity <0.8.0;
 library Errors {
 
   //Errors
-  string public constant VL_LIQUIDITY_INDEX_OVERFLOW = '100'; //  Liquidity index overflows uint128
+  string public constant VL_INDEX_OVERFLOW = '100'; // index overflows uint128
   string public constant VL_INVALID_MINT_AMOUNT = '101'; //invalid amount to mint
   string public constant VL_INVALID_BURN_AMOUNT = '102'; //invalid amount to burn
   string public constant VL_AMOUNT_ERROR = '103'; //Input value >0, and for ETH msg.value and amount shall match
@@ -29,13 +29,15 @@ library Errors {
   string public constant VL_NOT_AUTHORIZED = '111'; //Not authorized
   string public constant VL_INVALID_COLLATERAL = '112'; //Collateral is not in active in vault
   string public constant VL_NO_ERC20_BALANCE = '113'; //User does not have ERC20 balance
-  string public constant VL_INPUT_ERROR = '114';
+  string public constant VL_INPUT_ERROR = '114'; //Check inputs. For ERC1155 batch functions, array sizes should match.
   string public constant VL_ASSET_EXISTS ='115';  //Asset intended to be added already exists in FujiERC1155
-  string public constant VL_ZERO_ADDR_1155 ='116'; //ERC1155: balance query for the zero address
+  string public constant VL_ZERO_ADDR_1155 ='116'; //ERC1155: balance/transfer for zero address
   string public constant VL_NOT_A_CONTRACT = '117'; //Address is not a contract.
-  string public constant VL_INVALID_ASSETID_1155 = '118';
-  string public constant VL_NO_ERC1155_BALANCE ='119';//ERC1155: insufficient balance for transfer
-  string public constant VL_MISSING_ERC1155_APPROVAL = '120'; //ERC1155: transfer caller is not owner nor approved
+  string public constant VL_INVALID_ASSETID_1155 = '118'; //ERC1155 Asset ID is invalid.
+  string public constant VL_NO_ERC1155_BALANCE ='119';//ERC1155: insufficient balance for transfer.
+  string public constant VL_MISSING_ERC1155_APPROVAL = '120'; //ERC1155: transfer caller is not owner nor approved.
+  string public constant VL_RECEIVER_REJECT_1155 = '121'; //ERC1155Receiver rejected tokens
+  string public constant VL_RECEIVER_CONTRACT_NON_1155 = '122'; //ERC1155: transfer to non ERC1155Receiver implementer
 
   string public constant MATH_DIVISION_BY_ZERO = '201';
   string public constant MATH_ADDITION_OVERFLOW = '202';

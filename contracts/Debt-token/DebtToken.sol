@@ -5,6 +5,7 @@ import {IDebtToken} from './IDebtToken.sol';
 import {WadRayMath} from './Debt-token/WadRayMath.sol';
 import {Errors} from './Debt-token/Errors.sol';
 import {DebtTokenBase} from './Debt-token/DebtTokenBase.sol';
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title DebtToken - Variable
@@ -12,7 +13,7 @@ import {DebtTokenBase} from './Debt-token/DebtTokenBase.sol';
  * at variable rate mode
  * @author Inspired by Aave adapted to Fuji
  **/
-contract DebtToken is DebtTokenBase {
+contract DebtToken is DebtTokenBase, Ownable {
 
   using WadRayMath for uint256;
 
@@ -22,11 +23,12 @@ contract DebtToken is DebtTokenBase {
 
   constructor(
     address vault,
+    address fliquidator,
     address underlyingAsset,
     string memory name,
     string memory symbol
 
-  ) public DebtTokenBase(vault, underlyingAsset, name, symbol) {
+  ) public DebtTokenBase(vault, fliquidator, underlyingAsset, name, symbol) {
 
     liquidityIndex = uint128(WadRayMath.ray());
   }
@@ -124,7 +126,7 @@ contract DebtToken is DebtTokenBase {
    * @return The total supply
    **/
   function totalSupply() public view virtual override returns (uint256) {
-    return super.totalSupply();
+    return super.totalSupply().rayMul(liquidityIndex);
   }
 
   /**
@@ -144,6 +146,14 @@ contract DebtToken is DebtTokenBase {
   function getScaledUserBalanceAndSupply(address user) external view returns (uint256, uint256)
   {
     return (super.balanceOf(user), super.totalSupply());
+  }
+
+  /**
+  * @dev Sets the fliquidator address
+  * @param _newfliquidator: new fliquidator address
+  */
+  function setfliquidator(address _newfliquidator) external onlyOwner {
+    fliquidator = _newfliquidator;
   }
 
   /**

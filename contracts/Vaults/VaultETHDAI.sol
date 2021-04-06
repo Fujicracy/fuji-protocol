@@ -3,11 +3,12 @@
 pragma solidity >=0.4.25 <0.8.0;
 pragma experimental ABIEncoderV2;
 
+import { ReentrancyGuard } from '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import { IFujiERC1155 } from "./IFujiERC1155.sol";
-import { VaultBase } from "./VaultBase.sol";
+import { IFujiERC1155 } from "../FujiERC1155/IFujiERC1155.sol";
 import { IVault } from "./IVault.sol";
+import { VaultBase } from "./VaultBase.sol";
 import { IProvider } from "./IProvider.sol";
 import { Flasher } from "./flashloans/Flasher.sol";
 import { Errors } from './Debt-token/Errors.sol';
@@ -28,7 +29,7 @@ interface IAccountant {
 
 }
 
-contract VaultETHDAI is IVault, VaultBase {
+contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
 
   AggregatorV3Interface public oracle;
 
@@ -110,6 +111,16 @@ contract VaultETHDAI is IVault, VaultBase {
   }
 
   /**
+  * @dev Paybacks the underlying asset and withdraws collateral in a single function call from activeProvider
+  * @param _paybackAmount: amount of underlying asset to be payback
+  * @param _collateralAmount: amount of collateral to be withdrawn
+  */
+  function paybackAndWithdraw(uint256 _paybackAmount, uint256 _collateralAmount) external payable {
+    payback(_paybackAmount);
+    withdraw(_collateralAmount);
+  }
+
+  /**
   * @dev Deposit Vault's type collateral to activeProvider
   * call Controller checkrates
   * @param _collateralAmount: to be deposited
@@ -118,8 +129,15 @@ contract VaultETHDAI is IVault, VaultBase {
   function deposit(uint256 _collateralAmount) public override payable {
 
     require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST);
+
     require(msg.value == _collateralAmount, Errors.VL_AMOUNT_ERROR);
-    require(msg.value <= aWhitelist.ETH_CAP_VALUE(), Errors.SP_ALPHA_ETH_CAP_VALUE);//Alpha
+
+    //Alpha
+    require(
+      msg.value <= aWhitelist.ETH_CAP_VALUE() &&
+      uint256(msg.value).add(collaterals[msg.sender]) <= aWhitelist.ETH_CAP_VALUE(),
+      Errors.SP_ALPHA_ETH_CAP_VALUE
+    );
 
     // deposit to current provider
     _deposit(_collateralAmount, address(activeProvider));
@@ -138,7 +156,7 @@ contract VaultETHDAI is IVault, VaultBase {
   * @param _withdrawAmount: amount of collateral to withdraw
   * Emits a {Withdraw} event.
   */
-  function withdraw(uint256 _withdrawAmount) public override {
+  function withdraw(uint256 _withdrawAmount) public override nonReentrant {
 
     require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST); //alpha
 
@@ -170,7 +188,7 @@ contract VaultETHDAI is IVault, VaultBase {
   * @param _borrowAmount: token amount of underlying to borrow
   * Emits a {Borrow} event.
   */
-  function borrow(uint256 _borrowAmount) public override {
+  function borrow(uint256 _borrowAmount) public override nonReentrant {
 
     require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST); //alpha
 
@@ -310,12 +328,28 @@ contract VaultETHDAI is IVault, VaultBase {
   }
 
   /**
-  * @dev Sets the Collateral balance for this vault, after a change.
-  * @param _newCollateralBalance: New balance value
+  * @dev Sets the controller for this vault.
+  * @param _controller: controller address
   */
-  //function setVaultCollateralBalance(uint256 _newCollateralBalance) external override isAuthorized {
-  //  collateralBalance = _newCollateralBalance;
-  //}
+  function setController(address _controller) external isAuthorized {
+    controller = _controller;
+  }
+
+  /**
+  * @dev Sets the fliquidator address
+  * @param _newfliquidator: new fliquidator address
+  */
+  function setfliquidator(address _newfliquidator) external isAuthorized {
+    fliquidator = _newfliquidator;
+  }
+
+  /**
+  * @dev Sets the Oracle address (Must Comply with AggregatorV3Interface)
+  * @param _newOracle: new Oracle address
+  */
+  function setOracle(address _newOracle) external isAuthorized {
+    oracle = AggregatorV3Interface(_newOracle);
+  }
 
   /**
   * @dev Adds a provider to the Vault

@@ -38,6 +38,7 @@ library Errors {
   string public constant VL_MISSING_ERC1155_APPROVAL = '120'; //ERC1155: transfer caller is not owner nor approved.
   string public constant VL_RECEIVER_REJECT_1155 = '121'; //ERC1155Receiver rejected tokens
   string public constant VL_RECEIVER_CONTRACT_NON_1155 = '122'; //ERC1155: transfer to non ERC1155Receiver implementer
+  string public constant VL_OPTIMIZER_FEE_SMALL ='123'; //Fuji OptimizerFee has to be > 1 RAY (1e27)
 
   string public constant MATH_DIVISION_BY_ZERO = '201';
   string public constant MATH_ADDITION_OVERFLOW = '202';

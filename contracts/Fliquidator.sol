@@ -8,7 +8,7 @@ import { UniERC20 } from "./LibUniERC20.sol";
 import {IUniswapV2Router02} from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import {IVault} from "./IVault.sol";
 import {IDebtToken} from "./IDebtToken.sol";
-import {Errors} from "./Debt-token/Errors.sol";
+import {Errors} from "./Libraries/Errors.sol";
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import { UniERC20 } from "./LibUniERC20.sol";
 import { Flasher } from "./flashloans/Flasher.sol";

@@ -4,10 +4,11 @@ pragma solidity >=0.4.25 <0.8.0;
 
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import { UniERC20 } from "../LibUniERC20.sol";
+import { UniERC20 } from "../Libraries/LibUniERC20.sol";
 
-abstract contract VaultBase is Ownable {
+abstract contract VaultBase is Ownable, Pausable {
 
   using SafeMath for uint256;
   using UniERC20 for IERC20;
@@ -26,7 +27,7 @@ abstract contract VaultBase is Ownable {
   function _deposit(
     uint256 _amount,
     address _provider
-  ) internal {
+  ) internal whenNotPaused {
     bytes memory data = abi.encodeWithSignature(
       "deposit(address,uint256)",
       collateralAsset,
@@ -43,7 +44,7 @@ abstract contract VaultBase is Ownable {
   function _withdraw(
     uint256 _amount,
     address _provider
-  ) internal {
+  ) internal whenNotPaused {
     bytes memory data = abi.encodeWithSignature(
       "withdraw(address,uint256)",
       collateralAsset,
@@ -60,7 +61,7 @@ abstract contract VaultBase is Ownable {
   function _borrow(
     uint256 _amount,
     address _provider
-  ) internal {
+  ) internal whenNotPaused {
     bytes memory data = abi.encodeWithSignature(
       "borrow(address,uint256)",
       borrowAsset,
@@ -77,7 +78,7 @@ abstract contract VaultBase is Ownable {
   function _payback(
     uint256 _amount,
     address _provider
-  ) internal {
+  ) internal whenNotPaused {
     bytes memory data = abi.encodeWithSignature(
       "payback(address,uint256)",
       borrowAsset,
@@ -92,7 +93,7 @@ abstract contract VaultBase is Ownable {
   function _execute(
     address _target,
     bytes memory _data
-  ) internal returns (bytes memory response) {
+  ) internal whenNotPaused returns (bytes memory response) {
     assembly {
       let succeeded := delegatecall(sub(gas(), 5000), _target, add(_data, 0x20), mload(_data), 0, 0)
       let size := returndatasize()
@@ -109,4 +110,21 @@ abstract contract VaultBase is Ownable {
       }
     }
   }
+
+  //Pause Functions
+
+  /**
+  * @dev Emergency Call to stop all basic money flow functions.
+  */
+  function pause() public onlyOwner {
+    _pause();
+  }
+
+  /**
+  * @dev Emergency Call to stop all basic money flow functions.
+  */
+  function unpause() public onlyOwner  {
+    _pause();
+  }
+
 }

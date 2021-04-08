@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import { FujiBaseERC1155 } from "./FujiBaseERC1155.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { WadRayMath } from './WadRayMath.sol';
+import { WadRayMath } from '../Libraries/WadRayMath.sol';
 
 contract F1155Manager is FujiBaseERC1155, Ownable {
 
@@ -77,6 +77,7 @@ contract F1155Manager is FujiBaseERC1155, Ownable {
   * @param _fee; Fee in Ray to charge users for OptimizerFee
   */
   function setOptimizerFee(uint256 _fee) public onlyOwner {
+    require(_fee >= ray(), Errors.VL_OPTIMIZER_FEE_SMALL );
     OptimizerFee = _fee;
   }
 
@@ -94,19 +95,11 @@ contract F1155Manager is FujiBaseERC1155, Ownable {
     used_IDs[newManagedAssets] = true;
     AssetIDtype[newManagedAssets] = _Type;
 
-    if (_Type == AssetType.collateralToken) {
-      //Push new AssetID to BorrowAsset Array
-      IDsCollateralsAssets.push(newManagedAssets);
-      //Initialize the liquidity Index
-      Indexes[newManagedAssets] = ray();
+    //Push new AssetID to BorrowAsset Array
+    IDsCollateralsAssets.push(newManagedAssets);
+    //Initialize the liquidity Index
+    Indexes[newManagedAssets] = ray();
 
-    } else if (_Type == AssetType.debtToken) {
-      //Push new AssetID to BorrowAsset Array
-      IDsBorrowAssets.push(newManagedAssets);
-      //Initialize the liquidity Index
-      Indexes[newManagedAssets] = ray();
-
-    }
     //Update QtyOfManagedAssets
     QtyOfManagedAssets = newManagedAssets;
   }
@@ -162,7 +155,7 @@ contract FujiERC1155 is IFujiERC1155, F1155Manager {
 
     if (newBalance > 0 && total > 0) {
       uint256 diff = newBalance.sub(total);
-      uint256 amountToIndexRatio = diff.wadToRay().rayDiv(total.wadToRay());
+      uint256 amountToIndexRatio = (diff.wadToRay()).rayDiv(total.wadToRay());
 
       uint256 result = amountToIndexRatio.add(WadRayMath.ray());
 

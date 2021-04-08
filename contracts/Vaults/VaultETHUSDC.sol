@@ -138,7 +138,7 @@ contract VaultETHUSDC is IVault, VaultBase {
   * @param _withdrawAmount: amount of collateral to withdraw
   * Emits a {Withdraw} event.
   */
-  function withdraw(uint256 _withdrawAmount) public override {
+  function withdraw(uint256 _withdrawAmount) public override nonReentrant{
 
     require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST); //alpha
 
@@ -170,7 +170,7 @@ contract VaultETHUSDC is IVault, VaultBase {
   * @param _borrowAmount: token amount of underlying to borrow
   * Emits a {Borrow} event.
   */
-  function borrow(uint256 _borrowAmount) public override {
+  function borrow(uint256 _borrowAmount) public override nonReentrant{
 
     require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST); //alpha
 
@@ -238,7 +238,10 @@ contract VaultETHUSDC is IVault, VaultBase {
   * @param _flashLoanDebt amount of flashloan underlying to repay Flashloan
   * Emits a {Switch} event.
   */
-  function executeSwitch(address _newProvider,uint256 _flashLoanDebt) public override isAuthorized {
+  function executeSwitch(
+    address _newProvider,
+    uint256 _flashLoanDebt
+  ) public override isAuthorized whenNotPaused {
     // TODO make callable only from Flasher
     uint256 borrowBalance = borrowBalance(activeProvider);
 

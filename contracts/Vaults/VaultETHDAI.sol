@@ -145,6 +145,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     uint256 id = IFujiERC1155(FujiERC1155).getAssetID(0, collateralAsset);
 
     IFujiERC1155(FujiERC1155).mint(msg.sender, id, _collateralAmount, "");
+    collaterals[msg.sender] = (collaterals[msg.sender]).add(_collateralAmount);
 
     emit Deposit(msg.sender, _collateralAmount);
 
@@ -166,16 +167,19 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     uint256 providedCollateral = IFujiERC1155(FujiERC1155).balanceOf(msg.sender, idcollateral);
 
     require(providedCollateral >= _withdrawAmount, Errors.VL_INVALID_WITHDRAW_AMOUNT);
-    // get needed collateral for current position
-    // according current price
-    uint256 neededCollateral = getNeededCollateralFor(IFujiERC1155(FujiERC1155).balanceOf(msg.sender,idborrow));
+
+    // Get Required Collateral with Factors to maintain debt position healthy
+    uint256 neededCollateral = getNeededCollateralFor(
+      IFujiERC1155(FujiERC1155).balanceOf(msg.sender,idborrow),
+      true
+    );
 
     require(providedCollateral.sub(_withdrawAmount) >= neededCollateral, Errors.VL_INVALID_WITHDRAW_AMOUNT);
 
     // withdraw collateral from current provider
     _withdraw(_withdrawAmount, address(activeProvider));
 
-    IFujiERC1155(FujiERC1155).burn(msg.sender, idborrow, _withdrawAmount);
+    IFujiERC1155(FujiERC1155).burn(msg.sender, idcollateral, _withdrawAmount);
 
     IERC20(collateralAsset).uniTransfer(msg.sender, _withdrawAmount);
 
@@ -256,7 +260,10 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   * @param _flashLoanDebt amount of flashloan underlying to repay Flashloan
   * Emits a {Switch} event.
   */
-  function executeSwitch(address _newProvider,uint256 _flashLoanDebt) public override isAuthorized {
+  function executeSwitch(
+    address _newProvider,
+    uint256 _flashLoanDebt
+  ) public override isAuthorized whenNotPaused {
     // TODO make callable only from Flasher
     uint256 borrowBalance = borrowBalance(activeProvider);
 
@@ -453,18 +460,19 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   /**
   * @dev Returns the amount of collateral needed, including safety factors
   * @param _amount: Vault underlying type intended to be borrowed
+  * @param _withFactor: Inidicate if computation should include safety_Factors
   */
-  function getNeededCollateralFor(uint256 _amount) public view override returns(uint256) {
+  function getNeededCollateralFor(uint256 _amount, bool _withFactor) public view override returns(uint256) {
     // get price of DAI in ETH
     (,int256 latestPrice,,,) = oracle.latestRoundData();
-    return _amount.mul(uint256(latestPrice))
-        // 5/4 or 125% collateralization factor
-        .mul(collatF.a)
-        .div(collatF.b)
-        // 21/20 or + 5% safety factor
-        .mul(safetyF.a)
-        .div(safetyF.b)
-        .div(BASE);
+    uint256 minimumReq = (_amount.mul(uint256(latestPrice)).div(BASE);
+
+    if(_withFactor) { //125% + 5%
+      return minimumReq.mul(collatF.a).mul(safetyF.a).div(collatF.b).div(safetyF.b))
+    } else {
+      return minimumReq;
+    }
+
   }
 
   /**

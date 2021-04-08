@@ -29,7 +29,7 @@ contract AccountantAlpha is IAccountant, HelperFunct {
   * @param _FujiERC1155: address of the FujiERC1155
   * @param _user: address of the user
   */
-  function getUserCollateralGlobalBal(address _FujiERC1155, address _user) external override returns(uint256) {
+  function getUserGlobalCollateralBalance(address _FujiERC1155, address _user) external override returns(uint256) {
 
     uint256[] memory collateralAssets = IFujiERC1155(_FujiERC1155).IDsCollateralsAssets();
 

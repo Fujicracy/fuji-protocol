@@ -3,7 +3,7 @@ pragma solidity >=0.4.25 <0.8.0;
 
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import {Errors} from './Debt-token/Errors.sol';
+import {Errors} from './Libraries/Errors.sol';
 
 contract AlphaWhitelist is ReentrancyGuard  {
 

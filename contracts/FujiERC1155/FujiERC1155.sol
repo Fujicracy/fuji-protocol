@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import { FujiBaseERC1155 } from "./FujiBaseERC1155.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { WadRayMath } from '../Libraries/WadRayMath.sol';
+import { MathUtils } from '../Libraries/MathUtils.sol';
 
 contract F1155Manager is FujiBaseERC1155, Ownable {
 
@@ -23,33 +24,35 @@ contract F1155Manager is FujiBaseERC1155, Ownable {
 
   //FujiERC1155 Asset ID Mapping
 
-  //AssetType => asset address (ERC20) => ERC1155 Asset ID
-  mapping (AssetType => mapping(address => uint256)) public AssetIDs;
+  //AssetType => asset reference address => ERC1155 Asset ID
+  mapping (AssetType => mapping(address => uint64)) public AssetIDs;
 
   //ID Control to confirm ID, and avoid repeated uint256 incurrance
-  mapping (uint256 => bool) public used_IDs;
+  mapping (uint64 => bool) public used_IDs;
 
   //Control mapping that returns the AssetType of an AssetID
-  mapping (uint256 => AssetType) public AssetIDtype;
+  mapping (uint64 => AssetType) public AssetIDtype;
 
-  uint256 public QtyOfManagedAssets;
-  uint256[] public IDsCollateralsAssets;
-  uint256[] public IDsBorrowAssets;
+  uint64 public QtyOfManagedAssets;
+  uint64[] public IDsCollateralsAssets;
+  uint64[] public IDsBorrowAssets;
 
   //Asset ID  Liquidity Index mapping
   //AssetId => Liquidity index for asset ID
-  mapping (uint256 => uint256) Indexes;
+  mapping (uint64 => uint256) public Indexes;
 
   uint256 public OptimizerFee;
+  uint256 public lastUpdateTimestamp;
+  uint256 public fujiIndex;
 
   //Getter Functions
 
   /**
   * @dev Getter Function for the Asset ID locally managed
   * @param _Type: enum AssetType, 0 = Collateral asset, 1 = debt asset
-  * @param _assetAddr: Asset address (e.g. ERC20 token address)
+  * @param _Addr: Reference Address of the Asset
   */
-  function getAssetID(AssetType _Type, address _assetAddr) external view override returns(uint256) {
+  function getAssetID(AssetType _Type, address _Addr) external view override returns(uint64) {
     uint256 theID = AssetIDs[_Type][_assetAddr];
     require(used_IDs[theID], Errors.VL_INVALID_ASSETID_1155 );
     return theID;
@@ -59,14 +62,14 @@ contract F1155Manager is FujiBaseERC1155, Ownable {
   * @dev Getter function to get the AssetType
   * @param _AssetID: AssetID locally managed in ERC1155
   */
-  function getAssetIDType(uint256 _AssetID) internal view returns(AssetType) {
+  function getAssetIDType(uint264 _AssetID) internal view returns(AssetType) {
     return AssetIDtype[_AssetID];
   }
 
   /**
   * @dev Getter function to get quantity of assets managed in ERC1155
   */
-  function getQtyOfManagedAssets() external view override returns(uint256) {
+  function getQtyOfManagedAssets() external view override returns(uint264) {
     return QtyOfManagedAssets;
   }
 
@@ -84,14 +87,14 @@ contract F1155Manager is FujiBaseERC1155, Ownable {
   /**
   * @dev Adds and initializes liquidity index of a new asset in FujiERC1155
   * @param _Type: enum AssetType, 0 = Collateral asset, 1 = debt asset
-  * @param _assetAddr: Asset address (Example ERC20 token address)
+  * @param _Addr: Reference Address of the Asset
   */
-  function addInitializeAsset(AssetType _Type, address _assetAddr) public onlyOwner {
+  function addInitializeAsset(AssetType _Type, address _Addr) external override onlyPermit returns(uint64){
 
-    require(AssetIDs[_Type][_assetAddr] == 0 , Errors.VL_ASSET_EXISTS);
-    uint256 newManagedAssets = QtyOfManagedAssets+1;
+    require(AssetIDs[_Type][_Addr] == 0 , Errors.VL_ASSET_EXISTS);
+    uint64 newManagedAssets = QtyOfManagedAssets+1;
 
-    AssetIDs[_Type][_assetAddr] = newManagedAssets;
+    AssetIDs[_Type][_Addr] = newManagedAssets;
     used_IDs[newManagedAssets] = true;
     AssetIDtype[newManagedAssets] = _Type;
 
@@ -102,6 +105,29 @@ contract F1155Manager is FujiBaseERC1155, Ownable {
 
     //Update QtyOfManagedAssets
     QtyOfManagedAssets = newManagedAssets;
+
+    return newManagedAssets;
+  }
+
+  /**
+  * @dev Returns an array of the FujiERC1155 IDs on which the user has an Open Position
+  * @param _account: user address to check
+  * @param _Type: enum AssetType, 0 = Collateral asset, 1 = debt asset
+  */
+  function engagedIDsOf(address account, AssetType _Type) internal view returns(uint256[] memory _IDs) {
+    if(_Type == AssetType.collateralToken) {
+      for(uint i; i < IDsCollateralsAssets.length; i++) {
+        if(super.balanceOf(account, IDsCollateralsAssets[i]) > 0) {
+          _IDs.push(IDsCollateralsAssets[i]);
+        }
+      }
+    } else if (_Type == AssetType.debtToken) {
+      for(uint i; i < IDsBorrowAssets.length; i++) {
+        if(super.balanceOf(account, IDsBorrowAssets[i]) > 0) {
+          _IDs.push(IDsBorrowAssets[i]);
+        }
+      }
+    }
   }
 
   // Controls for Mint-Burn Operations
@@ -109,7 +135,8 @@ contract F1155Manager is FujiBaseERC1155, Ownable {
 
   modifier onlyPermit() {
     require(
-      isPermitted(_msgSender()),
+      isPermitted(_msgSender()) ||
+      msg.sender == owner(),
       Errors.VL_NOT_AUTHORIZED);
     _;
   }
@@ -140,6 +167,7 @@ contract FujiERC1155 is IFujiERC1155, F1155Manager {
 
     transfersActive = _transfersActive;
     QtyOfManagedAssets = 0;
+    fujiIndex =ray();
 
   }
 
@@ -163,6 +191,17 @@ contract FujiERC1155 is IFujiERC1155, F1155Manager {
       require(result <= type(uint128).max, Errors.VL_INDEX_OVERFLOW);
 
       Indexes[_AssetID] = uint128(result);
+
+      if(lastUpdateTimestamp==0){
+        lastUpdateTimestamp = block.timestamp;
+      }
+
+      uint256 cumulated =
+        (MathUtils.calculateCompoundedInterest(OptimizerFee, lastUpdateTimestamp, block.timestamp))
+        .rayMul(fujiIndex);
+
+      fujiIndex = cumulated;
+      lastUpdateTimestamp = block.timestamp;
     }
   }
 
@@ -194,7 +233,27 @@ contract FujiERC1155 is IFujiERC1155, F1155Manager {
       return 0;
     }
 
-    return scaledBalance.rayMul(Indexes[_AssetID]);
+    return scaledBalance.rayMul(Indexes[_AssetID]).rayMul(fujiIndex);
+  }
+
+  /**
+  * @dev Calculates the principal + accrued interest balance of the user
+  * @return The debt balance of the user owed to the base protocol and fuji protocol
+  **/
+  function splitBalanceOf(
+    address _user,
+    uint256 _AssetID
+  ) public view virtual override returns (baseprotocol uint256, fuji uint256) {
+    uint256 scaledBalance = super.balanceOf(_user, _AssetID);
+
+    if (scaledBalance == 0) {
+      return 0;
+    }
+
+    baseprotocol = scaledBalance.rayMul(Indexes[_AssetID]);
+
+    fuji = scaledBalance.rayMul(fujiIndex);
+
   }
 
   /**
@@ -204,6 +263,18 @@ contract FujiERC1155 is IFujiERC1155, F1155Manager {
   function scaledBalanceOf(address _user, uint256 _AssetID) public view virtual returns (uint256) {
     return super.balanceOf(_user,_AssetID);
   }
+
+
+  function balanceOfBatchDebt(address account, uint256[] calldata ids) external view override returns (uint256 total) {
+
+    uint256[] memory IDs = engagedIDsOf(address account, AssetType _Type);
+
+    for(uint i; i < IDs.length; i++ ){
+      total = total.add(balanceOf(account, IDs[i]));
+    }
+
+  }
+
 
 
   /**
@@ -223,6 +294,10 @@ contract FujiERC1155 is IFujiERC1155, F1155Manager {
 
    uint256 accountBalance = _balances[id][account];
    uint256 amountScaled = amount.rayDiv(Indexes[id]);
+
+   if(getAssetIDType(id)==AssetType.debtToken) {
+     amountScaled = amountScaled.rayDiv(fujiIndex);
+   }
 
    require(amountScaled != 0, Errors.VL_INVALID_MINT_AMOUNT);
 
@@ -264,6 +339,11 @@ contract FujiERC1155 is IFujiERC1155, F1155Manager {
      assetTotalBalance = _totalSupply[ids[i]];
 
      amountScaled = amounts[i].rayDiv(Indexes[ids[i]]);
+
+     if(getAssetIDType(id)==AssetType.debtToken) {
+       amountScaled = amountScaled.rayDiv(fujiIndex);
+     }
+
      require(amountScaled != 0, Errors.VL_INVALID_MINT_AMOUNT);
 
      _balances[ids[i]][to] = accountBalance.add(amountScaled);
@@ -294,12 +374,17 @@ contract FujiERC1155 is IFujiERC1155, F1155Manager {
     uint256 assetTotalBalance = _totalSupply[id];
 
     uint256 amountScaled = amount.rayDiv(Indexes[id]);
+
+    if(getAssetIDType(id)==AssetType.debtToken) {
+      amountScaled = amountScaled.rayDiv(fujiIndex);
+    }
+
     require(amountScaled != 0, Errors.VL_INVALID_BURN_AMOUNT);
 
     require(accountBalance >= amount, Errors.VL_INVALID_BURN_AMOUNT);
 
-    Userbalances[id][account] = accountBalance.sub(amountScaled);
-    TotalAsset_IDBalances[id] = assetTotalBalance.sub(amountScaled);
+    _balances[id][account] = accountBalance.sub(amountScaled);
+    _totalSupply[id] = assetTotalBalance.sub(amountScaled);
 
     emit TransferSingle(operator, account, address(0), id, amount);
   }
@@ -331,10 +416,16 @@ contract FujiERC1155 is IFujiERC1155, F1155Manager {
       accountBalance = _balances[ids[i]][account];
       assetTotalBalance = _totalSupply[ids[i]];
 
+      amountScaled = amounts[i].rayDiv(Indexes[ids[i]]);
+
+      if(getAssetIDType(id)==AssetType.debtToken) {
+        amountScaled = amountScaled.rayDiv(fujiIndex);
+      }
+
       require(accountBalance >= amount, Errors.VL_NO_ERC1155_BALANCE);
 
-      Userbalances[ids[i]][account] = accountBalance.sub(amount);
-      TotalAsset_IDBalances[ids[i]] = assetTotalBalance.sub(amount);
+      _balances[ids[i]][account] = accountBalance.sub(amount);
+      _totalSupply[ids[i]] = assetTotalBalance.sub(amount);
     }
 
     emit TransferBatch(operator, account, address(0), ids, amounts);

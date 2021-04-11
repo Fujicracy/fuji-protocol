@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.4.25 <0.8.0;
+pragma solidity >=0.6.12;
 
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
@@ -13,9 +13,19 @@ abstract contract VaultBase is Ownable, Pausable {
   using SafeMath for uint256;
   using UniERC20 for IERC20;
 
-  //Managed assets in this Vault
-  address public collateralAsset;
-  address public borrowAsset;
+  //Asset Struct
+  struct VaultAssets {
+    address collateralAsset;
+    address borrowAsset;
+    uint64 collateralID
+    uint64 borrowID
+  }
+
+  //Vault Struct for Managed Assets
+  VaultAssets vAssets;
+
+  //Particular Collateral Balance of this Vault
+  uint256 public collateralBalance;
 
   //Internal functions
 
@@ -26,7 +36,7 @@ abstract contract VaultBase is Ownable, Pausable {
   */
   function _deposit(
     uint256 _amount,
-    address _provider
+    address _provider,
   ) internal whenNotPaused {
     bytes memory data = abi.encodeWithSignature(
       "deposit(address,uint256)",

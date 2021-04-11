@@ -9,8 +9,8 @@ import {IERC1155MetadataURI} from "@openzeppelin/contracts/token/ERC1155/IERC115
 import {ERC165} from "@openzeppelin/contracts/introspection/ERC165.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { Errors } from "../Errors.sol";
+import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import {Errors} from "../Errors.sol";
 
 /**
  *

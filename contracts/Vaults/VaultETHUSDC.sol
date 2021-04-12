@@ -170,10 +170,10 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
       // Alpha check if Address is Whitelisted
       require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST);
 
+      updateF1155Balances();
+
       // Get User Collateral in this Vault
       uint256 providedCollateral = IFujiERC1155(FujiERC1155).balanceOf(msg.sender, vAssets.collateralID);
-
-      //updateDebtTokenBalances();
 
       // Get Required Collateral with Factors to maintain debt position healthy
       uint256 neededCollateral = getNeededCollateralFor(
@@ -251,9 +251,9 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     // Alpha check if User Address is Whitelisted
     require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST);
 
-    uint256 providedCollateral = IFujiERC1155(FujiERC1155).balanceOf(msg.sender, vAssets.collateralID);
+    updateF1155Balances();
 
-    //updateDebtTokenBalances();
+    uint256 providedCollateral = IFujiERC1155(FujiERC1155).balanceOf(msg.sender, vAssets.collateralID);
 
     // Get Required Collateral with Factors to maintain debt position healthy
     uint256 neededCollateral = getNeededCollateralFor(
@@ -289,7 +289,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
       // Alpha check if User Address is Whitelisted
       require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST);
 
-      //updateDebtTokenBalances();
+      updateF1155Balances();
 
       uint256 userDebtBalance = IFujiERC1155(FujiERC1155).balanceOf(msg.sender,vAssets.borrowID);
 
@@ -425,14 +425,6 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     emit SetActiveProvider(_provider);
   }
 
-  /**
-  * @dev Get the collateral provided for a User.
-  * @param _user: Address of the user
-  */
-  //function setUsercollateral(address _user, uint256 _newValue) external override isAuthorized {
-  //  collaterals[_user] = _newValue;
-  //}
-
   //Administrative functions
 
   /**
@@ -518,19 +510,12 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     providers[_position] = _provider;
   }
 
-  function updateFujiERC1155Balances() public override {
+  function updateF1155Balances() external override {
     IFujiERC1155(FujiERC1155).updateState(vAssets.borrowID, borrowBalance(activeProvider));
+    IFujiERC1155(FujiERC1155).updateState(vAssets.collateralID, depositBalance(activeProvider));
   }
 
   //Getter Functions
-
-  /**
-  * @dev Get the collateral provided for a User.
-  * @param _user: Address of the user
-  */
-  //function getUsercollateral(address _user) external view override returns(uint256){
-  //  return collaterals[_user];
-  //
 
   /**
   * @dev Returns an array of the Vault's providers

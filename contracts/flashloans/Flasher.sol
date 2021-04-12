@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.4.25 <0.8.0;
+pragma solidity >=0.6.12 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
@@ -35,16 +35,26 @@ contract Flasher is
 
   using SafeMath for uint256;
 
-  address controller;
-  mapping(address => bool) vaults;
+  address public controller;
+  address public fliquidator;
 
-  address constant AAVE_LENDING_POOL = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
-  address constant DYDX_SOLO_MARGIN = 0x1E0447b19BB6EcFdAe1e4AE1694b0C3659614e4e;
+  address public aave_lending_pool;
+  address public dydx_solo_margin;
+  address public flashloanProvider3;
+  address public flashloanProvider4;
+
+  constructor() {
+
+    aave_lending_pool = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
+    dydx_solo_margin = 0x1E0447b19BB6EcFdAe1e4AE1694b0C3659614e4e;
+
+  }
 
   modifier isAuthorized() {
-
     require(
-      msg.sender == controller || vaults[msg.sender] || msg.sender == owner(),
+      msg.sender == controller ||
+      msg.sender == fliquidator ||
+      msg.sender == owner(),
       Errors.VL_NOT_AUTHORIZED
     );
     _;
@@ -52,7 +62,8 @@ contract Flasher is
 
   modifier isAuthorizedExternal() {
     require(
-      msg.sender == DYDX_SOLO_MARGIN || msg.sender == AAVE_LENDING_POOL,
+      msg.sender == dydx_solo_margin ||
+      msg.sender == aave_lending_pool,
       Errors.VL_NOT_AUTHORIZED
     );
     _;
@@ -67,16 +78,13 @@ contract Flasher is
   }
 
   /**
-  * @dev Set an authorization for a vault..
-  * @param _vault: Address of vault
-  * @param _authorization: true or false
+  * @dev Sets the fliquidator address
+  * @param _newfliquidator: new fliquidator address
   */
-  function setVaultAuthorization(
-    address _vault,
-    bool _authorization
-  ) external isAuthorized {
-    vaults[_vault] = _authorization;
+  function setfliquidator(address _newfliquidator) external isAuthorized {
+    fliquidator = _newfliquidator;
   }
+
 
   // ===================== DyDx FlashLoan ===================================
 

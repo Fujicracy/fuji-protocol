@@ -175,7 +175,7 @@ contract FujiERC1155 is IFujiERC1155, F1155Manager {
   /**
    * @dev Updates Index of AssetID
    * @param assetID; ERC1155 ID of the asset which state will be updated.
-   * @param newBalance; Amount must be passed in WAD
+   * @param newBalance; Amount
    **/
   function updateState(uint256 _AssetID, uint256 newBalance) external onlyPermit {
 

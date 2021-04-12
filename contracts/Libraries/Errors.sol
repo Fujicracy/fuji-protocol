@@ -44,6 +44,8 @@ library Errors {
   string public constant MATH_ADDITION_OVERFLOW = '202';
   string public constant MATH_MULTIPLICATION_OVERFLOW = '203';
 
+  string public constant RF_NO_GREENLIGHT = '300'; // No green light authorization to proceed with refinancing
+
   string public constant VLT_CALLER_MUST_BE_VAULT = '401'; // The caller of this function must be a vault
 
   string public constant SP_ALPHA_ETH_CAP_VALUE = '901'; // One ETH cap value for Alpha Version < 1 ETH

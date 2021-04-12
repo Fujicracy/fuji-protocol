@@ -1,28 +1,26 @@
 // SPDX-License-Identifier: MIT
-//FujiMapping for receiptToken Address Mapping in Base Lending Protocols, inspired by InstaDapp
+//FujiMapping for two addresses
 
 pragma solidity >=0.4.25 <0.8.0;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import {Errors} from './Libraries/Errors.sol';
 
 contract FujiMapping is Ownable {
 
-  // Protocol ID => Asset Address (ERC20) => ReceiptToken Address (aToken, cToken, etc)
-  mapping (uint256 => mapping (address => address)) public TokenMapping;
+    //   Address 1 =>  Address 2 (e.g. erc20 => cToken, contract a L1 => contract b L2, etc)
+  mapping (address => address) public addressMapping;
+
+  //URI for mapping legend
+  //https://mapping.fujiDao.org/WebFujiMapping.json
+  string public _uri;
 
   /**
-  * @dev Adds a Mapping protocol => to underlying asset => to receiptToken.
-  * @param Tkn: array of receiptToken addresses
-  * @param Erc20: array of corresponding underlying ERC20 addresses
+  * @dev Adds a two address Mapping
+  * @param _addr1: key address for mapping (erc20, provider)
+  * @param _addr2: result address (cToken, erc20)
   */
-  function addTknMapping(uint256 _protocolID, address[] memory Tkn, address[] memory Erc20) public onlyOwner {
-        require(Tkn.length > 0 || Erc20.length == Tkn.length, Errors.VL_INPUT_ERROR);
-        for (uint i = 0; i < Tkn.length; i++) {
-            address receiptErc20 = Tkn[i];
-            address erc20addr = Erc20[i];
-            require(TokenMapping[_protocolID][Erc20[i]] == address(0), Errors.VL_INPUT_ERROR);
-            TokenMapping[_protocolID][Erc20[i]] = receiptErc20;
-        }
-    }
+  function addMapping(address _addr1, address _addr2) public onlyOwner {
+    addressMapping[_addr1] = _addr2;
+  }
+
 }

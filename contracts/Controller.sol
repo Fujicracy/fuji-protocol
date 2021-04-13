@@ -14,7 +14,7 @@ import "hardhat/console.sol"; //test line
 
 contract Controller is Ownable {
 
-  address public flasherAddr;
+  Flasher flasher;
   address public fliquidator;
 
   //Refinancing Variables
@@ -40,7 +40,7 @@ contract Controller is Ownable {
 
   ) public {
     // Add initializer addresses
-    flasherAddr = _flasher;
+    flasher = Flasher(_flasher);
     fliquidator = _fliquidator;
     deltaAPRThreshold = _deltaAPRThreshold;
     greenLight = false;
@@ -49,12 +49,17 @@ contract Controller is Ownable {
   //Administrative functions
 
   /**
+  * @dev Getter Function for the array of vaults in the controller.
+  */
+  function getvaults() external view returns(address[] memory theVaults) {
+    theVaults = vaults;
+  }
+
+  /**
   * @dev Adds a Vault to the controller.
   * @param _vaultAddr: Address of vault to be added
   */
-  function addVault(
-    address _vaultAddr
-  ) external isAuthorized {
+  function addVault(address _vaultAddr) external isAuthorized {
     bool alreadyIncluded = false;
 
     //Check if Vault is already included
@@ -67,13 +72,6 @@ contract Controller is Ownable {
 
     //Loop to check if vault address is already there
     vaults.push(_vaultAddr);
-  }
-
-  /**
-  * @dev Getter Function for the array of vaults in the controller.
-  */
-  function getvaults() external view returns(address[] memory theVaults) {
-    theVaults = vaults;
   }
 
   /**
@@ -94,11 +92,11 @@ contract Controller is Ownable {
     }
 
     /**
-    * @dev Changes the flasher contract address
-    * @param _newFlasher: address of new flasher contract
+    * @dev Sets the flasher for this vault.
+    * @param _flasher: flasher address
     */
-    function setFlasher(address _newFlasher) external isAuthorized {
-      flasherAddr = _newFlasher;
+    function setFlasher(address _flasher) external isAuthorized {
+      flasher = Flasher(_flasher);
     }
 
     /**
@@ -186,9 +184,7 @@ contract Controller is Ownable {
   * @param _vaultAddr: Fuji vault address
   * @return Success or not, and the Iprovider address with lower borrow rate if greater than deltaAPRThreshold
   */
-  function checkRates(
-    address _vaultAddr
-  ) public view returns(bool, address) {
+  function checkRates(address _vaultAddr) public view returns(bool, address) {
     //Get the array of Providers from _vaultAddr
     address[] memory arrayOfProviders = IVault(_vaultAddr).getProviders();
     address borrowingAsset = IVault(_vaultAddr).getBorrowAsset();

@@ -25,9 +25,7 @@ interface IFujiERC1155 is IERC1155 {
 
   function IDsBorrowAssets() external view returns(uint256[] memory);
 
-  function balanceOfBatchCollateral(address account, uint256[] calldata ids) external view returns (uint256);
-
-  function balanceOfBatchDebt(address account, uint256[] calldata ids) external view returns (uint256);
+  function balanceOfBatchType(address account, AssetType _Type) external view returns (uint256);
 
   //Permit Controlled  Functions
   function mint(address account, uint256 id, uint256 amount, bytes memory data) external;

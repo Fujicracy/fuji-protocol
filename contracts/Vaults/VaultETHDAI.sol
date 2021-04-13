@@ -22,13 +22,6 @@ interface IAlphaWhitelist {
 
 }
 
-interface IAccountant {
-
-  function ETH_CAP_VALUE() external view returns(uint256);
-  function isAddrWhitelisted(address _usrAddrs) external view returns(bool);
-
-}
-
 contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
 
   AggregatorV3Interface public oracle;
@@ -358,15 +351,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     } else if (msg.sender == fliquidator) {
 
       // Logic used when called by Fliquidator
-      require(
-        IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this))
-        >= uint256(_repayAmount),
-        Errors.VL_MISSING_ERC20_ALLOWANCE
-      );
-      IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), uint256(_repayAmount));
-      (uint256 protocolDebt,uint256 fujidebt) =
-          IFujiERC1155(FujiERC1155).splitBalanceOf(msg.sender,vAssets.borrowID);
-      _payback(uint256(_repayAmount).sub(fujidebt), address(activeProvider));
+      _payback(uint256(_repayAmount), address(activeProvider));
       IERC20(vAssets.borrowAsset).transfer(ftreasury, fujidebt);
 
     }
@@ -550,6 +535,13 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   }
 
   /**
+  * @dev Get the FujiERC1155 Contract linked to this vault.
+  */
+  function getF1155() external view override returns(address) {
+    return address(FujiERC1155);
+  }
+
+  /**
   * @dev Returns an amount to be paid as bonus for liquidation
   * @param _amount: Vault underlying type intended to be liquidated
   * @param _flash: Flash or classic type of liquidation, bonus differs
@@ -573,7 +565,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   }
 
   /**
-  * @dev Returns the amount of collateral needed, including safety factors
+  * @dev Returns the amount of collateral needed, including or not safety factors
   * @param _amount: Vault underlying type intended to be borrowed
   * @param _withFactor: Inidicate if computation should include safety_Factors
   */

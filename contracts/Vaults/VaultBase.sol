@@ -8,26 +8,9 @@ import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import { UniERC20 } from "../Libraries/LibUniERC20.sol";
 
-abstract contract VaultBase is Ownable, Pausable {
+contract VaultBaseFunctions  {
 
-  using SafeMath for uint256;
-  using UniERC20 for IERC20;
-
-  //Asset Struct
-  struct VaultAssets {
-    address collateralAsset;
-    address borrowAsset;
-    uint64 collateralID
-    uint64 borrowID
-  }
-
-  //Vault Struct for Managed Assets
-  VaultAssets vAssets;
-
-  //Particular Collateral Balance of this Vault
-  uint256 public collateralBalance;
-
-  //Internal functions
+  // Internal functions
 
   /**
   * @dev Executes deposit operation with delegatecall.
@@ -36,7 +19,7 @@ abstract contract VaultBase is Ownable, Pausable {
   */
   function _deposit(
     uint256 _amount,
-    address _provider,
+    address _provider
   ) internal whenNotPaused {
     bytes memory data = abi.encodeWithSignature(
       "deposit(address,uint256)",
@@ -121,6 +104,24 @@ abstract contract VaultBase is Ownable, Pausable {
     }
   }
 
+}
+
+abstract contract VaultBase is VaultBaseFunctions, Ownable, Pausable {
+
+  using SafeMath for uint256;
+  using UniERC20 for IERC20;
+
+  //Asset Struct
+  struct VaultAssets {
+    address collateralAsset;
+    address borrowAsset;
+    uint64 collateralID
+    uint64 borrowID
+  }
+
+  //Vault Struct for Managed Assets
+  VaultAssets vAssets;
+
   //Pause Functions
 
   /**
@@ -133,7 +134,7 @@ abstract contract VaultBase is Ownable, Pausable {
   /**
   * @dev Emergency Call to stop all basic money flow functions.
   */
-  function unpause() public onlyOwner  {
+  function unpause() public onlyOwner {
     _pause();
   }
 

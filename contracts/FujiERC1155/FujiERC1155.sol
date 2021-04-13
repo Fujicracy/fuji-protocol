@@ -27,7 +27,7 @@ contract F1155Manager is FujiBaseERC1155, Ownable {
   //AssetType => asset reference address => ERC1155 Asset ID
   mapping (AssetType => mapping(address => uint64)) public AssetIDs;
 
-  //ID Control to confirm ID, and avoid repeated uint256 incurrance
+  //ID Control to confirm ID, and avoid repeated uint64 incurrance
   mapping (uint64 => bool) public used_IDs;
 
   //Control mapping that returns the AssetType of an AssetID
@@ -141,9 +141,9 @@ contract F1155Manager is FujiBaseERC1155, Ownable {
     _;
   }
 
-  function addPermit(address _address) public onlyOwner {
+  function setPermit(address _address, bool _permit) public onlyOwner {
     require((_address).isContract(), Errors.VL_NOT_A_CONTRACT);
-    AddrPermit[_address] = true;
+    AddrPermit[_address] = _permit;
   }
 
   function isPermitted(address _address) internal returns (bool _permit) {
@@ -159,13 +159,9 @@ contract F1155Manager is FujiBaseERC1155, Ownable {
 
 contract FujiERC1155 is IFujiERC1155, F1155Manager {
 
-  constructor (
+  constructor () public {
 
-    bool _transfersActive
-
-  ) public {
-
-    transfersActive = _transfersActive;
+    transfersActive = false;
     QtyOfManagedAssets = 0;
     fujiIndex =ray();
 
@@ -238,7 +234,7 @@ contract FujiERC1155 is IFujiERC1155, F1155Manager {
 
   /**
   * @dev Calculates the principal + accrued interest balance of the user
-  * @return The debt balance of the user owed to the base protocol and fuji protocol
+  * @return The debt balance of the user owed split into the base protocol and fuji protocol
   **/
   function splitBalanceOf(
     address _user,
@@ -264,18 +260,20 @@ contract FujiERC1155 is IFujiERC1155, F1155Manager {
     return super.balanceOf(_user,_AssetID);
   }
 
+  /**
+   * @dev Returns the sum of balance of the user for an AssetType.
+   * This function is used for when AssetType have units of account of the same value (e.g stablecoins)
+   * @return The sum of balance of the user since the last burn/mint action
+   **/
+  function balanceOfBatchType(address account, AssetType _Type) external view override returns (uint256 total) {
 
-  function balanceOfBatchDebt(address account, uint256[] calldata ids) external view override returns (uint256 total) {
-
-    uint256[] memory IDs = engagedIDsOf(address account, AssetType _Type);
+    uint256[] memory IDs = engagedIDsOf(address account, _Type);
 
     for(uint i; i < IDs.length; i++ ){
       total = total.add(balanceOf(account, IDs[i]));
     }
 
   }
-
-
 
   /**
  * @dev Mints tokens for Collateral and Debt receipts for the Fuji Protocol

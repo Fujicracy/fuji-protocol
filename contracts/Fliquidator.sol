@@ -1,25 +1,34 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.4.25 <0.8.0;
+pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { UniERC20 } from "./LibUniERC20.sol";
-import {IUniswapV2Router02} from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
-import {IVault} from "./IVault.sol";
-import {IDebtToken} from "./IDebtToken.sol";
-import {Errors} from "./Libraries/Errors.sol";
+import { IVault} from "./Vaults/IVault.sol";
+import { VaultBaseFunctions } from "./Vaults/VaultBase.sol";
+import { IFujiERC1155} from "./FujiERC1155/IFujiERC1155.sol";
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import { UniERC20 } from "./LibUniERC20.sol";
 import { Flasher } from "./flashloans/Flasher.sol";
 import { FlashLoan } from "./flashloans/LibFlashLoan.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Errors} from "./Libraries/Errors.sol";
+import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
+import { UniERC20 } from "./LibUniERC20.sol";
+import { IUniswapV2Router02} from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
-contract Fliquidator {
+interface IController {
+  function getvaults() external view returns(address[] memory);
+}
+
+contract Fliquidator is VaultBaseFunctions, Ownable {
 
   using SafeMath for uint256;
   using UniERC20 for IERC20;
 
-  IUniswapV2Router02 public uniswap;
+  receive() external payable {}
+
+  IUniswapV2Router02 public swapper;
+  address public controller;
+  address public flasher;
 
   // Log Liquidation
   event evLiquidate(address userAddr, address liquidator, uint256 amount);
@@ -28,38 +37,67 @@ contract Fliquidator {
   // Log Liquidation
   event FlashLiquidate(address userAddr, address liquidator, uint256 amount);
 
-  constructor(address _uniswap) public {
-    uniswap = IUniswapV2Router02(_uniswap);
+  modifier isAuthorized() {
+    require(
+      msg.sender == owner() ||
+      msg.sender == address(this),
+      Errors.VL_NOT_AUTHORIZED);
+    _;
   }
+
+  modifier onlyFlash() {
+    require(
+      msg.sender == flasher,
+      Errors.VL_NOT_AUTHORIZED);
+    _;
+  }
+
+  constructor(address _swapper) public {
+    swapper = IUniswapV2Router02(_swapper);
+  }
+
+  // FLiquidator Core Functions
 
   /**
   * @dev Liquidate an undercollaterized debt and get 5% bonus
   * @param _userAddr: Address of user whose position is liquidatable
+  * @param _vault: Address of the vault in where liquidation will occur
   */
   function liquidate(address _userAddr, address vault) external {
 
-    //IVault(vault).updateDebtTokenBalances(); fix
-    address debtToken = address(0); //IVault(vault).debtToken(); fix
+    // Update Balances at FujiERC1155
+    IVault(vault).updateF1155Balances();
 
-    uint256 userCollateral = IVault(vault).getUsercollateral(_userAddr);
-    uint256 userDebtBalance = IDebtToken(debtToken).balanceOf(_userAddr);
+    // Create Instance of FujiERC1155
+    IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).getF1155());
 
-    // do checks user is liquidatable
-    uint256 neededCollateral = IVault(vault).getNeededCollateralFor(userDebtBalance);
+    // Get user Collateral and Debt Balances
+    uint256 userCollateral = F1155.balanceOf(_userAddr, IVault(vault).getCollateralAsset());
+    uint256 userDebtBalance = F1155.balanceOf(_userAddr, IVault(vault).getBorrowAsset());
+
+    // Compute Amount of Minimum Collateral Required
+    uint256 neededCollateral = IVault(vault).getNeededCollateralFor(userDebtBalance, false);
+
+    // Check if User is liquidatable
     require(
-      userCollateral >= neededCollateral,
+      userCollateral < neededCollateral,
       Errors.VL_USER_NOT_LIQUIDATABLE
     );
 
-    // transfer borrowAsset from liquidator to vault
+    // Check Liquidator Allowance
     require(
-      IERC20(IVault(vault).getBorrowAsset()).allowance(msg.sender, address(this)) >= userDebtBalance,
+      IERC20(IVault(vault).getBorrowAsset()).allowance(msg.sender, vault) >= userDebtBalance,
       Errors.VL_MISSING_ERC20_ALLOWANCE
     );
+
+    // Get Split amount of Base Protocol Debt Only
+    (,uint256 fujidebt) = IFujiERC1155(FujiERC1155).splitBalanceOf(msg.sender,vAssets.borrowID);
+
+    // Transfer borrowAsset Owed to Base protocol from Liquidator to Vault
     IERC20(IVault(vault).getBorrowAsset()).transferFrom(msg.sender, address(this), userDebtBalance);
 
     // repay debt
-    IVault(vault).payback(userDebtBalance);
+    _payback(userDebtBalance.sub(fujidebt),IVault(vault).activeProvider());
 
     // withdraw collateral
     IVault(vault).withdraw(userCollateral);
@@ -89,21 +127,24 @@ contract Fliquidator {
 
   /**
   * @dev Initiates a flashloan used to repay partially or fully the debt position of msg.sender
-  * @param _amount: Choose zero to fully close debt position, otherwise Amount to be repaid with a flashloan
+  * @param _amount: Pass -1 to fully close debt position, otherwise Amount to be repaid with a flashloan
   *@param vault: The vault address where the debt position exist.
   */
-  function flashClose(uint256 _amount, address vault) external {
+  function flashClose(int256 _amount, address vault) external {
 
-    //IVault(vault).updateDebtTokenBalances();
-    address debtToken = address(0); //IVault(vault).debtToken(); fix
+    // Update Balances at FujiERC1155
+    IVault(vault).updateF1155Balances();
 
-    uint256 userDebtBalance = IDebtToken(debtToken).balanceOf(msg.sender);
+    // Create Instance of FujiERC1155
+    IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).getF1155());
+
+    // Get user Debt Balances, and check debt is non-zero
+    uint256 userDebtBalance = F1155.balanceOf(_userAddr, IVault(vault).getBorrowAsset());
     require(userDebtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
-    require(_amount <= userDebtBalance, Errors.VL_DEBT_LESS_THAN_AMOUNT);
 
-    Flasher tflasher = Flasher(IVault(vault).getFlasher());
+    Flasher tflasher = Flasher(flasher);
 
-    if(_amount == 0) {
+    if(_amount < 0) {
 
       FlashLoan.Info memory info = FlashLoan.Info({
         callType: FlashLoan.CallType.Close,
@@ -119,10 +160,14 @@ contract Fliquidator {
       tflasher.initiateDyDxFlashLoan(info);
 
     } else {
+
+      // Check _amount passed is greater than zero
+      require(_amount>0, Errors.VL_AMOUNT_ERROR);
+
       FlashLoan.Info memory info = FlashLoan.Info({
         callType: FlashLoan.CallType.Close,
         asset: IVault(vault).getBorrowAsset(),
-        amount: _amount,
+        amount: uint256(_amount),
         vault: vault,
         newProvider: address(0),
         user: msg.sender,
@@ -285,6 +330,32 @@ contract Fliquidator {
     IERC20(IVault(vault).getBorrowAsset()).uniTransfer(payable(IVault(vault).getFlasher()), _debtAmount);
 
     return uniswapAmounts[0];
+  }
+
+  // Administrative functions
+
+  /**
+  * @dev Changes the Controller contract address
+  * @param _newController: address of new flasher contract
+  */
+  function setController(address _newController) external isAuthorized {
+    controller = _newController;
+  }
+
+  /**
+  * @dev Sets the flasher for this contract.
+  * @param _newflasher: flasher address
+  */
+  function setFlasher(address _newflasher) external isAuthorized {
+    flasher = _newflasher;
+  }
+
+  /**
+  * @dev Changes the Swapper contract address
+  * @param _newSwapper: address of new swapper contract
+  */
+  function setSwapper(address _newSwapper) external isAuthorized {
+    swapper = IUniswapV2Router02(_newSwapper);
   }
 
 }

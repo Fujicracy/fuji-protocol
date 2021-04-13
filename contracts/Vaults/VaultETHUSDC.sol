@@ -22,13 +22,6 @@ interface IAlphaWhitelist {
 
 }
 
-interface IAccountant {
-
-  function ETH_CAP_VALUE() external view returns(uint256);
-  function isAddrWhitelisted(address _usrAddrs) external view returns(bool);
-
-}
-
 contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
 
   AggregatorV3Interface public oracle;
@@ -578,7 +571,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   }
 
   /**
-  * @dev Returns the amount of collateral needed, including safety factors
+  * @dev Returns the amount of collateral needed, including or not safety factors
   * @param _amount: Vault underlying type intended to be borrowed
   * @param _withFactor: Inidicate if computation should include safety_Factors
   */

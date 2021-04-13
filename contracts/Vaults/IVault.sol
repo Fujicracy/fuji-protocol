@@ -38,6 +38,7 @@ interface IVault {
 		function getLiquidationBonusFor(uint256 _amount,bool _flash) external view returns(uint256);
 		function getProviders() external view returns(address[] memory);
 		function getFlasher() external view returns(address);
+		function getF1155() external view returns(address);
 
 	//Setter Functions
 

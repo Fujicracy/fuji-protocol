@@ -24,21 +24,26 @@ interface IAlphaWhitelist {
 
 contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
 
-  AggregatorV3Interface public oracle;
+  uint256 internal constant BASE = 1e18;
 
-  //Base Struct Object to define Safety factor
-  //a divided by b represent the factor example 1.2, or +20%, is (a/b)= 6/5
+  // Base Struct Object to define a factor
   struct Factor {
     uint64 a;
     uint64 b;
   }
 
-  //Safety factor
-  Factor private safetyF;
+  // Safety factor
+  Factor public safetyF;
 
-  //Collateralization factor
-  Factor private collatF;
-  uint256 internal constant BASE = 1e18;
+  // Collateralization factor
+  Factor public collatF;
+
+  // Bonus Factor for Flash Liquidation
+  Factor public bonusFlashL;
+
+  // Bonus Factor for normal Liquidation
+  Factor public bonusL;
+
 
   //State variables
   address[] public providers;
@@ -50,6 +55,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   address public fliquidator;
   Flasher flasher;
   IAlphaWhitelist aWhitelist;
+  AggregatorV3Interface public oracle;
 
   mapping(address => uint256) public collaterals;
 
@@ -88,13 +94,14 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     vAssets.collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
     vAssets.borrowAsset = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48); // USDC
 
-    // + 5%
+    // +105%
     safetyF.a = 21;
     safetyF.b = 20;
 
-    // 125%
-    collatF.a = 5;
-    collatF.b = 4;
+    // + 126.9%
+    collatF.a = 80;
+    collatF.b = 63;
+
   }
 
   //Core functions
@@ -455,6 +462,48 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   }
 
   /**
+  * @dev Sets the Collateral Factor of this Vault
+  * @dev This is means: Collateral Value / Debt Position > 1, a/b > 1
+  * @param _newFactorA
+  * @param _newFactorB
+  */
+  function setCollateralFactor(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
+    collatF.a = _newFactorA;
+    collatF.b = _newFactorB;
+  }
+
+  /**
+  * @dev Sets the Safety Factor of this Vault
+  * @dev This is means: Collateral Value / Debt Position > 1, a/b > 1
+  * @param _newFactorA
+  * @param _newFactorB
+  */
+  function setSafetyFactor(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
+    safetyF.a = _newFactorA;
+    safetyF.b = _newFactorB;
+  }
+
+  /**
+  * @dev Sets the bonus factor for Flash liquidation : Should be a/b < 1
+  * @param _newFactorA
+  * @param _newFactorB
+  */
+  function setbonusFlashL(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
+    bonusFlashL.a = _newFactorA;
+    bonusFlashL.b = _newFactorB;
+  }
+
+  /**
+  * @dev Sets the bonus factor for normal liquidation : Should be a/b < 1
+  * @param _newFactorA
+  * @param _newFactorB
+  */
+  function setbonusL(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
+    bonusL.a = _newFactorA;
+    bonusL.b = _newFactorB;
+  }
+
+  /**
   * @dev Sets the Oracle address (Must Comply with AggregatorV3Interface)
   * @param _newOracle: new Oracle address
   */
@@ -561,12 +610,12 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     uint256 p = (_amount.mul(1e12).mul(uint256(latestPrice))).div(BASE);
 
     if (_flash) {
-      // 1/25 or 4%
-      return p.div(25);
+      // Bonus Factors for Flash Liquidation
+      return p.mul(bonusFlashL.a).div(bonusFlashL.b);
     }
     else {
-      // 1/20 or 5%
-      return p.div(20);
+      //Bonus Factors for Normal Liquidation
+      return p.mul(bonusL.a).div(bonusL.b);
     }
   }
 

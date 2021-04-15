@@ -120,7 +120,7 @@ abstract contract VaultBase is VaultBaseFunctions, Ownable, Pausable {
   }
 
   //Vault Struct for Managed Assets
-  VaultAssets vAssets;
+  VaultAssets public vAssets;
 
   //Pause Functions
 

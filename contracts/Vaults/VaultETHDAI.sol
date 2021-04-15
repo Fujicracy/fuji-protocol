@@ -24,21 +24,25 @@ interface IAlphaWhitelist {
 
 contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
 
-  AggregatorV3Interface public oracle;
+  uint256 internal constant BASE = 1e18;
 
-  //Base Struct Object to define Safety factor
-  //a divided by b represent the factor example 1.2, or +20%, is (a/b)= 6/5
+  // Base Struct Object to define a factor
   struct Factor {
     uint64 a;
     uint64 b;
   }
 
-  //Safety factor
-  Factor private safetyF;
+  // Safety factor
+  Factor public safetyF;
 
-  //Collateralization factor
-  Factor private collatF;
-  uint256 internal constant BASE = 1e18;
+  // Collateralization factor
+  Factor public collatF;
+
+  // Bonus Factor for Flash Liquidation
+  Factor public bonusFlashL;
+
+  // Bonus Factor for normal Liquidation
+  Factor public bonusL;
 
   //State variables
   address[] public providers;
@@ -51,6 +55,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   address public fliquidator;
   Flasher flasher;
   IAlphaWhitelist aWhitelist;
+  AggregatorV3Interface public oracle;
 
   mapping(address => uint256) public collaterals;
 
@@ -91,13 +96,21 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     vAssets.collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
     vAssets.borrowAsset = address(0x6B175474E89094C44Da98b954EedeAC495271d0F); // DAI
 
-    // + 5%
+    // 1.05
     safetyF.a = 21;
     safetyF.b = 20;
 
-    // 125%
-    collatF.a = 5;
-    collatF.b = 4;
+    // 1.269
+    collatF.a = 80;
+    collatF.b = 63;
+
+    // 0.04
+    bonusFlashL.a = 1;
+    bonusFlashL.b = 25;
+
+    // 0.05
+    bonusL.a = 1;
+    bonusL.b = 20;
   }
 
   //Core functions
@@ -351,8 +364,15 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     } else if (msg.sender == fliquidator) {
 
       // Logic used when called by Fliquidator
-      _payback(uint256(_repayAmount), address(activeProvider));
-      IERC20(vAssets.borrowAsset).transfer(ftreasury, fujidebt);
+      require(
+        IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this))
+        >= uint256(_repayAmount),
+        Errors.VL_MISSING_ERC20_ALLOWANCE
+      );
+
+      IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), uint256(_repayAmount));
+
+      _payback(uint256(_repayAmount).sub(fujidebt), address(activeProvider));
 
     }
 
@@ -447,6 +467,49 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   function setfliquidator(address _newfliquidator) external isAuthorized {
     fliquidator = _newfliquidator;
   }
+
+  /**
+  * @dev Sets the Collateral Factor of this Vault
+  * @dev This is means: Collateral Value / Debt Position > 1, a/b > 1
+  * @param _newFactorA
+  * @param _newFactorB
+  */
+  function setCollateralFactor(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
+    collatF.a = _newFactorA;
+    collatF.b = _newFactorB;
+  }
+
+  /**
+  * @dev Sets the Safety Factor of this Vault
+  * @dev This is means: Collateral Value / Debt Position > 1, a/b > 1
+  * @param _newFactorA
+  * @param _newFactorB
+  */
+  function setSafetyFactor(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
+    safetyF.a = _newFactorA;
+    safetyF.b = _newFactorB;
+  }
+
+  /**
+  * @dev Sets the bonus factor for Flash liquidation : Should be a/b < 1
+  * @param _newFactorA
+  * @param _newFactorB
+  */
+  function setbonusFlashL(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
+    bonusFlashL.a = _newFactorA;
+    bonusFlashL.b = _newFactorB;
+  }
+
+  /**
+  * @dev Sets the bonus factor for normal liquidation : Should be a/b < 1
+  * @param _newFactorA
+  * @param _newFactorB
+  */
+  function setbonusL(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
+    bonusL.a = _newFactorA;
+    bonusL.b = _newFactorB;
+  }
+
 
   /**
   * @dev Sets the Oracle address (Must Comply with AggregatorV3Interface)
@@ -555,12 +618,12 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     uint256 p = _amount.mul(uint256(latestPrice)).div(BASE);
 
     if (_flash) {
-      // 1/25 or 4%
-      return p.div(25);
+      // Bonus Factors for Flash Liquidation
+      return p.mul(bonusFlashL.a).div(bonusFlashL.b);
     }
     else {
-      // 1/20 or 5%
-      return p.div(20);
+      //Bonus Factors for Normal Liquidation
+      return p.mul(bonusL.a).div(bonusL.b);
     }
   }
 
@@ -569,13 +632,13 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   * @param _amount: Vault underlying type intended to be borrowed
   * @param _withFactor: Inidicate if computation should include safety_Factors
   */
-  function getNeededCollateralFor(uint256 _amount, bool _withFactor) public view override returns(uint256) {
+  function getNeededCollateralFor(uint256 _amount, bool _withFactors) public view override returns(uint256) {
     // Get price of DAI in ETH
     (,int256 latestPrice,,,) = oracle.latestRoundData();
     uint256 minimumReq = (_amount.mul(uint256(latestPrice)).div(BASE);
 
-    if(_withFactor) { //125% + 5%
-      return minimumReq.mul(collatF.a).mul(safetyF.a).div(collatF.b).div(safetyF.b))
+    if(_withFactors) {
+      return minimumReq.mul(collatF.a).mul(safetyF.a).div(collatF.b).div(safetyF.b));
     } else {
       return minimumReq;
     }

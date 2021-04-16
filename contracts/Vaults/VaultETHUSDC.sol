@@ -361,11 +361,10 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
         >= uint256(_repayAmount),
         Errors.VL_MISSING_ERC20_ALLOWANCE
       );
+
       IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), uint256(_repayAmount));
-      (uint256 protocolDebt,uint256 fujidebt) =
-          IFujiERC1155(FujiERC1155).splitBalanceOf(msg.sender,vAssets.borrowID);
-      _payback(uint256(_repayAmount).sub(fujidebt), address(activeProvider));
-      IERC20(vAssets.borrowAsset).transfer(ftreasury, fujidebt);
+
+      _payback(uint256(_repayAmount), address(activeProvider));
 
     }
 

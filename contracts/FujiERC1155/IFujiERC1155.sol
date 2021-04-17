@@ -17,13 +17,15 @@ interface IFujiERC1155 is IERC1155 {
 
   //General Getter Functions
 
-  function getAssetID(AssetType _Type, address _assetAddr) external view override returns(uint64)
+  function getAssetID(AssetType _Type, address _assetAddr) external view returns(uint64);
 
   function getQtyOfManagedAssets() external view returns(uint256);
 
   function IDsCollateralsAssets() external view returns(uint256[] memory);
 
   function IDsBorrowAssets() external view returns(uint256[] memory);
+
+  function splitBalanceOf(address account,uint256 _AssetID) external view  returns (uint256,uint256);
 
   function balanceOfBatchType(address account, AssetType _Type) external view returns (uint256);
 
@@ -32,6 +34,6 @@ interface IFujiERC1155 is IERC1155 {
 
   function burn(address account, uint256 id, uint256 amount) external;
 
-  function addInitializeAsset(AssetType _Type, address _Addr) external override returns(uint64);
+  function addInitializeAsset(AssetType _Type, address _Addr) external returns(uint64);
 
 }

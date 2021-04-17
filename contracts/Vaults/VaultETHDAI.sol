@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.4.25 <0.8.0;
+pragma solidity >=0.6.12 <0.8.0;
 pragma experimental ABIEncoderV2;
 
-import { ReentrancyGuard } from '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
+import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
-import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IFujiERC1155 } from "../FujiERC1155/IFujiERC1155.sol";
 import { IVault } from "./IVault.sol";
 import { VaultBase } from "./VaultBase.sol";
-import { IProvider } from "./IProvider.sol";
-import { Flasher } from "./flashloans/Flasher.sol";
-import { Errors } from './Debt-token/Errors.sol';
+import { IProvider } from "../Providers/IProvider.sol";
+import { Errors } from "../Libraries/Errors.sol";
 
 import "hardhat/console.sol"; //test line
 
@@ -53,7 +52,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   address private ftreasury;
   address public controller;
   address public fliquidator;
-  Flasher flasher;
+  address public  flasher;
   IAlphaWhitelist aWhitelist;
   AggregatorV3Interface public oracle;
 
@@ -70,7 +69,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
 
   modifier onlyFlash() {
   require(
-    msg.sender == address(flasher) ||
+    msg.sender == flasher ||
     msg.sender == fliquidator,
     Errors.VL_NOT_AUTHORIZED);
   _;
@@ -80,6 +79,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
 
     address _controller,
     address _fliquidator,
+    address _flasher,
     address _oracle,
     address _aWhitelist,
     address _ftreasury
@@ -88,6 +88,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
 
     controller = _controller;
     fliquidator =_fliquidator;
+    flasher = _flasher;
     aWhitelist = IAlphaWhitelist(_aWhitelist);
     ftreasury = _ftreasury;
 
@@ -179,7 +180,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
       // Alpha check if Address is Whitelisted
       require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST);
 
-      updateF1155Balances();
+      _updateF1155Balances();
 
       // Get User Collateral in this Vault
       uint256 providedCollateral = IFujiERC1155(FujiERC1155).balanceOf(msg.sender, vAssets.collateralID);
@@ -260,7 +261,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     // Alpha check if User Address is Whitelisted
     require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST);
 
-    updateF1155Balances();
+    _updateF1155Balances();
 
     uint256 providedCollateral = IFujiERC1155(FujiERC1155).balanceOf(msg.sender, vAssets.collateralID);
 
@@ -297,7 +298,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
       // Alpha check if User Address is Whitelisted
       require(aWhitelist.isAddrWhitelisted(msg.sender), Errors.SP_ALPHA_ADDR_NOT_WHTLIST);
 
-      updateF1155Balances();
+      _updateF1155Balances();
 
       uint256 userDebtBalance = IFujiERC1155(FujiERC1155).balanceOf(msg.sender,vAssets.borrowID);
 
@@ -346,6 +347,9 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
         // Transfer Asset from User to Vault
         IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), uint256(_repayAmount));
 
+        // Check Paybck amount is greater than acccrued fujiOptimized Fee interest
+        require(uint256(_repayAmount).sub(fujidebt) > 0, Errors.VL_MINIMUM_PAYBACK_ERROR);
+
         // Delegate Call Payback to current provider, less fujiDebt
         _payback(uint256(_repayAmount).sub(fujidebt), address(activeProvider));
 
@@ -387,7 +391,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   function executeSwitch(
     address _newProvider,
     uint256 _flashLoanDebt
-  ) public override onlyFlash whenNotPaused {
+  ) external override onlyFlash whenNotPaused {
 
     uint256 borrowBalance = borrowBalance(activeProvider);
 
@@ -414,7 +418,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     _borrow(_flashLoanDebt, address(_newProvider));
 
     // return borrowed amount to Flasher
-    IERC20(borrowAsset).uniTransfer(msg.sender, _flashLoanDebt);
+    IERC20(vAssets.borrowAsset).uniTransfer(msg.sender, _flashLoanDebt);
 
     emit Switch(address(this) ,activeProvider, _newProvider);
   }
@@ -440,8 +444,8 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   */
   function setFujiERC1155(address _FujiERC1155) external isAuthorized {
     FujiERC1155 = _FujiERC1155;
-     vAssets.collateralID = IFujiERC1155(_FujiERC1155).addInitializeAsset(AssetType.collateralToken, address(this));
-     vAssets.borrowID = IFujiERC1155(_FujiERC1155).addInitializeAsset(AssetType.debtToken, address(this));
+     vAssets.collateralID = IFujiERC1155(_FujiERC1155).addInitializeAsset(IFujiERC1155.AssetType.collateralToken, address(this));
+     vAssets.borrowID = IFujiERC1155(_FujiERC1155).addInitializeAsset(IFujiERC1155.AssetType.debtToken, address(this));
   }
 
   /**
@@ -449,7 +453,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   * @param _flasher: flasher address
   */
   function setFlasher(address _flasher) external isAuthorized {
-    flasher = Flasher(_flasher);
+    flasher = _flasher;
   }
 
   /**
@@ -471,8 +475,8 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   /**
   * @dev Sets the Collateral Factor of this Vault
   * @dev This is means: Collateral Value / Debt Position > 1, a/b > 1
-  * @param _newFactorA
-  * @param _newFactorB
+  * @param _newFactorA: Big number
+  * @param _newFactorB: Small number
   */
   function setCollateralFactor(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
     collatF.a = _newFactorA;
@@ -482,8 +486,8 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   /**
   * @dev Sets the Safety Factor of this Vault
   * @dev This is means: Collateral Value / Debt Position > 1, a/b > 1
-  * @param _newFactorA
-  * @param _newFactorB
+  * @param _newFactorA: Big number
+  * @param _newFactorB: Small number
   */
   function setSafetyFactor(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
     safetyF.a = _newFactorA;
@@ -492,8 +496,8 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
 
   /**
   * @dev Sets the bonus factor for Flash liquidation : Should be a/b < 1
-  * @param _newFactorA
-  * @param _newFactorB
+  * @param _newFactorA: Small number
+  * @param _newFactorB: big number
   */
   function setbonusFlashL(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
     bonusFlashL.a = _newFactorA;
@@ -502,8 +506,8 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
 
   /**
   * @dev Sets the bonus factor for normal liquidation : Should be a/b < 1
-  * @param _newFactorA
-  * @param _newFactorB
+  * @param _newFactorA: Small number
+  * @param _newFactorB: big number
   */
   function setbonusL(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
     bonusL.a = _newFactorA;
@@ -560,9 +564,19 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     providers[_position] = _provider;
   }
 
-  function updateF1155Balances() external override {
+  /**
+  * @dev Internal Function to call updateState in F1155
+  */
+  function _updateF1155Balances() internal {
     IFujiERC1155(FujiERC1155).updateState(vAssets.borrowID, borrowBalance(activeProvider));
     IFujiERC1155(FujiERC1155).updateState(vAssets.collateralID, depositBalance(activeProvider));
+  }
+
+  /**
+  * @dev External Function to call updateState in F1155
+  */
+  function updateF1155Balances() external override {
+    _updateF1155Balances();
   }
 
   //Getter Functions
@@ -588,13 +602,6 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   */
   function getBorrowAsset() external view override returns(address) {
     return vAssets.borrowAsset;
-  }
-
-  /**
-  * @dev Get the flasher for this vault.
-  */
-  function getFlasher() external view override returns(address) {
-    return address(flasher);
   }
 
   /**
@@ -630,15 +637,15 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   /**
   * @dev Returns the amount of collateral needed, including or not safety factors
   * @param _amount: Vault underlying type intended to be borrowed
-  * @param _withFactor: Inidicate if computation should include safety_Factors
+  * @param _withFactors: Inidicate if computation should include safety_Factors
   */
   function getNeededCollateralFor(uint256 _amount, bool _withFactors) public view override returns(uint256) {
     // Get price of DAI in ETH
     (,int256 latestPrice,,,) = oracle.latestRoundData();
-    uint256 minimumReq = (_amount.mul(uint256(latestPrice)).div(BASE);
+    uint256 minimumReq = (_amount.mul(uint256(latestPrice))).div(BASE);
 
     if(_withFactors) {
-      return minimumReq.mul(collatF.a).mul(safetyF.a).div(collatF.b).div(safetyF.b));
+      return minimumReq.mul(collatF.a).mul(safetyF.a).div(collatF.b).div(safetyF.b);
     } else {
       return minimumReq;
     }
@@ -649,7 +656,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   * @param _provider: address of a provider
   */
   function borrowBalance(address _provider) public view override returns(uint256) {
-    return IProvider(_provider).getBorrowBalance(borrowAsset);
+    return IProvider(_provider).getBorrowBalance(vAssets.borrowAsset);
   }
 
   /**
@@ -657,7 +664,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   * @param _provider: address of a provider
   */
   function depositBalance(address _provider) public view override returns(uint256) {
-    uint256 balance = IProvider(_provider).getDepositBalance(collateralAsset);
+    uint256 balance = IProvider(_provider).getDepositBalance(vAssets.collateralAsset);
     return balance;
   }
 

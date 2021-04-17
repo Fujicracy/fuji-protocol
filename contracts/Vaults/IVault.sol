@@ -26,6 +26,7 @@ interface IVault {
 		function withdraw(int256 _withdrawAmount) external;
 		function borrow(uint256 _borrowAmount) external;
 		function payback(int256 _repayAmount) external payable;
+		function executeSwitch(address _newProvider,uint256 _flashLoanDebt) external;
 
 	//Getter Functions
 
@@ -37,7 +38,6 @@ interface IVault {
 		function getNeededCollateralFor(uint256 _amount) external view returns(uint256);
 		function getLiquidationBonusFor(uint256 _amount,bool _flash) external view returns(uint256);
 		function getProviders() external view returns(address[] memory);
-		function getFlasher() external view returns(address);
 		function getF1155() external view returns(address);
 
 	//Setter Functions

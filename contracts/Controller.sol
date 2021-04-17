@@ -4,11 +4,11 @@ pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { IVault } from "./IVault.sol";
-import { IProvider } from "./IProvider.sol";
-import { Flasher } from "./flashloans/Flasher.sol";
-import { FlashLoan } from "./flashloans/LibFlashLoan.sol";
-import { Errors } from "../Libraries/Errors.sol";
+import { IVault } from "./Vaults/IVault.sol";
+import { IProvider } from "./Providers/IProvider.sol";
+import { Flasher } from "./Flashloans/Flasher.sol";
+import { FlashLoan } from "./Flashloans/LibFlashLoan.sol";
+import { Errors } from "./Libraries/Errors.sol";
 
 import "hardhat/console.sol"; //test line
 
@@ -36,7 +36,7 @@ contract Controller is Ownable {
 
     address _flasher,
     address _fliquidator,
-    uint256 _deltaAPRThreshold,
+    uint256 _deltaAPRThreshold
 
   ) public {
     // Add initializer addresses
@@ -167,10 +167,10 @@ contract Controller is Ownable {
         fliquidator: fliquidator
       });
 
-      Flasher(flasherAddr).initiateDyDxFlashLoan(info);
+      flasher.initiateDyDxFlashLoan(info);
 
       //Set the new provider in the Vault
-      setProvider(_vaultAddr, address(newProvider));
+      _setProvider(_vaultAddr, newProvider);
       _setRefinanceTimestamp();
       return true;
     }

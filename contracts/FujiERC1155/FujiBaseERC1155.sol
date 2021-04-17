@@ -7,10 +7,11 @@ import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {IERC1155MetadataURI} from "@openzeppelin/contracts/token/ERC1155/IERC1155MetadataURI.sol";
 import {ERC165} from "@openzeppelin/contracts/introspection/ERC165.sol";
+import {IERC165} from "@openzeppelin/contracts/introspection/IERC165.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
-import {Errors} from "../Errors.sol";
+import {Errors} from "../Libraries/Errors.sol";
 
 /**
  *
@@ -20,17 +21,17 @@ import {Errors} from "../Errors.sol";
  *
  */
 
-contract FujiBaseERC1155 is IERC1155, ERC165, Errors {
+contract FujiBaseERC1155 is IERC1155, ERC165, Context {
 
   using Address for address;
 
   using SafeMath for uint256;
 
   // Mapping from token ID to account balances
-  mapping (uint256 => mapping(address => uint256)) private _balances;
+  mapping (uint256 => mapping(address => uint256)) internal _balances;
 
   // Mapping from account to operator approvals
-  mapping (address => mapping(address => bool)) private _operatorApprovals;
+  mapping (address => mapping(address => bool)) internal _operatorApprovals;
 
   // Mapping from token ID to totalSupply
   mapping (uint256 => uint256) internal _totalSupply;
@@ -45,19 +46,19 @@ contract FujiBaseERC1155 is IERC1155, ERC165, Errors {
 
   //URI for all token types by relying on ID substitution
   //https://token.fujiDao.org/{id}.json
-  string private _uri;
+  string internal _uri;
 
   /**
  * @return The total supply of a token id
  **/
- function totalSupply(uint256 id) public view virtual override returns (uint256) {
+ function totalSupply(uint256 id) public view virtual returns (uint256) {
    return _totalSupply[id];
  }
 
   /**
  * @dev See {IERC165-supportsInterface}.
  */
- function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
+ function supportsInterface(bytes4 interfaceId) public view override(ERC165, IERC165) returns (bool) {
     return interfaceId == type(IERC1155).interfaceId
         || interfaceId == type(IERC1155MetadataURI).interfaceId
         || super.supportsInterface(interfaceId);
@@ -68,7 +69,7 @@ contract FujiBaseERC1155 is IERC1155, ERC165, Errors {
   * Clients calling this function must replace the `\{id\}` substring with the
   * actual token type ID.
   */
-  function uri(uint256) public view virtual override returns (string memory) {
+  function uri(uint256) public view virtual returns (string memory) {
       return _uri;
   }
 
@@ -77,7 +78,7 @@ contract FujiBaseERC1155 is IERC1155, ERC165, Errors {
   * Requirements:
   * - `account` cannot be the zero address.
   */
-  function balanceOf(address account, uint256 id) public view override returns (uint256) {
+  function balanceOf(address account, uint256 id) public view override virtual returns (uint256) {
     require(account != address(0), Errors.VL_ZERO_ADDR_1155);
     return _balances[id][account];
   }
@@ -176,7 +177,7 @@ contract FujiBaseERC1155 is IERC1155, ERC165, Errors {
            uint256 fromBalance = _balances[id][from];
            require(fromBalance >= amount, Errors.VL_NO_ERC1155_BALANCE);
            _balances[id][from] = fromBalance.sub(amount);
-           _balances[id][to] = uint256(_balances[id][to]).add(amount);;
+           _balances[id][to] = uint256(_balances[id][to]).add(amount);
        }
 
        emit TransferBatch(operator, from, to, ids, amounts);
@@ -192,7 +193,7 @@ contract FujiBaseERC1155 is IERC1155, ERC165, Errors {
       uint256 amount,
       bytes memory data
   )
-      private
+      internal
   {
       if (to.isContract()) {
           try IERC1155Receiver(to).onERC1155Received(operator, from, id, amount, data) returns (bytes4 response) {
@@ -215,7 +216,7 @@ contract FujiBaseERC1155 is IERC1155, ERC165, Errors {
       uint256[] memory amounts,
       bytes memory data
   )
-      private
+      internal
   {
       if (to.isContract()) {
           try IERC1155Receiver(to).onERC1155BatchReceived(operator, from, ids, amounts, data) returns (bytes4 response) {
@@ -231,12 +232,42 @@ contract FujiBaseERC1155 is IERC1155, ERC165, Errors {
   }
 
   /**
- * @dev See {IERC165-supportsInterface}.
- */
-  //function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
-  //    return interfaceId == type(IERC1155).interfaceId
-  //        || interfaceId == type(IERC1155MetadataURI).interfaceId
-  //        || super.supportsInterface(interfaceId);
-  //}
+   * @dev Hook that is called before any token transfer. This includes minting
+   * and burning, as well as batched variants.
+   *
+   * The same hook is called on both single and batched variants. For single
+   * transfers, the length of the `id` and `amount` arrays will be 1.
+   *
+   * Calling conditions (for each `id` and `amount` pair):
+   *
+   * - When `from` and `to` are both non-zero, `amount` of ``from``'s tokens
+   * of token type `id` will be  transferred to `to`.
+   * - When `from` is zero, `amount` tokens of token type `id` will be minted
+   * for `to`.
+   * - when `to` is zero, `amount` of ``from``'s tokens of token type `id`
+   * will be burned.
+   * - `from` and `to` are never both zero.
+   * - `ids` and `amounts` have the same, non-zero length.
+   *
+   * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
+   */
+  function _beforeTokenTransfer(
+      address operator,
+      address from,
+      address to,
+      uint256[] memory ids,
+      uint256[] memory amounts,
+      bytes memory data
+  )
+      internal
+      virtual
+  { }
+
+  function _asSingletonArray(uint256 element) private pure returns (uint256[] memory) {
+      uint256[] memory array = new uint256[](1);
+      array[0] = element;
+
+      return array;
+  }
 
 }

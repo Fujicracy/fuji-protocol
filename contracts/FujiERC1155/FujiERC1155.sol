@@ -3,132 +3,14 @@
 pragma solidity >= 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import { IFujiERC1155 } from "./IFujiERC1155.sol";
 import { FujiBaseERC1155 } from "./FujiBaseERC1155.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { WadRayMath } from '../Libraries/WadRayMath.sol';
 import { MathUtils } from '../Libraries/MathUtils.sol';
+import {Errors} from "../Libraries/Errors.sol";
 
-contract F1155Manager is FujiBaseERC1155, Ownable {
-
-  using WadRayMath for uint256;
-
-  //Global Asset Managers
-
-  //Asset Types
-  enum AssetType {
-    //uint8 = 0
-    collateralToken,
-    //uint8 = 1
-    debtToken
-  }
-
-  //FujiERC1155 Asset ID Mapping
-
-  //AssetType => asset reference address => ERC1155 Asset ID
-  mapping (AssetType => mapping(address => uint64)) public AssetIDs;
-
-  //ID Control to confirm ID, and avoid repeated uint64 incurrance
-  mapping (uint64 => bool) public used_IDs;
-
-  //Control mapping that returns the AssetType of an AssetID
-  mapping (uint64 => AssetType) public AssetIDtype;
-
-  uint64 public QtyOfManagedAssets;
-  uint64[] public IDsCollateralsAssets;
-  uint64[] public IDsBorrowAssets;
-
-  //Asset ID  Liquidity Index mapping
-  //AssetId => Liquidity index for asset ID
-  mapping (uint64 => uint256) public Indexes;
-
-  uint256 public OptimizerFee;
-  uint256 public lastUpdateTimestamp;
-  uint256 public fujiIndex;
-
-  //Getter Functions
-
-  /**
-  * @dev Getter Function for the Asset ID locally managed
-  * @param _Type: enum AssetType, 0 = Collateral asset, 1 = debt asset
-  * @param _Addr: Reference Address of the Asset
-  */
-  function getAssetID(AssetType _Type, address _Addr) external view override returns(uint64) {
-    uint256 theID = AssetIDs[_Type][_assetAddr];
-    require(used_IDs[theID], Errors.VL_INVALID_ASSETID_1155 );
-    return theID;
-  }
-
-  /**
-  * @dev Getter function to get the AssetType
-  * @param _AssetID: AssetID locally managed in ERC1155
-  */
-  function getAssetIDType(uint264 _AssetID) internal view returns(AssetType) {
-    return AssetIDtype[_AssetID];
-  }
-
-  /**
-  * @dev Getter function to get quantity of assets managed in ERC1155
-  */
-  function getQtyOfManagedAssets() external view override returns(uint264) {
-    return QtyOfManagedAssets;
-  }
-
-  //Setter Functions
-
-  /**
-  * @dev Sets the FujiProtocol Fee to be charged
-  * @param _fee; Fee in Ray to charge users for OptimizerFee
-  */
-  function setOptimizerFee(uint256 _fee) public onlyOwner {
-    require(_fee >= ray(), Errors.VL_OPTIMIZER_FEE_SMALL );
-    OptimizerFee = _fee;
-  }
-
-  /**
-  * @dev Adds and initializes liquidity index of a new asset in FujiERC1155
-  * @param _Type: enum AssetType, 0 = Collateral asset, 1 = debt asset
-  * @param _Addr: Reference Address of the Asset
-  */
-  function addInitializeAsset(AssetType _Type, address _Addr) external override onlyPermit returns(uint64){
-
-    require(AssetIDs[_Type][_Addr] == 0 , Errors.VL_ASSET_EXISTS);
-    uint64 newManagedAssets = QtyOfManagedAssets+1;
-
-    AssetIDs[_Type][_Addr] = newManagedAssets;
-    used_IDs[newManagedAssets] = true;
-    AssetIDtype[newManagedAssets] = _Type;
-
-    //Push new AssetID to BorrowAsset Array
-    IDsCollateralsAssets.push(newManagedAssets);
-    //Initialize the liquidity Index
-    Indexes[newManagedAssets] = ray();
-
-    //Update QtyOfManagedAssets
-    QtyOfManagedAssets = newManagedAssets;
-
-    return newManagedAssets;
-  }
-
-  /**
-  * @dev Returns an array of the FujiERC1155 IDs on which the user has an Open Position
-  * @param _account: user address to check
-  * @param _Type: enum AssetType, 0 = Collateral asset, 1 = debt asset
-  */
-  function engagedIDsOf(address account, AssetType _Type) internal view returns(uint256[] memory _IDs) {
-    if(_Type == AssetType.collateralToken) {
-      for(uint i; i < IDsCollateralsAssets.length; i++) {
-        if(super.balanceOf(account, IDsCollateralsAssets[i]) > 0) {
-          _IDs.push(IDsCollateralsAssets[i]);
-        }
-      }
-    } else if (_Type == AssetType.debtToken) {
-      for(uint i; i < IDsBorrowAssets.length; i++) {
-        if(super.balanceOf(account, IDsBorrowAssets[i]) > 0) {
-          _IDs.push(IDsBorrowAssets[i]);
-        }
-      }
-    }
-  }
+contract F1155Manager is Ownable {
 
   // Controls for Mint-Burn Operations
   mapping(address => bool) public AddrPermit;
@@ -155,23 +37,46 @@ contract F1155Manager is FujiBaseERC1155, Ownable {
 }
 
 
+contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
 
+  using WadRayMath for uint256;
 
-contract FujiERC1155 is IFujiERC1155, F1155Manager {
+  //FujiERC1155 Asset ID Mapping
+
+  //AssetType => asset reference address => ERC1155 Asset ID
+  mapping (AssetType => mapping(address => uint64)) public AssetIDs;
+
+  //ID Control to confirm ID, and avoid repeated uint64 incurrance
+  mapping (uint64 => bool) public used_IDs;
+
+  //Control mapping that returns the AssetType of an AssetID
+  mapping (uint64 => AssetType) public AssetIDtype;
+
+  uint64 public QtyOfManagedAssets;
+  uint64[] public IDsCollateralsAssets;
+  uint64[] public IDsBorrowAssets;
+
+  //Asset ID  Liquidity Index mapping
+  //AssetId => Liquidity index for asset ID
+  mapping (uint64 => uint256) public Indexes;
+
+  uint256 public OptimizerFee;
+  uint256 public lastUpdateTimestamp;
+  uint256 public fujiIndex;
 
   constructor () public {
 
     transfersActive = false;
     QtyOfManagedAssets = 0;
-    fujiIndex =ray();
+    fujiIndex = WadRayMath.ray();
 
   }
 
 
   /**
    * @dev Updates Index of AssetID
-   * @param assetID; ERC1155 ID of the asset which state will be updated.
-   * @param newBalance; Amount
+   * @param _AssetID: ERC1155 ID of the asset which state will be updated.
+   * @param newBalance: Amount
    **/
   function updateState(uint256 _AssetID, uint256 newBalance) external onlyPermit {
 
@@ -203,8 +108,7 @@ contract FujiERC1155 is IFujiERC1155, F1155Manager {
 
   /**
    * @dev Returns the total supply of Asset_ID with accrued interest.
-   * @param _AssetID; the Asset ID
-   * @return The total supply
+   * @param _AssetID: ERC1155 ID of the asset which state will be updated.
    **/
   function totalSupply(uint256 _AssetID) public view virtual override returns (uint256) {
     return super.totalSupply(_AssetID).rayMul(Indexes[_AssetID]);
@@ -212,18 +116,19 @@ contract FujiERC1155 is IFujiERC1155, F1155Manager {
 
   /**
    * @dev Returns the scaled total supply of the token ID. Represents sum(token ID Principal /index)
-   * @return the scaled total supply
+   * @param _AssetID: ERC1155 ID of the asset which state will be updated.
    **/
   function scaledTotalSupply(uint256 _AssetID) public view virtual returns (uint256) {
     return super.totalSupply(_AssetID);
   }
 
   /**
-  * @dev Calculates the principal + accrued interest balance of the user
-  * @return The debt balance of the user
+  * @dev Returns the principal + accrued interest balance of the user
+  * @param account: address of the User
+  * @param _AssetID: ERC1155 ID of the asset which state will be updated.
   **/
-  function balanceOf(address _user, uint256 _AssetID) public view virtual override returns (uint256) {
-    uint256 scaledBalance = super.balanceOf(_user, _AssetID);
+  function balanceOf(address account, uint256 _AssetID) public view override(FujiBaseERC1155, IERC1155) returns (uint256) {
+    uint256 scaledBalance = super.balanceOf(account, _AssetID);
 
     if (scaledBalance == 0) {
       return 0;
@@ -233,41 +138,46 @@ contract FujiERC1155 is IFujiERC1155, F1155Manager {
   }
 
   /**
-  * @dev Calculates the principal + accrued interest balance of the user
-  * @return The debt balance of the user owed split into the base protocol and fuji protocol
+  * @dev Returns the balance of User, split into owed amounts to BaseProtocol and FujiProtocol
+  * @param account: address of the User
+  * @param _AssetID: ERC1155 ID of the asset which state will be updated.
   **/
   function splitBalanceOf(
-    address _user,
+    address account,
     uint256 _AssetID
-  ) public view virtual override returns (baseprotocol uint256, fuji uint256) {
-    uint256 scaledBalance = super.balanceOf(_user, _AssetID);
+  ) public view override returns (uint256,uint256) {
+    uint256 scaledBalance = super.balanceOf(account, _AssetID);
 
     if (scaledBalance == 0) {
       return 0;
     }
 
-    baseprotocol = scaledBalance.rayMul(Indexes[_AssetID]);
+    uint256 baseprotocol = scaledBalance.rayMul(Indexes[_AssetID]);
+    uint256 fuji = scaledBalance.rayMul(fujiIndex);
 
-    fuji = scaledBalance.rayMul(fujiIndex);
+    assert(baseprotocol.add(fuji) == balanceOf(account,_AssetID));
 
+    return (baseprotocol, fuji);
   }
 
   /**
-   * @dev Returns the principal balance of the user.
-   * @return The debt balance of the user since the last burn/mint action
+   * @dev Returns Scaled Balance of the user (e.g. balance/index)
+   * @param account: address of the User
+   * @param _AssetID: ERC1155 ID of the asset which state will be updated.
    **/
-  function scaledBalanceOf(address _user, uint256 _AssetID) public view virtual returns (uint256) {
-    return super.balanceOf(_user,_AssetID);
+  function scaledBalanceOf(address account, uint256 _AssetID) public view virtual returns (uint256) {
+    return super.balanceOf(account,_AssetID);
   }
 
   /**
    * @dev Returns the sum of balance of the user for an AssetType.
    * This function is used for when AssetType have units of account of the same value (e.g stablecoins)
-   * @return The sum of balance of the user since the last burn/mint action
+   * @param account: address of the User
+   * @param _Type: enum AssetType, 0 = Collateral asset, 1 = debt asset
    **/
   function balanceOfBatchType(address account, AssetType _Type) external view override returns (uint256 total) {
 
-    uint256[] memory IDs = engagedIDsOf(address account, _Type);
+    uint256[] memory IDs = engagedIDsOf(account, _Type);
 
     for(uint i; i < IDs.length; i++ ){
       total = total.add(balanceOf(account, IDs[i]));
@@ -338,7 +248,7 @@ contract FujiERC1155 is IFujiERC1155, F1155Manager {
 
      amountScaled = amounts[i].rayDiv(Indexes[ids[i]]);
 
-     if(getAssetIDType(id)==AssetType.debtToken) {
+     if(getAssetIDType(ids[i])==AssetType.debtToken) {
        amountScaled = amountScaled.rayDiv(fujiIndex);
      }
 
@@ -416,7 +326,7 @@ contract FujiERC1155 is IFujiERC1155, F1155Manager {
 
       amountScaled = amounts[i].rayDiv(Indexes[ids[i]]);
 
-      if(getAssetIDType(id)==AssetType.debtToken) {
+      if(getAssetIDType(ids[i])==AssetType.debtToken) {
         amountScaled = amountScaled.rayDiv(fujiIndex);
       }
 
@@ -429,11 +339,96 @@ contract FujiERC1155 is IFujiERC1155, F1155Manager {
     emit TransferBatch(operator, account, address(0), ids, amounts);
   }
 
+  //Getter Functions
+
+  /**
+  * @dev Getter Function for the Asset ID locally managed
+  * @param _Type: enum AssetType, 0 = Collateral asset, 1 = debt asset
+  * @param _Addr: Reference Address of the Asset
+  */
+  function getAssetID(AssetType _Type, address _Addr) external view override returns(uint64) {
+    uint256 theID = AssetIDs[_Type][_Addr];
+    require(used_IDs[theID], Errors.VL_INVALID_ASSETID_1155 );
+    return theID;
+  }
+
+  /**
+  * @dev Getter function to get the AssetType
+  * @param _AssetID: AssetID locally managed in ERC1155
+  */
+  function getAssetIDType(uint256 _AssetID) internal view returns(AssetType) {
+    return AssetIDtype[_AssetID];
+  }
+
+  /**
+  * @dev Getter function to get quantity of assets managed in ERC1155
+  */
+  function getQtyOfManagedAssets() external view override returns(uint256) {
+    return QtyOfManagedAssets;
+  }
+
+  //Setter Functions
+
+  /**
+  * @dev Sets the FujiProtocol Fee to be charged
+  * @param _fee; Fee in Ray to charge users for OptimizerFee
+  */
+  function setOptimizerFee(uint256 _fee) public onlyOwner {
+    require(_fee >= WadRayMath.ray(), Errors.VL_OPTIMIZER_FEE_SMALL );
+    OptimizerFee = _fee;
+  }
+
   /**
   * @dev Sets a new URI for all token types, by relying on the token type ID
   */
   function _setURI(string memory newuri) public onlyOwner {
     _uri = newuri;
+  }
+
+  /**
+  * @dev Adds and initializes liquidity index of a new asset in FujiERC1155
+  * @param _Type: enum AssetType, 0 = Collateral asset, 1 = debt asset
+  * @param _Addr: Reference Address of the Asset
+  */
+  function addInitializeAsset(AssetType _Type, address _Addr) external override onlyPermit returns(uint64){
+
+    require(AssetIDs[_Type][_Addr] == 0 , Errors.VL_ASSET_EXISTS);
+    uint64 newManagedAssets = QtyOfManagedAssets+1;
+
+    AssetIDs[_Type][_Addr] = newManagedAssets;
+    used_IDs[newManagedAssets] = true;
+    AssetIDtype[newManagedAssets] = _Type;
+
+    //Push new AssetID to BorrowAsset Array
+    IDsCollateralsAssets.push(newManagedAssets);
+    //Initialize the liquidity Index
+    Indexes[newManagedAssets] = WadRayMath.ray();
+
+    //Update QtyOfManagedAssets
+    QtyOfManagedAssets = newManagedAssets;
+
+    return newManagedAssets;
+  }
+
+  /**
+  * @dev Returns an array of the FujiERC1155 IDs on which the user has an Open Position
+  * @param account: user address to check
+  * @param _Type: enum AssetType, 0 = Collateral asset, 1 = debt asset
+  */
+  function engagedIDsOf(address account, AssetType _Type) internal view returns(uint256[] memory _IDs) {
+    if(_Type == AssetType.collateralToken) {
+      for(uint i; i < IDsCollateralsAssets.length; i++) {
+        if(super.balanceOf(account, IDsCollateralsAssets[i]) > 0) {
+          _IDs.push(IDsCollateralsAssets[i]);
+        }
+      }
+    } else if (_Type == AssetType.debtToken) {
+      for(uint i; i < IDsBorrowAssets.length; i++) {
+        if(super.balanceOf(account, IDsBorrowAssets[i]) > 0) {
+          _IDs.push(IDsBorrowAssets[i]);
+        }
+      }
+    }
   }
 
 }

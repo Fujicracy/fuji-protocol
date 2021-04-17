@@ -36,7 +36,10 @@ const fixture = async ([wallet, other], provider) => {
   const aweth = await ethers.getContractAt("IERC20", aWETH_ADDR);
   const ceth = await ethers.getContractAt("CErc20", cETH_ADDR);
 
-  const fliquidator = await deployContract(wallet, FLIQUIDATOR, [UNISWAP_ROUTER_ADDR]);
+  
+
+
+  const fliquidator = await deployContract(wallet, FLIQUIDATOR, [UNISWAP_ROUTER_ADDR, ]);
   const flasher = await deployContract(wallet, Flasher, []);
   const controller = await deployContract(wallet, Controller, [flasher.address, fliquidator.address,"0"]);//changeThreshold percentagedecimal to ray (0.02 x 10^27)
   const aave = await deployContract(wallet, AAVE, []);

@@ -39,6 +39,8 @@ library Errors {
   string public constant VL_RECEIVER_REJECT_1155 = '121'; //ERC1155Receiver rejected tokens
   string public constant VL_RECEIVER_CONTRACT_NON_1155 = '122'; //ERC1155: transfer to non ERC1155Receiver implementer
   string public constant VL_OPTIMIZER_FEE_SMALL ='123'; //Fuji OptimizerFee has to be > 1 RAY (1e27)
+  string public constant VL_UNDERCOLLATERIZED_ERROR = '124'; // Flashloan-Flashclose cannot be used when User's collateral is worth less than intended debt position to close.
+  string public constant VL_MINIMUM_PAYBACK_ERROR = '125'; // Minimum Amount payback should be at least Fuji Optimizerfee accrued interest.
 
   string public constant MATH_DIVISION_BY_ZERO = '201';
   string public constant MATH_ADDITION_OVERFLOW = '202';

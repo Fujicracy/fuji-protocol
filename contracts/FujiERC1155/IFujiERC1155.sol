@@ -3,9 +3,7 @@
 pragma solidity >= 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-
-interface IFujiERC1155 is IERC1155 {
+interface IFujiERC1155 {
 
   //Asset Types
   enum AssetType {
@@ -17,23 +15,27 @@ interface IFujiERC1155 is IERC1155 {
 
   //General Getter Functions
 
-  function getAssetID(AssetType _Type, address _assetAddr) external view returns(uint64);
+  function getAssetID(AssetType _Type, address _assetAddr) external view returns(uint256);
 
   function getQtyOfManagedAssets() external view returns(uint256);
 
-  function IDsCollateralsAssets() external view returns(uint256[] memory);
+  function getIDsCollateralsAssets() external view returns(uint256[] memory);
 
-  function IDsBorrowAssets() external view returns(uint256[] memory);
+  function getIDsBorrowAssets() external view returns(uint256[] memory);
+
+  function balanceOf(address account, uint256 id) external view returns (uint256);
 
   function splitBalanceOf(address account,uint256 _AssetID) external view  returns (uint256,uint256);
 
-  function balanceOfBatchType(address account, AssetType _Type) external view returns (uint256);
+  //function balanceOfBatchType(address account, AssetType _Type) external view returns (uint256);
 
   //Permit Controlled  Functions
   function mint(address account, uint256 id, uint256 amount, bytes memory data) external;
 
   function burn(address account, uint256 id, uint256 amount) external;
 
-  function addInitializeAsset(AssetType _Type, address _Addr) external returns(uint64);
+  function updateState(uint256 _AssetID, uint256 newBalance) external;
+
+  function addInitializeAsset(AssetType _Type, address _Addr) external returns(uint256);
 
 }

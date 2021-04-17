@@ -269,7 +269,8 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
 
     // Get Required Collateral with Factors to maintain debt position healthy
     uint256 neededCollateral = getNeededCollateralFor(
-      _borrowAmount.add(IFujiERC1155(FujiERC1155).balanceOf(msg.sender,vAssets.borrowID))
+      _borrowAmount.add(IFujiERC1155(FujiERC1155).balanceOf(msg.sender,vAssets.borrowID)),
+      true
     );
 
     // Check Provided Collateral is greater than needed to maintain healthy position
@@ -603,6 +604,14 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   */
   function getBorrowAsset() external view override returns(address) {
     return vAssets.borrowAsset;
+  }
+
+  /**
+  * @dev Getter for vault's FujiERC1155 address.
+  * @return FujiERC1155 contract address
+  */
+  function getF1155() external override view returns(address) {
+    return FujiERC1155;
   }
 
   /**

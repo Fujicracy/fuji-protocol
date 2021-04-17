@@ -8,9 +8,12 @@ import { FujiBaseERC1155 } from "./FujiBaseERC1155.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { WadRayMath } from '../Libraries/WadRayMath.sol';
 import { MathUtils } from '../Libraries/MathUtils.sol';
-import {Errors} from "../Libraries/Errors.sol";
+import { Errors } from "../Libraries/Errors.sol";
+import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 
 contract F1155Manager is Ownable {
+
+  using Address for address;
 
   // Controls for Mint-Burn Operations
   mapping(address => bool) public AddrPermit;
@@ -44,25 +47,28 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   //FujiERC1155 Asset ID Mapping
 
   //AssetType => asset reference address => ERC1155 Asset ID
-  mapping (AssetType => mapping(address => uint64)) public AssetIDs;
+  mapping (AssetType => mapping(address => uint256)) public AssetIDs;
 
-  //ID Control to confirm ID, and avoid repeated uint64 incurrance
-  mapping (uint64 => bool) public used_IDs;
+  //ID Control to confirm ID, and avoid repeated uint256 incurrance
+  mapping (uint256 => bool) public used_IDs;
 
   //Control mapping that returns the AssetType of an AssetID
-  mapping (uint64 => AssetType) public AssetIDtype;
+  mapping (uint256 => AssetType) public AssetIDtype;
 
-  uint64 public QtyOfManagedAssets;
-  uint64[] public IDsCollateralsAssets;
-  uint64[] public IDsBorrowAssets;
+  uint256 public QtyOfManagedAssets;
+  uint256[] public IDsCollateralsAssets;
+  uint256[] public IDsBorrowAssets;
 
   //Asset ID  Liquidity Index mapping
   //AssetId => Liquidity index for asset ID
-  mapping (uint64 => uint256) public Indexes;
+  mapping (uint256 => uint256) public Indexes;
 
   uint256 public OptimizerFee;
   uint256 public lastUpdateTimestamp;
   uint256 public fujiIndex;
+
+  /// @dev Ignoring leap years
+  uint256 internal constant SECONDS_PER_YEAR = 365 days;
 
   constructor () public {
 
@@ -78,7 +84,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    * @param _AssetID: ERC1155 ID of the asset which state will be updated.
    * @param newBalance: Amount
    **/
-  function updateState(uint256 _AssetID, uint256 newBalance) external onlyPermit {
+  function updateState(uint256 _AssetID, uint256 newBalance) external override onlyPermit {
 
     uint256 total = totalSupply(_AssetID);
 
@@ -97,9 +103,11 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
         lastUpdateTimestamp = block.timestamp;
       }
 
-      uint256 cumulated =
-        (MathUtils.calculateCompoundedInterest(OptimizerFee, lastUpdateTimestamp, block.timestamp))
-        .rayMul(fujiIndex);
+      uint256 cumulated = _calculateCompoundedInterest(
+        OptimizerFee,
+        lastUpdateTimestamp,
+        block.timestamp
+      ).rayMul(fujiIndex);
 
       fujiIndex = cumulated;
       lastUpdateTimestamp = block.timestamp;
@@ -127,7 +135,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   * @param account: address of the User
   * @param _AssetID: ERC1155 ID of the asset which state will be updated.
   **/
-  function balanceOf(address account, uint256 _AssetID) public view override(FujiBaseERC1155, IERC1155) returns (uint256) {
+  function balanceOf(address account, uint256 _AssetID) public view override(FujiBaseERC1155, IFujiERC1155) returns (uint256) {
     uint256 scaledBalance = super.balanceOf(account, _AssetID);
 
     if (scaledBalance == 0) {
@@ -149,15 +157,17 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
     uint256 scaledBalance = super.balanceOf(account, _AssetID);
 
     if (scaledBalance == 0) {
-      return 0;
+      return (0,0);
+    } else {
+
+      uint256 baseprotocol = scaledBalance.rayMul(Indexes[_AssetID]);
+      uint256 fuji = scaledBalance.rayMul(fujiIndex);
+
+      assert(baseprotocol.add(fuji) == balanceOf(account,_AssetID));
+
+      return (baseprotocol, fuji);
+
     }
-
-    uint256 baseprotocol = scaledBalance.rayMul(Indexes[_AssetID]);
-    uint256 fuji = scaledBalance.rayMul(fujiIndex);
-
-    assert(baseprotocol.add(fuji) == balanceOf(account,_AssetID));
-
-    return (baseprotocol, fuji);
   }
 
   /**
@@ -175,6 +185,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    * @param account: address of the User
    * @param _Type: enum AssetType, 0 = Collateral asset, 1 = debt asset
    **/
+   /*
   function balanceOfBatchType(address account, AssetType _Type) external view override returns (uint256 total) {
 
     uint256[] memory IDs = engagedIDsOf(account, _Type);
@@ -182,8 +193,8 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
     for(uint i; i < IDs.length; i++ ){
       total = total.add(balanceOf(account, IDs[i]));
     }
-
   }
+  */
 
   /**
  * @dev Mints tokens for Collateral and Debt receipts for the Fuji Protocol
@@ -194,7 +205,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
  * acceptance magic value.
  * - `amount` should be in WAD
  */
- function mint(address account, uint256 id, uint256 amount, bytes memory data) external onlyPermit {
+ function mint(address account, uint256 id, uint256 amount, bytes memory data) external override onlyPermit {
    require(used_IDs[id], Errors.VL_INVALID_ASSETID_1155 );
    require(account != address(0), Errors.VL_ZERO_ADDR_1155);
 
@@ -271,7 +282,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    * - `account` must have at least `amount` tokens of token type `id`.
    * - `amount` should be in WAD
    */
-  function burn(address account, uint256 id, uint256 amount) external onlyPermit{
+  function burn(address account, uint256 id, uint256 amount) external override onlyPermit{
 
     require(used_IDs[id], Errors.VL_INVALID_ASSETID_1155);
     require(account != address(0), Errors.VL_ZERO_ADDR_1155);
@@ -346,7 +357,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   * @param _Type: enum AssetType, 0 = Collateral asset, 1 = debt asset
   * @param _Addr: Reference Address of the Asset
   */
-  function getAssetID(AssetType _Type, address _Addr) external view override returns(uint64) {
+  function getAssetID(AssetType _Type, address _Addr) external view override returns(uint256) {
     uint256 theID = AssetIDs[_Type][_Addr];
     require(used_IDs[theID], Errors.VL_INVALID_ASSETID_1155 );
     return theID;
@@ -358,6 +369,14 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   */
   function getAssetIDType(uint256 _AssetID) internal view returns(AssetType) {
     return AssetIDtype[_AssetID];
+  }
+
+  function getIDsCollateralsAssets() external view override returns(uint256[] memory) {
+    return IDsCollateralsAssets;
+  }
+
+  function getIDsBorrowAssets() external view override returns(uint256[] memory){
+    return IDsBorrowAssets;
   }
 
   /**
@@ -390,10 +409,10 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   * @param _Type: enum AssetType, 0 = Collateral asset, 1 = debt asset
   * @param _Addr: Reference Address of the Asset
   */
-  function addInitializeAsset(AssetType _Type, address _Addr) external override onlyPermit returns(uint64){
+  function addInitializeAsset(AssetType _Type, address _Addr) external override onlyPermit returns(uint256){
 
     require(AssetIDs[_Type][_Addr] == 0 , Errors.VL_ASSET_EXISTS);
-    uint64 newManagedAssets = QtyOfManagedAssets+1;
+    uint256 newManagedAssets = QtyOfManagedAssets+1;
 
     AssetIDs[_Type][_Addr] = newManagedAssets;
     used_IDs[newManagedAssets] = true;
@@ -415,7 +434,12 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   * @param account: user address to check
   * @param _Type: enum AssetType, 0 = Collateral asset, 1 = debt asset
   */
-  function engagedIDsOf(address account, AssetType _Type) internal view returns(uint256[] memory _IDs) {
+  /*
+
+  function engagedIDsOf(address account, AssetType _Type) internal view returns(uint256[] memory) {
+
+    uint256[] memory _IDs = new uint256[](1);
+
     if(_Type == AssetType.collateralToken) {
       for(uint i; i < IDsCollateralsAssets.length; i++) {
         if(super.balanceOf(account, IDsCollateralsAssets[i]) > 0) {
@@ -429,6 +453,49 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
         }
       }
     }
+
+    return _IDs;
+  }
+  */
+
+  /**
+   * @dev Function to calculate the interest using a compounded interest rate formula
+   * To avoid expensive exponentiation, the calculation is performed using a binomial approximation:
+   *
+   *  (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
+   *
+   * The approximation slightly underpays liquidity providers and undercharges borrowers, with the advantage of great gas cost reductions
+   * The whitepaper contains reference to the approximation and a table showing the margin of error per different time periods
+   *
+   * @param rate The interest rate, in ray
+   * @param _lastUpdateTimestamp The timestamp of the last update of the interest
+   * @return The interest rate compounded during the timeDelta, in ray
+   **/
+  function _calculateCompoundedInterest(
+    uint256 rate,
+    uint256 _lastUpdateTimestamp,
+    uint256 currentTimestamp
+  ) internal pure returns (uint256) {
+    //solium-disable-next-line
+    uint256 exp = currentTimestamp.sub(uint256(_lastUpdateTimestamp));
+
+    if (exp == 0) {
+      return WadRayMath.ray();
+    }
+
+    uint256 expMinusOne = exp - 1;
+
+    uint256 expMinusTwo = exp > 2 ? exp - 2 : 0;
+
+    uint256 ratePerSecond = rate / SECONDS_PER_YEAR;
+
+    uint256 basePowerTwo = ratePerSecond.rayMul(ratePerSecond);
+    uint256 basePowerThree = basePowerTwo.rayMul(ratePerSecond);
+
+    uint256 secondTerm = exp.mul(expMinusOne).mul(basePowerTwo) / 2;
+    uint256 thirdTerm = exp.mul(expMinusOne).mul(expMinusTwo).mul(basePowerThree) / 6;
+
+    return WadRayMath.ray().add(ratePerSecond.mul(exp)).add(secondTerm).add(thirdTerm);
   }
 
 }

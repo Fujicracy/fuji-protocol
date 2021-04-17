@@ -44,14 +44,6 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     uint64 b;
   }
 
-  //Asset Struct
-  struct VaultAssets {
-    address collateralAsset;
-    address borrowAsset;
-    uint64 collateralID;
-    uint64 borrowID;
-  }
-
   // Flash Close Fee Factor
   Factor public flashCloseF;
 
@@ -61,7 +53,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
   IUniswapV2Router02 public swapper;
   address public controller;
   address public flasher;
-  address private ftreasury;
+  address payable public ftreasury;
 
   // Log Liquidation
   event evLiquidate(address indexed userAddr, address liquidator, address indexed asset, uint256 amount);
@@ -88,7 +80,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
   constructor(
 
     address _swapper,
-    address _ftreasury
+    address payable _ftreasury
 
   ) public {
 
@@ -117,7 +109,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).getF1155());
 
     // Struct Instance to get Vault Asset IDs in F1155
-    VaultAssets memory vAssets = IVaultext(vault).vAssets();
+    IVaultext.VaultAssets memory vAssets = IVaultext(vault).vAssets();
 
     // Get user Collateral and Debt Balances
     uint256 userCollateral = F1155.balanceOf(_userAddr, vAssets.collateralID);
@@ -195,7 +187,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).getF1155());
 
     // Struct Instance to get Vault Asset IDs in F1155
-    VaultAssets memory vAssets = IVaultext(vault).vAssets();
+    IVaultext.VaultAssets memory vAssets = IVaultext(vault).vAssets();
 
     // Get user  Balances
     uint256 userCollateral = F1155.balanceOf(msg.sender, vAssets.collateralID);
@@ -232,7 +224,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       require(_amount>0, Errors.VL_AMOUNT_ERROR);
 
       // Check _amount passed is less than debt
-      require(_amount < userDebtBalance, Errors.VL_AMOUNT_ERROR);
+      require(uint256(_amount) < userDebtBalance, Errors.VL_AMOUNT_ERROR);
 
       // Check there is enough Collateral for FlashClose
       neededCollateral = IVault(vault).getNeededCollateralFor(uint256(_amount), false);
@@ -272,7 +264,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IVault(vault).updateF1155Balances();
 
     // Struct Instance to get Vault Asset IDs in F1155
-    VaultAssets memory vAssets = IVaultext(vault).vAssets();
+    IVaultext.VaultAssets memory vAssets = IVaultext(vault).vAssets();
 
     // Create Instance of FujiERC1155
     IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).getF1155());
@@ -309,18 +301,17 @@ contract Fliquidator is Ownable, ReentrancyGuard {
   /**
   * @dev Close user's debt position by using a flashloan
   * @param _userAddr: user addr to be liquidated
-  * @param _asset: asset type
   * @param _Amount: amount received by Flashloan
   * @param vault: Vault address
   * Emits a {FlashClose} event.
   */
-  function executeFlashClose(address payable _userAddr, address _asset, uint256 _Amount, address vault) external onlyFlash nonReentrant {
+  function executeFlashClose(address payable _userAddr, uint256 _Amount, address vault) external onlyFlash nonReentrant {
 
     // Create Instance of FujiERC1155
     IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).getF1155());
 
     // Struct Instance to get Vault Asset IDs in F1155
-    VaultAssets memory vAssets = IVaultext(vault).vAssets();
+    IVaultext.VaultAssets memory vAssets = IVaultext(vault).vAssets();
 
     // Get user Collateral and Debt Balances
     uint256 userCollateral = F1155.balanceOf(_userAddr, vAssets.collateralID);
@@ -330,7 +321,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     uint256 userCollateralinPlay = (IVault(vault).getNeededCollateralFor(_Amount, false)).mul(flashCloseF.a).div(flashCloseF.b);
 
     // Load the FlashLoan funds to this contract.
-    IERC20(_asset).transferFrom(flasher, address(this), _Amount);
+    IERC20(vAssets.borrowAsset).transferFrom(flasher, address(this), _Amount);
 
     // Compute Split debt between BaseProtocol and FujiOptmizer Fee
     (uint256 protocolDebt,uint256 fujidebt) =
@@ -340,7 +331,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IERC20(vAssets.borrowAsset).approve(vault, _Amount.sub(fujidebt));
 
     // Repay BaseProtocol debt
-    IVault(vault).payback(_Amount.sub(fujidebt));
+    IVault(vault).payback(int256(_Amount.sub(fujidebt)));
 
     // Transfer Fuji Split Debt to Fuji Treasury
     IERC20(vAssets.borrowAsset).uniTransfer(ftreasury, fujidebt);
@@ -377,9 +368,9 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IERC20(vAssets.collateralAsset).uniTransfer(ftreasury, remainingFujiCollat);
 
     // Send flasher the underlying to repay Flashloan
-    IERC20(_asset).uniTransfer(payable(flasher), _Amount);
+    IERC20(vAssets.borrowAsset).uniTransfer(payable(flasher), _Amount);
 
-    emit FlashClose(_userAddr, _asset, userDebtBalance);
+    emit FlashClose(_userAddr, vAssets.borrowAsset, userDebtBalance);
   }
 
   /**
@@ -396,7 +387,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).getF1155());
 
     // Struct Instance to get Vault Asset IDs in F1155
-    VaultAssets memory vAssets = IVaultext(vault).vAssets();
+    IVaultext.VaultAssets memory vAssets = IVaultext(vault).vAssets();
 
     // Get user Collateral and Debt Balances
     uint256 userCollateral = F1155.balanceOf(_userAddr, vAssets.collateralID);
@@ -442,7 +433,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Burn Debt F1155 tokens
     F1155.burn(_userAddr, vAssets.borrowID, userDebtBalance);
 
-    emit FlashLiquidate(_userAddr, _liquidatorAddr,vAssets.borrowID, userDebtBalance);
+    emit FlashLiquidate(_userAddr, _liquidatorAddr,vAssets.borrowAsset, userDebtBalance);
   }
 
 
@@ -493,7 +484,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
   * @dev Sets the Treasury address
   * @param _newTreasury: new Fuji Treasury address
   */
-  function setTreasury(address _newTreasury) external isAuthorized {
+  function setTreasury(address payable _newTreasury) external isAuthorized {
     ftreasury = _newTreasury;
   }
 

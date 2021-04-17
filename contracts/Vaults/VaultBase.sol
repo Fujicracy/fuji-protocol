@@ -17,8 +17,8 @@ contract VaultControl is  Ownable, Pausable {
   struct VaultAssets {
     address collateralAsset;
     address borrowAsset;
-    uint64 collateralID;
-    uint64 borrowID;
+    uint256 collateralID;
+    uint256 borrowID;
   }
 
   //Vault Struct for Managed Assets

@@ -35,7 +35,7 @@ interface IVault {
 		function depositBalance(address _provider) external view returns(uint256);
   	function getCollateralAsset() external view returns(address);
   	function getBorrowAsset() external view returns(address);
-		function getNeededCollateralFor(uint256 _amount) external view returns(uint256);
+		function getNeededCollateralFor(uint256 _amount, bool _withFactors) external view returns(uint256);
 		function getLiquidationBonusFor(uint256 _amount,bool _flash) external view returns(uint256);
 		function getProviders() external view returns(address[] memory);
 		function getF1155() external view returns(address);

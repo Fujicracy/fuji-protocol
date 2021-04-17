@@ -147,7 +147,7 @@ contract Flasher is
 
       // Approve Fliquidator to spend ERC20
       IERC20(info.asset).approve(info.fliquidator, info.amount);
-      IFliquidator(info.fliquidator).executeFlashClose(info.user, info.asset, info.amount, info.vault);
+      IFliquidator(info.fliquidator).executeFlashClose(info.user, info.amount, info.vault);
     }
     else {
 

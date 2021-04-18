@@ -22,7 +22,7 @@ interface IAlphaWhitelist {
 
 }
 
-contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
+contract VaultDUMMY is IVault, VaultBase, ReentrancyGuard {
 
   uint256 internal constant BASE = 1e18;
 
@@ -232,7 +232,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
 
     uint256 providedCollateral = IFujiERC1155(FujiERC1155).balanceOf(msg.sender, vAssets.collateralID);
 
-    // Get Required Collateral with Factors to maintain debt position healthy
+    // Get Required Collateral for existing and intended borrowAmount with Factors to maintain debt position healthy
     uint256 neededCollateral = getNeededCollateralFor(
       _borrowAmount.add(IFujiERC1155(FujiERC1155).balanceOf(msg.sender,vAssets.borrowID)),
       true
@@ -389,73 +389,6 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   }
 
   /**
-  * @dev Sets the flasher for this vault.
-  * @param _flasher: flasher address
-  */
-  function setFlasher(address _flasher) external isAuthorized {
-    flasher = _flasher;
-  }
-
-  /**
-  * @dev Sets the controller for this vault.
-  * @param _controller: controller address
-  */
-  function setController(address _controller) external isAuthorized {
-    controller = _controller;
-  }
-
-  /**
-  * @dev Sets the fliquidator address
-  * @param _newfliquidator: new fliquidator address
-  */
-  function setfliquidator(address _newfliquidator) external isAuthorized {
-    fliquidator = _newfliquidator;
-  }
-
-  /**
-  * @dev Sets the Collateral Factor of this Vault
-  * @dev This is means: Collateral Value / Debt Position > 1, a/b > 1
-  * @param _newFactorA: Big number
-  * @param _newFactorB: Small number
-  */
-  function setCollateralFactor(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
-    collatF.a = _newFactorA;
-    collatF.b = _newFactorB;
-  }
-
-  /**
-  * @dev Sets the Safety Factor of this Vault
-  * @dev This is means: Collateral Value / Debt Position > 1, a/b > 1
-  * @param _newFactorA: Big number
-  * @param _newFactorB: Small number
-  */
-  function setSafetyFactor(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
-    safetyF.a = _newFactorA;
-    safetyF.b = _newFactorB;
-  }
-
-  /**
-  * @dev Sets the bonus factor for Flash liquidation : Should be a/b < 1
-  * @param _newFactorA: Small number
-  * @param _newFactorB: big number
-  */
-  function setbonusFlashL(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
-    bonusFlashL.a = _newFactorA;
-    bonusFlashL.b = _newFactorB;
-  }
-
-  /**
-  * @dev Sets the bonus factor for normal liquidation : Should be a/b < 1
-  * @param _newFactorA: Small number
-  * @param _newFactorB: big number
-  */
-  function setbonusL(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
-    bonusL.a = _newFactorA;
-    bonusL.b = _newFactorB;
-  }
-
-
-  /**
   * @dev Sets the Oracle address (Must Comply with AggregatorV3Interface)
   * @param _newOracle: new Oracle address
   */
@@ -463,13 +396,6 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     oracle = AggregatorV3Interface(_newOracle);
   }
 
-  /**
-  * @dev Sets the Treasury address
-  * @param _newTreasury: new Fuji Treasury address
-  */
-  function setTreasury(address _newTreasury) external isAuthorized {
-    ftreasury = _newTreasury;
-  }
 
   /**
   * @dev Adds a provider to the Vault

@@ -324,7 +324,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IERC20(vAssets.borrowAsset).transferFrom(flasher, address(this), _Amount);
 
     // Compute Split debt between BaseProtocol and FujiOptmizer Fee
-    (uint256 protocolDebt,uint256 fujidebt) =
+    (,uint256 fujidebt) =
         F1155.splitBalanceOf(_userAddr, vAssets.borrowID);
 
     // Approve Amount to Vault

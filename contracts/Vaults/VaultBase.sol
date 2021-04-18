@@ -54,7 +54,7 @@ contract VaultBase is VaultControl {
   function _deposit(
     uint256 _amount,
     address _provider
-  ) internal whenNotPaused {
+  ) internal {
     bytes memory data = abi.encodeWithSignature(
       "deposit(address,uint256)",
       vAssets.collateralAsset,
@@ -71,7 +71,7 @@ contract VaultBase is VaultControl {
   function _withdraw(
     uint256 _amount,
     address _provider
-  ) internal whenNotPaused {
+  ) internal {
     bytes memory data = abi.encodeWithSignature(
       "withdraw(address,uint256)",
       vAssets.collateralAsset,
@@ -88,7 +88,7 @@ contract VaultBase is VaultControl {
   function _borrow(
     uint256 _amount,
     address _provider
-  ) internal whenNotPaused {
+  ) internal  {
     bytes memory data = abi.encodeWithSignature(
       "borrow(address,uint256)",
       vAssets.borrowAsset,
@@ -105,7 +105,7 @@ contract VaultBase is VaultControl {
   function _payback(
     uint256 _amount,
     address _provider
-  ) internal whenNotPaused {
+  ) internal {
     bytes memory data = abi.encodeWithSignature(
       "payback(address,uint256)",
       vAssets.borrowAsset,

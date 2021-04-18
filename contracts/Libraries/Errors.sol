@@ -27,7 +27,7 @@ library Errors {
   string public constant VL_DEBT_LESS_THAN_AMOUNT = '109'; //User debt is less than amount to partial close
   string public constant VL_PROVIDER_ALREADY_ADDED = '110'; // Provider is already added in Provider Array
   string public constant VL_NOT_AUTHORIZED = '111'; //Not authorized
-  string public constant VL_INVALID_COLLATERAL = '112'; //Collateral is not in active in vault
+  string public constant VL_INVALID_COLLATERAL = '112'; //There is no Collateral, or Collateral is not in active in vault
   string public constant VL_NO_ERC20_BALANCE = '113'; //User does not have ERC20 balance
   string public constant VL_INPUT_ERROR = '114'; //Check inputs. For ERC1155 batch functions, array sizes should match.
   string public constant VL_ASSET_EXISTS ='115';  //Asset intended to be added already exists in FujiERC1155

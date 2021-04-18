@@ -75,6 +75,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
     transfersActive = false;
     QtyOfManagedAssets = 0;
     fujiIndex = WadRayMath.ray();
+    OptimizerFee = 1e24;
 
   }
 
@@ -103,13 +104,13 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
         lastUpdateTimestamp = block.timestamp;
       }
 
-      uint256 cumulated = _calculateCompoundedInterest(
+      uint256 accrued = _calculateCompoundedInterest(
         OptimizerFee,
         lastUpdateTimestamp,
         block.timestamp
       ).rayMul(fujiIndex);
 
-      fujiIndex = cumulated;
+      fujiIndex = accrued;
       lastUpdateTimestamp = block.timestamp;
     }
   }
@@ -390,7 +391,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
 
   /**
   * @dev Sets the FujiProtocol Fee to be charged
-  * @param _fee; Fee in Ray to charge users for OptimizerFee
+  * @param _fee; Fee in Ray(1e27) to charge users for OptimizerFee (1 ray = 100% APR)
   */
   function setOptimizerFee(uint256 _fee) public onlyOwner {
     require(_fee >= WadRayMath.ray(), Errors.VL_OPTIMIZER_FEE_SMALL );

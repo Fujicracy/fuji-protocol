@@ -23,7 +23,7 @@ interface IVaultExt is IVault {
     uint64 borrowID;
   }
 
-  function getvAssets() external view returns(VaultAssets memory);
+  function vAssets() external view returns(VaultAssets memory);
 
 }
 
@@ -48,10 +48,8 @@ contract Controller is Ownable {
   }
 
   constructor(
-
     uint256 _deltaAPRThreshold,
     address _fujiAdmin
-
   ) public {
 
     deltaAPRThreshold = _deltaAPRThreshold;
@@ -118,7 +116,7 @@ contract Controller is Ownable {
     vault.updateF1155Balances();
     uint256 debtPosition = vault.borrowBalance(vault.activeProvider());
 
-    IVaultExt.VaultAssets memory vAssets = IVaultExt(_vaultAddr).getvAssets();
+    IVaultExt.VaultAssets memory vAssets = IVaultExt(_vaultAddr).vAssets();
 
     //Check if there is an opportunity to Change provider with a lower borrowing Rate
     (bool opportunityTochange, address newProvider) = checkRates(_vaultAddr);
@@ -158,7 +156,7 @@ contract Controller is Ownable {
   function checkRates(address _vaultAddr) public view returns(bool, address) {
     //Get the array of Providers from _vaultAddr
     address[] memory arrayOfProviders = IVault(_vaultAddr).getProviders();
-    IVaultExt.VaultAssets memory vAssets = IVaultExt(_vaultAddr).getvAssets();
+    IVaultExt.VaultAssets memory vAssets = IVaultExt(_vaultAddr).vAssets();
     address borrowingAsset = vAssets.borrowAsset;
     bool opportunityTochange = false;
 

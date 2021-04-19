@@ -16,18 +16,17 @@ import { Errors } from "../Libraries/Errors.sol";
 import "hardhat/console.sol"; //test line
 
 interface IAlphaWhitelist {
-
-  function whitelistRoutine(address _usrAddrs, uint256 _amount) external returns(bool letgo);
-  function depositCapCheckRoutine(uint256 currentUserDepositBal, uint256 newDeposit) external returns(bool letgo);
-  function isAddrWhitelisted(address _usrAddrs) external view returns(bool);
-
+  function whitelistRoutine(
+    address _usrAddrs,
+    uint64 _assetId,
+    uint256 _amount,
+    address _erc1155
+  ) external returns(bool);
 }
 
 contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
 
   uint256 internal constant BASE = 1e18;
-
-  enum FactorType {safety, collateral, bonusLiq, bonusFlashLiq, flashclosefee}
 
   struct Factor {
     uint64 a;
@@ -45,7 +44,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   address public override activeProvider;
 
   IFujiAdmin private fujiAdmin;
-  address public FujiERC1155;
+  address public override fujiERC1155;
   AggregatorV3Interface public oracle;
 
   modifier isAuthorized() {
@@ -63,15 +62,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
     _;
   }
 
-  constructor (
-
-    address _fujiAdmin,
-    address _oracle
-
-  ) public {
-
-    fujiAdmin = IFujiAdmin(_fujiAdmin);
-    oracle = AggregatorV3Interface(_oracle);
+  constructor () public {
 
     vAssets.collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
     vAssets.borrowAsset = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48); // USDC
@@ -83,7 +74,6 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
     // 1.269
     collatF.a = 80;
     collatF.b = 63;
-
   }
 
   //Core functions
@@ -120,18 +110,17 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
     require(msg.value == _collateralAmount, Errors.VL_AMOUNT_ERROR);
 
     // Alpha Whitelist Routine
-    IAlphaWhitelist aWhitelist = IAlphaWhitelist(fujiAdmin.getaWhitelist());
-    require(aWhitelist.whitelistRoutine(msg.sender, _collateralAmount), Errors.SP_ALPHA_WHTLIST_FULL);
-
-    // Alpha Cap Check
-    uint256 userCurrentBalance = IFujiERC1155(FujiERC1155).balanceOf(msg.sender, vAssets.collateralID);
-    require(aWhitelist.depositCapCheckRoutine(userCurrentBalance, _collateralAmount),Errors.SP_ALPHA_ETH_CAP_VALUE);
+    require(
+      IAlphaWhitelist(fujiAdmin.getaWhitelist())
+        .whitelistRoutine(msg.sender, vAssets.collateralID, _collateralAmount, fujiERC1155),
+      Errors.SP_ALPHA_WHTLIST_FULL
+    );
 
     // Delegate Call Deposit to current provider
     _deposit(_collateralAmount, address(activeProvider));
 
     // Collateral Management
-    IFujiERC1155(FujiERC1155).mint(msg.sender, vAssets.collateralID, _collateralAmount, "");
+    IFujiERC1155(fujiERC1155).mint(msg.sender, vAssets.collateralID, _collateralAmount, "");
 
     emit Deposit(msg.sender, vAssets.collateralAsset ,_collateralAmount);
   }
@@ -148,33 +137,33 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
     // If call from Normal User do typical, otherwise Fliquidator
     if(msg.sender != fujiAdmin.getFliquidator()) {
 
-      _updateF1155Balances();
+      updateF1155Balances();
 
       // Get User Collateral in this Vault
-      uint256 providedCollateral = IFujiERC1155(FujiERC1155).balanceOf(msg.sender, vAssets.collateralID);
+      uint256 providedCollateral = IFujiERC1155(fujiERC1155)
+        .balanceOf(msg.sender, vAssets.collateralID);
 
       // Check User has collateral
       require(providedCollateral > 0, Errors.VL_INVALID_COLLATERAL);
 
       // Get Required Collateral with Factors to maintain debt position healthy
       uint256 neededCollateral = getNeededCollateralFor(
-        IFujiERC1155(FujiERC1155).balanceOf(msg.sender,vAssets.borrowID),
+        IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID),
         true
       );
 
-      uint256 amountToWithdraw;
-
-      if (_withdrawAmount < 0) {
-        amountToWithdraw = providedCollateral.sub(neededCollateral);
-      } else if ( _withdrawAmount > 0) {
-        amountToWithdraw = uint256(_withdrawAmount);
-      }
+      uint256 amountToWithdraw = _withdrawAmount < 0
+        ? providedCollateral.sub(neededCollateral)
+        : uint256(_withdrawAmount);
 
       // Check Withdrawal amount will not fall undercollaterized.
-      require(providedCollateral.sub(amountToWithdraw) >= neededCollateral, Errors.VL_INVALID_WITHDRAW_AMOUNT);
+      require(
+        providedCollateral.sub(amountToWithdraw) >= neededCollateral,
+        Errors.VL_INVALID_WITHDRAW_AMOUNT
+      );
 
       // Collateral Management
-      IFujiERC1155(FujiERC1155).burn(msg.sender, vAssets.collateralID, amountToWithdraw);
+      IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.collateralID, amountToWithdraw);
 
       // Delegate Call Withdraw to current provider
       _withdraw(amountToWithdraw, address(activeProvider));
@@ -184,14 +173,12 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
 
       emit Withdraw(msg.sender, vAssets.collateralAsset, amountToWithdraw);
 
-    } else if(msg.sender == fujiAdmin.getFliquidator()) {
+    } else {
 
-    // Logic used when called by Fliquidator
-    _withdraw(uint256(_withdrawAmount), address(activeProvider));
-    IERC20(vAssets.collateralAsset).uniTransfer(msg.sender, uint256(_withdrawAmount));
-
+      // Logic used when called by Fliquidator
+      _withdraw(uint256(_withdrawAmount), address(activeProvider));
+      IERC20(vAssets.collateralAsset).uniTransfer(msg.sender, uint256(_withdrawAmount));
     }
-
   }
 
   /**
@@ -201,13 +188,13 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   */
   function borrow(uint256 _borrowAmount) public override nonReentrant {
 
-    _updateF1155Balances();
+    updateF1155Balances();
 
-    uint256 providedCollateral = IFujiERC1155(FujiERC1155).balanceOf(msg.sender, vAssets.collateralID);
+    uint256 providedCollateral = IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.collateralID);
 
     // Get Required Collateral with Factors to maintain debt position healthy
     uint256 neededCollateral = getNeededCollateralFor(
-      _borrowAmount.add(IFujiERC1155(FujiERC1155).balanceOf(msg.sender,vAssets.borrowID)),
+      _borrowAmount.add(IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID)),
       true
     );
 
@@ -215,7 +202,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
     require(providedCollateral > neededCollateral, Errors.VL_INVALID_BORROW_AMOUNT);
 
     // Debt Management
-    IFujiERC1155(FujiERC1155).mint(msg.sender, vAssets.borrowID, _borrowAmount, "");
+    IFujiERC1155(fujiERC1155).mint(msg.sender, vAssets.borrowID, _borrowAmount, "");
 
     // Delegate Call Borrow to current provider
     _borrow(_borrowAmount, address(activeProvider));
@@ -236,35 +223,26 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
     // If call from Normal User do typical, otherwise Fliquidator
     if (msg.sender != fujiAdmin.getFliquidator()) {
 
-      _updateF1155Balances();
+      updateF1155Balances();
 
-      uint256 userDebtBalance = IFujiERC1155(FujiERC1155).balanceOf(msg.sender,vAssets.borrowID);
+      uint256 userDebtBalance = IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID);
 
       // Check User Debt is greater than Zero
       require(userDebtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
 
       // Get corresponding amount of Base Protocol Debt Only
-      (,uint256 fujidebt) = IFujiERC1155(FujiERC1155).splitBalanceOf(msg.sender,vAssets.borrowID);
-
-      uint256 amountToPayback;
+      (,uint256 fujidebt) = IFujiERC1155(fujiERC1155).splitBalanceOf(msg.sender, vAssets.borrowID);
 
       // If passed argument amount is negative do MAX
-      if(_repayAmount < 0) {
-        amountToPayback = userDebtBalance;
-      } else if( _repayAmount >= 0 ) {
-
-        amountToPayback = uint256(_repayAmount);
-
-        // Check amountToPayback is NON Zero
-        require(amountToPayback > 0, Errors.VL_NO_DEBT_TO_PAYBACK );
-      }
+      uint256 amountToPayback = _repayAmount < 0
+        ? userDebtBalance
+        : uint256(_repayAmount);
 
       // Check User Allowance
       require(
-        IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this))
-        >= amountToPayback,
+        IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this)) >= amountToPayback,
         Errors.VL_MISSING_ERC20_ALLOWANCE
-        );
+      );
 
       // Transfer Asset from User to Vault
       IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), amountToPayback);
@@ -276,16 +254,15 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
       IERC20(vAssets.borrowAsset).transfer(fujiAdmin.getTreasury(), fujidebt);
 
       // Debt Management
-      IFujiERC1155(FujiERC1155).burn(msg.sender, vAssets.borrowID, userDebtBalance);
+      IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.borrowID, userDebtBalance);
 
-      emit Payback(msg.sender, vAssets.borrowAsset,userDebtBalance);
+      emit Payback(msg.sender, vAssets.borrowAsset, userDebtBalance);
 
-    } else if (msg.sender == fujiAdmin.getFliquidator()) {
+    } else {
 
       // Logic used when called by Fliquidator
       require(
-        IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this))
-        >= uint256(_repayAmount),
+        IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this)) >= uint256(_repayAmount),
         Errors.VL_MISSING_ERC20_ALLOWANCE
       );
 
@@ -333,7 +310,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
     // return borrowed amount to Flasher
     IERC20(vAssets.borrowAsset).uniTransfer(msg.sender, _flashLoanDebt);
 
-    emit Switch(address(this) ,activeProvider, _newProvider);
+    emit Switch(address(this), activeProvider, _newProvider);
   }
 
   //Setter, change state functions
@@ -342,7 +319,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   * @dev Sets the fujiAdmin Address
   * @param _fujiAdmin: FujiAdmin Contract Address
   */
-  function setfujiAdmin(address _fujiAdmin) public isAuthorized{
+  function setFujiAdmin(address _fujiAdmin) public isAuthorized {
     fujiAdmin = IFujiAdmin(_fujiAdmin);
   }
 
@@ -361,27 +338,30 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
 
   /**
   * @dev Sets a fujiERC1155 Collateral and Debt Asset manager for this vault and initializes it.
-  * @param _FujiERC1155: fuji ERC1155 address
+  * @param _fujiERC1155: fuji ERC1155 address
   */
-  function setFujiERC1155(address _FujiERC1155) external isAuthorized {
-    FujiERC1155 = _FujiERC1155;
-     vAssets.collateralID = IFujiERC1155(_FujiERC1155).addInitializeAsset(IFujiERC1155.AssetType.collateralToken, address(this));
-     vAssets.borrowID = IFujiERC1155(_FujiERC1155).addInitializeAsset(IFujiERC1155.AssetType.debtToken, address(this));
+  function setFujiERC1155(address _fujiERC1155) external isAuthorized {
+    fujiERC1155 = _fujiERC1155;
+
+    vAssets.collateralID = IFujiERC1155(_fujiERC1155)
+      .addInitializeAsset(IFujiERC1155.AssetType.collateralToken, address(this));
+    vAssets.borrowID = IFujiERC1155(_fujiERC1155)
+      .addInitializeAsset(IFujiERC1155.AssetType.debtToken, address(this));
   }
 
   /**
   * @dev Set Factors "a" and "b" for a Struct Factor
   * For safetyF;  Sets Safety Factor of Vault, should be > 1, a/b
   * For collatF; Sets Collateral Factor of Vault, should be > 1, a/b
-  * @param _type: enum FactorType
-  * @param _newFactorA: A number
-  * @param _newFactorB: A number
+  * @param _newFactorA: Nominator
+  * @param _newFactorB: Denominator
+  * @param _isSafety: safetyF or collatF
   */
-  function setFactor(FactorType _type, uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
-    if(_type == FactorType.safety) {
+  function setFactor(uint64 _newFactorA, uint64 _newFactorB, bool _isSafety) external isAuthorized {
+    if(_isSafety) {
       safetyF.a = _newFactorA;
       safetyF.b = _newFactorB;
-    } else if (_type == FactorType.collateral) {
+    } else {
       collatF.a = _newFactorA;
       collatF.b = _newFactorB;
     }
@@ -389,58 +369,26 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
 
   /**
   * @dev Sets the Oracle address (Must Comply with AggregatorV3Interface)
-  * @param _newOracle: new Oracle address
+  * @param _oracle: new Oracle address
   */
-  function setOracle(address _newOracle) external isAuthorized {
-    oracle = AggregatorV3Interface(_newOracle);
+  function setOracle(address _oracle) external isAuthorized {
+    oracle = AggregatorV3Interface(_oracle);
   }
 
   /**
-  * @dev Adds a provider to the Vault
-  * @param _provider: new provider fuji address
+  * @dev Set providers to the Vault
+  * @param _providers: new providers' addresses
   */
-  function addProvider(address _provider) external isAuthorized {
-    bool alreadyIncluded = false;
-
-    //Check if Provider is not already included
-    for (uint i = 0; i < providers.length; i++) {
-      if (providers[i] == _provider) {
-        alreadyIncluded = true;
-      }
-    }
-    require(!alreadyIncluded, Errors.VL_PROVIDER_ALREADY_ADDED);
-
-    //Push new provider to provider array
-    providers.push(_provider);
-
-    //Asign an active provider if none existed
-    if (providers.length == 1) {
-      activeProvider = _provider;
-    }
-  }
-
-  /**
-  * @dev Overrides a porvider address at location in the providers Array
-  * @param _position: position in the array
-  * @param _provider: new provider fuji address
-  */
-  function overrideProvider(uint8 _position, address _provider) external isAuthorized {
-    providers[_position] = _provider;
-  }
-
-  /**
-  * @dev Internal Function to call updateState in F1155
-  */
-  function _updateF1155Balances() internal {
-    IFujiERC1155(FujiERC1155).updateState(vAssets.borrowID, borrowBalance(activeProvider));
-    IFujiERC1155(FujiERC1155).updateState(vAssets.collateralID, depositBalance(activeProvider));
+  function setProviders(address[] calldata _providers) external isAuthorized {
+    providers = _providers;
   }
 
   /**
   * @dev External Function to call updateState in F1155
   */
-  function updateF1155Balances() external override {
-    _updateF1155Balances();
+  function updateF1155Balances() public override {
+    IFujiERC1155(fujiERC1155).updateState(vAssets.borrowID, borrowBalance(activeProvider));
+    IFujiERC1155(fujiERC1155).updateState(vAssets.collateralID, depositBalance(activeProvider));
   }
 
   //Getter Functions
@@ -450,21 +398,6 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   */
   function getProviders() external view override returns(address[] memory) {
     return providers;
-  }
-
-  /**
-  * @dev Getter for vaultAssets Struct
-  */
-  function getvAssets() external view returns(VaultAssets memory) {
-    return vAssets;
-  }
-
-  /**
-  * @dev Getter for vault's FujiERC1155 address.
-  * @return FujiERC1155 contract address
-  */
-  function getF1155() external override view returns(address) {
-    return FujiERC1155;
   }
 
   /**
@@ -495,14 +428,14 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   /**
   * @dev Returns the amount of collateral needed, including or not safety factors
   * @param _amount: Vault underlying type intended to be borrowed
-  * @param _withFactor: Inidicate if computation should include safety_Factors
+  * @param _withFactors: Inidicate if computation should include safety_Factors
   */
-  function getNeededCollateralFor(uint256 _amount, bool _withFactor) public view override returns(uint256) {
+  function getNeededCollateralFor(uint256 _amount, bool _withFactors) public view override returns(uint256) {
     // Get price of DAI in ETH
     (,int256 latestPrice,,,) = oracle.latestRoundData();
     uint256 minimumReq = (_amount.mul(1e12).mul(uint256(latestPrice))).div(BASE);
 
-    if(_withFactor) { //125% + 5%
+    if (_withFactors) {
       return minimumReq.mul(collatF.a).mul(safetyF.a).div(collatF.b).div(safetyF.b);
     } else {
       return minimumReq;
@@ -522,9 +455,8 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   * @param _provider: address of a provider
   */
   function depositBalance(address _provider) public view override returns(uint256) {
-    uint256 balance = IProvider(_provider).getDepositBalance(vAssets.collateralAsset);
-    return balance;
+    return IProvider(_provider).getDepositBalance(vAssets.collateralAsset);
   }
 
-  receive() external payable {}
+  //receive() external payable {}
 }

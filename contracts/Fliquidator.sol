@@ -26,7 +26,7 @@ interface IVaultExt is IVault {
     uint64 borrowID;
   }
 
-  function getvAssets() external view returns(VaultAssets memory);
+  function vAssets() external view returns(VaultAssets memory);
 
 }
 
@@ -74,10 +74,8 @@ contract Fliquidator is Ownable, ReentrancyGuard {
   }
 
   constructor(
-
     address _swapper,
     address _fujiAdmin
-
   ) public {
 
     swapper = IUniswapV2Router02(_swapper);
@@ -103,10 +101,10 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IVault(vault).updateF1155Balances();
 
     // Create Instance of FujiERC1155
-    IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).getF1155());
+    IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).fujiERC1155());
 
     // Struct Instance to get Vault Asset IDs in F1155
-    IVaultExt.VaultAssets memory vAssets = IVaultExt(vault).getvAssets();
+    IVaultExt.VaultAssets memory vAssets = IVaultExt(vault).vAssets();
 
     // Get user Collateral and Debt Balances
     uint256 userCollateral = F1155.balanceOf(_userAddr, vAssets.collateralID);
@@ -131,7 +129,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), userDebtBalance);
 
     // Compute Split debt between BaseProtocol and FujiOptmizer Fee
-    (uint256 protocolDebt,uint256 fujidebt) =
+    (uint256 protocolDebt, uint256 fujidebt) =
         F1155.splitBalanceOf(msg.sender, vAssets.borrowID);
 
     // Approve Amount to Vault
@@ -181,10 +179,10 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IVault(vault).updateF1155Balances();
 
     // Create Instance of FujiERC1155
-    IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).getF1155());
+    IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).fujiERC1155());
 
     // Struct Instance to get Vault Asset IDs in F1155
-    IVaultExt.VaultAssets memory vAssets = IVaultExt(vault).getvAssets();
+    IVaultExt.VaultAssets memory vAssets = IVaultExt(vault).vAssets();
 
     // Get user  Balances
     uint256 userCollateral = F1155.balanceOf(msg.sender, vAssets.collateralID);
@@ -261,10 +259,10 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IVault(vault).updateF1155Balances();
 
     // Struct Instance to get Vault Asset IDs in F1155
-    IVaultExt.VaultAssets memory vAssets = IVaultExt(vault).getvAssets();
+    IVaultExt.VaultAssets memory vAssets = IVaultExt(vault).vAssets();
 
     // Create Instance of FujiERC1155
-    IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).getF1155());
+    IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).fujiERC1155());
 
     // Get user Collateral and Debt Balances
     uint256 userCollateral = F1155.balanceOf(_userAddr, vAssets.collateralID);
@@ -305,10 +303,10 @@ contract Fliquidator is Ownable, ReentrancyGuard {
   function executeFlashClose(address payable _userAddr, uint256 _Amount, address vault) external onlyFlash nonReentrant {
 
     // Create Instance of FujiERC1155
-    IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).getF1155());
+    IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).fujiERC1155());
 
     // Struct Instance to get Vault Asset IDs in F1155
-    IVaultExt.VaultAssets memory vAssets = IVaultExt(vault).getvAssets();
+    IVaultExt.VaultAssets memory vAssets = IVaultExt(vault).vAssets();
 
     // Get user Collateral and Debt Balances
     uint256 userCollateral = F1155.balanceOf(_userAddr, vAssets.collateralID);
@@ -378,13 +376,18 @@ contract Fliquidator is Ownable, ReentrancyGuard {
   * @param vault: Vault address
   * Emits a {FlashLiquidate} event.
   */
-  function executeFlashLiquidation(address _userAddr,address _liquidatorAddr,uint256 _Amount, address vault) external  onlyFlash nonReentrant {
+  function executeFlashLiquidation(
+    address _userAddr,
+    address _liquidatorAddr,
+    uint256 _Amount,
+    address vault
+  ) external  onlyFlash nonReentrant {
 
     // Create Instance of FujiERC1155
-    IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).getF1155());
+    IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).fujiERC1155());
 
     // Struct Instance to get Vault Asset IDs in F1155
-    IVaultExt.VaultAssets memory vAssets = IVaultExt(vault).getvAssets();
+    IVaultExt.VaultAssets memory vAssets = IVaultExt(vault).vAssets();
 
     // Get user Collateral and Debt Balances
     uint256 userCollateral = F1155.balanceOf(_userAddr, vAssets.collateralID);
@@ -394,7 +397,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IERC20(vAssets.borrowAsset).transferFrom(fujiAdmin.getFlasher(), address(this), _Amount);
 
     // Compute Split debt between BaseProtocol and FujiOptmizer Fee
-    (uint256 protocolDebt,uint256 fujidebt) =
+    (uint256 protocolDebt, uint256 fujidebt) =
         F1155.splitBalanceOf(_userAddr, vAssets.borrowID);
 
     // Approve Amount to Vault
@@ -430,14 +433,14 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Burn Debt F1155 tokens
     F1155.burn(_userAddr, vAssets.borrowID, userDebtBalance);
 
-    emit FlashLiquidate(_userAddr, _liquidatorAddr,vAssets.borrowAsset, userDebtBalance);
+    emit FlashLiquidate(_userAddr, _liquidatorAddr, vAssets.borrowAsset, userDebtBalance);
   }
 
 
   function swap(address _vault, uint256 _amountToReceive, uint256 _collateralAmount) internal returns(uint256) {
 
     // Struct Instance to get Vault Asset IDs in F1155
-    IVaultExt.VaultAssets memory vAssets = IVaultExt(_vault).getvAssets();
+    IVaultExt.VaultAssets memory vAssets = IVaultExt(_vault).vAssets();
 
     // Swap Collateral Asset to Borrow Asset
     address[] memory path = new address[](2);

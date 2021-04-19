@@ -5,6 +5,7 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.s
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { Errors } from './Libraries/Errors.sol';
+import { IFujiERC1155 } from "./FujiERC1155/IFujiERC1155.sol";
 
 contract AlphaWhitelist is ReentrancyGuard, Ownable {
 
@@ -75,15 +76,13 @@ contract AlphaWhitelist is ReentrancyGuard, Ownable {
   * @param _usrAddrs: Address of the User to check
   * @return letgo a boolean that allows a function to continue in "require" context
   */
-  function whitelistRoutine(address _usrAddrs, uint256 _amount) external returns(bool letgo) {
-    require(_amount>0, "No Zero Deposit!");
-    letgo = false;
-    if(isAddrWhitelisted(_usrAddrs)) {
-      letgo = true;
-    } else if (counter < LIMIT_USERS) {
-      addmetowhitelist(_usrAddrs);
-      letgo = true;
+  function whitelistRoutine(address _usrAddrs, uint64 _assetID, uint256 _amount, address _erc1155) external returns(bool letgo) {
+    uint256 currentBalance = IFujiERC1155(_erc1155).balanceOf(_usrAddrs, _assetID);
+    if (currentBalance == 0) {
+      counter = counter.add(1);
     }
+
+    letgo = currentBalance.add(_amount) <= ETH_CAP_VALUE && counter <= LIMIT_USERS;
   }
 
   /**

@@ -36,6 +36,6 @@ interface IFujiERC1155 {
 
   function updateState(uint256 _AssetID, uint256 newBalance) external;
 
-  function addInitializeAsset(AssetType _Type, address _Addr) external returns(uint256);
+  function addInitializeAsset(AssetType _Type, address _Addr) external returns(uint64);
 
 }

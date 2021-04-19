@@ -8,14 +8,29 @@ import { IVault } from "./Vaults/IVault.sol";
 import { IProvider } from "./Providers/IProvider.sol";
 import { Flasher } from "./Flashloans/Flasher.sol";
 import { FlashLoan } from "./Flashloans/LibFlashLoan.sol";
+import { IFujiAdmin } from "./IFujiAdmin.sol";
 import { Errors } from "./Libraries/Errors.sol";
 
 import "hardhat/console.sol"; //test line
 
+interface IVaultExt is IVault {
+
+  //Asset Struct
+  struct VaultAssets {
+    address collateralAsset;
+    address borrowAsset;
+    uint64 collateralID;
+    uint64 borrowID;
+  }
+
+  function getvAssets() external view returns(VaultAssets memory);
+
+}
+
+
 contract Controller is Ownable {
 
-  Flasher flasher;
-  address public fliquidator;
+  IFujiAdmin private fujiAdmin;
 
   //Refinancing Variables
   bool public greenLight;
@@ -23,115 +38,69 @@ contract Controller is Ownable {
   uint256 public deltatimestampThreshold;
   uint256 public deltaAPRThreshold; //Expressed in ray (1e27)
 
-  //State variables to control vault providers
-  address[] public vaults;
-
   //Modifiers
   modifier isAuthorized() {
-    require(msg.sender == owner() || msg.sender == address(this), "!authorized");
+    require(
+      msg.sender == owner() ||
+      msg.sender == address(this),
+      Errors.VL_NOT_AUTHORIZED);
     _;
   }
 
   constructor(
 
-    address _flasher,
-    address _fliquidator,
-    uint256 _deltaAPRThreshold
+    uint256 _deltaAPRThreshold,
+    address _fujiAdmin
 
   ) public {
-    // Add initializer addresses
-    flasher = Flasher(_flasher);
-    fliquidator = _fliquidator;
+
     deltaAPRThreshold = _deltaAPRThreshold;
     greenLight = false;
+    fujiAdmin = IFujiAdmin(_fujiAdmin);
   }
 
   //Administrative functions
 
   /**
-  * @dev Getter Function for the array of vaults in the controller.
+  * @dev Sets the fujiAdmin Address
+  * @param _fujiAdmin: FujiAdmin Contract Address
   */
-  function getvaults() external view returns(address[] memory theVaults) {
-    theVaults = vaults;
+  function setfujiAdmin(address _fujiAdmin) public isAuthorized{
+    fujiAdmin = IFujiAdmin(_fujiAdmin);
   }
 
   /**
-  * @dev Adds a Vault to the controller.
-  * @param _vaultAddr: Address of vault to be added
+  * @dev Changes the conditional Threshold for a provider switch
+  * @param _newThreshold: percent decimal in ray (example 25% =.25 x10^27)
   */
-  function addVault(address _vaultAddr) external isAuthorized {
-    bool alreadyIncluded = false;
-
-    //Check if Vault is already included
-    for (uint i =0; i < vaults.length; i++ ) {
-      if (vaults[i] == _vaultAddr) {
-        alreadyIncluded = true;
-      }
-    }
-    require(alreadyIncluded == false, "Vault is already included in Controller");
-
-    //Loop to check if vault address is already there
-    vaults.push(_vaultAddr);
+  function setdeltaAPRThreshold(uint256 _newThreshold) external isAuthorized {
+    deltaAPRThreshold = _newThreshold;
   }
 
   /**
-   * @dev Overrides a Vault address at location in the vaults Array
-   * @param _position: position in the array
-   * @param _vaultAddr: new provider fuji address
-   */
-   function overrideVault(uint8 _position, address _vaultAddr) external isAuthorized {
-     vaults[_position] = _vaultAddr;
-   }
+  * @dev Sets the Green light to proceed with a Refinancing opportunity
+  * @param _lightstate: True or False
+  */
+  function setLight(bool _lightstate) external isAuthorized {
+    greenLight = _lightstate;
+  }
 
-   /**
-    * @dev Changes the conditional Threshold for a provider switch
-    * @param _newThreshold: percent decimal in ray (example 25% =.25 x10^27)
-    */
-    function setdeltaAPRThreshold(uint256 _newThreshold) external isAuthorized {
-      deltaAPRThreshold = _newThreshold;
-    }
+  /**
+  * @dev Sets a new provider to called Vault, returns true on success
+  * @param _vaultAddr: fuji Vault address to which active provider will change
+  * @param _newProviderAddr: fuji address of new Provider
+  */
+  function _setProvider(address _vaultAddr,address _newProviderAddr) internal {
+    //Create vault instance and call setActiveProvider method in that vault.
+    IVault(_vaultAddr).setActiveProvider(_newProviderAddr);
+  }
 
-    /**
-    * @dev Sets the flasher for this vault.
-    * @param _flasher: flasher address
-    */
-    function setFlasher(address _flasher) external isAuthorized {
-      flasher = Flasher(_flasher);
-    }
-
-    /**
-    * @dev Sets the fliquidator address
-    * @param _newfliquidator: new fliquidator address
-    */
-    function setfliquidator(address _newfliquidator) external isAuthorized {
-      fliquidator = _newfliquidator;
-    }
-
-    /**
-    * @dev Sets the Green light to proceed with a Refinancing opportunity
-    * @param _lightstate: True or False
-    */
-    function setLight(bool _lightstate) external isAuthorized {
-      greenLight = _lightstate;
-    }
-
-    /**
-    * @dev Sets a new provider to called Vault, returns true on success
-    * @param _vaultAddr: fuji Vault address to which active provider will change
-    * @param _newProviderAddr: fuji address of new Provider
-    */
-    function _setProvider(address _vaultAddr,address _newProviderAddr) internal {
-      //Create vault instance and call setActiveProvider method in that vault.
-      IVault(_vaultAddr).setActiveProvider(_newProviderAddr);
-    }
-
-    /**
-    * @dev Sets current timestamp after a refinancing cycle
-    */
-    function _setRefinanceTimestamp() internal {
-      lastRefinancetimestamp = block.timestamp;
-
-    }
+  /**
+  * @dev Sets current timestamp after a refinancing cycle
+  */
+  function _setRefinanceTimestamp() internal {
+    lastRefinancetimestamp = block.timestamp;
+  }
 
   //Controller Core functions
 
@@ -149,6 +118,8 @@ contract Controller is Ownable {
     vault.updateF1155Balances();
     uint256 debtPosition = vault.borrowBalance(vault.activeProvider());
 
+    IVaultExt.VaultAssets memory vAssets = IVaultExt(_vaultAddr).getvAssets();
+
     //Check if there is an opportunity to Change provider with a lower borrowing Rate
     (bool opportunityTochange, address newProvider) = checkRates(_vaultAddr);
 
@@ -158,16 +129,16 @@ contract Controller is Ownable {
       //Initiate Flash Loan Struct
       FlashLoan.Info memory info = FlashLoan.Info({
         callType: FlashLoan.CallType.Switch,
-        asset: vault.getBorrowAsset(),
+        asset: vAssets.borrowAsset,
         amount: debtPosition,
         vault: _vaultAddr,
         newProvider: newProvider,
         user: address(0),
         userliquidator: address(0),
-        fliquidator: fliquidator
+        fliquidator: fujiAdmin.getFliquidator()
       });
 
-      flasher.initiateDyDxFlashLoan(info);
+      Flasher(fujiAdmin.getFlasher()).initiateDyDxFlashLoan(info);
 
       //Set the new provider in the Vault
       _setProvider(_vaultAddr, newProvider);
@@ -187,7 +158,8 @@ contract Controller is Ownable {
   function checkRates(address _vaultAddr) public view returns(bool, address) {
     //Get the array of Providers from _vaultAddr
     address[] memory arrayOfProviders = IVault(_vaultAddr).getProviders();
-    address borrowingAsset = IVault(_vaultAddr).getBorrowAsset();
+    IVaultExt.VaultAssets memory vAssets = IVaultExt(_vaultAddr).getvAssets();
+    address borrowingAsset = vAssets.borrowAsset;
     bool opportunityTochange = false;
 
     //Call and check borrow rates for all Providers in array for _vaultAddr

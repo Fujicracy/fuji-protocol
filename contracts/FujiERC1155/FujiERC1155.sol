@@ -55,7 +55,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   //Control mapping that returns the AssetType of an AssetID
   mapping (uint256 => AssetType) public AssetIDtype;
 
-  uint256 public QtyOfManagedAssets;
+  uint64 public QtyOfManagedAssets;
   uint256[] public IDsCollateralsAssets;
   uint256[] public IDsBorrowAssets;
 
@@ -410,10 +410,10 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   * @param _Type: enum AssetType, 0 = Collateral asset, 1 = debt asset
   * @param _Addr: Reference Address of the Asset
   */
-  function addInitializeAsset(AssetType _Type, address _Addr) external override onlyPermit returns(uint256){
+  function addInitializeAsset(AssetType _Type, address _Addr) external override onlyPermit returns(uint64){
 
     require(AssetIDs[_Type][_Addr] == 0 , Errors.VL_ASSET_EXISTS);
-    uint256 newManagedAssets = QtyOfManagedAssets+1;
+    uint64 newManagedAssets = QtyOfManagedAssets+1;
 
     AssetIDs[_Type][_Addr] = newManagedAssets;
     used_IDs[newManagedAssets] = true;

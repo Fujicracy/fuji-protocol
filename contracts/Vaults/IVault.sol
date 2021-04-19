@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.12;
+pragma experimental ABIEncoderV2;
 
 interface IVault {
 
@@ -33,8 +34,6 @@ interface IVault {
 		function activeProvider() external view returns(address);
 		function borrowBalance(address _provider) external view returns(uint256);
 		function depositBalance(address _provider) external view returns(uint256);
-  	function getCollateralAsset() external view returns(address);
-  	function getBorrowAsset() external view returns(address);
 		function getNeededCollateralFor(uint256 _amount, bool _withFactors) external view returns(uint256);
 		function getLiquidationBonusFor(uint256 _amount,bool _flash) external view returns(uint256);
 		function getProviders() external view returns(address[] memory);

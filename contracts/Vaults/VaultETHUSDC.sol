@@ -3,12 +3,13 @@
 pragma solidity >=0.4.25 <0.8.0;
 pragma experimental ABIEncoderV2;
 
+import { IVault } from "./IVault.sol";
+import { VaultBase } from "./VaultBase.sol";
+import { IFujiAdmin } from "../IFujiAdmin.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IFujiERC1155 } from "../FujiERC1155/IFujiERC1155.sol";
-import { IVault } from "./IVault.sol";
-import { VaultBase } from "./VaultBase.sol";
 import { IProvider } from "../Providers/IProvider.sol";
 import { Errors } from "../Libraries/Errors.sol";
 
@@ -26,7 +27,8 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
 
   uint256 internal constant BASE = 1e18;
 
-  // Base Struct Object to define a factor
+  enum FactorType {safety, collateral, bonusLiq, bonusFlashLiq, flashclosefee}
+
   struct Factor {
     uint64 a;
     uint64 b;
@@ -38,62 +40,37 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   // Collateralization factor
   Factor public collatF;
 
-  // Bonus Factor for Flash Liquidation
-  Factor public bonusFlashL;
-
-  // Bonus Factor for normal Liquidation
-  Factor public bonusL;
-
-
   //State variables
   address[] public providers;
   address public override activeProvider;
 
+  IFujiAdmin private fujiAdmin;
   address public FujiERC1155;
-
-  address private ftreasury;
-  address public controller;
-  address public fliquidator;
-  address public flasher;
-  IAlphaWhitelist aWhitelist;
   AggregatorV3Interface public oracle;
-
-  mapping(address => uint256) public collaterals;
 
   modifier isAuthorized() {
     require(
-      msg.sender == controller ||
-      msg.sender == address(this) ||
+      msg.sender == fujiAdmin.getController() ||
       msg.sender == owner(),
       Errors.VL_NOT_AUTHORIZED);
     _;
   }
 
   modifier onlyFlash() {
-  require(
-    msg.sender == flasher ||
-    msg.sender == fliquidator,
-    Errors.VL_NOT_AUTHORIZED);
-  _;
-}
+    require(
+      msg.sender == fujiAdmin.getFlasher(),
+      Errors.VL_NOT_AUTHORIZED);
+    _;
+  }
 
   constructor (
 
-    address _controller,
-    address _fliquidator,
-    address _flasher,
-    address _oracle,
-    address _aWhitelist,
-    address _ftreasury
+    address _fujiAdmin,
+    address _oracle
 
   ) public {
 
-    controller = _controller;
-    fliquidator =_fliquidator;
-    flasher = _flasher;
-    aWhitelist = IAlphaWhitelist(_aWhitelist);
-    ftreasury = _ftreasury;
-
+    fujiAdmin = IFujiAdmin(_fujiAdmin);
     oracle = AggregatorV3Interface(_oracle);
 
     vAssets.collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
@@ -106,14 +83,6 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
     // 1.269
     collatF.a = 80;
     collatF.b = 63;
-
-    // 0.04
-    bonusFlashL.a = 1;
-    bonusFlashL.b = 25;
-
-    // 0.05
-    bonusL.a = 1;
-    bonusL.b = 20;
 
   }
 
@@ -151,6 +120,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
     require(msg.value == _collateralAmount, Errors.VL_AMOUNT_ERROR);
 
     // Alpha Whitelist Routine
+    IAlphaWhitelist aWhitelist = IAlphaWhitelist(fujiAdmin.getaWhitelist());
     require(aWhitelist.whitelistRoutine(msg.sender, _collateralAmount), Errors.SP_ALPHA_WHTLIST_FULL);
 
     // Alpha Cap Check
@@ -176,7 +146,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   function withdraw(int256 _withdrawAmount) public override nonReentrant {
 
     // If call from Normal User do typical, otherwise Fliquidator
-    if(msg.sender != fliquidator) {
+    if(msg.sender != fujiAdmin.getFliquidator()) {
 
       _updateF1155Balances();
 
@@ -214,7 +184,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
 
       emit Withdraw(msg.sender, vAssets.collateralAsset, amountToWithdraw);
 
-    } else if(msg.sender == fliquidator) {
+    } else if(msg.sender == fujiAdmin.getFliquidator()) {
 
     // Logic used when called by Fliquidator
     _withdraw(uint256(_withdrawAmount), address(activeProvider));
@@ -264,7 +234,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   function payback(int256 _repayAmount) public override payable {
 
     // If call from Normal User do typical, otherwise Fliquidator
-    if (msg.sender != fliquidator) {
+    if (msg.sender != fujiAdmin.getFliquidator()) {
 
       _updateF1155Balances();
 
@@ -303,14 +273,14 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
       _payback(amountToPayback.sub(fujidebt), address(activeProvider));
 
       // Transfer Remaining Debt Amount to Fuji Treasury
-      IERC20(vAssets.borrowAsset).transfer(ftreasury, fujidebt);
+      IERC20(vAssets.borrowAsset).transfer(fujiAdmin.getTreasury(), fujidebt);
 
       // Debt Management
       IFujiERC1155(FujiERC1155).burn(msg.sender, vAssets.borrowID, userDebtBalance);
 
       emit Payback(msg.sender, vAssets.borrowAsset,userDebtBalance);
 
-    } else if (msg.sender == fliquidator) {
+    } else if (msg.sender == fujiAdmin.getFliquidator()) {
 
       // Logic used when called by Fliquidator
       require(
@@ -369,6 +339,14 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   //Setter, change state functions
 
   /**
+  * @dev Sets the fujiAdmin Address
+  * @param _fujiAdmin: FujiAdmin Contract Address
+  */
+  function setfujiAdmin(address _fujiAdmin) public isAuthorized{
+    fujiAdmin = IFujiAdmin(_fujiAdmin);
+  }
+
+  /**
   * @dev Sets a new active provider for the Vault
   * @param _provider: fuji address of the new provider
   * Emits a {SetActiveProvider} event.
@@ -392,69 +370,21 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   }
 
   /**
-  * @dev Sets the flasher for this vault.
-  * @param _flasher: flasher address
+  * @dev Set Factors "a" and "b" for a Struct Factor
+  * For safetyF;  Sets Safety Factor of Vault, should be > 1, a/b
+  * For collatF; Sets Collateral Factor of Vault, should be > 1, a/b
+  * @param _type: enum FactorType
+  * @param _newFactorA: A number
+  * @param _newFactorB: A number
   */
-  function setFlasher(address _flasher) external isAuthorized {
-    flasher = _flasher;
-  }
-
-  /**
-  * @dev Sets the controller for this vault.
-  * @param _controller: controller address
-  */
-  function setController(address _controller) external isAuthorized {
-    controller = _controller;
-  }
-
-  /**
-  * @dev Sets the fliquidator address
-  * @param _newfliquidator: new fliquidator address
-  */
-  function setfliquidator(address _newfliquidator) external isAuthorized {
-    fliquidator = _newfliquidator;
-  }
-
-  /**
-  * @dev Sets the Collateral Factor of this Vault
-  * @dev This is means: Collateral Value / Debt Position > 1, a/b > 1
-  * @param _newFactorA: Big number
-  * @param _newFactorB: Small number
-  */
-  function setCollateralFactor(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
-    collatF.a = _newFactorA;
-    collatF.b = _newFactorB;
-  }
-
-  /**
-  * @dev Sets the Safety Factor of this Vault
-  * @dev This is means: Collateral Value / Debt Position > 1, a/b > 1
-  * @param _newFactorA: Big number
-  * @param _newFactorB: Small number
-  */
-  function setSafetyFactor(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
-    safetyF.a = _newFactorA;
-    safetyF.b = _newFactorB;
-  }
-
-  /**
-  * @dev Sets the bonus factor for Flash liquidation : Should be a/b < 1
-  * @param _newFactorA: Small number
-  * @param _newFactorB: big number
-  */
-  function setbonusFlashL(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
-    bonusFlashL.a = _newFactorA;
-    bonusFlashL.b = _newFactorB;
-  }
-
-  /**
-  * @dev Sets the bonus factor for normal liquidation : Should be a/b < 1
-  * @param _newFactorA: Small number
-  * @param _newFactorB: big number
-  */
-  function setbonusL(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
-    bonusL.a = _newFactorA;
-    bonusL.b = _newFactorB;
+  function setFactor(FactorType _type, uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
+    if(_type == FactorType.safety) {
+      safetyF.a = _newFactorA;
+      safetyF.b = _newFactorB;
+    } else if (_type == FactorType.collateral) {
+      collatF.a = _newFactorA;
+      collatF.b = _newFactorB;
+    }
   }
 
   /**
@@ -463,14 +393,6 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   */
   function setOracle(address _newOracle) external isAuthorized {
     oracle = AggregatorV3Interface(_newOracle);
-  }
-
-  /**
-  * @dev Sets the Treasury address
-  * @param _newTreasury: new Fuji Treasury address
-  */
-  function setTreasury(address _newTreasury) external isAuthorized {
-    ftreasury = _newTreasury;
   }
 
   /**
@@ -531,19 +453,10 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   }
 
   /**
-  * @dev Getter for vault's collateral asset address.
-  * @return collateral asset address
+  * @dev Getter for vaultAssets Struct
   */
-  function getCollateralAsset() external view override returns(address) {
-    return vAssets.collateralAsset;
-  }
-
-  /**
-  * @dev Getter for vault's borrow asset address.
-  * @return borrow asset address
-  */
-  function getBorrowAsset() external view override returns(address) {
-    return vAssets.borrowAsset;
+  function getvAssets() external view returns(VaultAssets memory) {
+    return vAssets;
   }
 
   /**
@@ -569,11 +482,13 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
 
     if (_flash) {
       // Bonus Factors for Flash Liquidation
-      return p.mul(bonusFlashL.a).div(bonusFlashL.b);
+      (uint64 a, uint64 b) = fujiAdmin.getBonusFlashL();
+      return p.mul(a).div(b);
     }
     else {
       //Bonus Factors for Normal Liquidation
-      return p.mul(bonusL.a).div(bonusL.b);
+      (uint64 a, uint64 b) = fujiAdmin.getBonusLiq();
+      return p.mul(a).div(b);
     }
   }
 

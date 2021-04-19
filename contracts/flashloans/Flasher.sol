@@ -40,8 +40,6 @@ contract Flasher is
 
   address public aave_lending_pool;
   address public dydx_solo_margin;
-  address public flashloanProvider3;
-  address public flashloanProvider4;
 
   constructor() public {
 

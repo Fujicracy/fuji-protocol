@@ -3,6 +3,7 @@ const fs = require("fs");
 const chalk = require("chalk");
 
 require("@nomiclabs/hardhat-waffle");
+require("hardhat-contract-sizer");
 
 const { isAddress, getAddress, formatUnits, parseUnits } = utils;
 

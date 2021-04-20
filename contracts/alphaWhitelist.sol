@@ -27,11 +27,9 @@ contract AlphaWhitelist is ReentrancyGuard, Ownable {
   event capValueUpdated(uint256 newCapValue);
 
   constructor(
-
-    uint256 _limitusers,
-    uint256 _capvalue,
+    uint256 _limitUsers,
+    uint256 _capValue,
     address _fliquidator
-
   ) public {
 
     LIMIT_USERS = _limitusers;
@@ -39,7 +37,6 @@ contract AlphaWhitelist is ReentrancyGuard, Ownable {
     counter = 0;
 
     addmetowhitelist(_fliquidator);
-
   }
 
 
@@ -72,17 +69,22 @@ contract AlphaWhitelist is ReentrancyGuard, Ownable {
   }
 
   /**
-  * @dev Does Whitelist Routine to check if User isWhitelisted or adds them to List if there is capacity
+  * @dev Does Whitelist Routine to check if:
+  * - limit of users got reached
+  * - first deposit is less than ETH_CAP_VALUE
+  * - subsequent total deposits are less than 2*ETH_CAP_VALUE
   * @param _usrAddrs: Address of the User to check
   * @return letgo a boolean that allows a function to continue in "require" context
   */
   function whitelistRoutine(address _usrAddrs, uint64 _assetID, uint256 _amount, address _erc1155) external returns(bool letgo) {
     uint256 currentBalance = IFujiERC1155(_erc1155).balanceOf(_usrAddrs, _assetID);
+
     if (currentBalance == 0) {
       counter = counter.add(1);
+      letgo = _amount <= ETH_CAP_VALUE && counter <= LIMIT_USERS;
+    } else {
+      letgo = currentBalance.add(_amount) <= ETH_CAP_VALUE.mul(2);
     }
-
-    letgo = currentBalance.add(_amount) <= ETH_CAP_VALUE && counter <= LIMIT_USERS;
   }
 
   // Administrative Functions
@@ -98,11 +100,11 @@ contract AlphaWhitelist is ReentrancyGuard, Ownable {
 
   /**
   * @dev Modifies the ETH_CAP_VALUE
-  * @param _newETH_CAP_VALUE: New ETH_CAP_VALUE
+  * @param _newEthCapValue: New ETH_CAP_VALUE
   */
-  function modifyCap(uint256 _newETH_CAP_VALUE) public onlyOwner {
-    ETH_CAP_VALUE = _newETH_CAP_VALUE;
-    emit capValueUpdated(_newETH_CAP_VALUE);
+  function modifyCap(uint256 _newEthCapValue) public onlyOwner {
+    ETH_CAP_VALUE = _newEthCapValue;
+    emit capValueUpdated(_newEthCapValue);
   }
 
 }

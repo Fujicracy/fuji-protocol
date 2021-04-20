@@ -9,25 +9,21 @@ const USDC_ADDR = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 const aWETH_ADDR = "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e";
 const cETH_ADDR = "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5";
-const WhiteListedUsers =
-["0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
- "0x70997970c51812dc3a010c7d01b50e0d17dc79c8",
- "0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc",
- "0x90f79bf6eb2c4f870365e785982e1f101e93b906"];
 
 const ONE_ETH = ethers.utils.parseEther("1.0");
 
-const FLIQUIDATOR = require("../artifacts/contracts/Fliquidator.sol/Fliquidator.json");
-const AWHITELIST = require("../artifacts/contracts/AlphaWhitelist.sol/AlphaWhitelist.json");
+const FujiAdmin = require("../artifacts/contracts/FujiAdmin.sol/FujiAdmin.json");
+const Fliquidator = require("../artifacts/contracts/Fliquidator.sol/Fliquidator.json");
+const AWhitelist = require("../artifacts/contracts/AlphaWhitelist.sol/AlphaWhitelist.json");
 const VaultETHDAI = require("../artifacts/contracts/VaultETHDAI.sol/VaultETHDAI.json");
 const VaultETHUSDC = require("../artifacts/contracts/VaultETHUSDC.sol/VaultETHUSDC.json");
-const AAVE = require("../artifacts/contracts/ProviderAave.sol/ProviderAave.json");
+const Aave = require("../artifacts/contracts/ProviderAave.sol/ProviderAave.json");
 const Compound = require("../artifacts/contracts/ProviderCompound.sol/ProviderCompound.json");
-const DYDX = require("../artifacts/contracts/ProviderDYDX.sol/ProviderDYDX.json")
-const DebtToken = require("../artifacts/contracts/DebtToken.sol/DebtToken.json");
+const Dydx = require("../artifacts/contracts/ProviderDYDX.sol/ProviderDYDX.json")
+const F1155 = require("../artifacts/contracts/DebtToken.sol/DebtToken.json");
 const Flasher = require("../artifacts/contracts/flashloans/Flasher.sol/Flasher.json");
 const Controller = require("../artifacts/contracts/Controller.sol/Controller.json");
-
+const Treasury = require("..artifacts/contracts/Gnosis Treasury/GnosisSafe.sol/GnosisSafe.json")
 
 const fixture = async ([wallet, other], provider) => {
 
@@ -36,75 +32,73 @@ const fixture = async ([wallet, other], provider) => {
   const aweth = await ethers.getContractAt("IERC20", aWETH_ADDR);
   const ceth = await ethers.getContractAt("CErc20", cETH_ADDR);
 
-  
+  // Step 1 of Deploy: Contracts which address is required to be hardcoded in other contracts
+  //Fuji Mapping, for testing this is not required.
+  const treasury = await deployContract(wallet, Treasury, []);
 
-
-  const fliquidator = await deployContract(wallet, FLIQUIDATOR, [UNISWAP_ROUTER_ADDR, ]);
+  // Step 2 Of Deploy: Functional Contracts
+  const fujiadmin = await deployContract(wallet, FujiAdmin,[]);
+  const fliquidator = await deployContract(wallet, Fliquidator, []);
   const flasher = await deployContract(wallet, Flasher, []);
-  const controller = await deployContract(wallet, Controller, [flasher.address, fliquidator.address,"0"]);//changeThreshold percentagedecimal to ray (0.02 x 10^27)
-  const aave = await deployContract(wallet, AAVE, []);
+  const controller = await deployContract(wallet, Controller, []);
+  const f1155 = await deployContract(wallet, F1155, []);
+
+  // Step 3 Of Deploy: Provider Contracts
+  const aave = await deployContract(wallet, Aave, []);
   const compound = await deployContract(wallet, Compound, []);
-  const dydx = await deployContract(wallet, DYDX, []);
-  const aWhitelist = await deployContract(wallet, AWHITELIST,
+  const dydx = await deployContract(wallet, Dydx, []);
+
+  // Step 4 Of Deploy Core Money Handling Contracts
+  const aWhitelist = await deployContract(wallet, AWhitelist,
     [
-      "5",
-      ONE_ETH,
-      WhiteListedUsers,
+      "100",
+      ethers.utils.parseEther("5.0"),
       fliquidator.address
     ]);
-  const vaultdai = await deployContract(wallet, VaultETHDAI,
-    [
-      controller.address,
-      fliquidator.address,
-      CHAINLINK_ORACLE_ADDR,
-      aWhitelist.address
-    ]);
-  const vaultusdc = await deployContract(wallet, VaultETHUSDC,
-    [
-      controller.address,
-      fliquidator.address,
-      CHAINLINK_ORACLE_ADDR,
-      aWhitelist.address
-    ]);
+  const vaultdai = await deployContract(wallet, VaultETHDAI,[]);
+  const vaultusdc = await deployContract(wallet, VaultETHUSDC,[]);
 
-  const debtTokendai = await deployContract(wallet, DebtToken, [vaultdai.address,DAI_ADDR,"Fuji DAI debt token","fjDAI"]);
-  const debtTokenusdc = await deployContract(wallet, DebtToken, [vaultusdc.address,USDC_ADDR,"Fuji USDC debt token","fjUSDC"]);
+  // Step 5 - General Plug-ins and Set-up Transactions
+  await fujiadmin.setFlasher(flasher.address);
+  await fujiadmin.setFliquidator(fliquidator.address);
+  await fujiadmin.setTreasury(treasury.address);
+  await fujiadmin.setController(controller.address);
+  await fujiadmin.setaWhitelist(aWhitelist.address);
+  await fliquidator.setfujiAdmin(fujiadmin.address);
+  await fliquidator.setSwapper(UNISWAP_ROUTER_ADDR);
+  await flasher.setfujiAdmin(fujiadmin.address);
+  await controller.setFujiAdmin(fujiadmin.address);
+  await f1155.setPermit(vaultdai.address, true);
+  await f1155.setPermit(vaultusdc.address, true);
 
-  await flasher.setController(controller.address);
+  // Step 6 - Vault Set-up
+  await vaultdai.setProviders([compound.address, aave.address, dydx.address]);
+  await vaultdai.setActiveProvider(compound.address);
+  await vaultdai.setFujiERC1155(f1155.address);
+  await vaultdai.setOracle(CHAINLINK_ORACLE_ADDR);
 
-  await flasher.setVaultAuthorization(vaultdai.address, true);
-  await vaultdai.setDebtToken(debtTokendai.address);
-  await vaultdai.setFlasher(flasher.address);
-  await vaultdai.addProvider(aave.address);
-  await vaultdai.addProvider(compound.address);
-  await vaultdai.addProvider(dydx.address);
-  await controller.addVault(vaultdai.address);
-
-
-  await flasher.setVaultAuthorization(vaultusdc.address, true);
-  await vaultusdc.setDebtToken(debtTokenusdc.address);
-  await vaultusdc.setFlasher(flasher.address);
-  await controller.addVault(vaultusdc.address);
-  await vaultusdc.addProvider(aave.address);
-  await vaultusdc.addProvider(compound.address);
-  await vaultusdc.addProvider(dydx.address);
+  await vaultusdc.setProviders([compound.address, aave.address, dydx.address]);
+  await vaultusdc.setActiveProvider(compound.address);
+  await vaultusdc.setFujiERC1155(f1155.address);
+  await vaultusdc.setOracle(CHAINLINK_ORACLE_ADDR);
 
   return {
     dai,
     usdc,
     aweth,
     ceth,
+    treasury,
+    fujiadmin,
     fliquidator,
     flasher,
     controller,
+    f1155,
     aave,
     compound,
     dydx,
     aWhitelist,
     vaultdai,
-    vaultusdc,
-    debtTokendai,
-    debtTokenusdc
+    vaultusdc
   }
 }
 

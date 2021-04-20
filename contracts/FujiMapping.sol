@@ -19,8 +19,15 @@ contract FujiMapping is Ownable {
   * @param _addr1: key address for mapping (erc20, provider)
   * @param _addr2: result address (cToken, erc20)
   */
-  function addMapping(address _addr1, address _addr2) public onlyOwner {
+  function setMapping(address _addr1, address _addr2) public onlyOwner {
     addressMapping[_addr1] = _addr2;
+  }
+
+  /**
+  * @dev Sets a new URI for all token types, by relying on the token type ID
+  */
+  function setURI(string memory newuri) public onlyOwner {
+    _uri = newuri;
   }
 
 }

@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IFujiAdmin } from "../IFujiAdmin.sol";
 import {Errors} from '../Libraries/Errors.sol';
 
 import { ILendingPool, IFlashLoanReceiver } from "./AaveFlashLoans.sol";
@@ -35,8 +36,7 @@ contract Flasher is
 
   using SafeMath for uint256;
 
-  address public controller;
-  address public fliquidator;
+  IFujiAdmin private fujiAdmin;
 
   address public aave_lending_pool;
   address public dydx_solo_margin;
@@ -50,8 +50,8 @@ contract Flasher is
 
   modifier isAuthorized() {
     require(
-      msg.sender == controller ||
-      msg.sender == fliquidator ||
+      msg.sender == fujiAdmin.getController() ||
+      msg.sender == fujiAdmin.getFliquidator() ||
       msg.sender == owner(),
       Errors.VL_NOT_AUTHORIZED
     );
@@ -68,19 +68,11 @@ contract Flasher is
   }
 
   /**
-  * @dev Sets new controller.
-  * @param _controller: Address of controller
+  * @dev Sets the fujiAdmin Address
+  * @param _fujiAdmin: FujiAdmin Contract Address
   */
-  function setController(address _controller) external isAuthorized {
-    controller = _controller;
-  }
-
-  /**
-  * @dev Sets the fliquidator address
-  * @param _newfliquidator: new fliquidator address
-  */
-  function setfliquidator(address _newfliquidator) external isAuthorized {
-    fliquidator = _newfliquidator;
+  function setFujiAdmin(address _fujiAdmin) public isAuthorized {
+    fujiAdmin = IFujiAdmin(_fujiAdmin);
   }
 
 

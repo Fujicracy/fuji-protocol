@@ -36,7 +36,9 @@ contract Controller is Ownable {
   bool public greenLight;
   uint256 public lastRefinancetimestamp;
   uint256 public deltatimestampThreshold;
-  uint256 public deltaAPRThreshold; //Expressed in ray (1e27)
+
+  //deltaAPRThreshold: Expressed in ray (1e27), where 1ray = 100% APR
+  uint256 public deltaAPRThreshold;
 
   //Modifiers
   modifier isAuthorized() {
@@ -47,14 +49,11 @@ contract Controller is Ownable {
     _;
   }
 
-  constructor(
-    uint256 _deltaAPRThreshold,
-    address _fujiAdmin
-  ) public {
+  constructor() public {
 
-    deltaAPRThreshold = _deltaAPRThreshold;
+    deltaAPRThreshold = 1e25;
     greenLight = false;
-    fujiAdmin = IFujiAdmin(_fujiAdmin);
+
   }
 
   //Administrative functions

@@ -35,10 +35,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
   using SafeMath for uint256;
   using UniERC20 for IERC20;
 
-  enum FactorType {safety, collateral, bonusLiq, bonusFlashLiq, flashclosefee}
-
   struct Factor {
-    FactorType ftype;
     uint64 a;
     uint64 b;
   }
@@ -73,16 +70,9 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     _;
   }
 
-  constructor(
-    address _swapper,
-    address _fujiAdmin
-  ) public {
-
-    swapper = IUniswapV2Router02(_swapper);
-    fujiAdmin = IFujiAdmin(_fujiAdmin);
+  constructor() public {
 
     // 1.013
-    flashCloseF.ftype = FactorType.flashclosefee;
     flashCloseF.a = 1013;
     flashCloseF.b = 1000;
 

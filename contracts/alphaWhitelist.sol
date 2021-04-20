@@ -85,20 +85,6 @@ contract AlphaWhitelist is ReentrancyGuard, Ownable {
     letgo = currentBalance.add(_amount) <= ETH_CAP_VALUE && counter <= LIMIT_USERS;
   }
 
-  /**
-  * @dev Checks if User Balance + Deposit does not exceed Cap Limit
-  * @param currentUserDepositBal: Current User Balance
-  * @param newDeposit: Intended new Deposit
-  * @return letgo a boolean that allows a function to continue in "require" context
-  */
-  function depositCapCheckRoutine(uint256 currentUserDepositBal, uint256 newDeposit) external view returns(bool letgo) {
-    letgo = false;
-    uint256 newAmount = currentUserDepositBal.add(newDeposit);
-    if(newAmount <= ETH_CAP_VALUE){
-      letgo = true;
-    }
-  }
-
   // Administrative Functions
 
   /**

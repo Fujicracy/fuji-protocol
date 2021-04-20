@@ -3,7 +3,6 @@
 pragma solidity >=0.6.12 <0.8.0;
 
 import { IFujiAdmin } from "./IFujiAdmin.sol";
-import { LibVault } from "./Libraries/LibVault.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract FujiAdmin is IFujiAdmin, Ownable {
@@ -14,8 +13,6 @@ contract FujiAdmin is IFujiAdmin, Ownable {
   address payable public ftreasury;
   address public controller;
   address public aWhitelist;
-
-  enum FactorType {safety, collateral, bonusLiq, bonusFlashLiq, flashclosefee}
 
   struct Factor {
     uint64 a;
@@ -85,15 +82,15 @@ contract FujiAdmin is IFujiAdmin, Ownable {
   * @dev Set Factors "a" and "b" for a Struct Factor
   * For bonusL; Sets the Bonus for normal Liquidation, should be < 1, a/b
   * For bonusFlashL; Sets the Bonus for flash Liquidation, should be < 1, a/b
-  * @param _type: enum FactorType
   * @param _newFactorA: A number
   * @param _newFactorB: A number
+  * @param _isbonusFlash: is bonusFlashFactor
   */
-  function setFactor(FactorType _type, uint64 _newFactorA, uint64 _newFactorB) external onlyOwner {
-    if(_type == FactorType.bonusFlashLiq) {
+  function setFactor(uint64 _newFactorA, uint64 _newFactorB, bool _isbonusFlash) external onlyOwner {
+    if(_isbonusFlash) {
       bonusFlashL.a = _newFactorA;
       bonusFlashL.b = _newFactorB;
-    } else if (_type == FactorType.bonusLiq) {
+    } else {
       bonusL.a = _newFactorA;
       bonusL.b = _newFactorB;
     }
@@ -105,16 +102,6 @@ contract FujiAdmin is IFujiAdmin, Ownable {
   * @param _vaultAddr: Address of vault to be added
   */
   function addVault(address _vaultAddr) external onlyOwner {
-    bool alreadyIncluded = false;
-
-    //Check if Vault is already included
-    for (uint i =0; i < vaults.length; i++ ) {
-      if (vaults[i] == _vaultAddr) {
-        alreadyIncluded = true;
-      }
-    }
-    require(alreadyIncluded == false, "Vault is already included in Controller");
-
     //Loop to check if vault address is already there
     vaults.push(_vaultAddr);
   }
@@ -131,23 +118,23 @@ contract FujiAdmin is IFujiAdmin, Ownable {
 
   // Getter Functions
 
-  function getFlasher() external override returns(address) {
+  function getFlasher() external override view returns(address) {
     return flasher;
   }
 
-  function getFliquidator() external override returns(address) {
+  function getFliquidator() external override view returns(address) {
     return fliquidator;
   }
 
-  function getTreasury() external override returns(address payable) {
+  function getTreasury() external override view returns(address payable) {
     return ftreasury;
   }
 
-  function getController() external override returns(address) {
+  function getController() external override view returns(address) {
     return controller;
   }
 
-  function getaWhitelist() external override returns(address) {
+  function getaWhitelist() external override view returns(address) {
     return aWhitelist;
   }
 

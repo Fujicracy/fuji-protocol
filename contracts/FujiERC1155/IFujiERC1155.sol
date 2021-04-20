@@ -17,11 +17,7 @@ interface IFujiERC1155 {
 
   function getAssetID(AssetType _Type, address _assetAddr) external view returns(uint256);
 
-  function getQtyOfManagedAssets() external view returns(uint256);
-
-  function getIDsCollateralsAssets() external view returns(uint256[] memory);
-
-  function getIDsBorrowAssets() external view returns(uint256[] memory);
+  function qtyOfManagedAssets() external view returns(uint64);
 
   function balanceOf(address account, uint256 id) external view returns (uint256);
 

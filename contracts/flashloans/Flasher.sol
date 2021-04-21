@@ -20,6 +20,8 @@ import {
 import { FlashLoan } from "./LibFlashLoan.sol";
 import { IVault } from "../Vaults/IVault.sol";
 
+import "hardhat/console.sol"; //test line
+
 interface IFliquidator {
 
   function executeFlashClose(address _userAddr, uint256 _debtAmount, address vault) external;
@@ -36,7 +38,7 @@ contract Flasher is
 
   using SafeMath for uint256;
 
-  IFujiAdmin private fujiAdmin;
+  IFujiAdmin public fujiAdmin;
 
   address public aave_lending_pool;
   address public dydx_solo_margin;
@@ -71,10 +73,9 @@ contract Flasher is
   * @dev Sets the fujiAdmin Address
   * @param _fujiAdmin: FujiAdmin Contract Address
   */
-  function setFujiAdmin(address _fujiAdmin) public isAuthorized {
+  function setfujiAdmin(address _fujiAdmin) public onlyOwner {
     fujiAdmin = IFujiAdmin(_fujiAdmin);
   }
-
 
   // ===================== DyDx FlashLoan ===================================
 

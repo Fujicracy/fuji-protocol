@@ -319,7 +319,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   * @dev Sets the fujiAdmin Address
   * @param _fujiAdmin: FujiAdmin Contract Address
   */
-  function setFujiAdmin(address _fujiAdmin) public isAuthorized {
+  function setfujiAdmin(address _fujiAdmin) public onlyOwner {
     fujiAdmin = IFujiAdmin(_fujiAdmin);
   }
 

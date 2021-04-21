@@ -51,7 +51,7 @@ contract FujiAdmin is IFujiAdmin, Ownable {
   * @dev Sets the fliquidator contract address
   * @param _newfliquidator: new fliquidator address
   */
-  function setfliquidator(address _newfliquidator) external  onlyOwner {
+  function setFliquidator(address _newfliquidator) external  onlyOwner {
     fliquidator = _newfliquidator;
   }
 
@@ -65,10 +65,10 @@ contract FujiAdmin is IFujiAdmin, Ownable {
 
   /**
   * @dev Sets the controller contract address.
-  * @param _controller: controller address
+  * @param _newcontroller: controller address
   */
-  function setController(address _controller) external onlyOwner {
-    controller = _controller;
+  function setController(address _newcontroller) external onlyOwner {
+    controller = _newcontroller;
   }
 
   /**
@@ -76,6 +76,7 @@ contract FujiAdmin is IFujiAdmin, Ownable {
   * @param _newaWhitelist: controller address
   */
   function setaWhitelist(address _newaWhitelist) external  onlyOwner  {
+    aWhitelist = _newaWhitelist;
   }
 
   /**

@@ -331,7 +331,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   * @dev Sets the fujiAdmin Address
   * @param _fujiAdmin: FujiAdmin Contract Address
   */
-  function setFujiAdmin(address _fujiAdmin) public isAuthorized {
+  function setfujiAdmin(address _fujiAdmin) public onlyOwner {
     fujiAdmin = IFujiAdmin(_fujiAdmin);
   }
 
@@ -457,5 +457,5 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     return IProvider(_provider).getDepositBalance(vAssets.collateralAsset);
   }
 
-  //receive() external payable {}
+  receive() external payable {}
 }

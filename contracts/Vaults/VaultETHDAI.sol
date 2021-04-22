@@ -246,6 +246,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
       // Transfer Asset from User to Vault
       IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), amountToPayback);
 
+      console.log(amountToPayback, fujidebt);
       // Delegate Call Payback to current provider
       _payback(amountToPayback.sub(fujidebt), address(activeProvider));
 

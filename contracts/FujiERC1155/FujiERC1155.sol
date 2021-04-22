@@ -90,7 +90,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    **/
   function updateState(uint256 _assetID, uint256 newBalance) external override onlyPermit {
 
-    uint256 total = totalSupply(_assetID);
+    uint256 total = totalSupply(_assetID).rayDiv(fujiIndex);
     console.log("newbalance", newBalance, "total",total);
 
     if (newBalance > 0 && total > 0) {
@@ -165,10 +165,10 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
       return (0,0);
     } else {
 
-      uint256 baseprotocol = scaledBalance.rayMul(indexes[_assetID]);
-      uint256 fuji = scaledBalance.rayMul(fujiIndex);
+      uint256 baseprotocol = (scaledBalance.rayMul(indexes[_assetID])).sub(scaledBalance);
+      uint256 fuji = (scaledBalance.rayMul(fujiIndex)).sub(scaledBalance);
 
-      assert(baseprotocol.add(fuji) == balanceOf(account,_assetID));
+      //assert(baseprotocol.add(fuji) == balanceOf(account,_assetID));
 
       return (baseprotocol, fuji);
 

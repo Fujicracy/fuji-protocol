@@ -52,7 +52,7 @@ const fixture = async ([wallet, other], provider) => {
   const aWhitelist = await deployContract(wallet, AWhitelist,
     [
       "100",
-      ethers.utils.parseEther("90000"),
+      ethers.utils.parseEther("12"),
       fliquidator.address
     ]);
   const vaultdai = await deployContract(wallet, VaultETHDAI,[]);
@@ -83,7 +83,6 @@ const fixture = async ([wallet, other], provider) => {
   await vaultusdc.setActiveProvider(compound.address);
   await vaultusdc.setFujiERC1155(f1155.address);
   await vaultusdc.setOracle(CHAINLINK_ORACLE_ADDR);
-
 
   return {
     dai,

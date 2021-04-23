@@ -30,6 +30,7 @@
   "scripts": {
     "chain": "hardhat node --hostname 0.0.0.0",
     "fork": "hardhat node --fork https://mainnet.infura.io/v3/4d5f1b5afb094856bd8dcd86c7bd8dc1",
+    "fork2": "hardhat node --fork https://eth-mainnet.alchemyapi.io/v2/wD4n2-AQFlW1DKFNwF2yhder-sjpZ463",
     "test": "hardhat test --network localhost",
     "contracts:size": "hardhat size-contracts",
     "test:alpha-whitelisting": "hardhat test --network localhost test/alpha-whitelisting.js",

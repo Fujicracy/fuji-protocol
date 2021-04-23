@@ -118,18 +118,15 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Transfer borrowAsset funds from the Liquidator to Here
     IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), userDebtBalance);
 
-    // Compute Split debt between BaseProtocol and FujiOptmizer Fee
-    (uint256 protocolDebt, uint256 fujidebt) =
-        F1155.splitBalanceOf(msg.sender, vAssets.borrowID);
+    // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
     // Approve Amount to Vault
-    IERC20(vAssets.borrowAsset).approve(vault, protocolDebt);
+    IERC20(vAssets.borrowAsset).approve(vault, userDebtBalance);
 
     // Repay BaseProtocol debt
-    IVault(vault).payback(int256(protocolDebt));
+    IVault(vault).payback(int256(userDebtBalance));
 
-    // Transfer Fuji Split Debt to Fuji Treasury
-    IERC20(vAssets.borrowAsset).uniTransfer(fujiAdmin.getTreasury(), fujidebt);
+    //TODO: Transfer corresponding Debt Amount to Fuji Treasury
 
     // Burn Debt F1155 tokens
     F1155.burn(_userAddr, vAssets.borrowID, userDebtBalance);
@@ -215,12 +212,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       neededCollateral = IVault(vault).getNeededCollateralFor(uint256(_amount), false);
       require(userCollateral >= neededCollateral, Errors.VL_UNDERCOLLATERIZED_ERROR);
 
-      // Compute Split debt between BaseProtocol and FujiOptmizer Fee
-      (,uint256 fujidebt) =
-          F1155.splitBalanceOf(msg.sender, vAssets.borrowID);
-
-      // Check FlashClose amount is greater than acccrued fujiOptimized Fee interest
-      require(uint256(_amount) > fujidebt, Errors.VL_MINIMUM_PAYBACK_ERROR);
+      // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
       FlashLoan.Info memory info = FlashLoan.Info({
         callType: FlashLoan.CallType.Close,
@@ -308,18 +300,15 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Load the FlashLoan funds to this contract.
     IERC20(vAssets.borrowAsset).transferFrom(fujiAdmin.getFlasher(), address(this), _Amount);
 
-    // Compute Split debt between BaseProtocol and FujiOptmizer Fee
-    (,uint256 fujidebt) =
-        F1155.splitBalanceOf(_userAddr, vAssets.borrowID);
+    // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
     // Approve Amount to Vault
-    IERC20(vAssets.borrowAsset).approve(vault, _Amount.sub(fujidebt));
+    IERC20(vAssets.borrowAsset).approve(vault, _Amount);
 
     // Repay BaseProtocol debt
-    IVault(vault).payback(int256(_Amount.sub(fujidebt)));
+    IVault(vault).payback(int256(_Amount));
 
-    // Transfer Fuji Split Debt to Fuji Treasury
-    IERC20(vAssets.borrowAsset).uniTransfer(fujiAdmin.getTreasury(), fujidebt);
+    //TODO: Transfer corresponding Debt Amount to Fuji Treasury
 
     // Logic to handle Full or Partial FlashClose
     bool isFullFlashClose = _Amount == userDebtBalance ? true: false;
@@ -386,18 +375,15 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Load the FlashLoan funds to this contract.
     IERC20(vAssets.borrowAsset).transferFrom(fujiAdmin.getFlasher(), address(this), _Amount);
 
-    // Compute Split debt between BaseProtocol and FujiOptmizer Fee
-    (uint256 protocolDebt, uint256 fujidebt) =
-        F1155.splitBalanceOf(_userAddr, vAssets.borrowID);
+    // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
     // Approve Amount to Vault
-    IERC20(vAssets.borrowAsset).approve(vault, protocolDebt);
+    IERC20(vAssets.borrowAsset).approve(vault, _Amount);
 
     // Repay BaseProtocol debt
-    IVault(vault).payback(int256(protocolDebt));
+    IVault(vault).payback(int256(_Amount));
 
-    // Transfer Fuji Split Debt to Fuji Treasury
-    IERC20(vAssets.borrowAsset).uniTransfer(fujiAdmin.getTreasury(), fujidebt);
+    //TODO: Transfer corresponding Debt Amount to Fuji Treasury
 
     // Burn Collateral F1155 tokens
     F1155.burn(_userAddr, vAssets.collateralID, userCollateral);

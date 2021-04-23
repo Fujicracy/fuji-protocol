@@ -231,8 +231,7 @@ contract ProviderCompound is IProvider, HelperFunct {
     address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_asset);
     uint256 cTokenbal = gencToken(ctokenaddress).balanceOf(msg.sender);
     uint256 exRate = gencToken(ctokenaddress).exchangeRateStored();
-    uint256 depositBal = (exRate.mul(cTokenbal).div(1e18));//.add(80*1e9);
-    console.log(depositBal);
+    uint256 depositBal = (exRate.mul(cTokenbal).div(1e18));
     return depositBal;
   }
 
@@ -240,7 +239,6 @@ contract ProviderCompound is IProvider, HelperFunct {
   function getDepositBalanceTest(address _asset, address addr) external returns(uint256) {
     address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_asset);
     uint256 depositBal = gencToken(ctokenaddress).balanceOfUnderlying(addr);
-    console.log(depositBal);
     return depositBal;
   }
 

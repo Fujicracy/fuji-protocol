@@ -141,6 +141,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
       // Get User Collateral in this Vault
       uint256 providedCollateral = IFujiERC1155(fujiERC1155)
         .balanceOf(msg.sender, vAssets.collateralID);
+        console.log("prov collat",providedCollateral);
 
       // Check User has collateral
       require(providedCollateral > 0, Errors.VL_INVALID_COLLATERAL);
@@ -150,6 +151,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
         IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID),
         true
       );
+      console.log("need collat",neededCollateral);
 
       uint256 amountToWithdraw = _withdrawAmount < 0
         ? providedCollateral.sub(neededCollateral)
@@ -160,6 +162,8 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
         providedCollateral.sub(amountToWithdraw) >= neededCollateral,
         Errors.VL_INVALID_WITHDRAW_AMOUNT
       );
+
+      console.log("passed amount burn",amountToWithdraw);
 
       // Collateral Management
       IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.collateralID, amountToWithdraw);
@@ -229,8 +233,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
       // Check User Debt is greater than Zero
       require(userDebtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
 
-      // Get corresponding amount of Base Protocol Debt Only
-      (,uint256 fujidebt) = IFujiERC1155(fujiERC1155).splitBalanceOf(msg.sender, vAssets.borrowID);
+      // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
       // If passed argument amount is negative do MAX
       uint256 amountToPayback = _repayAmount < 0
@@ -246,15 +249,13 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
       // Transfer Asset from User to Vault
       IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), amountToPayback);
 
-      console.log(amountToPayback, fujidebt);
       // Delegate Call Payback to current provider
-      _payback(amountToPayback.sub(fujidebt), address(activeProvider));
+      _payback(amountToPayback, address(activeProvider));
 
-      // Transfer Remaining Debt Amount to Fuji Treasury
-      IERC20(vAssets.borrowAsset).transfer(fujiAdmin.getTreasury(), fujidebt);
+      //TODO: Transfer corresponding Debt Amount to Fuji Treasury
 
       // Debt Management
-      IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.borrowID, userDebtBalance);
+      IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.borrowID, amountToPayback);
 
       emit Payback(msg.sender, vAssets.borrowAsset, userDebtBalance);
 

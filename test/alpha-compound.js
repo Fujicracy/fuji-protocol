@@ -167,9 +167,10 @@ describe("Alpha", () => {
       await expect(vaultbal).to.be.closeTo(cethAmount, 100);
 
     });
+    */
 
 
-    it("Users[5]: deposit 10 ETH in Vaultdai and then withdraws 9.99 ETH, check VaulDai ceth balance ok", async () => {
+    it("Users[5]: deposit 10 ETH in Vaultdai and then withdraws 9.9999 ETH, check VaulDai ceth balance ok", async () => {
 
       //Bootstrap Liquidity
       let user_1 = users[0];
@@ -181,7 +182,7 @@ describe("Alpha", () => {
       let user_X = users[5];
       let depositAmount = ethers.utils.parseEther("10");
       let negdepositAmount = ethers.utils.parseEther("-10");
-      let withdrawAmount = ethers.utils.parseEther("9.99");
+      let withdrawAmount = ethers.utils.parseEther("9.9999");
 
       await expect(await vaultdai.connect(user_X)
             .deposit(depositAmount,{ value: depositAmount})).to
@@ -196,9 +197,11 @@ describe("Alpha", () => {
 
       let numberExpected = depositAmount.sub(withdrawAmount)/1;
       let numberExpected2 = await f1155.balanceOf(user_X.address,1);
+
       await expect(numberExpected2/1).to.be.closeTo(numberExpected, 10*1e9);
 
     });
+    /*
 
 
     it("Users[3]: deposits 5 ETH to vaultusdc and borrows 7500 usdc", async () => {

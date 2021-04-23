@@ -162,6 +162,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
         Errors.VL_INVALID_WITHDRAW_AMOUNT
       );
 
+      console.log("amountToWithdraw", amountToWithdraw);
       // Collateral Management
       IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.collateralID, amountToWithdraw);
 
@@ -456,5 +457,5 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
     return IProvider(_provider).getDepositBalance(vAssets.collateralAsset);
   }
 
-  //receive() external payable {}
+  receive() external payable {}
 }

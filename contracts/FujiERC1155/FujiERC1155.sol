@@ -89,7 +89,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    * @param newBalance: Amount
    **/
   function updateState(uint256 _assetID, uint256 newBalance) external override onlyPermit {
-    console.log("updateState", _assetID, "Index",indexes[_assetID]);
+    console.log("updateState,", _assetID, "Index",indexes[_assetID]);
 
     uint256 total = totalSupply(_assetID);
     uint256 diff = newBalance.sub(total);
@@ -159,7 +159,8 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
     }
 
     // TODO: include interest accrued by Fuji OptimizerFee
-
+    console.log("balanceOf asetID,",_assetID, "account",account );
+    console.log("balance",scaledBalance.rayMul(indexes[_assetID]));
     return scaledBalance.rayMul(indexes[_assetID]);
   }
 
@@ -299,7 +300,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    * - `amount` should be in WAD
    */
   function burn(address account, uint256 id, uint256 amount) external override onlyPermit{
-    console.log("burning");
 
     require(used_IDs[id], Errors.VL_INVALID_ASSETID_1155);
     require(account != address(0), Errors.VL_ZERO_ADDR_1155);
@@ -310,7 +310,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
     uint256 assetTotalBalance = _totalSupply[id];
 
     uint256 amountScaled = amount.rayDiv(indexes[id]);
-    console.log("burnamount",amountScaled);
+    console.log("burning, ", "burnamount",amountScaled);
     console.log("accountBalancebeforeBurn",accountBalance);
     console.log("aasetTotalBalancebeforeburn",assetTotalBalance);
 

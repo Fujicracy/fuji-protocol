@@ -11,6 +11,8 @@ import { MathUtils } from '../Libraries/MathUtils.sol';
 import { Errors } from "../Libraries/Errors.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 
+import "hardhat/console.sol"; //test line
+
 contract F1155Manager is Ownable {
 
   using Address for address;
@@ -31,7 +33,7 @@ contract F1155Manager is Ownable {
     addrPermit[_address] = _permit;
   }
 
-  function isPermitted(address _address) internal returns (bool _permit) {
+  function isPermitted(address _address) internal view returns (bool _permit) {
     _permit = false;
     if (addrPermit[_address]) {
       _permit = true;
@@ -64,9 +66,9 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   mapping (uint256 => uint256) public indexes;
 
   // Optimizer Fee expressed in Ray, where 1 ray = 100% APR
-  uint256 public optimizerFee;
-  uint256 public lastUpdateTimestamp;
-  uint256 public fujiIndex;
+  //uint256 public optimizerFee;
+  //uint256 public lastUpdateTimestamp;
+  //uint256 public fujiIndex;
 
   /// @dev Ignoring leap years
   uint256 internal constant SECONDS_PER_YEAR = 365 days;
@@ -75,8 +77,8 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
 
     transfersActive = false;
     qtyOfManagedAssets = 0;
-    fujiIndex = WadRayMath.ray();
-    optimizerFee = 1e24;
+    //fujiIndex = WadRayMath.ray();
+    //optimizerFee = 1e24;
 
   }
 
@@ -87,20 +89,28 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    * @param newBalance: Amount
    **/
   function updateState(uint256 _assetID, uint256 newBalance) external override onlyPermit {
+    console.log("updateState", _assetID, "Index",indexes[_assetID]);
 
     uint256 total = totalSupply(_assetID);
+    uint256 diff = newBalance.sub(total);
+    console.log("newbalance", newBalance, "previoustotal",total);
+    console.log("diff",diff);
 
-    if (newBalance > 0 && total > 0) {
-      uint256 diff = newBalance.sub(total);
+    if (newBalance > 0 && total > 0 && diff > 0) {
+
       uint256 amountToIndexRatio = (diff.wadToRay()).rayDiv(total.wadToRay());
+      console.log("amountToIndexRatio",amountToIndexRatio);
 
       uint256 result = amountToIndexRatio.add(WadRayMath.ray());
 
       result = result.rayMul(indexes[_assetID]);
+      console.log("result",result);
       require(result <= type(uint128).max, Errors.VL_INDEX_OVERFLOW);
 
       indexes[_assetID] = uint128(result);
 
+      // TODO: calculate interest rate for a fujiOptimizer Fee.
+      /*
       if(lastUpdateTimestamp==0){
         lastUpdateTimestamp = block.timestamp;
       }
@@ -113,6 +123,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
 
       fujiIndex = accrued;
       lastUpdateTimestamp = block.timestamp;
+      */
     }
   }
 
@@ -121,7 +132,10 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    * @param _assetID: ERC1155 ID of the asset which state will be updated.
    **/
   function totalSupply(uint256 _assetID) public view virtual override returns (uint256) {
-    return super.totalSupply(_assetID).rayMul(indexes[_assetID]).rayMul(fujiIndex);
+
+    // TODO: include interest accrued by Fuji OptimizerFee
+
+    return super.totalSupply(_assetID).rayMul(indexes[_assetID]);
   }
 
   /**
@@ -144,7 +158,9 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
       return 0;
     }
 
-    return scaledBalance.rayMul(indexes[_assetID]).rayMul(fujiIndex);
+    // TODO: include interest accrued by Fuji OptimizerFee
+
+    return scaledBalance.rayMul(indexes[_assetID]);
   }
 
   /**
@@ -152,25 +168,20 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   * @param account: address of the User
   * @param _assetID: ERC1155 ID of the asset which state will be updated.
   **/
+  /*
   function splitBalanceOf(
     address account,
     uint256 _assetID
   ) public view override returns (uint256,uint256) {
     uint256 scaledBalance = super.balanceOf(account, _assetID);
-
     if (scaledBalance == 0) {
       return (0,0);
     } else {
-
-      uint256 baseprotocol = scaledBalance.rayMul(indexes[_assetID]);
-      uint256 fuji = scaledBalance.rayMul(fujiIndex);
-
-      assert(baseprotocol.add(fuji) == balanceOf(account,_assetID));
-
+    TO DO COMPUTATION
       return (baseprotocol, fuji);
-
     }
   }
+  */
 
   /**
    * @dev Returns Scaled Balance of the user (e.g. balance/index)
@@ -210,19 +221,22 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
  function mint(address account, uint256 id, uint256 amount, bytes memory data) external override onlyPermit {
    require(used_IDs[id], Errors.VL_INVALID_ASSETID_1155 );
    require(account != address(0), Errors.VL_ZERO_ADDR_1155);
+   console.log("minting");
 
    address operator = _msgSender();
 
    uint256 accountBalance = _balances[id][account];
+   uint256 assetTotalBalance = _totalSupply[id];
    uint256 amountScaled = amount.rayDiv(indexes[id]);
+   console.log("mintamount", amountScaled);
+   console.log("accountBalancebeforeMint",accountBalance);
+   console.log("aasetTotalBalancebefore",assetTotalBalance);
 
-   if(getAssetIDType(id)==AssetType.debtToken) {
-     amountScaled = amountScaled.rayDiv(fujiIndex);
-   }
+   //if(getAssetIDType(id)==AssetType.debtToken) {
+   // amountScaled = amountScaled.rayDiv(fujiIndex);
+   //}
 
    require(amountScaled != 0, Errors.VL_INVALID_MINT_AMOUNT);
-
-   uint256 assetTotalBalance = _totalSupply[id];
 
    _balances[id][account] = accountBalance.add(amountScaled);
    _totalSupply[id] =assetTotalBalance.add(amountScaled);
@@ -261,9 +275,9 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
 
      amountScaled = amounts[i].rayDiv(indexes[ids[i]]);
 
-     if(getAssetIDType(ids[i])==AssetType.debtToken) {
-       amountScaled = amountScaled.rayDiv(fujiIndex);
-     }
+    //if(getAssetIDType(ids[i])==AssetType.debtToken) {
+    //   amountScaled = amountScaled.rayDiv(fujiIndex);
+    //}
 
      require(amountScaled != 0, Errors.VL_INVALID_MINT_AMOUNT);
 
@@ -285,6 +299,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    * - `amount` should be in WAD
    */
   function burn(address account, uint256 id, uint256 amount) external override onlyPermit{
+    console.log("burning");
 
     require(used_IDs[id], Errors.VL_INVALID_ASSETID_1155);
     require(account != address(0), Errors.VL_ZERO_ADDR_1155);
@@ -295,14 +310,17 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
     uint256 assetTotalBalance = _totalSupply[id];
 
     uint256 amountScaled = amount.rayDiv(indexes[id]);
+    console.log("burnamount",amountScaled);
+    console.log("accountBalancebeforeBurn",accountBalance);
+    console.log("aasetTotalBalancebeforeburn",assetTotalBalance);
 
-    if(getAssetIDType(id)==AssetType.debtToken) {
-      amountScaled = amountScaled.rayDiv(fujiIndex);
-    }
+    //if(getAssetIDType(id)==AssetType.debtToken) {
+    //  amountScaled = amountScaled.rayDiv(fujiIndex);
+    //}
 
     require(amountScaled != 0, Errors.VL_INVALID_BURN_AMOUNT);
 
-    require(accountBalance >= amount, Errors.VL_INVALID_BURN_AMOUNT);
+    require(accountBalance >= amountScaled, Errors.VL_INVALID_BURN_AMOUNT);
 
     _balances[id][account] = accountBalance.sub(amountScaled);
     _totalSupply[id] = assetTotalBalance.sub(amountScaled);
@@ -339,11 +357,11 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
 
       amountScaled = amounts[i].rayDiv(indexes[ids[i]]);
 
-      if(getAssetIDType(ids[i])==AssetType.debtToken) {
-        amountScaled = amountScaled.rayDiv(fujiIndex);
-      }
-
-      require(accountBalance >= amount, Errors.VL_NO_ERC1155_BALANCE);
+      //if(getAssetIDType(ids[i])==AssetType.debtToken) {
+      //  amountScaled = amountScaled.rayDiv(fujiIndex);
+      //}
+      require(amountScaled != 0, Errors.VL_INVALID_BURN_AMOUNT);
+      require(accountBalance >= amountScaled, Errors.VL_INVALID_BURN_AMOUNT);
 
       _balances[ids[i]][account] = accountBalance.sub(amount);
       _totalSupply[ids[i]] = assetTotalBalance.sub(amount);
@@ -379,10 +397,12 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   * @dev Sets the FujiProtocol Fee to be charged
   * @param _fee; Fee in Ray(1e27) to charge users for optimizerFee (1 ray = 100% APR)
   */
+  /*
   function setoptimizerFee(uint256 _fee) public onlyOwner {
     require(_fee >= WadRayMath.ray(), Errors.VL_OPTIMIZER_FEE_SMALL );
     optimizerFee = _fee;
   }
+  */
 
   /**
   * @dev Sets a new URI for all token types, by relying on the token type ID
@@ -463,6 +483,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    * @param _lastUpdateTimestamp The timestamp of the last update of the interest
    * @return The interest rate compounded during the timeDelta, in ray
    **/
+   /*
   function _calculateCompoundedInterest(
     uint256 rate,
     uint256 _lastUpdateTimestamp,
@@ -489,5 +510,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
 
     return WadRayMath.ray().add(ratePerSecond.mul(exp)).add(secondTerm).add(thirdTerm);
   }
+  */
 
 }

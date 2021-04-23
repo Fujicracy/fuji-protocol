@@ -230,8 +230,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
       // Check User Debt is greater than Zero
       require(userDebtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
 
-      // Get corresponding amount of Base Protocol Debt Only
-      (,uint256 fujidebt) = IFujiERC1155(fujiERC1155).splitBalanceOf(msg.sender, vAssets.borrowID);
+      // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
       // If passed argument amount is negative do MAX
       uint256 amountToPayback = _repayAmount < 0
@@ -248,13 +247,12 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
       IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), amountToPayback);
 
       // Delegate Call Payback to current provider
-      _payback(amountToPayback.sub(fujidebt), address(activeProvider));
+      _payback(amountToPayback, address(activeProvider));
 
-      // Transfer Remaining Debt Amount to Fuji Treasury
-      IERC20(vAssets.borrowAsset).transfer(fujiAdmin.getTreasury(), fujidebt);
+      //TODO: Transfer corresponding Debt Amount to Fuji Treasury
 
       // Debt Management
-      IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.borrowID, userDebtBalance);
+      IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.borrowID, amountToPayback);
 
       emit Payback(msg.sender, vAssets.borrowAsset, userDebtBalance);
 
@@ -319,7 +317,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   * @dev Sets the fujiAdmin Address
   * @param _fujiAdmin: FujiAdmin Contract Address
   */
-  function setFujiAdmin(address _fujiAdmin) public isAuthorized {
+  function setfujiAdmin(address _fujiAdmin) public onlyOwner {
     fujiAdmin = IFujiAdmin(_fujiAdmin);
   }
 

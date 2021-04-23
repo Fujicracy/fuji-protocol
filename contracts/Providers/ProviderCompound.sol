@@ -6,6 +6,8 @@ import { UniERC20 } from "../Libraries/LibUniERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IProvider } from "./IProvider.sol";
 
+import "hardhat/console.sol"; //test line
+
 interface gencToken is IERC20{
   function redeem(uint) external returns (uint);
   function redeemUnderlying(uint) external returns (uint);
@@ -229,7 +231,14 @@ contract ProviderCompound is IProvider, HelperFunct {
     address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_asset);
     uint256 cTokenbal = gencToken(ctokenaddress).balanceOf(msg.sender);
     uint256 exRate = gencToken(ctokenaddress).exchangeRateStored();
-    uint256 depositBal = (cTokenbal.mul(exRate)).div(1e18);
+    uint256 depositBal = (exRate.mul(cTokenbal).div(1e18));
+    return depositBal;
+  }
+
+  //This function is the accurate way to get Compound Deposit Balance but it costs 84K gas
+  function getDepositBalanceTest(address _asset, address addr) external returns(uint256) {
+    address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_asset);
+    uint256 depositBal = gencToken(ctokenaddress).balanceOfUnderlying(addr);
     return depositBal;
   }
 

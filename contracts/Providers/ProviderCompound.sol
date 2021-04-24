@@ -163,7 +163,7 @@ contract ProviderCompound is IProvider, HelperFunct {
     gencToken cToken = gencToken(ctokenaddress);
 
     //Enter and/or ensure collateral market is enacted
-    _enterCollatMarket(ctokenaddress);
+    //_enterCollatMarket(ctokenaddress);
 
     //Compound Protocol Borrow Process, throw errow if not.
     require(cToken.borrow(_amount) == 0, "borrow-failed");

@@ -107,7 +107,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   */
   function deposit(uint256 _collateralAmount) public override payable {
 
-    require(msg.value == _collateralAmount, Errors.VL_AMOUNT_ERROR);
+    require(msg.value == _collateralAmount && _collateralAmount != 0, Errors.VL_AMOUNT_ERROR);
 
     // Alpha Whitelist Routine
     require(
@@ -162,8 +162,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
         Errors.VL_INVALID_WITHDRAW_AMOUNT
       );
 
-      console.log("amountToWithdraw", amountToWithdraw);
-      // Collateral Management
+      // Collateral Management before Withdraw Operation
       IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.collateralID, amountToWithdraw);
 
       // Delegate Call Withdraw to current provider

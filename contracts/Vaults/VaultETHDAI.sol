@@ -106,7 +106,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   */
   function deposit(uint256 _collateralAmount) public override payable {
 
-    require(msg.value == _collateralAmount, Errors.VL_AMOUNT_ERROR);
+    require(msg.value == _collateralAmount && _collateralAmount != 0, Errors.VL_AMOUNT_ERROR);
 
     // Alpha Whitelist Routine
     require(
@@ -141,7 +141,6 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
       // Get User Collateral in this Vault
       uint256 providedCollateral = IFujiERC1155(fujiERC1155)
         .balanceOf(msg.sender, vAssets.collateralID);
-        console.log("prov collat",providedCollateral);
 
       // Check User has collateral
       require(providedCollateral > 0, Errors.VL_INVALID_COLLATERAL);
@@ -151,7 +150,6 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
         IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID),
         true
       );
-      console.log("need collat",neededCollateral);
 
       uint256 amountToWithdraw = _withdrawAmount < 0
         ? providedCollateral.sub(neededCollateral)
@@ -163,9 +161,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
         Errors.VL_INVALID_WITHDRAW_AMOUNT
       );
 
-      console.log("passed amount burn",amountToWithdraw);
-
-      // Collateral Management
+      // Collateral Management before Withdraw Operation
       IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.collateralID, amountToWithdraw);
 
       // Delegate Call Withdraw to current provider

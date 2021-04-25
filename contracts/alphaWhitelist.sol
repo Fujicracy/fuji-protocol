@@ -32,9 +32,8 @@ contract AlphaWhitelist is ReentrancyGuard, Ownable {
     address _fliquidator
   ) public {
 
-    LIMIT_USERS = _limitusers;
-    ETH_CAP_VALUE = _capvalue;
-    counter = 0;
+    LIMIT_USERS = _limitUsers;
+    ETH_CAP_VALUE = _capValue;
 
     addmetowhitelist(_fliquidator);
   }

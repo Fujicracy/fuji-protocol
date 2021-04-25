@@ -51,15 +51,10 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   //AssetType => asset reference address => ERC1155 Asset ID
   mapping (AssetType => mapping(address => uint256)) public assetIDs;
 
-  //ID Control to confirm ID, and avoid repeated uint256 incurrance
-  mapping (uint256 => bool) public used_IDs;
-
   //Control mapping that returns the AssetType of an AssetID
   mapping (uint256 => AssetType) public assetIDtype;
 
   uint64 override public qtyOfManagedAssets;
-  uint256[] public iDsCollateralAssets;
-  uint256[] public iDsBorrowAssets;
 
   //Asset ID  Liquidity Index mapping
   //AssetId => Liquidity index for asset ID
@@ -74,12 +69,8 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   uint256 internal constant SECONDS_PER_YEAR = 365 days;
 
   constructor () public {
-
-    transfersActive = false;
-    qtyOfManagedAssets = 0;
     //fujiIndex = WadRayMath.ray();
     //optimizerFee = 1e24;
-
   }
 
 
@@ -215,7 +206,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
  * - `amount` should be in WAD
  */
  function mint(address account, uint256 id, uint256 amount, bytes memory data) external override onlyPermit {
-   require(used_IDs[id], Errors.VL_INVALID_ASSETID_1155 );
    require(account != address(0), Errors.VL_ZERO_ADDR_1155);
 
    address operator = _msgSender();
@@ -246,10 +236,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   * acceptance magic value.
   */
  function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) external onlyPermit {
-
-   for (uint i = 0; i < ids.length; i++) {
-       require(used_IDs[ids[i]], Errors.VL_INVALID_ASSETID_1155 );
-   }
 
    require(to != address(0), Errors.VL_ZERO_ADDR_1155);
    require(ids.length == amounts.length, Errors.VL_INPUT_ERROR);
@@ -292,7 +278,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    */
   function burn(address account, uint256 id, uint256 amount) external override onlyPermit{
 
-    require(used_IDs[id], Errors.VL_INVALID_ASSETID_1155);
     require(account != address(0), Errors.VL_ZERO_ADDR_1155);
 
     address operator = _msgSender();
@@ -322,10 +307,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    * - `ids` and `amounts` must have the same length.
    */
   function burnBatch(address account, uint256[] memory ids, uint256[] memory amounts) external onlyPermit {
-
-    for (uint i = 0; i < ids.length; i++) {
-        require(used_IDs[ids[i]], Errors.VL_INVALID_ASSETID_1155 );
-    }
 
     require(account != address(0), Errors.VL_ZERO_ADDR_1155);
     require(ids.length == amounts.length, Errors.VL_INPUT_ERROR);
@@ -367,7 +348,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   */
   function getAssetID(AssetType _type, address _addr) external view override returns(uint256) {
     uint256 theID = assetIDs[_type][_addr];
-    require(used_IDs[theID], Errors.VL_INVALID_ASSETID_1155 );
+    require(theID <= qtyOfManagedAssets, Errors.VL_INVALID_ASSETID_1155 );
     return theID;
   }
 
@@ -407,57 +388,17 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   function addInitializeAsset(AssetType _type, address _addr) external override onlyPermit returns(uint64){
 
     require(assetIDs[_type][_addr] == 0 , Errors.VL_ASSET_EXISTS);
-    uint64 newManagedAssets = qtyOfManagedAssets+1;
 
-    assetIDs[_type][_addr] = newManagedAssets;
-    used_IDs[newManagedAssets] = true;
-    assetIDtype[newManagedAssets] = _type;
-
-    //Push new assetID to Collateral or Borrow Asset Array
-    if(_type == AssetType.collateralToken) {
-      iDsCollateralAssets.push(newManagedAssets);
-    } else{
-      iDsBorrowAssets.push(newManagedAssets);
-    }
+    assetIDs[_type][_addr] = qtyOfManagedAssets;
+    assetIDtype[qtyOfManagedAssets] = _type;
 
     //Initialize the liquidity Index
-    indexes[newManagedAssets] = WadRayMath.ray();
+    indexes[qtyOfManagedAssets] = WadRayMath.ray();
+    qtyOfManagedAssets++;
 
-    //Update qtyOfManagedAssets
-    qtyOfManagedAssets = newManagedAssets;
+    return qtyOfManagedAssets - 1;
 
-    return newManagedAssets;
   }
-
-  /**
-  * @dev Returns an array of the FujiERC1155 IDs on which the user has an Open Position
-  * @param account: user address to check
-  * @param _type: enum AssetType, 0 = Collateral asset, 1 = debt asset
-  */
-  /*
-
-  function engagedIDsOf(address account, AssetType _type) internal view returns(uint256[] memory) {
-
-    uint256[] memory _IDs = new uint256[](1);
-
-    if(_type == AssetType.collateralToken) {
-      for(uint i; i < iDsCollateralAssets.length; i++) {
-        if(super.balanceOf(account, iDsCollateralAssets[i]) > 0) {
-          _IDs.push(iDsCollateralAssets[i]);
-        }
-      }
-    } else if (_type == AssetType.debtToken) {
-      for(uint i; i < iDsBorrowAssets.length; i++) {
-        if(super.balanceOf(account, iDsBorrowAssets[i]) > 0) {
-          _IDs.push(iDsBorrowAssets[i]);
-        }
-      }
-    }
-
-    return _IDs;
-  }
-  */
-
   /**
    * @dev Function to calculate the interest using a compounded interest rate formula
    * To avoid expensive exponentiation, the calculation is performed using a binomial approximation:

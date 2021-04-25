@@ -5,7 +5,7 @@ const bre = require("hardhat");
 const publishDir = "../react-app/src/contracts";
 const graphDir = "../subgraph"
 
-function publishContract(contractName) {
+function publishContract(contractName, dir) {
   console.log(
     "Publishing",
     chalk.cyan(contractName),
@@ -13,13 +13,19 @@ function publishContract(contractName) {
     chalk.yellow(publishDir)
   );
   try {
-    let contract = fs
-      .readFileSync(`${bre.config.paths.artifacts}/contracts/${contractName}.sol/${contractName}.json`)
-      .toString();
+    let contract;
+    if (dir) {
+      contract = fs
+        .readFileSync(`${bre.config.paths.artifacts}/contracts/${dir}/${contractName}.sol/${contractName}.json`);
+    }
+    else {
+      contract = fs
+        .readFileSync(`${bre.config.paths.artifacts}/contracts/${contractName}.sol/${contractName}.json`);
+    }
     const address = fs
       .readFileSync(`${bre.config.paths.artifacts}/${contractName}.address`)
       .toString();
-    contract = JSON.parse(contract);
+    contract = JSON.parse(contract.toString());
 
     //let graphConfigPath = `${graphDir}/config/config.json`
     //let graphConfig
@@ -71,25 +77,48 @@ function publishContract(contractName) {
   }
 }
 
+function findMoreSolFiles(path) {
+  const list = [];
+  fs.readdirSync(path).forEach((file) => {
+    if (file.indexOf(".sol") >= 0) {
+      const contractName = file.replace(".sol", "");
+      list.push(contractName);
+    }
+  });
+
+  return list;
+}
+
 async function main() {
   if (!fs.existsSync(publishDir)) {
     fs.mkdirSync(publishDir);
   }
+
   const finalContractList = [];
   fs.readdirSync(bre.config.paths.sources).forEach((file) => {
     if (file.indexOf(".sol") >= 0) {
       const contractName = file.replace(".sol", "");
-      // Add contract to list if publishing is successful
       if (publishContract(contractName)) {
         finalContractList.push(contractName);
       }
     }
+    // if it's a directory
+    else if (file.indexOf(".") === -1) {
+      findMoreSolFiles(`${bre.config.paths.sources}/${file}`)
+        .forEach((contractName) => {
+          if (publishContract(contractName, file)) {
+            finalContractList.push(contractName);
+          }
+        });
+    }
   });
+  console.log(finalContractList);
   fs.writeFileSync(
     `${publishDir}/contracts.js`,
     `module.exports = ${JSON.stringify(finalContractList)};`
   );
 }
+
 main()
   .then(() => process.exit(0))
   .catch((error) => {

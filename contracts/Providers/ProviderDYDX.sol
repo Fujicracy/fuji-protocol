@@ -29,6 +29,10 @@ interface SoloMarginContract {
       uint256 value;
   }
 
+  struct Rate {
+    uint256 value;
+  }
+
   enum ActionType {
     Deposit,
     Withdraw,
@@ -84,6 +88,8 @@ struct Wei {
 
   function getAccountValues(Info memory account) external view returns (Value memory, Value memory);
 
+  function getMarketInterestRate(uint256 marketId) external view returns (Rate memory);
+
   }
 
 contract HelperFunct {
@@ -123,7 +129,7 @@ contract HelperFunct {
               break;
           }
       }
-      require(check, "DYDX Market doesn't exist!");
+      require(check, "DYDX Market doesnt exist!");
   }
 
   /**
@@ -131,7 +137,6 @@ contract HelperFunct {
   */
   function getAccountArgs() internal view returns (SoloMarginContract.Info[] memory) {
     SoloMarginContract.Info[] memory accounts = new SoloMarginContract.Info[](1);
-    console.log(address(this));
     accounts[0] = (SoloMarginContract.Info(address(this), 0));
     return accounts;
   }
@@ -208,10 +213,6 @@ contract ProviderDYDX is IProvider, HelperFunct {
 
     dydxContract.operate(getAccountArgs(), getActionsArgs(_marketId, _amount, true));
 
-    (uint tokenBal, bool tokenSign) = getDydxPosition(dydxContract,_marketId); //test line
-    console.log('Deposit, DYDX','marketID', _marketId);//test line
-    console.log('TokenBal', tokenBal,'TokenSign', tokenSign);//test line
-
   }
 
   /**
@@ -235,10 +236,6 @@ contract ProviderDYDX is IProvider, HelperFunct {
 
         tweth.withdraw(_amount);
     }
-
-    (uint tokenBal, bool tokenSign) = getDydxPosition(dydxContract,_marketId); //test line
-    console.log('Withdraw, DYDX','marketID', _marketId);//test line
-    console.log('TokenBal', tokenBal,'TokenSign', tokenSign);//test line
 
   }
 
@@ -264,9 +261,6 @@ contract ProviderDYDX is IProvider, HelperFunct {
       tweth.withdraw(_amount);
       }
 
-      (uint tokenBal, bool tokenSign) = getDydxPosition(dydxContract,_marketId); //test line
-      console.log('Borrow, DYDX','marketID', _marketId);//test line
-      console.log('TokenBal', tokenBal,'TokenSign', tokenSign);//test line
   }
 
   /**
@@ -294,10 +288,6 @@ contract ProviderDYDX is IProvider, HelperFunct {
 
     dydxContract.operate(getAccountArgs(), getActionsArgs(_marketId, _amount, true));
 
-    (uint tokenBal, bool tokenSign) = getDydxPosition(dydxContract,_marketId); //test line
-    console.log('Payback, DYDX','marketID', _marketId);//test line
-    console.log('TokenBal', tokenBal,'TokenSign', tokenSign);//test line
-
   }
 
 
@@ -306,7 +296,10 @@ contract ProviderDYDX is IProvider, HelperFunct {
   * @param _asset: token address to query the current borrowing rate.
   */
   function getBorrowRateFor(address _asset) external view override returns(uint256) {
-    return 0;
+    SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
+    uint _marketId = getMarketId(dydxContract, _asset);
+    SoloMarginContract.Rate memory _rate = dydxContract.getMarketInterestRate(_marketId);
+    return (_rate.value).mul(1e9).mul(365 days);
   }
 
   /**
@@ -316,7 +309,7 @@ contract ProviderDYDX is IProvider, HelperFunct {
   function getBorrowBalance(address _asset) external view override returns(uint256) {
     SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
     uint _marketId = getMarketId(dydxContract, _asset);
-    (uint256 tokenBal, bool tokenSign) = getDydxPosition(dydxContract,_marketId);
+    (uint256 tokenBal,) = getDydxPosition(dydxContract,_marketId);
     return tokenBal;
   }
 

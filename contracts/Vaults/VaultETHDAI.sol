@@ -406,19 +406,15 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     uint256 _amount,
     bool _flash
   ) external view override returns(uint256) {
-    // get price of DAI in ETH
-    (,int256 latestPrice,,,) = oracle.latestRoundData();
-    uint256 p = _amount.mul(uint256(latestPrice)).div(BASE);
-
     if (_flash) {
       // Bonus Factors for Flash Liquidation
       (uint64 a, uint64 b) = fujiAdmin.getBonusFlashL();
-      return p.mul(a).div(b);
+      return _amount.mul(a).div(b);
     }
     else {
       //Bonus Factors for Normal Liquidation
       (uint64 a, uint64 b) = fujiAdmin.getBonusLiq();
-      return p.mul(a).div(b);
+      return _amount.mul(a).div(b);
     }
   }
 

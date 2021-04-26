@@ -24,7 +24,7 @@ interface IAlphaWhitelist {
   ) external returns(bool);
 }
 
-contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
+contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
 
   uint256 internal constant BASE = 1e18;
 
@@ -65,7 +65,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   constructor () public {
 
     vAssets.collateralAsset = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE); // ETH
-    vAssets.borrowAsset = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48); // USDC
+    vAssets.borrowAsset = address(0xdAC17F958D2ee523a2206206994597C13D831ec7); // USDT
 
     // 1.05
     safetyF.a = 21;

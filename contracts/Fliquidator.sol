@@ -137,7 +137,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Withdraw collateral
     IVault(vault).withdraw(int256(userCollateral));
 
-    // Compute 5% of user debt
+    // Compute the Liquidator Bonus bonusL
     uint256 bonus = IVault(vault).getLiquidationBonusFor(userDebtBalance, false);
 
     // Swap Collateral

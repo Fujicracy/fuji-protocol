@@ -11,6 +11,7 @@ const {
   evmRevert,
   DAI_ADDR,
   USDC_ADDR,
+  USDT_ADDR,
   ETH_ADDR,
   ONE_ETH
 } = require("./utils-alpha.js");
@@ -21,8 +22,10 @@ describe("Alpha", () => {
 
   let dai;
   let usdc;
+  let usdt;
   let aweth;
   let ceth;
+  let oracle;
   let treasury;
   let fujiadmin;
   let fliquidator;
@@ -35,6 +38,7 @@ describe("Alpha", () => {
   let aWhitelist;
   let vaultdai;
   let vaultusdc;
+  let vaultusdt;
 
   let users;
 
@@ -58,8 +62,10 @@ describe("Alpha", () => {
     const _fixture = await loadFixture(fixture);
     dai = _fixture.dai;
     usdc = _fixture.usdc;
+    usdt = _fixture.usdt;
     aweth = _fixture.aweth;
     ceth = _fixture.ceth;
+    oracle = _fixture.oracle;
     treasury = _fixture.treasury;
     fujiadmin = _fixture.fujiadmin;
     fliquidator = _fixture.fliquidator;
@@ -72,9 +78,11 @@ describe("Alpha", () => {
     aWhitelist = _fixture.aWhitelist;
     vaultdai = _fixture.vaultdai;
     vaultusdc = _fixture.vaultusdc;
+    vaultusdt = _fixture.vaultusdt;
 
     await vaultdai.setActiveProvider(aave.address);
     await vaultusdc.setActiveProvider(aave.address);
+    await vaultusdt.setActiveProvider(aave.address);
 
   });
 

@@ -308,6 +308,9 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     // Borrow from the new provider, borrowBalance + premium
     _borrow(_flashLoanAmount.add(fee), _newProvider);
 
+
+    console.log("sending to",msg.sender);
+    console.log(_flashLoanAmount.add(fee));
     // return borrowed amount to Flasher
     IERC20(vAssets.borrowAsset).uniTransfer(msg.sender, _flashLoanAmount.add(fee));
 

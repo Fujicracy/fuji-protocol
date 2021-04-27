@@ -76,6 +76,8 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
     collatF.b = 63;
   }
 
+  receive() external payable {}
+
   //Core functions
 
   /**
@@ -273,42 +275,44 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   /**
   * @dev Changes Vault debt and collateral to newProvider, called by Flasher
   * @param _newProvider new provider's address
-  * @param _flashLoanDebt amount of flashloan underlying to repay Flashloan
+  * @param _flashLoanAmount amount of flashloan underlying to repay Flashloan
   * Emits a {Switch} event.
   */
   function executeSwitch(
     address _newProvider,
-    uint256 _flashLoanDebt
+    uint256 _flashLoanAmount,
+    uint256 fee
   ) external override onlyFlash whenNotPaused {
 
-    uint256 borrowBalance = borrowBalance(activeProvider);
-
     // Check Allowance
-    require(
-      IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this)) >= borrowBalance,
-      Errors.VL_MISSING_ERC20_ALLOWANCE
-    );
+    //require(
+    //  IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this)) >= _flashLoanAmount,
+    //  Errors.VL_MISSING_ERC20_ALLOWANCE
+    //);
 
     // Load Flashloan Assets to Vault
-    IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), borrowBalance);
+    //IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), _flashLoanAmount);
 
     // Payback current provider
-    _payback(borrowBalance, address(activeProvider));
+    _payback(_flashLoanAmount, activeProvider);
 
-    // Withdraw collateral from current provider
-    uint256 collateralBalance = depositBalance(activeProvider);
-    _withdraw(collateralBalance, address(activeProvider));
+    // Compute Ratio of transfer
+    uint256 ratio = (_flashLoanAmount).mul(1e18).div(borrowBalance(activeProvider));
+
+    // Withdraw collateral proportional ratio from current provider
+    uint256 collateraltoMove = (depositBalance(activeProvider)).mul(ratio).div(1e18);
+    _withdraw(collateraltoMove, activeProvider);
 
     // Deposit to the new provider
-    _deposit(collateralBalance, address(_newProvider));
+    _deposit(collateraltoMove, _newProvider);
 
-    // Borrow from the new provider, borrowBalance + premium = flashloandebt
-    _borrow(_flashLoanDebt, address(_newProvider));
+    // Borrow from the new provider, borrowBalance + premium
+    _borrow(_flashLoanAmount.add(fee), _newProvider);
 
     // return borrowed amount to Flasher
-    IERC20(vAssets.borrowAsset).uniTransfer(msg.sender, _flashLoanDebt);
+    IERC20(vAssets.borrowAsset).uniTransfer(msg.sender, _flashLoanAmount.add(fee));
 
-    emit Switch(address(this), activeProvider, _newProvider);
+    emit Switch(address(this), activeProvider, _newProvider, _flashLoanAmount, collateraltoMove);
   }
 
   //Setter, change state functions
@@ -385,8 +389,8 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   * @dev External Function to call updateState in F1155
   */
   function updateF1155Balances() public override {
-    IFujiERC1155(fujiERC1155).updateState(vAssets.borrowID, borrowBalance(activeProvider));
-    IFujiERC1155(fujiERC1155).updateState(vAssets.collateralID, depositBalance(activeProvider));
+    IFujiERC1155(fujiERC1155).updateState(vAssets.borrowID, allborrowBalance());
+    IFujiERC1155(fujiERC1155).updateState(vAssets.collateralID, alldepositBalance());
   }
 
   //Getter Functions
@@ -437,7 +441,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   }
 
   /**
-  * @dev Returns the total borrow balance of the Vault's  underlying at provider
+  * @dev Returns the borrow balance of the Vault's underlying at a particular provider
   * @param _provider: address of a provider
   */
   function borrowBalance(address _provider) public view override returns(uint256) {
@@ -445,12 +449,29 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
   }
 
   /**
-  * @dev Returns the total deposit balance of the Vault's type collateral at provider
+  * @dev Returns the total borrow balance of the Vault's underlying at all providers
+  */
+  function allborrowBalance() public view returns(uint256 value) {
+    for(uint i = 0; i < providers.length; i++){
+      value += IProvider(providers[i]).getBorrowBalance(vAssets.borrowAsset);
+    }
+  }
+
+  /**
+  * @dev Returns the deposit balance of the Vault's type collateral at a particular provider
   * @param _provider: address of a provider
   */
   function depositBalance(address _provider) public view override returns(uint256) {
     return IProvider(_provider).getDepositBalance(vAssets.collateralAsset);
   }
 
-  receive() external payable {}
+  /**
+  * @dev Returns the total deposit balance of the Vault's type collateral at all providers
+  */
+  function alldepositBalance() public view returns(uint256 value) {
+    for(uint i = 0; i < providers.length; i++){
+      value += IProvider(providers[i]).getDepositBalance(vAssets.collateralAsset);
+    }
+  }
+
 }

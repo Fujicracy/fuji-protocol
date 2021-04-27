@@ -130,9 +130,9 @@ contract Flasher is
 
     if (info.callType == FlashLoan.CallType.Switch) {
 
-      // Approve vault to spend ERC20
-      IERC20(info.asset).approve(info.vault, info.amount);
-      IVault(info.vault).executeSwitch(info.newProvider, amountOwing);
+      // Trasnfet to vault ERC20
+      IERC20(info.asset).transfer(info.vault, info.amount);
+      IVault(info.vault).executeSwitch(info.newProvider, info.amount, 2);
     }
     else if (info.callType == FlashLoan.CallType.Close) {
 
@@ -210,11 +210,11 @@ contract Flasher is
     //Estimate flashloan payback + premium fee,
     uint amountOwing = amounts[0].add(premiums[0]);
 
-    //approve vault to spend ERC20
-    IERC20(assets[0]).approve(info.vault, amountOwing);
+    // Transfer to the vault ERC20
+    IERC20(assets[0]).transfer(info.vault, amounts[0]);
 
     if (info.callType == FlashLoan.CallType.Switch) {
-      IVault(info.vault).executeSwitch(info.newProvider, amountOwing);
+      IVault(info.vault).executeSwitch(info.newProvider, amounts[0], premiums[0]);
     }
     else if (info.callType == FlashLoan.CallType.Close) {
       IFliquidator(info.fliquidator).executeFlashClose(info.user, amountOwing, info.vault);

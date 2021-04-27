@@ -309,8 +309,13 @@ contract ProviderDYDX is IProvider, HelperFunct {
   function getBorrowBalance(address _asset) external view override returns(uint256) {
     SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
     uint _marketId = getMarketId(dydxContract, _asset);
-    (uint256 tokenBal,) = getDydxPosition(dydxContract,_marketId);
-    return tokenBal;
+    SoloMarginContract.Info memory account = SoloMarginContract.Info({
+      owner: msg.sender,
+      number: 0
+    });
+    SoloMarginContract.Wei memory structbalance = dydxContract.getAccountWei(account,_marketId);
+    uint256 balance = structbalance.value;
+    return balance;
   }
 
   /**

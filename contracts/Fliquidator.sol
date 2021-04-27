@@ -43,8 +43,6 @@ contract Fliquidator is Ownable, ReentrancyGuard {
   // Flash Close Fee Factor
   Factor public flashCloseF;
 
-  receive() external payable {}
-
   IFujiAdmin private fujiAdmin;
   IUniswapV2Router02 public swapper;
 
@@ -77,6 +75,8 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     flashCloseF.b = 1000;
 
   }
+
+  receive() external payable {}
 
   // FLiquidator Core Functions
 

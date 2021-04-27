@@ -19,7 +19,7 @@ interface IVault {
   // Log New active provider
   event SetActiveProvider(address providerAddr);
   // Log Switch providers
-  event Switch(address vault, address fromProviderAddrs, address toProviderAddr);
+  event Switch(address vault, address fromProviderAddrs, address toProviderAddr, uint256 Debtamount, uint256 Collattamount);
 
   // Core Vault Functions
 
@@ -27,7 +27,7 @@ interface IVault {
   function withdraw(int256 _withdrawAmount) external;
   function borrow(uint256 _borrowAmount) external;
   function payback(int256 _repayAmount) external payable;
-  function executeSwitch(address _newProvider,uint256 _flashLoanDebt) external;
+  function executeSwitch(address _newProvider,uint256 _flashLoanDebt, uint256 fee) external;
 
   //Getter Functions
 

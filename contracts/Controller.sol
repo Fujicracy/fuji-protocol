@@ -3,6 +3,7 @@
 pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
+import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IVault } from "./Vaults/IVault.sol";
 import { IProvider } from "./Providers/IProvider.sol";
@@ -30,12 +31,13 @@ interface IVaultExt is IVault {
 
 contract Controller is Ownable {
 
+  using SafeMath for uint256;
+
   IFujiAdmin private fujiAdmin;
 
   //Refinancing Variables
   bool public greenLight;
-  uint256 public lastRefinancetimestamp;
-  uint256 public deltatimestampThreshold;
+  //uint256 public lastRefinancetimestamp;
 
   //deltaAPRThreshold: Expressed in ray (1e27), where 1ray = 100% APR
   uint256 public deltaAPRThreshold;
@@ -78,7 +80,10 @@ contract Controller is Ownable {
   * @dev Sets the Green light to proceed with a Refinancing opportunity
   * @param _lightstate: True or False
   */
-  function setLight(bool _lightstate) external isAuthorized {
+  function setLight(bool _lightstate) public isAuthorized {
+    greenLight = _lightstate;
+  }
+  function _setLight(bool _lightstate) private {
     greenLight = _lightstate;
   }
 
@@ -95,56 +100,75 @@ contract Controller is Ownable {
   /**
   * @dev Sets current timestamp after a refinancing cycle
   */
+  /*
   function _setRefinanceTimestamp() internal {
     lastRefinancetimestamp = block.timestamp;
   }
+  */
 
   //Controller Core functions
 
   /**
-  * @dev Performs full refinancing routine, performs checks for verification
+  * @dev Performs refinancing routine, performs checks for verification
   * @param _vaultAddr: fuji Vault address
-  * @return true if provider got switched, false if no change
+  * @param _ratioA: ratio to determine how much of debtposition to move
+  * @param _ratioB: _ratioA/_ratioB <= 1, and > 0
+  * @param isdydx: indicate if dydx flashloan applicable
   */
-  function doRefinancing(address _vaultAddr) external returns(bool) {
+  function doRefinancing(address _vaultAddr, uint256 _ratioA, uint256 _ratioB, bool isdydx) external {
 
-    // Check Server Script has confirmed an opportunity to refinance
-    require(greenLight, Errors.RF_NO_GREENLIGHT);
+    // Check Protocol have allowed to refinance
+    require(
+      greenLight,
+      Errors.RF_NO_GREENLIGHT
+    );
 
     IVault vault = IVault(_vaultAddr);
     vault.updateF1155Balances();
+
+    // Check if there is an opportunity to Change provider with a lower borrowing Rate
+    (bool opportunityTochange, address newProvider) = checkRates(_vaultAddr);
+
+    require(opportunityTochange,Errors.RF_CHECK_RATES_FALSE);
+
+    // Check Vault borrowbalance and apply ratio
     uint256 debtPosition = vault.borrowBalance(vault.activeProvider());
+    uint256 applyRatiodebtPosition = debtPosition.mul(_ratioA).div(_ratioB);
+    console.log("debtPosition:",debtPosition);
+    console.log("applyRatiodebtPosition:",applyRatiodebtPosition);
+
+    // Check Ratio Input and Vault Balance at ActiveProvider
+    require(
+      debtPosition >= applyRatiodebtPosition &&
+      applyRatiodebtPosition > 0,
+      Errors.RF_INVALID_RATIO_VALUES
+    );
 
     IVaultExt.VaultAssets memory vAssets = IVaultExt(_vaultAddr).vAssets();
 
-    //Check if there is an opportunity to Change provider with a lower borrowing Rate
-    (bool opportunityTochange, address newProvider) = checkRates(_vaultAddr);
+    //Initiate Flash Loan Struct
+    FlashLoan.Info memory info = FlashLoan.Info({
+      callType: FlashLoan.CallType.Switch,
+      asset: vAssets.borrowAsset,
+      amount: applyRatiodebtPosition,
+      vault: _vaultAddr,
+      newProvider: newProvider,
+      user: address(0),
+      userliquidator: address(0),
+      fliquidator: fujiAdmin.getFliquidator()
+    });
 
-    if (opportunityTochange) {
-      //Check how much borrowed balance along with accrued interest at current Provider
-
-      //Initiate Flash Loan Struct
-      FlashLoan.Info memory info = FlashLoan.Info({
-        callType: FlashLoan.CallType.Switch,
-        asset: vAssets.borrowAsset,
-        amount: debtPosition,
-        vault: _vaultAddr,
-        newProvider: newProvider,
-        user: address(0),
-        userliquidator: address(0),
-        fliquidator: fujiAdmin.getFliquidator()
-      });
-
+    if(isdydx) {
       Flasher(fujiAdmin.getFlasher()).initiateDyDxFlashLoan(info);
+    } else {
+      Flasher(fujiAdmin.getFlasher()).initiateAaveFlashLoan(info);
+    }
 
-      //Set the new provider in the Vault
-      _setProvider(_vaultAddr, newProvider);
-      _setRefinanceTimestamp();
-      return true;
-    }
-    else {
-      return false;
-    }
+    //Set the new provider in the Vault
+    _setProvider(_vaultAddr, newProvider);
+    //console.log(msg.sender, address(this));
+    _setLight(false);
+
   }
 
   /**

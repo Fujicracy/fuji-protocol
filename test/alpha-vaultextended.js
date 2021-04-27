@@ -83,7 +83,6 @@ describe("Alpha", () => {
 
   describe("Alpha Vaults Extended Functionalities", () => {
 
-    /*
     it("1.- getLiquidationBonusFor, vaultdai inputs 100 Amount, checks computation", async () => {
 
       let inputAmount = ethers.utils.parseUnits("100",18);
@@ -179,17 +178,6 @@ describe("Alpha", () => {
 
       await expect(collatNeeded/1).to.equal(computedcollatNeeded);
       await expect(collatNeededwFactor/1).to.equal(computedcollatNeededwFactor);
-
-    });
-    */
-
-    it("5.- dummy, ", async () => {
-
-      let ratedydx = await dydx.getBorrowRateFor(USDC_ADDR);
-      let rateaave = await aave.getBorrowRateFor(USDC_ADDR);
-      let ratecompound = await compound.getBorrowRateFor(USDC_ADDR);
-      console.log(ratedydx/1,rateaave/1,ratecompound/1);
-
 
     });
 

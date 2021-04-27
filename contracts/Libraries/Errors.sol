@@ -46,7 +46,9 @@ library Errors {
   string public constant MATH_ADDITION_OVERFLOW = '202';
   string public constant MATH_MULTIPLICATION_OVERFLOW = '203';
 
-  string public constant RF_NO_GREENLIGHT = '300'; // No green light authorization to proceed with refinancing
+  string public constant RF_NO_GREENLIGHT = '300'; // Conditions for refinancing are not met, greenLight, deltaAPRThreshold, deltatimestampThreshold
+  string public constant RF_INVALID_RATIO_VALUES = '301'; // Ratio Value provided is invalid, _ratioA/_ratioB <= 1, and > 0, or activeProvider borrowBalance = 0
+  string public constant RF_CHECK_RATES_FALSE = '302'; //Check Rates routine returned False
 
   string public constant VLT_CALLER_MUST_BE_VAULT = '401'; // The caller of this function must be a vault
 

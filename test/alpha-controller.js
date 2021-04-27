@@ -79,12 +79,115 @@ describe("Alpha", () => {
     vaultusdc = _fixture.vaultusdc;
     vaultusdt = _fixture.vaultusdt;
 
-    await vaultdai.setActiveProvider(dydx.address);
-    await vaultusdc.setActiveProvider(dydx.address);
-
   });
 
   describe("Alpha Controller Functionality", () => {
+    /*
+
+    it("1.- Check Rates for All Vaults", async () => {
+
+      // Set defined ActiveProviders
+      await vaultdai.setActiveProvider(dydx.address);
+      await vaultusdc.setActiveProvider(dydx.address);
+      await vaultusdt.setActiveProvider(aave.address);
+
+      // Responses
+      let responsedai = await controller.checkRates(vaultdai.address);
+      let responseusdc = await controller.checkRates(vaultusdc.address);
+      let responseusdt = await controller.checkRates(vaultusdc.address);
+      //console.log(responsedai,responseusdc,responseusdt);
+
+      // Manual Rate check
+
+      let getInfo = async function (provider, assetaddr) {
+        let info = [];
+        info[0] = await provider.getBorrowRateFor(assetaddr);
+        info[0] = info[0]/1e27;
+        info[1] = provider.address;
+        return info;
+      }
+
+      //DAI
+      let dairatedydx = await getInfo(dydx, DAI_ADDR);
+      let dairateaave = await getInfo(aave, DAI_ADDR);
+      let dairatecompound = await getInfo(compound, DAI_ADDR);
+      //console.log("dai markets",dairatedydx,dairateaave,dairatecompound);
+
+      let daiLowestRate;
+      daiLowestRate = dairatedydx[0] < dairateaave[0] ? dairatedydx:dairateaave;
+      daiLowestRate =  dairatecompound[0] < daiLowestRate[0] ? dairatecompound:daiLowestRate;
+      await expect(responsedai[1]).to.equal(daiLowestRate[1]);
+
+      //USDC
+      let usdcratedydx = await getInfo(dydx, USDC_ADDR);
+      let usdcrateaave = await getInfo(aave, USDC_ADDR);
+      let usdcratecompound = await getInfo(compound, USDC_ADDR);
+      //console.log("usdc markets",usdcratedydx,usdcrateaave,usdcratecompound);
+
+      let usdcLowestRate;
+      usdcLowestRate = usdcratedydx[0] < usdcrateaave[0] ? usdcratedydx:usdcrateaave;
+      usdcLowestRate = usdcratecompound[0] < usdcLowestRate[0] ? usdcratecompound : usdcLowestRate;
+      await expect(responseusdc[1]).to.equal(usdcLowestRate[1]);
+
+      //USDT
+      let usdtrateaave = await getInfo(aave, USDT_ADDR);
+      let usdtratecompound = await getInfo(compound, USDT_ADDR);
+      //console.log("usdt markets",usdtrateaave,usdtratecompound);
+
+      let usdtLowestRate;
+      usdtLowestRate = usdtrateaave[0] < usdtratecompound[0] ? usdtrateaave : usdtratecompound;
+      await expect(responseusdt[1]).to.equal(usdtLowestRate[1]);
+
+      //console.log(daiLowestRate,usdcLowestRate,usdtLowestRate);
+      //console.log("compound", compound.address);
+      //console.log("aave", aave.address);
+      //console.log("dydx", dydx.address);
+    });
+    */
+
+    it("2.- Do Full Refinancing Routing VaultDai", async () => {
+
+      // Testing Vault
+      let thevault = vaultdai;
+      let pre_stagedProvider = dydx;
+
+      // Set defined ActiveProviders
+      await thevault.setActiveProvider(pre_stagedProvider.address);
+      console.log(pre_stagedProvider.address);
+
+      //Bootstrap Liquidity
+      let bootstraper = users[0];
+      let bstrapLiquidity = ethers.utils.parseEther("1");
+      await thevault.connect(bootstraper).deposit(bstrapLiquidity,{ value: bstrapLiquidity });
+
+      // Users deposit and borrow
+      let userX = users[2]; let depositX = ethers.utils.parseEther("10"); let borrowX = ethers.utils.parseUnits("10",18);
+      let userY = users[3]; let depositY = ethers.utils.parseEther("5"); let borrowY = ethers.utils.parseUnits("20",18);
+      let userW = users[4]; let depositW = ethers.utils.parseEther("5"); let borrowW = ethers.utils.parseUnits("30",18);
+
+      await thevault.connect(userX).depositAndBorrow(depositX,borrowX,{ value: depositX });
+      await thevault.connect(userY).depositAndBorrow(depositY,borrowY,{ value: depositY });
+      await thevault.connect(userW).depositAndBorrow(depositW,borrowW,{ value: depositW });
+
+      let priorRefinanceVaultDebt = await thevault.borrowBalance(pre_stagedProvider.address);
+      let priorRefinanceVaultCollat = await thevault.depositBalance(pre_stagedProvider.address);
+      console.log(priorRefinanceVaultDebt/1,priorRefinanceVaultCollat/1);
+
+      await advanceblocks(50);
+
+      await controller.setLight(true);
+
+      let response = await controller.checkRates(thevault.address);
+      let afterProvider = response[1];
+      await controller.connect(userX).doRefinancing(thevault.address, 1, 1, true);
+
+      let afterRefinanceVaultDebt = await thevault.borrowBalance(afterProvider);
+      let afterRefinanceVaultCollat = await thevault.depositBalance(afterProvider);
+
+      await expect(priorRefinanceVaultDebt).to.equal(afterRefinanceVaultDebt);
+      await expect(priorRefinanceVaultCollat).to.equal(afterRefinanceVaultCollat);
+
+    });
 
   });
 });

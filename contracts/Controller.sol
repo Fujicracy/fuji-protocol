@@ -28,6 +28,11 @@ interface IVaultExt is IVault {
 
 }
 
+interface IProviderExt is IProvider {
+  // Temp
+  function getBorrowBalanceTest(address _asset, address who) external returns(uint256);
+}
+
 
 contract Controller is Ownable {
 
@@ -113,9 +118,16 @@ contract Controller is Ownable {
   * @param _vaultAddr: fuji Vault address
   * @param _ratioA: ratio to determine how much of debtposition to move
   * @param _ratioB: _ratioA/_ratioB <= 1, and > 0
-  * @param isdydx: indicate if dydx flashloan applicable
+  * @param usedydx: indicate if dydx flashloan applicable
+  * @param isCompoundActiveProvider: indicate if activeProvider is Compound
   */
-  function doRefinancing(address _vaultAddr, uint256 _ratioA, uint256 _ratioB, bool isdydx) external {
+  function doRefinancing(
+    address _vaultAddr,
+    uint256 _ratioA,
+    uint256 _ratioB,
+    bool usedydx,
+    bool isCompoundActiveProvider
+  ) external {
 
     // Check Protocol have allowed to refinance
     require(
@@ -125,17 +137,19 @@ contract Controller is Ownable {
 
     IVault vault = IVault(_vaultAddr);
     vault.updateF1155Balances();
+    IVaultExt.VaultAssets memory vAssets = IVaultExt(_vaultAddr).vAssets();
 
     // Check if there is an opportunity to Change provider with a lower borrowing Rate
     (bool opportunityTochange, address newProvider) = checkRates(_vaultAddr);
 
     require(opportunityTochange,Errors.RF_CHECK_RATES_FALSE);
 
-    // Check Vault borrowbalance and apply ratio
-    uint256 debtPosition = vault.borrowBalance(vault.activeProvider());
+    // Check Vault borrowbalance and apply ratio (consider compound or not)
+    uint256 debtPosition = isCompoundActiveProvider ?
+    IProviderExt(
+      vault.activeProvider()).getBorrowBalanceTest(vAssets.borrowAsset,_vaultAddr) :
+      vault.borrowBalance(vault.activeProvider());
     uint256 applyRatiodebtPosition = debtPosition.mul(_ratioA).div(_ratioB);
-    console.log("debtPosition:",debtPosition);
-    console.log("applyRatiodebtPosition:",applyRatiodebtPosition);
 
     // Check Ratio Input and Vault Balance at ActiveProvider
     require(
@@ -143,8 +157,6 @@ contract Controller is Ownable {
       applyRatiodebtPosition > 0,
       Errors.RF_INVALID_RATIO_VALUES
     );
-
-    IVaultExt.VaultAssets memory vAssets = IVaultExt(_vaultAddr).vAssets();
 
     //Initiate Flash Loan Struct
     FlashLoan.Info memory info = FlashLoan.Info({
@@ -155,10 +167,10 @@ contract Controller is Ownable {
       newProvider: newProvider,
       user: address(0),
       userliquidator: address(0),
-      fliquidator: fujiAdmin.getFliquidator()
+      fliquidator: address(0)
     });
 
-    if(isdydx) {
+    if(usedydx) {
       Flasher(fujiAdmin.getFlasher()).initiateDyDxFlashLoan(info);
     } else {
       Flasher(fujiAdmin.getFlasher()).initiateAaveFlashLoan(info);
@@ -166,6 +178,67 @@ contract Controller is Ownable {
 
     //Set the new provider in the Vault
     _setProvider(_vaultAddr, newProvider);
+    //console.log(msg.sender, address(this));
+    _setLight(false);
+
+  }
+
+  /**
+  * @dev Performs a forced refinancing routine
+  * @param _vaultAddr: fuji Vault address
+  * @param _newProvider: new provider address
+  * @param _ratioA: ratio to determine how much of debtposition to move
+  * @param _ratioB: _ratioA/_ratioB <= 1, and > 0
+  * @param usedydx: indicate if dydx flashloan applicable
+  * @param isCompoundActiveProvider: indicate if activeProvider is Compound
+  */
+  function forcedRefinancing(
+    address _vaultAddr,
+    address _newProvider,
+    uint256 _ratioA,
+    uint256 _ratioB,
+    bool usedydx,
+    bool isCompoundActiveProvider
+  ) external isAuthorized {
+
+    IVault vault = IVault(_vaultAddr);
+    IVaultExt.VaultAssets memory vAssets = IVaultExt(_vaultAddr).vAssets();
+    vault.updateF1155Balances();
+
+    // Check Vault borrowbalance and apply ratio (consider compound or not)
+    uint256 debtPosition = isCompoundActiveProvider ?
+    IProviderExt(
+      vault.activeProvider()).getBorrowBalanceTest(vAssets.borrowAsset,_vaultAddr) :
+      vault.borrowBalance(vault.activeProvider());
+    uint256 applyRatiodebtPosition = debtPosition.mul(_ratioA).div(_ratioB);
+
+    // Check Ratio Input and Vault Balance at ActiveProvider
+    require(
+      debtPosition >= applyRatiodebtPosition &&
+      applyRatiodebtPosition > 0,
+      Errors.RF_INVALID_RATIO_VALUES
+    );
+
+    //Initiate Flash Loan Struct
+    FlashLoan.Info memory info = FlashLoan.Info({
+      callType: FlashLoan.CallType.Switch,
+      asset: vAssets.borrowAsset,
+      amount: applyRatiodebtPosition,
+      vault: _vaultAddr,
+      newProvider: _newProvider,
+      user: address(0),
+      userliquidator: address(0),
+      fliquidator: address(0)
+    });
+
+    if(usedydx) {
+      Flasher(fujiAdmin.getFlasher()).initiateDyDxFlashLoan(info);
+    } else {
+      Flasher(fujiAdmin.getFlasher()).initiateAaveFlashLoan(info);
+    }
+
+    //Set the new provider in the Vault
+    _setProvider(_vaultAddr, _newProvider);
     //console.log(msg.sender, address(this));
     _setLight(false);
 

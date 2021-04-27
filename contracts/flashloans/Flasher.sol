@@ -148,11 +148,8 @@ contract Flasher is
     }
 
     //Approve DYDXSolo to spend to repay flashloan
-    console.log("last step to complete flashloan");
-    console.log(IERC20(info.asset).balanceOf(address(this)));
-    console.log(amountOwing);
     IERC20(info.asset).approve(dydx_solo_margin, amountOwing);
-    //console.log('approval pass');
+    console.log('approval pass');
   }
 
 

@@ -11,7 +11,7 @@ import { IProvider } from "./IProvider.sol";
 import "hardhat/console.sol"; //test line
 
 interface LQTYInterface {
-  
+
 }
 
 contract LQTYHelpers {
@@ -48,7 +48,7 @@ contract ProviderLQTY is IProvider, LQTYHelpers {
     return 0;
 
   }
-  function getBorrowBalance(address _asset) external view  override returns(uint256) {
+  function getBorrowBalance(address _asset) external view override returns(uint256) {
     //TODO
     return 0;
   }

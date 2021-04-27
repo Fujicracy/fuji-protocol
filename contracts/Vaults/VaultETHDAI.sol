@@ -283,15 +283,6 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     uint256 fee
   ) external override onlyFlash whenNotPaused {
 
-    // Check Allowance
-    //require(
-    //  IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this)) >= _flashLoanAmount,
-    //  Errors.VL_MISSING_ERC20_ALLOWANCE
-    //);
-
-    // Load Flashloan Assets to Vault
-    //IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), _flashLoanAmount);
-
     // Compute Ratio of transfer before payback
     uint256 ratio = (_flashLoanAmount).mul(1e18).div(borrowBalance(activeProvider));
 
@@ -308,9 +299,6 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     // Borrow from the new provider, borrowBalance + premium
     _borrow(_flashLoanAmount.add(fee), _newProvider);
 
-
-    console.log("sending to",msg.sender);
-    console.log(_flashLoanAmount.add(fee));
     // return borrowed amount to Flasher
     IERC20(vAssets.borrowAsset).uniTransfer(msg.sender, _flashLoanAmount.add(fee));
 

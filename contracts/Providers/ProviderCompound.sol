@@ -235,11 +235,21 @@ contract ProviderCompound is IProvider, HelperFunct {
     return depositBal;
   }
 
-  //This function is the accurate way to get Compound Deposit Balance but it costs 84K gas
-  function getDepositBalanceTest(address _asset, address addr) external returns(uint256) {
+  // This function is the accurate way to get Compound Borrow Balance but it costs 84K gas
+  // and is not a view function.
+  function getBorrowBalanceTest(address _asset, address who) external returns(uint256) {
     address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_asset);
-    uint256 depositBal = gencToken(ctokenaddress).balanceOfUnderlying(addr);
+    uint256 borrowbal = gencToken(ctokenaddress).borrowBalanceCurrent(who);
+    return borrowbal;
+  }
+
+  // This function is the accurate way to get Compound Deposit Balance but it costs 84K gas
+  // and is not a view function.
+  function getDepositBalanceTest(address _asset, address who) external returns(uint256) {
+    address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_asset);
+    uint256 depositBal = gencToken(ctokenaddress).balanceOfUnderlying(who);
     return depositBal;
   }
+
 
 }

@@ -284,20 +284,11 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
     uint256 fee
   ) external override onlyFlash whenNotPaused {
 
-    // Check Allowance
-    //require(
-    //  IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this)) >= _flashLoanAmount,
-    //  Errors.VL_MISSING_ERC20_ALLOWANCE
-    //);
-
-    // Load Flashloan Assets to Vault
-    //IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), _flashLoanAmount);
+    // Compute Ratio of transfer before payback
+    uint256 ratio = (_flashLoanAmount).mul(1e18).div(borrowBalance(activeProvider));
 
     // Payback current provider
     _payback(_flashLoanAmount, activeProvider);
-
-    // Compute Ratio of transfer
-    uint256 ratio = (_flashLoanAmount).mul(1e18).div(borrowBalance(activeProvider));
 
     // Withdraw collateral proportional ratio from current provider
     uint256 collateraltoMove = (depositBalance(activeProvider)).mul(ratio).div(1e18);
@@ -313,6 +304,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
     IERC20(vAssets.borrowAsset).uniTransfer(msg.sender, _flashLoanAmount.add(fee));
 
     emit Switch(address(this), activeProvider, _newProvider, _flashLoanAmount, collateraltoMove);
+    console.log("complete execute switch");
   }
 
   //Setter, change state functions

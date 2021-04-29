@@ -34,6 +34,7 @@
     "test": "hardhat test --network localhost",
     "contracts:size": "hardhat size-contracts",
     "test:alpha-controller": "hardhat test --network localhost test/alpha-controller.js",
+    "test:alpha-fliquidator": "hardhat test --network localhost test/alpha-fliquidator.js",
     "test:alpha-vaultext": "hardhat test --network localhost test/alpha-vaultextended.js",
     "test:alpha-whitelisting": "hardhat test --network localhost test/alpha-whitelisting.js",
     "test:alpha-compound": "hardhat test --network localhost test/alpha-compound.js",

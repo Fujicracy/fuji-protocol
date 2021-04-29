@@ -88,9 +88,6 @@ contract Controller is Ownable {
   function setLight(bool _lightstate) public isAuthorized {
     greenLight = _lightstate;
   }
-  function _setLight(bool _lightstate) private {
-    greenLight = _lightstate;
-  }
 
   /**
   * @dev Sets a new provider to called Vault, returns true on success
@@ -158,6 +155,8 @@ contract Controller is Ownable {
       Errors.RF_INVALID_RATIO_VALUES
     );
 
+    greenLight = false;
+
     //Initiate Flash Loan Struct
     FlashLoan.Info memory info = FlashLoan.Info({
       callType: FlashLoan.CallType.Switch,
@@ -178,9 +177,6 @@ contract Controller is Ownable {
 
     //Set the new provider in the Vault
     _setProvider(_vaultAddr, newProvider);
-    //console.log(msg.sender, address(this));
-    _setLight(false);
-
   }
 
   /**
@@ -236,12 +232,7 @@ contract Controller is Ownable {
     } else {
       Flasher(fujiAdmin.getFlasher()).initiateAaveFlashLoan(info);
     }
-
-    //Set the new provider in the Vault
-    _setProvider(_vaultAddr, _newProvider);
-    //console.log(msg.sender, address(this));
-    _setLight(false);
-
+    
   }
 
   /**

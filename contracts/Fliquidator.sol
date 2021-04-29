@@ -16,6 +16,8 @@ import { UniERC20 } from "./Libraries/LibUniERC20.sol";
 import { IUniswapV2Router02} from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import { ReentrancyGuard } from '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 
+import "hardhat/console.sol"; //test line
+
 interface IVaultExt is IVault {
 
   //Asset Struct
@@ -120,8 +122,8 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
     // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
-    // Approve Amount to Vault
-    IERC20(vAssets.borrowAsset).approve(vault, userDebtBalance);
+    // Transfer Amount to Vault
+    IERC20(vAssets.borrowAsset).transfer(vault, userDebtBalance);
 
     // Repay BaseProtocol debt
     IVault(vault).payback(int256(userDebtBalance));
@@ -144,7 +146,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     uint256 remainingCollat = swap(vault, userDebtBalance.add(bonus), userCollateral);
 
     // Transfer to Liquidator the debtBalance + bonus
-    IERC20(vAssets.collateralAsset).uniTransfer(msg.sender, userDebtBalance.add(bonus));
+    IERC20(vAssets.borrowAsset).uniTransfer(msg.sender, userDebtBalance.add(bonus));
 
     // Cast User addr to payable
     address payable user = address(uint160(_userAddr));
@@ -302,8 +304,8 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
     // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
-    // Approve Amount to Vault
-    IERC20(vAssets.borrowAsset).approve(vault, _Amount);
+    // Transfer Amount to Vault
+    IERC20(vAssets.borrowAsset).transfer(vault, _Amount);
 
     // Repay BaseProtocol debt
     IVault(vault).payback(int256(_Amount));
@@ -377,8 +379,8 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
     // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
-    // Approve Amount to Vault
-    IERC20(vAssets.borrowAsset).approve(vault, _Amount);
+    // Transfer Amount to Vault
+    IERC20(vAssets.borrowAsset).transfer(vault, _Amount);
 
     // Repay BaseProtocol debt
     IVault(vault).payback(int256(_Amount));
@@ -429,8 +431,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       block.timestamp
     );
 
-    return swapperAmounts[0];
-
+    return _collateralAmount.sub(swapperAmounts[0]);
   }
 
   // Administrative functions
@@ -462,16 +463,5 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     swapper = IUniswapV2Router02(_newSwapper);
   }
 
-
-  /**
-  * @dev Sets the Flash Close Fee Factor; should  be < 1
-  * E. g. 1% fee: a = 1, b = 100, Fee = 1/100 = 1%
-  * @param _newFactorA: Small number
-  * @param _newFactorB: Big number (typically 100)
-  */
-  function setFlashCloseF(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
-    flashCloseF.a = _newFactorA;
-    flashCloseF.b = _newFactorB;
-  }
 
 }

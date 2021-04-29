@@ -261,14 +261,8 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
     } else {
 
       // Logic used when called by Fliquidator
-      require(
-        IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this)) >= uint256(_repayAmount),
-        Errors.VL_MISSING_ERC20_ALLOWANCE
-      );
-
-      IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), uint256(_repayAmount));
-
       _payback(uint256(_repayAmount), address(activeProvider));
+
     }
   }
 

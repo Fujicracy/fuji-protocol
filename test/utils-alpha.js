@@ -73,6 +73,7 @@ const fixture = async ([wallet, other], provider) => {
   await fliquidator.setSwapper(UNISWAP_ROUTER_ADDR);
   await flasher.setfujiAdmin(fujiadmin.address);
   await controller.setfujiAdmin(fujiadmin.address);
+  await f1155.setPermit(fliquidator.address, true);
   await f1155.setPermit(vaultdai.address, true);
   await f1155.setPermit(vaultusdc.address, true);
   await f1155.setPermit(vaultusdt.address, true);

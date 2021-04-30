@@ -24,7 +24,7 @@ import "hardhat/console.sol"; //test line
 
 interface IFliquidator {
 
-  function executeFlashClose(address _userAddr, uint256 _debtAmount, address vault) external;
+  function executeFlashClose(address _userAddr, address vault, uint256 _Amount, uint256 flashloanfee) external;
 
   function executeFlashLiquidation(address _userAddr,address _liquidatorAddr,uint256 _debtAmount, address vault) external;
 }
@@ -77,6 +77,20 @@ contract Flasher is
     fujiAdmin = IFujiAdmin(_fujiAdmin);
   }
 
+
+  /**
+  * @dev Routing Function for Flashloan Provider
+  * @param info: struct information for flashLoan
+  * @param _flashnum: integer identifier of flashloan provider
+  */
+  function initiateFlashloan(FlashLoan.Info memory info, uint8 _flashnum) public isAuthorized {
+    if(_flashnum==0) {
+      initiateAaveFlashLoan(info);
+    } else if(_flashnum==1) {
+      initiateDyDxFlashLoan(info);
+    }
+  }
+
   // ===================== DyDx FlashLoan ===================================
 
   /**
@@ -85,7 +99,7 @@ contract Flasher is
   */
   function initiateDyDxFlashLoan(
     FlashLoan.Info memory info
-  ) public isAuthorized {
+  ) internal {
 
     ISoloMargin solo = ISoloMargin(dydx_solo_margin);
 
@@ -128,28 +142,21 @@ contract Flasher is
     //Estimate flashloan payback + premium fee of 2 wei,
     uint amountOwing = info.amount.add(2);
 
-    if (info.callType == FlashLoan.CallType.Switch) {
+    // Transfer to Vault the flashloan Amount
+    IERC20(info.asset).transfer(info.vault, info.amount);
 
-      // Transfer to Vault ERC20
-      IERC20(info.asset).transfer(info.vault, info.amount);
+    if (info.callType == FlashLoan.CallType.Switch) {
       IVault(info.vault).executeSwitch(info.newProvider, info.amount, 2);
     }
     else if (info.callType == FlashLoan.CallType.Close) {
-
-      // Approve Fliquidator to spend ERC20
-      IERC20(info.asset).approve(info.fliquidator, info.amount);
-      IFliquidator(info.fliquidator).executeFlashClose(info.user, info.amount, info.vault);
+      IFliquidator(info.fliquidator).executeFlashClose(info.user, info.vault, info.amount,2);
     }
     else {
-
-      // Approve Fliquidator to spend ERC20
-      IERC20(info.asset).approve(info.fliquidator, info.amount);
       IFliquidator(info.fliquidator).executeFlashLiquidation(info.user, info.userliquidator, info.amount, info.vault);
     }
 
     //Approve DYDXSolo to spend to repay flashloan
     IERC20(info.asset).approve(dydx_solo_margin, amountOwing);
-    console.log('approval pass');
   }
 
 
@@ -161,7 +168,7 @@ contract Flasher is
   */
   function initiateAaveFlashLoan(
     FlashLoan.Info memory info
-  ) external isAuthorized {
+  ) internal {
 
     //Initialize Instance of Aave Lending Pool
     ILendingPool aaveLp = ILendingPool(aave_lending_pool);
@@ -218,7 +225,7 @@ contract Flasher is
       IVault(info.vault).executeSwitch(info.newProvider, amounts[0], premiums[0]);
     }
     else if (info.callType == FlashLoan.CallType.Close) {
-      IFliquidator(info.fliquidator).executeFlashClose(info.user, amountOwing, info.vault);
+      IFliquidator(info.fliquidator).executeFlashClose(info.user, info.vault, amounts[0], premiums[0]);
     }
     else {
       IFliquidator(info.fliquidator).executeFlashLiquidation(info.user, info.userliquidator, amountOwing,info.vault);

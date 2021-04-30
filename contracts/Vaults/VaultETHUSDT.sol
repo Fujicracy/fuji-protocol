@@ -298,7 +298,6 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
     IERC20(vAssets.borrowAsset).uniTransfer(msg.sender, _flashLoanAmount.add(fee));
 
     emit Switch(address(this), activeProvider, _newProvider, _flashLoanAmount, collateraltoMove);
-    console.log("complete execute switch");
   }
 
   //Setter, change state functions

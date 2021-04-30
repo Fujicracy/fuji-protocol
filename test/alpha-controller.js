@@ -82,9 +82,13 @@ describe("Alpha", () => {
   });
 
   describe("Alpha Controller Functionality", () => {
-    /*
 
     it("1.- Check Rates for All Vaults", async () => {
+
+      // Console log providers
+      console.log("Aave", aave.address);
+      console.log("Compound", compound.address);
+      console.log("Dydx", dydx.address);
 
       // Set defined ActiveProviders
       await vaultdai.setActiveProvider(dydx.address);
@@ -94,8 +98,8 @@ describe("Alpha", () => {
       // Responses
       let responsedai = await controller.checkRates(vaultdai.address);
       let responseusdc = await controller.checkRates(vaultusdc.address);
-      let responseusdt = await controller.checkRates(vaultusdc.address);
-      //console.log(responsedai,responseusdc,responseusdt);
+      let responseusdt = await controller.checkRates(vaultusdt.address);
+      console.log(responsedai,responseusdc,responseusdt);
 
       // Manual Rate check
 
@@ -111,39 +115,40 @@ describe("Alpha", () => {
       let dairatedydx = await getInfo(dydx, DAI_ADDR);
       let dairateaave = await getInfo(aave, DAI_ADDR);
       let dairatecompound = await getInfo(compound, DAI_ADDR);
-      //console.log("dai markets",dairatedydx,dairateaave,dairatecompound);
+      console.log("dai markets",dairatedydx,dairateaave,dairatecompound);
 
       let daiLowestRate;
       daiLowestRate = dairatedydx[0] < dairateaave[0] ? dairatedydx:dairateaave;
       daiLowestRate =  dairatecompound[0] < daiLowestRate[0] ? dairatecompound:daiLowestRate;
-      await expect(responsedai[1]).to.equal(daiLowestRate[1]);
+
 
       //USDC
       let usdcratedydx = await getInfo(dydx, USDC_ADDR);
       let usdcrateaave = await getInfo(aave, USDC_ADDR);
       let usdcratecompound = await getInfo(compound, USDC_ADDR);
-      //console.log("usdc markets",usdcratedydx,usdcrateaave,usdcratecompound);
+      console.log("usdc markets",usdcratedydx,usdcrateaave,usdcratecompound);
 
       let usdcLowestRate;
       usdcLowestRate = usdcratedydx[0] < usdcrateaave[0] ? usdcratedydx:usdcrateaave;
       usdcLowestRate = usdcratecompound[0] < usdcLowestRate[0] ? usdcratecompound : usdcLowestRate;
-      await expect(responseusdc[1]).to.equal(usdcLowestRate[1]);
+
 
       //USDT
       let usdtrateaave = await getInfo(aave, USDT_ADDR);
       let usdtratecompound = await getInfo(compound, USDT_ADDR);
-      //console.log("usdt markets",usdtrateaave,usdtratecompound);
+      console.log("usdt markets",usdtrateaave,usdtratecompound);
 
       let usdtLowestRate;
       usdtLowestRate = usdtrateaave[0] < usdtratecompound[0] ? usdtrateaave : usdtratecompound;
+
+      // Visual Check of all Results
+      console.log(daiLowestRate,usdcLowestRate,usdtLowestRate);
+
+      await expect(responsedai[1]).to.equal(daiLowestRate[1]);
+      await expect(responseusdc[1]).to.equal(usdcLowestRate[1]);
       await expect(responseusdt[1]).to.equal(usdtLowestRate[1]);
 
-      //console.log(daiLowestRate,usdcLowestRate,usdtLowestRate);
-      //console.log("compound", compound.address);
-      //console.log("aave", aave.address);
-      //console.log("dydx", dydx.address);
     });
-    */
 
     it("2.- Try ForcedRefinancing VaultDai", async () => {
 
@@ -155,7 +160,7 @@ describe("Alpha", () => {
       // Testing Vault
       let thevault = vaultdai;
       let asset = dai;
-      let pre_stagedProvider = aave;
+      let pre_stagedProvider = dydx;
       let destinationProvider = compound;
 
       // Set defined ActiveProviders
@@ -181,14 +186,21 @@ describe("Alpha", () => {
       console.log(priorRefinanceVaultDebt/1,priorRefinanceVaultCollat/1);
 
       //await advanceblocks(50);
-      await controller.connect(users[0]).forcedRefinancing(thevault.address, destinationProvider.address, 1, 4, true, false);
+      await controller.connect(users[0]).forcedRefinancing(thevault.address, destinationProvider.address, 1, 1, 0, false);
 
       let afterRefinanceVaultDebt = await thevault.borrowBalance(destinationProvider.address);
       let afterRefinanceVaultCollat = await thevault.depositBalance(destinationProvider.address);
+
+      // Visual Check
       console.log(afterRefinanceVaultDebt/1, afterRefinanceVaultCollat/1);
 
-      //await expect(priorRefinanceVaultDebt/1).to.be.closeTo(afterRefinanceVaultDebt/1,1000e9);
-      //await expect(priorRefinanceVaultCollat/1).to.be.closeTo(afterRefinanceVaultCollat/1,1000e9);
+      if(pre_stagedProvider == dydx || destinationProvider == dydx){
+        priorRefinanceVaultDebt = priorRefinanceVaultDebt*1.0009;
+        await expect(priorRefinanceVaultDebt/1).to.be.closeTo(afterRefinanceVaultDebt/1,1e15);
+      } else {
+        await expect(priorRefinanceVaultDebt/1).to.be.closeTo(afterRefinanceVaultDebt/1,1e15);
+      }
+      await expect(priorRefinanceVaultCollat/1).to.be.closeTo(afterRefinanceVaultCollat/1,1e15);
 
     });
 

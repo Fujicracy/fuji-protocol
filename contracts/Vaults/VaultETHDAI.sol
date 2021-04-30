@@ -261,7 +261,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
 
       // Logic used when called by Fliquidator
       _payback(uint256(_repayAmount), address(activeProvider));
-      
+
     }
   }
 
@@ -297,7 +297,6 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     IERC20(vAssets.borrowAsset).uniTransfer(msg.sender, _flashLoanAmount.add(fee));
 
     emit Switch(address(this), activeProvider, _newProvider, _flashLoanAmount, collateraltoMove);
-    console.log("complete execute switch");
   }
 
   //Setter, change state functions

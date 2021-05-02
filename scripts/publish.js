@@ -3,6 +3,7 @@ const chalk = require("chalk");
 const bre = require("hardhat");
 
 const publishDir = "../react-app/src/contracts";
+const botsDir = "../bots/contracts";
 const graphDir = "../subgraph"
 
 function publishContract(contractName, dir) {
@@ -54,6 +55,19 @@ function publishContract(contractName, dir) {
     );
     fs.writeFileSync(
       `${publishDir}/${contractName}.bytecode.js`,
+      `module.exports = "${contract.bytecode}";`
+    );
+
+    fs.writeFileSync(
+      `${botsDir}/${contractName}.address.js`,
+      `module.exports = "${address}";`
+    );
+    fs.writeFileSync(
+      `${botsDir}/${contractName}.abi.js`,
+      `module.exports = ${JSON.stringify(contract.abi, null, 2)};`
+    );
+    fs.writeFileSync(
+      `${botsDir}/${contractName}.bytecode.js`,
       `module.exports = "${contract.bytecode}";`
     );
 
@@ -115,6 +129,10 @@ async function main() {
   console.log(finalContractList);
   fs.writeFileSync(
     `${publishDir}/contracts.js`,
+    `module.exports = ${JSON.stringify(finalContractList)};`
+  );
+  fs.writeFileSync(
+    `${botsDir}/contracts.js`,
     `module.exports = ${JSON.stringify(finalContractList)};`
   );
 }

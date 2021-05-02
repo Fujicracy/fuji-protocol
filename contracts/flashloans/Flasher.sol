@@ -5,9 +5,10 @@ pragma experimental ABIEncoderV2;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
+import { UniERC20 } from "../Libraries/LibUniERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IFujiAdmin } from "../IFujiAdmin.sol";
-import {Errors} from '../Libraries/Errors.sol';
+import { Errors } from '../Libraries/Errors.sol';
 
 import { ILendingPool, IFlashLoanReceiver } from "./AaveFlashLoans.sol";
 import {
@@ -26,7 +27,7 @@ interface IFliquidator {
 
   function executeFlashClose(address _userAddr, address vault, uint256 _Amount, uint256 flashloanfee) external;
 
-  function executeFlashLiquidation(address _userAddr,address _liquidatorAddr,uint256 _debtAmount, address vault) external;
+  function executeFlashLiquidation(address _userAddr,address _liquidatorAddr, address vault, uint256 _debtAmount, uint256 flashloanfee) external;
 }
 
 contract Flasher is
@@ -37,11 +38,14 @@ contract Flasher is
 {
 
   using SafeMath for uint256;
+  using UniERC20 for IERC20;
 
   IFujiAdmin public fujiAdmin;
 
   address public aave_lending_pool;
   address public dydx_solo_margin;
+  
+  receive() external payable {}
 
   constructor() public {
 
@@ -143,16 +147,19 @@ contract Flasher is
     uint amountOwing = info.amount.add(2);
 
     // Transfer to Vault the flashloan Amount
-    IERC20(info.asset).transfer(info.vault, info.amount);
+    IERC20(info.asset).uniTransfer(payable(info.vault), info.amount);
 
     if (info.callType == FlashLoan.CallType.Switch) {
-      IVault(info.vault).executeSwitch(info.newProvider, info.amount, 2);
+      IVault(info.vault)
+      .executeSwitch(info.newProvider, info.amount, 2);
     }
     else if (info.callType == FlashLoan.CallType.Close) {
-      IFliquidator(info.fliquidator).executeFlashClose(info.user, info.vault, info.amount,2);
+      IFliquidator(info.fliquidator)
+      .executeFlashClose(info.user, info.vault, info.amount,2);
     }
     else {
-      IFliquidator(info.fliquidator).executeFlashLiquidation(info.user, info.userliquidator, info.amount, info.vault);
+      IFliquidator(info.fliquidator)
+      .executeFlashLiquidation(info.user, info.userliquidator, info.vault, info.amount, 2);
     }
 
     //Approve DYDXSolo to spend to repay flashloan
@@ -219,23 +226,25 @@ contract Flasher is
     uint amountOwing = amounts[0].add(premiums[0]);
 
     // Transfer to the vault ERC20
-    IERC20(assets[0]).transfer(info.vault, amounts[0]);
+    IERC20(assets[0]).uniTransfer(payable(info.vault), amounts[0]);
 
     if (info.callType == FlashLoan.CallType.Switch) {
-      IVault(info.vault).executeSwitch(info.newProvider, amounts[0], premiums[0]);
+      IVault(info.vault)
+      .executeSwitch(info.newProvider, amounts[0], premiums[0]);
     }
     else if (info.callType == FlashLoan.CallType.Close) {
-      IFliquidator(info.fliquidator).executeFlashClose(info.user, info.vault, amounts[0], premiums[0]);
+      IFliquidator(info.fliquidator)
+      .executeFlashClose(info.user, info.vault, amounts[0], premiums[0]);
     }
     else {
-      IFliquidator(info.fliquidator).executeFlashLiquidation(info.user, info.userliquidator, amountOwing,info.vault);
+      IFliquidator(info.fliquidator)
+      .executeFlashLiquidation(info.user, info.userliquidator, info.vault, amounts[0],premiums[0]);
     }
 
     //Approve aaveLP to spend to repay flashloan
-    IERC20(assets[0]).approve(address(aave_lending_pool), amountOwing);
+    IERC20(assets[0]).uniApprove(payable(aave_lending_pool), amountOwing);
 
     return true;
   }
 
-  //receive() external payable {}
 }

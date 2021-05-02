@@ -115,7 +115,7 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
     require(
       IAlphaWhitelist(fujiAdmin.getaWhitelist())
         .whitelistRoutine(msg.sender, vAssets.collateralID, _collateralAmount, fujiERC1155),
-      Errors.SP_ALPHA_WHTLIST_FULL
+      Errors.SP_ALPHA_WHITELIST
     );
 
     // Delegate Call Deposit to current provider

@@ -169,7 +169,7 @@ contract Controller is Ownable {
       fliquidator: address(0)
     });
 
-    Flasher(fujiAdmin.getFlasher()).initiateFlashloan(info, _flashnum);
+    Flasher(payable(fujiAdmin.getFlasher())).initiateFlashloan(info, _flashnum);
 
     //Set the new provider in the Vault
     _setProvider(_vaultAddr, newProvider);
@@ -223,7 +223,7 @@ contract Controller is Ownable {
       fliquidator: address(0)
     });
 
-    Flasher(fujiAdmin.getFlasher()).initiateFlashloan(info, _flashnum);
+    Flasher(payable(fujiAdmin.getFlasher())).initiateFlashloan(info, _flashnum);
 
   }
 

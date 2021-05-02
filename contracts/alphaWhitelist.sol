@@ -45,8 +45,8 @@ contract AlphaWhitelist is ReentrancyGuard, Ownable {
   */
   function addmetowhitelist(address _usrAddrs) private nonReentrant {
 
-    require(whitelisted[_usrAddrs] == 0, Errors.SP_ALPHA_ADDR_OK_WHTLIST);
-    require(counter <= LIMIT_USERS, Errors.SP_ALPHA_WHTLIST_FULL);
+    require(whitelisted[_usrAddrs] == 0, Errors.SP_ALPHA_WHITELIST);
+    require(counter <= LIMIT_USERS, Errors.SP_ALPHA_WHITELIST);
 
     whitelisted[_usrAddrs] = counter;
     counter = counter.add(1);

@@ -143,7 +143,7 @@ describe("Alpha", () => {
       await expect(vaultdai.connect(user_X)
             .deposit(depositAmount,
             { value: depositAmount })).to
-            .revertedWith("904");
+            .revertedWith("901");
 
     });
 

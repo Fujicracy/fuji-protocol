@@ -125,6 +125,8 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Transfer Amount to Vault
     IERC20(vAssets.borrowAsset).transfer(vault, userDebtBalance);
 
+    // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
+
     // Repay BaseProtocol debt
     IVault(vault).payback(int256(userDebtBalance));
 
@@ -148,11 +150,8 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Transfer to Liquidator the debtBalance + bonus
     IERC20(vAssets.borrowAsset).uniTransfer(msg.sender, userDebtBalance.add(bonus));
 
-    // Cast User addr to payable
-    address payable user = address(uint160(_userAddr));
-
     // Transfer left-over collateral to user
-    IERC20(vAssets.collateralAsset).uniTransfer(user, remainingCollat);
+    IERC20(vAssets.collateralAsset).uniTransfer(payable(_userAddr), remainingCollat);
 
     emit evLiquidate(_userAddr, msg.sender, vAssets.borrowAsset, userDebtBalance);
   }
@@ -182,7 +181,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Check Debt is > zero
     require(userDebtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
 
-    Flasher tflasher = Flasher(fujiAdmin.getFlasher());
+    Flasher tflasher = Flasher(payable(fujiAdmin.getFlasher()));
 
     if(_amount < 0) {
 
@@ -245,11 +244,11 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Update Balances at FujiERC1155
     IVault(vault).updateF1155Balances();
 
-    // Struct Instance to get Vault Asset IDs in F1155
-    IVaultExt.VaultAssets memory vAssets = IVaultExt(vault).vAssets();
-
     // Create Instance of FujiERC1155
     IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).fujiERC1155());
+
+    // Struct Instance to get Vault Asset IDs in F1155
+    IVaultExt.VaultAssets memory vAssets = IVaultExt(vault).vAssets();
 
     // Get user Collateral and Debt Balances
     uint256 userCollateral = F1155.balanceOf(_userAddr, vAssets.collateralID);
@@ -264,7 +263,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       Errors.VL_USER_NOT_LIQUIDATABLE
     );
 
-    Flasher tflasher = Flasher(fujiAdmin.getFlasher());
+    Flasher tflasher = Flasher(payable(fujiAdmin.getFlasher()));
 
     FlashLoan.Info memory info = FlashLoan.Info({
       callType: FlashLoan.CallType.Liquidate,
@@ -288,27 +287,26 @@ contract Fliquidator is Ownable, ReentrancyGuard {
   * @param flashloanfee: amount extra charged by flashloan provider
   * Emits a {FlashClose} event.
   */
-  function executeFlashClose(address payable _userAddr,address vault, uint256 _Amount, uint256 flashloanfee) external onlyFlash {
-
+  function executeFlashClose(
+    address payable _userAddr,
+    address vault,
+    uint256 _Amount,
+    uint256 flashloanfee
+  ) external onlyFlash {
     // Create Instance of FujiERC1155
     IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).fujiERC1155());
 
     // Struct Instance to get Vault Asset IDs in F1155
     IVaultExt.VaultAssets memory vAssets = IVaultExt(vault).vAssets();
-    console.log("vault balance", IERC20(vAssets.borrowAsset).balanceOf(vault));
 
     // Get user Collateral and Debt Balances
     uint256 userCollateral = F1155.balanceOf(_userAddr, vAssets.collateralID);
     uint256 userDebtBalance = F1155.balanceOf(_userAddr, vAssets.borrowID);
-    console.log("userCollateral",userCollateral);
-    console.log("userDebtBalance", userDebtBalance);
 
     // Get user Collateral + Flash Close Fee to close posisition, for _Amount passed
     uint256 userCollateralinPlay =
     (IVault(vault).getNeededCollateralFor(_Amount.add(flashloanfee), false))
     .mul(flashCloseF.a).div(flashCloseF.b);
-
-    console.log("userCollateralinPlay", userCollateralinPlay);
 
     // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
@@ -319,7 +317,6 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
     // Logic to handle Full or Partial FlashClose
     bool isFullFlashClose = _Amount == userDebtBalance ? true: false;
-    console.log("isFullFlashClose", isFullFlashClose);
 
     if (isFullFlashClose) {
 
@@ -328,7 +325,6 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
       // Withdraw Full collateral
       IVault(vault).withdraw(int256(userCollateral));
-      console.log("balanceAfterWithrawal", address(this).balance);
 
       // Send unUsed Collateral to User
       uint256 userCollateraluntouched = userCollateral.sub(userCollateralinPlay);
@@ -346,7 +342,6 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
     // Swap Collateral for underlying to repay Flashloan
     uint256 remainingFujiCollat = swap(vault, _Amount.add(flashloanfee), userCollateralinPlay);
-    console.log("remainingFujiCollat",remainingFujiCollat);
 
     // Send FlashClose Fee to FujiTreasury
     IERC20(vAssets.collateralAsset).uniTransfer(fujiAdmin.getTreasury(), remainingFujiCollat);
@@ -364,16 +359,18 @@ contract Fliquidator is Ownable, ReentrancyGuard {
   * @dev Liquidate a debt position by using a flashloan
   * @param _userAddr: user addr to be liquidated
   * @param _liquidatorAddr: liquidator address
-  * @param _Amount: amount of debt to be repaid
   * @param vault: Vault address
+  * @param _Amount: amount of debt to be repaid
+  * @param flashloanfee: amount extra charged by flashloan provider
   * Emits a {FlashLiquidate} event.
   */
   function executeFlashLiquidation(
     address _userAddr,
     address _liquidatorAddr,
+    address vault,
     uint256 _Amount,
-    address vault
-  ) external  onlyFlash nonReentrant {
+    uint256 flashloanfee
+  ) external  onlyFlash {
 
     // Create Instance of FujiERC1155
     IFujiERC1155 F1155 = IFujiERC1155(IVault(vault).fujiERC1155());
@@ -385,21 +382,15 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     uint256 userCollateral = F1155.balanceOf(_userAddr, vAssets.collateralID);
     uint256 userDebtBalance = F1155.balanceOf(_userAddr, vAssets.borrowID);
 
-    // Load the FlashLoan funds to this contract.
-    IERC20(vAssets.borrowAsset).transferFrom(fujiAdmin.getFlasher(), address(this), _Amount);
+    // Burn Collateral F1155 tokens
+    F1155.burn(_userAddr, vAssets.collateralID, userCollateral);
 
     // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
-    // Transfer Amount to Vault
-    IERC20(vAssets.borrowAsset).transfer(vault, _Amount);
-
-    // Repay BaseProtocol debt
-    IVault(vault).payback(int256(_Amount));
-
     //TODO: Transfer corresponding Debt Amount to Fuji Treasury
 
-    // Burn Collateral F1155 tokens
-    F1155.burn(_userAddr, vAssets.collateralID, userCollateral);
+    // Repay BaseProtocol debt to release collateral
+    IVault(vault).payback(int256(_Amount));
 
     // Withdraw collateral
     IVault(vault).withdraw(int256(userCollateral));
@@ -407,17 +398,20 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Compute the Liquidator Bonus bonusFlashL
     uint256 bonus = IVault(vault).getLiquidationBonusFor(userDebtBalance, true);
 
-    uint256 remainingCollat = swap(vault, _Amount.add(bonus), userCollateral);
+    uint256 remainingCollat = swap(
+      vault,
+      _Amount.add(flashloanfee).add(bonus),
+      userCollateral
+    );
 
-    // Cast Addresses to payable
-    address payable liquidator = address(uint160(_liquidatorAddr));
-    address payable user = address(uint160(_userAddr));
+    // Send flasher the underlying to repay Flashloan
+    IERC20(vAssets.borrowAsset).uniTransfer(payable(fujiAdmin.getFlasher()), _Amount.add(flashloanfee));
 
     // Transfer Bonus bonusFlashL to liquidator
-    IERC20(vAssets.borrowAsset).uniTransfer(liquidator, bonus);
+    IERC20(vAssets.borrowAsset).uniTransfer(payable(_liquidatorAddr), bonus);
 
-    // transfer Remaining Collateral to user deducted by bonus
-    IERC20(vAssets.collateralAsset).uniTransfer(user, remainingCollat.sub(bonus));
+    // Transfer left-over collateral to user
+    IERC20(vAssets.collateralAsset).uniTransfer(payable(_userAddr), remainingCollat);
 
     // Burn Debt F1155 tokens
     F1155.burn(_userAddr, vAssets.borrowID, userDebtBalance);
@@ -425,7 +419,12 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     emit FlashLiquidate(_userAddr, _liquidatorAddr, vAssets.borrowAsset, userDebtBalance);
   }
 
-
+  /**
+  * @dev Swap an amount of underlying
+  * @param _vault: Vault address
+  * @param _amountToReceive: amount of underlying to Receive
+  * @param _collateralAmount: collateral Amount sent for swap
+  */
   function swap(address _vault, uint256 _amountToReceive, uint256 _collateralAmount) internal returns(uint256) {
 
     // Struct Instance to get Vault Asset IDs in F1155

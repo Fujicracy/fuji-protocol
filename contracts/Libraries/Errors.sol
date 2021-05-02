@@ -52,11 +52,7 @@ library Errors {
 
   string public constant VLT_CALLER_MUST_BE_VAULT = '401'; // The caller of this function must be a vault
 
-  string public constant SP_ALPHA_ETH_CAP_VALUE = '901'; // One ETH cap value for Alpha Version < 1 ETH
-  string public constant SP_ALPHA_ADDR_NOT_WHTLIST = '902'; //Address is not Whitelisted to use alpha version Fuji Protocol
-  string public constant SP_ALPHA_ADDR_OK_WHTLIST = '903'; //Address has already been Whitelisted!
-  string public constant SP_ALPHA_WHTLIST_FULL = '904'; //Whitelist address list is already full
-  string public constant SP_ALPHA_WAIT_BLOCKLAG = '905'; //Block-lag for adding next address to whitelist has not passed
+  string public constant SP_ALPHA_WHITELIST = '901'; // One ETH cap value for Alpha Version < 1 ETH
 
 
 

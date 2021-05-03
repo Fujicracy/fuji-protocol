@@ -11,8 +11,6 @@ import { MathUtils } from '../Libraries/MathUtils.sol';
 import { Errors } from "../Libraries/Errors.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 
-import "hardhat/console.sol"; //test line
-
 contract F1155Manager is Ownable {
 
   using Address for address;
@@ -82,8 +80,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   function updateState(uint256 _assetID, uint256 newBalance) external override onlyPermit {
 
     uint256 total = totalSupply(_assetID);
-    //console.log("updateste, assetID", _assetID, "newbal",newBalance);
-    //console.log("totalbal", total);
 
     if (newBalance > 0 && total > 0 && newBalance > total) {
       uint256 diff = newBalance.sub(total);

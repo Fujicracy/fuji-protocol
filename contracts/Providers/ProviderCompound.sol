@@ -6,8 +6,6 @@ import { UniERC20 } from "../Libraries/LibUniERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IProvider } from "./IProvider.sol";
 
-import "hardhat/console.sol"; //test line
-
 interface gencToken is IERC20{
   function redeem(uint) external returns (uint);
   function redeemUnderlying(uint) external returns (uint);

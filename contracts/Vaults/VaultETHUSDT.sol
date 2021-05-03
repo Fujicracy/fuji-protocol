@@ -13,8 +13,6 @@ import { IFujiERC1155 } from "../FujiERC1155/IFujiERC1155.sol";
 import { IProvider } from "../Providers/IProvider.sol";
 import { Errors } from "../Libraries/Errors.sol";
 
-import "hardhat/console.sol"; //test line
-
 interface IAlphaWhitelist {
   function whitelistRoutine(
     address _usrAddrs,

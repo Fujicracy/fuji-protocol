@@ -21,8 +21,6 @@ import {
 import { FlashLoan } from "./LibFlashLoan.sol";
 import { IVault } from "../Vaults/IVault.sol";
 
-import "hardhat/console.sol"; //test line
-
 interface IFliquidator {
 
   function executeFlashClose(address _userAddr, address vault, uint256 _Amount, uint256 flashloanfee) external;
@@ -44,7 +42,7 @@ contract Flasher is
 
   address public aave_lending_pool;
   address public dydx_solo_margin;
-  
+
   receive() external payable {}
 
   constructor() public {

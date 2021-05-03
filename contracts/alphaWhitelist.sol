@@ -7,6 +7,8 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { Errors } from './Libraries/Errors.sol';
 import { IFujiERC1155 } from "./FujiERC1155/IFujiERC1155.sol";
 
+import "hardhat/console.sol"; //test line
+
 contract AlphaWhitelist is ReentrancyGuard, Ownable {
 
   using SafeMath for uint256;
@@ -77,6 +79,8 @@ contract AlphaWhitelist is ReentrancyGuard, Ownable {
   */
   function whitelistRoutine(address _usrAddrs, uint64 _assetID, uint256 _amount, address _erc1155) external returns(bool letgo) {
     uint256 currentBalance = IFujiERC1155(_erc1155).balanceOf(_usrAddrs, _assetID);
+    console.log("_usrAddrs", _usrAddrs);
+    console.log("currentBalance", currentBalance);
 
     if (currentBalance == 0) {
       counter = counter.add(1);
@@ -101,7 +105,7 @@ contract AlphaWhitelist is ReentrancyGuard, Ownable {
   * @dev Modifies the ETH_CAP_VALUE
   * @param _newEthCapValue: New ETH_CAP_VALUE
   */
-  function modifyCap(uint256 _newEthCapValue) public onlyOwner {
+    function modifyCap(uint256 _newEthCapValue) public onlyOwner {
     ETH_CAP_VALUE = _newEthCapValue;
     emit capValueUpdated(_newEthCapValue);
   }

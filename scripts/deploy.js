@@ -18,7 +18,7 @@ const main = async () => {
 
   // Step 1 of Deploy: Contracts which address is required to be hardcoded in other contracts
   //Fuji Mapping, for testing this is not required.
-  //const treasury = await deploy("GnosisSafe");
+  const treasury = await deploy("GnosisSafe");
 
   // Step 2 Of Deploy: Functional Contracts
   const fujiadmin = await deploy("FujiAdmin");
@@ -44,7 +44,7 @@ const main = async () => {
   // Step 5 - General Plug-ins and Set-up Transactions
   await fujiadmin.setFlasher(flasher.address);
   await fujiadmin.setFliquidator(fliquidator.address);
-  //await fujiadmin.setTreasury(treasury.address);
+  await fujiadmin.setTreasury(treasury.address);
   await fujiadmin.setController(controller.address);
   await fujiadmin.setaWhitelist(aWhitelist.address);
   await fliquidator.setfujiAdmin(fujiadmin.address);
@@ -53,6 +53,7 @@ const main = async () => {
   await controller.setfujiAdmin(fujiadmin.address);
   await f1155.setPermit(vaultdai.address, true);
   await f1155.setPermit(vaultusdc.address, true);
+  await f1155.setPermit(fliquidator.address, true);
 
   // Step 6 - Vault Set-up
   await vaultdai.setfujiAdmin(fujiadmin.address)

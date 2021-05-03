@@ -22,7 +22,7 @@ contract F1155Manager is Ownable {
 
   modifier onlyPermit() {
     require(
-      isPermitted(_msgSender()) ||
+      addrPermit[_msgSender()] ||
       msg.sender == owner(),
       Errors.VL_NOT_AUTHORIZED);
     _;
@@ -31,13 +31,6 @@ contract F1155Manager is Ownable {
   function setPermit(address _address, bool _permit) public onlyOwner {
     require((_address).isContract(), Errors.VL_NOT_A_CONTRACT);
     addrPermit[_address] = _permit;
-  }
-
-  function isPermitted(address _address) internal view returns (bool _permit) {
-    _permit = false;
-    if (addrPermit[_address]) {
-      _permit = true;
-    }
   }
 }
 
@@ -276,7 +269,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    * - `account` must have at least `amount` tokens of token type `id`.
    * - `amount` should be in WAD
    */
-  function burn(address account, uint256 id, uint256 amount) external override onlyPermit{
+  function burn(address account, uint256 id, uint256 amount) external override onlyPermit {
 
     require(account != address(0), Errors.VL_ZERO_ADDR_1155);
 
@@ -291,9 +284,10 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
     //  amountScaled = amountScaled.rayDiv(fujiIndex);
     //}
 
-    require(amountScaled != 0, Errors.VL_INVALID_BURN_AMOUNT);
-
-    require(accountBalance >= amountScaled, Errors.VL_INVALID_BURN_AMOUNT);
+    require(
+      amountScaled != 0 && accountBalance >= amountScaled,
+      Errors.VL_INVALID_BURN_AMOUNT
+    );
 
     _balances[id][account] = accountBalance.sub(amountScaled);
     _totalSupply[id] = assetTotalBalance.sub(amountScaled);
@@ -329,8 +323,10 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
       //if(getAssetIDType(ids[i])==AssetType.debtToken) {
       //  amountScaled = amountScaled.rayDiv(fujiIndex);
       //}
-      require(amountScaled != 0, Errors.VL_INVALID_BURN_AMOUNT);
-      require(accountBalance >= amountScaled, Errors.VL_INVALID_BURN_AMOUNT);
+      require(
+        amountScaled != 0 && accountBalance >= amountScaled,
+        Errors.VL_INVALID_BURN_AMOUNT
+      );
 
       _balances[ids[i]][account] = accountBalance.sub(amount);
       _totalSupply[ids[i]] = assetTotalBalance.sub(amount);
@@ -346,10 +342,9 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   * @param _type: enum AssetType, 0 = Collateral asset, 1 = debt asset
   * @param _addr: Reference Address of the Asset
   */
-  function getAssetID(AssetType _type, address _addr) external view override returns(uint256) {
-    uint256 theID = assetIDs[_type][_addr];
-    require(theID <= qtyOfManagedAssets, Errors.VL_INVALID_ASSETID_1155 );
-    return theID;
+  function getAssetID(AssetType _type, address _addr) external view override returns(uint256 id) {
+    id = assetIDs[_type][_addr];
+    require(id <= qtyOfManagedAssets, Errors.VL_INVALID_ASSETID_1155);
   }
 
   /**
@@ -368,7 +363,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   */
   /*
   function setoptimizerFee(uint256 _fee) public onlyOwner {
-    require(_fee >= WadRayMath.ray(), Errors.VL_OPTIMIZER_FEE_SMALL );
+    require(_fee >= WadRayMath.ray(), Errors.VL_OPTIMIZER_FEE_SMALL);
     optimizerFee = _fee;
   }
   */
@@ -387,7 +382,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   */
   function addInitializeAsset(AssetType _type, address _addr) external override onlyPermit returns(uint64){
 
-    require(assetIDs[_type][_addr] == 0 , Errors.VL_ASSET_EXISTS);
+    require(assetIDs[_type][_addr] == 0, Errors.VL_ASSET_EXISTS);
 
     assetIDs[_type][_addr] = qtyOfManagedAssets;
     assetIDtype[qtyOfManagedAssets] = _type;

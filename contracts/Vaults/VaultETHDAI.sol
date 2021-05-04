@@ -13,8 +13,6 @@ import { IFujiERC1155 } from "../FujiERC1155/IFujiERC1155.sol";
 import { IProvider } from "../Providers/IProvider.sol";
 import { Errors } from "../Libraries/Errors.sol";
 
-import "hardhat/console.sol"; //test line
-
 interface IAlphaWhitelist {
   function whitelistRoutine(
     address _usrAddrs,
@@ -157,8 +155,9 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
         ? providedCollateral.sub(neededCollateral)
         : uint256(_withdrawAmount);
 
-      // Check Withdrawal amount will not fall undercollaterized.
+      // Check Withdrawal amount, and that it will not fall undercollaterized.
       require(
+        amountToWithdraw != 0 &&
         providedCollateral.sub(amountToWithdraw) >= neededCollateral,
         Errors.VL_INVALID_WITHDRAW_AMOUNT
       );
@@ -199,8 +198,12 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
       true
     );
 
-    // Check Provided Collateral is greater than needed to maintain healthy position
-    require(providedCollateral > neededCollateral, Errors.VL_INVALID_BORROW_AMOUNT);
+    // Check Provided Collateral is not Zero, and greater than needed to maintain healthy position
+    require(
+      _borrowAmount != 0 &&
+      providedCollateral > neededCollateral,
+      Errors.VL_INVALID_BORROW_AMOUNT
+    );
 
     // Debt Management
     IFujiERC1155(fujiERC1155).mint(msg.sender, vAssets.borrowID, _borrowAmount, "");
@@ -228,8 +231,12 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
 
       uint256 userDebtBalance = IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID);
 
-      // Check User Debt is greater than Zero
-      require(userDebtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
+      // Check User Debt is greater than Zero and amount is not Zero
+      require(
+        _repayAmount != 0 &&
+        userDebtBalance > 0,
+        Errors.VL_NO_DEBT_TO_PAYBACK
+      );
 
       // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 

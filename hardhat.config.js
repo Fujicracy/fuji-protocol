@@ -66,10 +66,10 @@ module.exports = {
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_ID}`,
-      accounts: [process.env.PRIVATE_KEY]
-      //accounts: {
-        //mnemonic: mnemonic(),
-      //},
+      //accounts: [process.env.PRIVATE_KEY]
+      accounts: {
+        mnemonic: mnemonic(),
+      },
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${process.env.INFURA_ID}`,

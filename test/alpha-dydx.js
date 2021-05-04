@@ -163,9 +163,9 @@ describe("Alpha", () => {
             .changeEtherBalance(user_Y, negdepositAmount_Y);
 
       let balanceCheck = await vaultusdc.depositBalance(dydx.address);
-      let deposits = depositAmount.add(depositAmount_Y)/1;
+      let deposits = depositAmount.add(depositAmount_Y);
 
-      await expect(balanceCheck/1).to.be.closeTo(deposits, 2e6);
+      await expect(balanceCheck).to.be.gte(deposits);
 
     });
 
@@ -197,7 +197,7 @@ describe("Alpha", () => {
       let numberExpected2 = await vaultdai.depositBalance(dydx.address);
       numberExpected2 = numberExpected2-bstrapLiquidity/1;
 
-      await expect(numberExpected2/1).to.be.closeTo(numberExpected/1, 20e6);
+      await expect(numberExpected2).to.be.gte(numberExpected);
 
     });
 
@@ -320,7 +320,12 @@ describe("Alpha", () => {
 
       let vAssetStruct = await vaultdai.vAssets();
 
-      await dai.connect(user_X).approve(vaultdai.address, borrowAmount);
+      //Facilitate User_X some extra amount to pay for debt + accrued interest
+      let someextraAmount = ethers.utils.parseUnits("20", 18);
+      await vaultdai.connect(bootstraper).borrow(someextraAmount);
+      await dai.connect(bootstraper).transfer(user_X.address,someextraAmount);
+
+      await dai.connect(user_X).approve(vaultdai.address, borrowAmount.add(someextraAmount));
 
       await vaultdai.connect(user_X).payback(-1);
 
@@ -443,16 +448,16 @@ describe("Alpha", () => {
       await expect(await dai.balanceOf(theCurrentUser.address))
             .to.equal(borrowAmount);
 
-      //Facilitate User_X some extra DAI to pay for debt + accrued interest
-      let someextraDai = ethers.utils.parseUnits("20", 18);
-      await vaultdai.connect(bootstraper).borrow(someextraDai);
-      await dai.connect(bootstraper).transfer(theCurrentUser.address,someextraDai);
+      //Facilitate User_X some extra Amount to pay for debt + accrued interest
+      let someextraAmount = ethers.utils.parseUnits("20", 18);
+      await vaultdai.connect(bootstraper).borrow(someextraAmount);
+      await dai.connect(bootstraper).transfer(theCurrentUser.address,someextraAmount);
 
-      await dai.connect(theCurrentUser).approve(vaultdai.address, borrowAmount.add(someextraDai));
+      await dai.connect(theCurrentUser).approve(vaultdai.address, borrowAmount.add(someextraAmount));
 
       await vaultdai.connect(theCurrentUser).paybackAndWithdraw(-1, -1);
 
-      await expect(await dai.balanceOf(theCurrentUser.address)).to.be.lte(someextraDai);
+      await expect(await dai.balanceOf(theCurrentUser.address)).to.be.lte(someextraAmount);
 
       let f1155usertokebal = await f1155.balanceOf(theCurrentUser.address, vAssetStruct.borrowID);
       let f1155totaltokebal = await f1155.totalSupply(vAssetStruct.borrowID);
@@ -489,16 +494,16 @@ describe("Alpha", () => {
       await expect(await usdc.balanceOf(theCurrentUser.address))
             .to.equal(borrowAmount);
 
-      //Facilitate User_X some extra DAI to pay for debt + accrued interest
-      let someextrausdc = ethers.utils.parseUnits("20", 6);
-      await vaultusdc.connect(bootstraper).borrow(someextrausdc);
-      await usdc.connect(bootstraper).transfer(theCurrentUser.address,someextrausdc);
+      //Facilitate User_X some extra Amount to pay for debt + accrued interest
+      let someextraAmount = ethers.utils.parseUnits("20", 6);
+      await vaultusdc.connect(bootstraper).borrow(someextraAmount);
+      await usdc.connect(bootstraper).transfer(theCurrentUser.address,someextraAmount);
 
-      await usdc.connect(theCurrentUser).approve(vaultusdc.address, borrowAmount.add(someextrausdc));
+      await usdc.connect(theCurrentUser).approve(vaultusdc.address, borrowAmount.add(someextraAmount));
 
       await vaultusdc.connect(theCurrentUser).paybackAndWithdraw(-1, -1);
 
-      await expect(await usdc.balanceOf(theCurrentUser.address)).to.be.lte(someextrausdc);
+      await expect(await usdc.balanceOf(theCurrentUser.address)).to.be.lte(someextraAmount);
 
       let f1155usertokebal = await f1155.balanceOf(theCurrentUser.address, vAssetStruct.borrowID);
       let f1155totaltokebal = await f1155.totalSupply(vAssetStruct.borrowID);

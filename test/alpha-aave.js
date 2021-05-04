@@ -341,7 +341,7 @@ describe("Alpha", () => {
 
       let ethbalFinal = await user_X.getBalance();
 
-      await expect(ethbalOriginal/1).to.be.closeTo(ethbalFinal/1, 2e16);
+      await expect(ethbalOriginal/1).to.be.closeTo(ethbalFinal/1, 5e16);
     });
 
     it("12.- Users[16]: deposits 2 ETH to vaultusdc, borrows 3000 usdc, then paybacks 1250, and then withdraws 0.1 ETH", async () => {
@@ -452,7 +452,7 @@ describe("Alpha", () => {
       await expect(await dai.balanceOf(theCurrentUser.address))
             .to.equal(borrowAmount);
 
-      //Facilitate User_X some extra DAI to pay for debt + accrued interest
+      //Facilitate User_X some extra amount to pay for debt + accrued interest
       let someextraDai = ethers.utils.parseUnits("20", 18);
       await vaultdai.connect(bootstraper).borrow(someextraDai);
       await dai.connect(bootstraper).transfer(theCurrentUser.address,someextraDai);
@@ -471,7 +471,7 @@ describe("Alpha", () => {
       let ethbalFinal = await theCurrentUser.getBalance();
       ethbalFinal =ethbalFinal/1
 
-      await expect(ethbalOriginal/1).to.be.closeTo(ethbalFinal, 2e16);
+      await expect(ethbalOriginal/1).to.be.closeTo(ethbalFinal, 5e16);
     });
 
     it("16.- Users[8]: Try Deposit-and-Borrow, 2.5 ETH deposit, 500 Usdc borrow; then Repay-and-withdraw all, Vaultusdc Check Balances ", async () => {
@@ -498,7 +498,7 @@ describe("Alpha", () => {
       await expect(await usdc.balanceOf(theCurrentUser.address))
             .to.equal(borrowAmount);
 
-      //Facilitate User_X some extra DAI to pay for debt + accrued interest
+      //Facilitate User_X some extra amount to pay for debt + accrued interest
       let someextrausdc = ethers.utils.parseUnits("20", 6);
       await vaultusdc.connect(bootstraper).borrow(someextrausdc);
       await usdc.connect(bootstraper).transfer(theCurrentUser.address,someextrausdc);
@@ -516,7 +516,7 @@ describe("Alpha", () => {
       let ethbalFinal = await theCurrentUser.getBalance();
       ethbalFinal =ethbalFinal/1
 
-      await expect(ethbalOriginal/1).to.be.closeTo(ethbalFinal, 2e16);
+      await expect(ethbalOriginal/1).to.be.closeTo(ethbalFinal, 5e16);
     });
 
   });

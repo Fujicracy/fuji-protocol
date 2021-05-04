@@ -330,7 +330,7 @@ describe("Alpha", () => {
       // vault to use
       let thevault = vaultdai;
       let asset = dai;
-      let theActiveProvider = compound;
+      let theActiveProvider = dydx;
 
       // Set a defined ActiveProviders
       await thevault.setActiveProvider(theActiveProvider.address);
@@ -383,7 +383,7 @@ describe("Alpha", () => {
       // vault to use
       let thevault = vaultusdc;
       let asset = usdc;
-      let theActiveProvider = compound;
+      let theActiveProvider = dydx;
 
       // Set a defined ActiveProviders
       await thevault.setActiveProvider(theActiveProvider.address);

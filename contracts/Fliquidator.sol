@@ -16,8 +16,6 @@ import { UniERC20 } from "./Libraries/LibUniERC20.sol";
 import { IUniswapV2Router02} from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import { ReentrancyGuard } from '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 
-import "hardhat/console.sol"; //test line
-
 interface IVaultExt is IVault {
 
   //Asset Struct

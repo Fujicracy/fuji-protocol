@@ -190,7 +190,6 @@ describe("Alpha", () => {
             .changeEtherBalance(user_X, negdepositAmount);
 
       await vaultdai.depositBalance(compound.address);
-      await compound.getDepositBalanceTest("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", vaultdai.address);
 
       await expect(await vaultdai.connect(user_X)
             .withdraw(withdrawAmount)).to
@@ -451,8 +450,7 @@ describe("Alpha", () => {
 
       let f1155usertokebal = await f1155.balanceOf(theCurrentUser.address, vAssetStruct.borrowID);
       let f1155totaltokebal = await f1155.totalSupply(vAssetStruct.borrowID);
-      let balanceATCompound = await compound.getDepositBalanceTest(dai.address, vaultdai.address);
-      //console.log(f1155usertokebal/1,f1155totaltokebal/1,balanceATCompound.value/1);
+      //console.log(f1155usertokebal/1,f1155totaltokebal/1);
 
       let ethbalFinal = await theCurrentUser.getBalance();
       ethbalFinal =ethbalFinal/1
@@ -492,8 +490,7 @@ describe("Alpha", () => {
 
       let f1155usertokebal = await f1155.balanceOf(theCurrentUser.address, vAssetStruct.borrowID);
       let f1155totaltokebal = await f1155.totalSupply(vAssetStruct.borrowID);
-      let balanceATCompound = await compound.getDepositBalanceTest(usdc.address, vaultusdc.address);
-      //console.log(f1155usertokebal/1,f1155totaltokebal/1,balanceATCompound.value/1);
+      //console.log(f1155usertokebal/1,f1155totaltokebal/1);
 
       let ethbalFinal = await theCurrentUser.getBalance();
       ethbalFinal =ethbalFinal/1

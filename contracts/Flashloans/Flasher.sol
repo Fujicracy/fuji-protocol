@@ -153,7 +153,7 @@ contract Flasher is
     }
     else if (info.callType == FlashLoan.CallType.Close) {
       IFliquidator(info.fliquidator)
-      .executeFlashClose(info.user, info.vault, info.amount,2);
+      .executeFlashClose(info.user, info.vault, info.amount, 2);
     }
     else {
       IFliquidator(info.fliquidator)

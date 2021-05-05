@@ -122,8 +122,8 @@ describe("Alpha", () => {
 
       // Set up
       let theuser = users[11];
-      let depositETHAmount_1 = ethers.utils.parseEther ("3.99");
-      let depositETHAmount_2 = ethers.utils.parseEther ("1.5");
+      let depositETHAmount_1 = ethers.utils.parseEther ("2");
+      let depositETHAmount_2 = ethers.utils.parseEther ("1.99");
 
       // First Deposit
       await vaultdai.connect(theuser).deposit(depositETHAmount_1,{value:depositETHAmount_1});

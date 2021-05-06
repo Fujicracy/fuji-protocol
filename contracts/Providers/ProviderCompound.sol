@@ -74,7 +74,7 @@ interface IComptroller {
 }
 
 interface IFujiMappings {
-  function cTokenMapping(address) external view returns (address);
+  function addressMapping(address) external view returns (address);
 }
 
 contract HelperFunct {
@@ -83,8 +83,7 @@ contract HelperFunct {
   }
 
   function _getMappingAddr() internal pure returns (address) {
-    // FujiMapping Address, to be replaced
-    return 0xe81F70Cc7C0D46e12d70efc60607F16bbD617E88;
+    return 0x6b09443595BFb8F91eA837c7CB4Fe1255782093b;
   }
 
   function _getComptrollerAddress() internal pure returns (address) {
@@ -131,7 +130,7 @@ contract ProviderCompound is IProvider, HelperFunct {
    */
   function deposit(address _asset, uint256 _amount) external payable override {
     //Get cToken address from mapping
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).cTokenMapping(_asset);
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     //Enter and/or ensure collateral market is enacted
     _enterCollatMarket(cTokenAddr);
@@ -167,7 +166,7 @@ contract ProviderCompound is IProvider, HelperFunct {
    */
   function withdraw(address _asset, uint256 _amount) external payable override {
     //Get cToken address from mapping
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).cTokenMapping(_asset);
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     // Create a reference to the corresponding cToken contract
     IGenCToken cToken = IGenCToken(cTokenAddr);
@@ -183,7 +182,7 @@ contract ProviderCompound is IProvider, HelperFunct {
    */
   function borrow(address _asset, uint256 _amount) external payable override {
     //Get cToken address from mapping
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).cTokenMapping(_asset);
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     // Create a reference to the corresponding cToken contract
     IGenCToken cToken = IGenCToken(cTokenAddr);
@@ -202,7 +201,7 @@ contract ProviderCompound is IProvider, HelperFunct {
    */
   function payback(address _asset, uint256 _amount) external payable override {
     //Get cToken address from mapping
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).cTokenMapping(_asset);
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     if (_isETH(_asset)) {
       // Create a reference to the corresponding cToken contract
@@ -228,7 +227,7 @@ contract ProviderCompound is IProvider, HelperFunct {
    * @param _asset: token address to query the current borrowing rate.
    */
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).cTokenMapping(_asset);
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     //Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: Compound uses base 1e18
     uint256 bRateperBlock = (IGenCToken(cTokenAddr).borrowRatePerBlock()).mul(10**9);
@@ -243,7 +242,7 @@ contract ProviderCompound is IProvider, HelperFunct {
    * @param _asset: token address to query the balance.
    */
   function getBorrowBalance(address _asset) external view override returns (uint256) {
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).cTokenMapping(_asset);
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
     return IGenCToken(cTokenAddr).borrowBalanceStored(msg.sender);
   }
 
@@ -252,7 +251,7 @@ contract ProviderCompound is IProvider, HelperFunct {
    * @param _asset: token address to query the balance.
    */
   function getDepositBalance(address _asset) external view override returns (uint256) {
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).cTokenMapping(_asset);
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
     uint256 cTokenBal = IGenCToken(cTokenAddr).balanceOf(msg.sender);
     uint256 exRate = IGenCToken(cTokenAddr).exchangeRateStored();
     return exRate.mul(cTokenBal).div(1e18);
@@ -261,14 +260,14 @@ contract ProviderCompound is IProvider, HelperFunct {
   // This function is the accurate way to get Compound Borrow Balance but it costs 84K gas
   // and is not a view function.
   function getBorrowBalanceExact(address _asset, address who) external returns (uint256) {
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).cTokenMapping(_asset);
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
     return IGenCToken(cTokenAddr).borrowBalanceCurrent(who);
   }
 
   // This function is the accurate way to get Compound Deposit Balance but it costs 84K gas
   // and is not a view function.
   function getDepositBalanceExact(address _asset, address who) external returns (uint256) {
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).cTokenMapping(_asset);
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
     return IGenCToken(cTokenAddr).balanceOfUnderlying(who);
   }
 }

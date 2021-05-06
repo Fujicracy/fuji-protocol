@@ -9,7 +9,11 @@
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-babel": "^5.3.1",
     "eslint-plugin-prettier": "^3.1.4",
-    "hardhat-contract-sizer": "^2.0.3"
+    "hardhat-contract-sizer": "^2.0.3",
+    "prettier": "^2.2.1",
+    "prettier-plugin-solidity": "^1.0.0-beta.10",
+    "solhint": "^3.3.4",
+    "solhint-plugin-prettier": "^0.0.5"
   },
   "dependencies": {
     "@chainlink/contracts": "^0.0.12",
@@ -44,6 +48,8 @@
     "test:alpha-f1155": "hardhat test --network localhost test/alpha-f1155.js",
     "compile": "hardhat compile",
     "deploy": "hardhat run scripts/deploy.js && hardhat run scripts/publish.js",
+    "lint": "solhint -f table contracts/**/*.sol",
+    "format": "prettier --write contracts/**/*.sol",
     "watch": "node scripts/watch.js",
     "accounts": "hardhat accounts",
     "balance": "hardhat balance",

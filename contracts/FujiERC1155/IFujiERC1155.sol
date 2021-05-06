@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >= 0.6.12;
+pragma solidity >=0.6.12;
 pragma experimental ABIEncoderV2;
 
 interface IFujiERC1155 {
-
   //Asset Types
   enum AssetType {
     //uint8 = 0
@@ -15,9 +14,9 @@ interface IFujiERC1155 {
 
   //General Getter Functions
 
-  function getAssetID(AssetType _type, address _assetAddr) external view returns(uint256);
+  function getAssetID(AssetType _type, address _assetAddr) external view returns (uint256);
 
-  function qtyOfManagedAssets() external view returns(uint64);
+  function qtyOfManagedAssets() external view returns (uint64);
 
   function balanceOf(address _account, uint256 _id) external view returns (uint256);
 
@@ -26,12 +25,20 @@ interface IFujiERC1155 {
   //function balanceOfBatchType(address account, AssetType _Type) external view returns (uint256);
 
   //Permit Controlled  Functions
-  function mint(address _account, uint256 _id, uint256 _amount, bytes memory _data) external;
+  function mint(
+    address _account,
+    uint256 _id,
+    uint256 _amount,
+    bytes memory _data
+  ) external;
 
-  function burn(address _account, uint256 _id, uint256 _amount) external;
+  function burn(
+    address _account,
+    uint256 _id,
+    uint256 _amount
+  ) external;
 
   function updateState(uint256 _assetID, uint256 _newBalance) external;
 
-  function addInitializeAsset(AssetType _type, address _addr) external returns(uint64);
-
+  function addInitializeAsset(AssetType _type, address _addr) external returns (uint64);
 }

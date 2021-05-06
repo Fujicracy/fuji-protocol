@@ -90,7 +90,7 @@ describe("Alpha", () => {
     it("1.- Set limit users to 5, Users[0,1,2,3,4] added to whitelist, then users[5] tries deposit and reverts", async () => {
 
       // Set up Limit of users to 5. This is only staged for purposes of testing.
-      await aWhitelist.connect(users[0]).modifyLimitUser(5);
+      await aWhitelist.connect(users[0]).updateLimitUser(5);
 
       //Bootstrap Liquidity (1st User)
       let bootstraper = users[0];
@@ -113,7 +113,7 @@ describe("Alpha", () => {
     it("2.- Set ETH_CAP_VALUE to 2 eth, and Users[2] tries to deposit 4 ETH, and then 1 ETH and reverts ", async () => {
 
       // Set up Limit of users to 5. This is only staged for purposes of testing.
-      await aWhitelist.connect(users[0]).modifyCap(ethers.utils.parseEther("2"));
+      await aWhitelist.connect(users[0]).updateCap(ethers.utils.parseEther("2"));
 
       //Bootstrap Liquidity (1st User)
       let bootstraper = users[0];
@@ -123,7 +123,7 @@ describe("Alpha", () => {
       // Set up
       let theuser = users[11];
       let depositETHAmount_1 = ethers.utils.parseEther ("2");
-      let depositETHAmount_2 = ethers.utils.parseEther ("1.99");
+      let depositETHAmount_2 = ethers.utils.parseEther ("2.01");
 
       // First Deposit
       await vaultdai.connect(theuser).deposit(depositETHAmount_1,{value:depositETHAmount_1});

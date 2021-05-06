@@ -34,7 +34,7 @@ const fixture = async ([wallet, other], provider) => {
   const usdc = await ethers.getContractAt("IERC20", USDC_ADDR);
   const usdt = await ethers.getContractAt("IERC20", USDT_ADDR);
   const aweth = await ethers.getContractAt("IERC20", aWETH_ADDR);
-  const ceth = await ethers.getContractAt("CErc20", cETH_ADDR);
+  const ceth = await ethers.getContractAt("ICErc20", cETH_ADDR);
   const oracle = await ethers.getContractAt("AggregatorV3Interface", CHAINLINK_ORACLE_ADDR);
 
   // Step 1 of Deploy: Contracts which address is required to be hardcoded in other contracts

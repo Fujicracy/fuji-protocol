@@ -200,7 +200,7 @@ describe("Alpha", () => {
       await thevault.setActiveProvider(compound.address);
 
       // Set up high Deposit Limit. This is only staged for purposes of testing.
-      await aWhitelist.connect(users[0]).modifyCap(ethers.utils.parseEther("1000"));
+      await aWhitelist.connect(users[0]).updateCap(ethers.utils.parseEther("1000"));
 
       // Do a deposit
       await thevault.connect(user_X).depositAndBorrow(depositAmount, borrowAmount, {value:depositAmount});
@@ -234,7 +234,7 @@ describe("Alpha", () => {
       await thevault.setActiveProvider(aave.address);
 
       // Set up high Deposit Limit. This is only staged for purposes of testing.
-      await aWhitelist.connect(users[0]).modifyCap(ethers.utils.parseEther("1000"));
+      await aWhitelist.connect(users[0]).updateCap(ethers.utils.parseEther("1000"));
 
       // Do a deposit
       await thevault.connect(user_X).depositAndBorrow(depositAmount, borrowAmount, {value:depositAmount});

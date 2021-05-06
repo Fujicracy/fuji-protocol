@@ -146,7 +146,7 @@ contract ProviderAave is IProvider {
     if (_isEth) _token.deposit{ value: _amount }();
   }
 
-  function convertWethToEth(
+  function _convertWethToEth(
     bool _isEth,
     ITokenInterface _token,
     uint256 _amount
@@ -244,7 +244,7 @@ contract ProviderAave is IProvider {
     address _token = isEth ? _getWethAddr() : _asset;
 
     aave.borrow(_token, _amount, 2, 0, address(this));
-    convertWethToEth(isEth, ITokenInterface(_token), _amount);
+    _convertWethToEth(isEth, ITokenInterface(_token), _amount);
   }
 
   /**
@@ -265,7 +265,7 @@ contract ProviderAave is IProvider {
     uint256 finalBal = tokenContract.balanceOf(address(this));
     _amount = finalBal.sub(initialBal);
 
-    convertWethToEth(isEth, tokenContract, _amount);
+    _convertWethToEth(isEth, tokenContract, _amount);
   }
 
   /**

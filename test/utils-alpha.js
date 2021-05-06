@@ -71,30 +71,30 @@ const fixture = async ([wallet, other], provider) => {
   await fujiadmin.setTreasury(treasury.address);
   await fujiadmin.setController(controller.address);
   await fujiadmin.setaWhitelist(aWhitelist.address);
-  await fujiadmin.setvaultharvester(vaultharvester.address);
-  await fliquidator.setfujiAdmin(fujiadmin.address);
+  await fujiadmin.setVaultHarvester(vaultharvester.address);
+  await fliquidator.setFujiAdmin(fujiadmin.address);
   await fliquidator.setSwapper(UNISWAP_ROUTER_ADDR);
-  await flasher.setfujiAdmin(fujiadmin.address);
-  await controller.setfujiAdmin(fujiadmin.address);
+  await flasher.setFujiAdmin(fujiadmin.address);
+  await controller.setFujiAdmin(fujiadmin.address);
   await f1155.setPermit(fliquidator.address, true);
   await f1155.setPermit(vaultdai.address, true);
   await f1155.setPermit(vaultusdc.address, true);
   await f1155.setPermit(vaultusdt.address, true);
 
   // Step 6 - Vault Set-up
-  await vaultdai.setfujiAdmin(fujiadmin.address)
+  await vaultdai.setFujiAdmin(fujiadmin.address)
   await vaultdai.setProviders([compound.address, aave.address, dydx.address]);
   await vaultdai.setActiveProvider(compound.address);
   await vaultdai.setFujiERC1155(f1155.address);
   await vaultdai.setOracle(CHAINLINK_ORACLE_ADDR);
 
-  await vaultusdc.setfujiAdmin(fujiadmin.address);
+  await vaultusdc.setFujiAdmin(fujiadmin.address);
   await vaultusdc.setProviders([compound.address, aave.address, dydx.address]);
   await vaultusdc.setActiveProvider(compound.address);
   await vaultusdc.setFujiERC1155(f1155.address);
   await vaultusdc.setOracle(CHAINLINK_ORACLE_ADDR);
 
-  await vaultusdt.setfujiAdmin(fujiadmin.address);
+  await vaultusdt.setFujiAdmin(fujiadmin.address);
   await vaultusdt.setProviders([compound.address, aave.address]);
   await vaultusdt.setActiveProvider(compound.address);
   await vaultusdt.setFujiERC1155(f1155.address);

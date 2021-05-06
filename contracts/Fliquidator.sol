@@ -45,7 +45,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
   // Flash Close Fee Factor
   Factor public flashCloseF;
 
-  IFujiAdmin private fujiAdmin;
+  IFujiAdmin private _fujiAdmin;
   IUniswapV2Router02 public swapper;
 
   // Log Liquidation
@@ -65,7 +65,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
   modifier onlyFlash() {
     require(
-      msg.sender == fujiAdmin.getFlasher(),
+      msg.sender == _fujiAdmin.getFlasher(),
       Errors.VL_NOT_AUTHORIZED
     );
     _;
@@ -165,7 +165,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
   */
   function flashClose(int256 _amount, address _vault, uint8 _flashnum) external nonReentrant {
 
-    Flasher flasher = Flasher(payable(fujiAdmin.getFlasher()));
+    Flasher flasher = Flasher(payable(_fujiAdmin.getFlasher()));
 
     // Update Balances at FujiERC1155
     IVault(_vault).updateF1155Balances();
@@ -259,10 +259,10 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     uint256 remaining = swap(vAssets.borrowAsset, _amount.add(_flashloanFee), userCollateralinPlay);
 
     // Send FlashClose Fee to FujiTreasury
-    IERC20(vAssets.collateralAsset).uniTransfer(fujiAdmin.getTreasury(), remaining);
+    IERC20(vAssets.collateralAsset).uniTransfer(_fujiAdmin.getTreasury(), remaining);
 
     // Send flasher the underlying to repay Flashloan
-    IERC20(vAssets.borrowAsset).uniTransfer(payable(fujiAdmin.getFlasher()), _amount.add(_flashloanFee));
+    IERC20(vAssets.borrowAsset).uniTransfer(payable(_fujiAdmin.getFlasher()), _amount.add(_flashloanFee));
 
     // Burn Debt F1155 tokens
     F1155.burn(_userAddr, vAssets.borrowID, _amount);
@@ -301,7 +301,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       Errors.VL_USER_NOT_LIQUIDATABLE
     );
 
-    Flasher flasher = Flasher(payable(fujiAdmin.getFlasher()));
+    Flasher flasher = Flasher(payable(_fujiAdmin.getFlasher()));
 
     FlashLoan.Info memory info = FlashLoan.Info({
       callType: FlashLoan.CallType.Liquidate,
@@ -367,7 +367,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     console.log(remainingCollat);
 
     // Send flasher the underlying to repay Flashloan
-    IERC20(vAssets.borrowAsset).uniTransfer(payable(fujiAdmin.getFlasher()), _amount.add(_flashloanFee));
+    IERC20(vAssets.borrowAsset).uniTransfer(payable(_fujiAdmin.getFlasher()), _amount.add(_flashloanFee));
 
     // Transfer Bonus bonusFlashL to liquidator
     IERC20(vAssets.borrowAsset).uniTransfer(payable(_liquidatorAddr), bonus);
@@ -436,10 +436,10 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
   /**
   * @dev Sets the fujiAdmin Address
-  * @param _fujiAdmin: FujiAdmin Contract Address
+  * @param _newFujiAdmin: FujiAdmin Contract Address
   */
-  function setfujiAdmin(address _fujiAdmin) public isAuthorized{
-    fujiAdmin = IFujiAdmin(_fujiAdmin);
+  function setFujiAdmin(address _newFujiAdmin) public isAuthorized{
+    _fujiAdmin = IFujiAdmin(_newFujiAdmin);
   }
 
   /**

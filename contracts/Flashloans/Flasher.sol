@@ -38,7 +38,7 @@ contract Flasher is
   using SafeMath for uint256;
   using UniERC20 for IERC20;
 
-  IFujiAdmin public fujiAdmin;
+  IFujiAdmin private _fujiAdmin;
 
   address public aave_lending_pool;
   address public dydx_solo_margin;
@@ -54,8 +54,8 @@ contract Flasher is
 
   modifier isAuthorized() {
     require(
-      msg.sender == fujiAdmin.getController() ||
-      msg.sender == fujiAdmin.getFliquidator() ||
+      msg.sender == _fujiAdmin.getController() ||
+      msg.sender == _fujiAdmin.getFliquidator() ||
       msg.sender == owner(),
       Errors.VL_NOT_AUTHORIZED
     );
@@ -73,10 +73,10 @@ contract Flasher is
 
   /**
   * @dev Sets the fujiAdmin Address
-  * @param _fujiAdmin: FujiAdmin Contract Address
+  * @param _newFujiAdmin: FujiAdmin Contract Address
   */
-  function setfujiAdmin(address _fujiAdmin) public onlyOwner {
-    fujiAdmin = IFujiAdmin(_fujiAdmin);
+  function setFujiAdmin(address _newFujiAdmin) public onlyOwner {
+    _fujiAdmin = IFujiAdmin(_newFujiAdmin);
   }
 
 

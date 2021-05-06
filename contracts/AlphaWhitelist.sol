@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.4.25 <0.8.0;
 
+import { IAlphaWhiteList } from "./IAlphaWhiteList.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
@@ -9,7 +10,7 @@ import { IFujiERC1155 } from "./FujiERC1155/IFujiERC1155.sol";
 
 import "hardhat/console.sol"; //test line
 
-contract AlphaWhitelist is ReentrancyGuard, Ownable {
+contract AlphaWhitelist is IAlphaWhiteList, ReentrancyGuard, Ownable {
 
   using SafeMath for uint256;
 
@@ -17,10 +18,10 @@ contract AlphaWhitelist is ReentrancyGuard, Ownable {
   uint256 public LIMIT_USERS;
   uint256 public counter;
 
-  mapping(address => uint256) public whitelisted;
+  mapping(address => uint256) public whiteListed;
 
   // Log User entered
-	event userWhitelisted(address _userAddrs, uint256 _counter);
+	event userWhiteListed(address _userAddrs, uint256 _counter);
 
   // Log Limit Users Changed
   event userLimitUpdated(uint256 newUserLimit);
@@ -37,23 +38,23 @@ contract AlphaWhitelist is ReentrancyGuard, Ownable {
     LIMIT_USERS = _limitUsers;
     ETH_CAP_VALUE = _capValue;
 
-    addmetowhitelist(_fliquidator);
+    _addmetoWhiteList(_fliquidator);
   }
 
 
   /**
   * @dev Adds a user's address to the Fuji Whitelist
-  * Emits a {userWhitelisted} event.
+  * Emits a {userWhiteListed} event.
   */
-  function addmetowhitelist(address _usrAddrs) private nonReentrant {
+  function _addmetoWhiteList(address _usrAddrs) private nonReentrant {
 
-    require(whitelisted[_usrAddrs] == 0, Errors.SP_ALPHA_WHITELIST);
+    require(whiteListed[_usrAddrs] == 0, Errors.SP_ALPHA_WHITELIST);
     require(counter <= LIMIT_USERS, Errors.SP_ALPHA_WHITELIST);
 
-    whitelisted[_usrAddrs] = counter;
+    whiteListed[_usrAddrs] = counter;
     counter = counter.add(1);
 
-    emit userWhitelisted(_usrAddrs, counter);
+    emit userWhiteListed(_usrAddrs, counter);
   }
 
   /**
@@ -61,8 +62,8 @@ contract AlphaWhitelist is ReentrancyGuard, Ownable {
   * @param _usrAddrs: Address of the User to check
   * @return True or False
   */
-  function isAddrWhitelisted(address _usrAddrs) public view returns(bool) {
-    if (whitelisted[_usrAddrs] != 0) {
+  function isAddrWhiteListed(address _usrAddrs) public view returns(bool) {
+    if (whiteListed[_usrAddrs] != 0) {
       return true;
     } else {
       return false;
@@ -77,11 +78,8 @@ contract AlphaWhitelist is ReentrancyGuard, Ownable {
   * @param _usrAddrs: Address of the User to check
   * @return letgo a boolean that allows a function to continue in "require" context
   */
-  function whitelistRoutine(address _usrAddrs, uint64 _assetID, uint256 _amount, address _erc1155) external returns(bool letgo) {
+  function whiteListRoutine(address _usrAddrs, uint64 _assetID, uint256 _amount, address _erc1155) external override returns(bool letgo) {
     uint256 currentBalance = IFujiERC1155(_erc1155).balanceOf(_usrAddrs, _assetID);
-    console.log("_usrAddrs", _usrAddrs);
-    console.log("currentBalance", currentBalance);
-
     if (currentBalance == 0) {
       counter = counter.add(1);
       letgo = _amount <= ETH_CAP_VALUE && counter <= LIMIT_USERS;

@@ -7,13 +7,13 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract FujiAdmin is IFujiAdmin, Ownable {
 
-  address[] private vaults;
-  address private flasher;
-  address private fliquidator;
-  address payable private ftreasury;
-  address private controller;
-  address private aWhitelist;
-  address private vaultharvester;
+  address[] private _vaults;
+  address private _flasher;
+  address private _fliquidator;
+  address payable private _ftreasury;
+  address private _controller;
+  address private _aWhiteList;
+  address private _vaultHarvester;
 
   struct Factor {
     uint64 a;
@@ -42,18 +42,18 @@ contract FujiAdmin is IFujiAdmin, Ownable {
 
   /**
   * @dev Sets the flasher contract address
-  * @param _newflasher: flasher address
+  * @param _newFlasher: flasher address
   */
-  function setFlasher(address _newflasher) external  onlyOwner {
-    flasher = _newflasher;
+  function setFlasher(address _newFlasher) external  onlyOwner {
+    _flasher = _newFlasher;
   }
 
   /**
   * @dev Sets the fliquidator contract address
-  * @param _newfliquidator: new fliquidator address
+  * @param _newFliquidator: new fliquidator address
   */
-  function setFliquidator(address _newfliquidator) external  onlyOwner {
-    fliquidator = _newfliquidator;
+  function setFliquidator(address _newFliquidator) external  onlyOwner {
+    _fliquidator = _newFliquidator;
   }
 
   /**
@@ -61,31 +61,31 @@ contract FujiAdmin is IFujiAdmin, Ownable {
   * @param _newTreasury: new Fuji Treasury address
   */
   function setTreasury(address payable _newTreasury) external onlyOwner {
-    ftreasury = _newTreasury;
+    _ftreasury = _newTreasury;
   }
 
   /**
   * @dev Sets the controller contract address.
-  * @param _newcontroller: controller address
+  * @param _newController: controller address
   */
-  function setController(address _newcontroller) external onlyOwner {
-    controller = _newcontroller;
+  function setController(address _newController) external onlyOwner {
+    _controller = _newController;
   }
 
   /**
   * @dev Sets the Whitelistingcontract address
-  * @param _newaWhitelist: controller address
+  * @param _newAWhiteList: controller address
   */
-  function setaWhitelist(address _newaWhitelist) external  onlyOwner  {
-    aWhitelist = _newaWhitelist;
+  function setaWhitelist(address _newAWhiteList) external  onlyOwner  {
+    _aWhiteList = _newAWhiteList;
   }
 
   /**
   * @dev Sets the VaultHarvester address
-  * @param _newVaultharvester: controller address
+  * @param _newVaultHarverster: controller address
   */
-  function setVaultHarvester(address _newVaultharvester) external  onlyOwner  {
-    vaultharvester = _newVaultharvester;
+  function setVaultHarvester(address _newVaultHarverster) external  onlyOwner  {
+    _vaultHarvester = _newVaultHarverster;
   }
 
   /**
@@ -113,7 +113,7 @@ contract FujiAdmin is IFujiAdmin, Ownable {
   */
   function addVault(address _vaultAddr) external onlyOwner {
     //Loop to check if vault address is already there
-    vaults.push(_vaultAddr);
+    _vaults.push(_vaultAddr);
   }
 
   /**
@@ -122,38 +122,38 @@ contract FujiAdmin is IFujiAdmin, Ownable {
   * @param _vaultAddr: new provider fuji address
   */
   function overrideVault(uint8 _position, address _vaultAddr) external onlyOwner {
-    vaults[_position] = _vaultAddr;
+    _vaults[_position] = _vaultAddr;
   }
 
 
   // Getter Functions
 
   function getFlasher() external override view returns(address) {
-    return flasher;
+    return _flasher;
   }
 
   function getFliquidator() external override view returns(address) {
-    return fliquidator;
+    return _fliquidator;
   }
 
   function getTreasury() external override view returns(address payable) {
-    return ftreasury;
+    return _ftreasury;
   }
 
   function getController() external override view returns(address) {
-    return controller;
+    return _controller;
   }
 
-  function getaWhitelist() external override view returns(address) {
-    return aWhitelist;
+  function getaWhiteList() external override view returns(address) {
+    return _aWhiteList;
   }
 
   function getVaultHarvester() external override view returns(address) {
-    return vaultharvester;
+    return _vaultHarvester;
   }
 
   function getvaults() external view returns(address[] memory theVaults) {
-    theVaults = vaults;
+    theVaults = _vaults;
   }
 
   function getBonusFlashL() external view override returns(uint64, uint64){

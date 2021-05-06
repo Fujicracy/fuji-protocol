@@ -38,7 +38,7 @@ contract Controller is Ownable {
 
   using SafeMath for uint256;
 
-  IFujiAdmin private fujiAdmin;
+  IFujiAdmin private _fujiAdmin;
 
   //Refinancing Variables
   bool public greenLight;
@@ -67,17 +67,17 @@ contract Controller is Ownable {
 
   /**
   * @dev Sets the fujiAdmin Address
-  * @param _fujiAdmin: FujiAdmin Contract Address
+  * @param _newFujiAdmin: FujiAdmin Contract Address
   */
-  function setfujiAdmin(address _fujiAdmin) public isAuthorized{
-    fujiAdmin = IFujiAdmin(_fujiAdmin);
+  function setFujiAdmin(address _newFujiAdmin) public isAuthorized{
+    _fujiAdmin = IFujiAdmin(_newFujiAdmin);
   }
 
   /**
   * @dev Changes the conditional Threshold for a provider switch
   * @param _newThreshold: percent decimal in ray (example 25% =.25 x10^27)
   */
-  function setdeltaAPRThreshold(uint256 _newThreshold) external isAuthorized {
+  function setDeltaAPRThreshold(uint256 _newThreshold) external isAuthorized {
     deltaAPRThreshold = _newThreshold;
   }
 
@@ -169,7 +169,7 @@ contract Controller is Ownable {
       fliquidator: address(0)
     });
 
-    Flasher(payable(fujiAdmin.getFlasher())).initiateFlashloan(info, _flashnum);
+    Flasher(payable(_fujiAdmin.getFlasher())).initiateFlashloan(info, _flashnum);
 
     //Set the new provider in the Vault
     _setProvider(_vaultAddr, newProvider);
@@ -223,7 +223,7 @@ contract Controller is Ownable {
       fliquidator: address(0)
     });
 
-    Flasher(payable(fujiAdmin.getFlasher())).initiateFlashloan(info, _flashnum);
+    Flasher(payable(_fujiAdmin.getFlasher())).initiateFlashloan(info, _flashnum);
 
   }
 

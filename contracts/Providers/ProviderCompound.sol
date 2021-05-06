@@ -6,206 +6,232 @@ import { UniERC20 } from "../Libraries/LibUniERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IProvider } from "./IProvider.sol";
 
-interface gencToken is IERC20{
-  function redeem(uint) external returns (uint);
-  function redeemUnderlying(uint) external returns (uint);
-  function borrow(uint borrowAmount) external returns (uint);
+interface IGenCToken is IERC20 {
+  function redeem(uint256) external returns (uint256);
+
+  function redeemUnderlying(uint256) external returns (uint256);
+
+  function borrow(uint256 borrowAmount) external returns (uint256);
+
   function exchangeRateCurrent() external returns (uint256);
-  function exchangeRateStored() external view returns (uint);
-  function borrowRatePerBlock() external view returns (uint);
-  function balanceOfUnderlying(address owner) external returns (uint);
-  function getAccountSnapshot(address account) external view returns (uint, uint, uint, uint);
-  function totalBorrowsCurrent() external returns (uint);
-  function borrowBalanceCurrent(address account) external returns (uint);
-  function borrowBalanceStored(address account) external view returns (uint);
-  function getCash() external view returns (uint);
+
+  function exchangeRateStored() external view returns (uint256);
+
+  function borrowRatePerBlock() external view returns (uint256);
+
+  function balanceOfUnderlying(address owner) external returns (uint256);
+
+  function getAccountSnapshot(address account)
+    external
+    view
+    returns (
+      uint256,
+      uint256,
+      uint256,
+      uint256
+    );
+
+  function totalBorrowsCurrent() external returns (uint256);
+
+  function borrowBalanceCurrent(address account) external returns (uint256);
+
+  function borrowBalanceStored(address account) external view returns (uint256);
+
+  function getCash() external view returns (uint256);
 }
 
-interface CErc20 is gencToken {
+interface ICErc20 is IGenCToken {
   function mint(uint256) external returns (uint256);
-  function repayBorrow(uint repayAmount) external returns (uint);
-  function repayBorrowBehalf(address borrower, uint repayAmount) external returns (uint);
-  function _addReserves(uint addAmount) external returns (uint);
+
+  function repayBorrow(uint256 repayAmount) external returns (uint256);
+
+  function repayBorrowBehalf(address borrower, uint256 repayAmount) external returns (uint256);
 }
 
-interface CEth is gencToken {
+interface ICEth is IGenCToken {
   function mint() external payable;
+
   function repayBorrow() external payable;
+
   function repayBorrowBehalf(address borrower) external payable;
 }
 
-interface Comptroller {
+interface IComptroller {
   function markets(address) external returns (bool, uint256);
+
   function enterMarkets(address[] calldata) external returns (uint256[] memory);
-  function exitMarket(address cTokenAddress) external returns (uint);
-  function getAccountLiquidity(address) external view returns (uint256, uint256, uint256);
+
+  function exitMarket(address cTokenAddress) external returns (uint256);
+
+  function getAccountLiquidity(address)
+    external
+    view
+    returns (
+      uint256,
+      uint256,
+      uint256
+    );
 }
 
-interface FujiMappings {
+interface IFujiMappings {
   function cTokenMapping(address) external view returns (address);
 }
 
 contract HelperFunct {
-
-  function isETH(address token) internal pure returns (bool) {
+  function _isETH(address token) internal pure returns (bool) {
     return (token == address(0) || token == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE));
   }
 
-  function getMappingAddr() internal pure returns (address) {
+  function _getMappingAddr() internal pure returns (address) {
     // FujiMapping Address, to be replaced
     return 0xe81F70Cc7C0D46e12d70efc60607F16bbD617E88;
   }
 
-  function getComptrollerAddress() internal pure returns (address) {
+  function _getComptrollerAddress() internal pure returns (address) {
     return 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
   }
 
   //Compound functions
 
   /**
-  * @dev Approves vault's assets as collateral for Compound Protocol.
-  * @param _cTokenAddress: asset type to be approved as collateral.
-  */
+   * @dev Approves vault's assets as collateral for Compound Protocol.
+   * @param _cTokenAddress: asset type to be approved as collateral.
+   */
   function _enterCollatMarket(address _cTokenAddress) internal {
     // Create a reference to the corresponding network Comptroller
-    Comptroller Cptrllr = Comptroller(getComptrollerAddress());
+    IComptroller comptroller = IComptroller(_getComptrollerAddress());
 
     address[] memory cTokenMarkets = new address[](1);
     cTokenMarkets[0] = _cTokenAddress;
-    Cptrllr.enterMarkets(cTokenMarkets);
+    comptroller.enterMarkets(cTokenMarkets);
   }
 
   /**
-  * @dev Removes vault's assets as collateral for Compound Protocol.
-  * @param _cTokenAddress: asset type to be removed as collateral.
-  */
+   * @dev Removes vault's assets as collateral for Compound Protocol.
+   * @param _cTokenAddress: asset type to be removed as collateral.
+   */
   function _exitCollatMarket(address _cTokenAddress) internal {
     // Create a reference to the corresponding network Comptroller
-    Comptroller Cptrllr = Comptroller(getComptrollerAddress());
+    IComptroller comptroller = IComptroller(_getComptrollerAddress());
 
-    Cptrllr.exitMarket(_cTokenAddress);
+    comptroller.exitMarket(_cTokenAddress);
   }
-
 }
 
 contract ProviderCompound is IProvider, HelperFunct {
-
   using SafeMath for uint256;
   using UniERC20 for IERC20;
 
   //Provider Core Functions
 
   /**
- * @dev Deposit ETH/ERC20_Token.
- * @param _depositAsset: token address to deposit. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
- * @param _amount: token amount to deposit.
- */
-  function deposit(address _depositAsset, uint256 _amount) external override payable {
+   * @dev Deposit ETH/ERC20_Token.
+   * @param _asset: token address to deposit. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+   * @param _amount: token amount to deposit.
+   */
+  function deposit(address _asset, uint256 _amount) external payable override {
     //Get cToken address from mapping
-    address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_depositAsset);
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).cTokenMapping(_asset);
 
     //Enter and/or ensure collateral market is enacted
-    _enterCollatMarket(ctokenaddress);
+    _enterCollatMarket(cTokenAddr);
 
-    if (isETH(_depositAsset)) {
+    if (_isETH(_asset)) {
       // Create a reference to the cToken contract
-      CEth cToken = CEth(ctokenaddress);
+      ICEth cToken = ICEth(cTokenAddr);
 
       //Compound protocol Mints cTokens, ETH method
-      cToken.mint{value: _amount}();
-    }
-    else {
+      cToken.mint{ value: _amount }();
+    } else {
       // Create reference to the ERC20 contract
-      IERC20 ERC20token = IERC20(_depositAsset);
+      IERC20 erc20token = IERC20(_asset);
 
       // Create a reference to the cToken contract
-      CErc20 cToken = CErc20(ctokenaddress);
+      ICErc20 cToken = ICErc20(cTokenAddr);
 
       //Checks, Vault balance of ERC20 to make deposit
-      require(ERC20token.balanceOf(address(this)) >= _amount, "Not enough Balance");
+      require(erc20token.balanceOf(address(this)) >= _amount, "Not enough Balance");
 
       //Approve to move ERC20tokens
-      ERC20token.approve(ctokenaddress, _amount);
+      erc20token.approve(cTokenAddr, _amount);
 
       // Compound Protocol mints cTokens, trhow error if not
-      require(cToken.mint(_amount)==0, "deposit-failed");
+      require(cToken.mint(_amount) == 0, "Deposit-failed");
     }
   }
 
   /**
- * @dev Withdraw ETH/ERC20_Token.
- * @param _withdrawAsset: token address to withdraw. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
- * @param _amount: token amount to withdraw.
- */
-  function withdraw(address _withdrawAsset, uint256 _amount) external override payable {
+   * @dev Withdraw ETH/ERC20_Token.
+   * @param _asset: token address to withdraw. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+   * @param _amount: token amount to withdraw.
+   */
+  function withdraw(address _asset, uint256 _amount) external payable override {
     //Get cToken address from mapping
-    address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_withdrawAsset);
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).cTokenMapping(_asset);
 
     // Create a reference to the corresponding cToken contract
-    gencToken cToken = gencToken(ctokenaddress);
+    IGenCToken cToken = IGenCToken(cTokenAddr);
 
     //Compound Protocol Redeem Process, throw errow if not.
     require(cToken.redeemUnderlying(_amount) == 0, "Withdraw-failed");
   }
 
   /**
- * @dev Borrow ETH/ERC20_Token.
- * @param _borrowAsset token address to borrow.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
- * @param _amount: token amount to borrow.
- */
-  function borrow(address _borrowAsset, uint256 _amount) external override payable {
+   * @dev Borrow ETH/ERC20_Token.
+   * @param _asset token address to borrow.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+   * @param _amount: token amount to borrow.
+   */
+  function borrow(address _asset, uint256 _amount) external payable override {
     //Get cToken address from mapping
-    address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_borrowAsset);
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).cTokenMapping(_asset);
 
     // Create a reference to the corresponding cToken contract
-    gencToken cToken = gencToken(ctokenaddress);
+    IGenCToken cToken = IGenCToken(cTokenAddr);
 
     //Enter and/or ensure collateral market is enacted
-    //_enterCollatMarket(ctokenaddress);
+    //_enterCollatMarket(cTokenAddr);
 
     //Compound Protocol Borrow Process, throw errow if not.
     require(cToken.borrow(_amount) == 0, "borrow-failed");
-
   }
 
   /**
-  * @dev Payback borrowed ETH/ERC20_Token.
-  * @param _paybackAsset token address to payback.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
-  * @param _amount: token amount to payback.
-  */
-  function payback(address _paybackAsset, uint256 _amount) external override payable {
+   * @dev Payback borrowed ETH/ERC20_Token.
+   * @param _asset token address to payback.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+   * @param _amount: token amount to payback.
+   */
+  function payback(address _asset, uint256 _amount) external payable override {
     //Get cToken address from mapping
-    address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_paybackAsset);
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).cTokenMapping(_asset);
 
-    if (isETH(_paybackAsset)) {
+    if (_isETH(_asset)) {
       // Create a reference to the corresponding cToken contract
-      CEth cToken = CEth(ctokenaddress);
+      ICEth cToken = ICEth(cTokenAddr);
 
-      cToken.repayBorrow{value: msg.value}();
-    }
-    else {
+      cToken.repayBorrow{ value: msg.value }();
+    } else {
       // Create reference to the ERC20 contract
-      IERC20 ERC20token = IERC20(_paybackAsset);
+      IERC20 erc20token = IERC20(_asset);
 
       // Create a reference to the corresponding cToken contract
-      CErc20 cToken = CErc20(ctokenaddress);
+      ICErc20 cToken = ICErc20(cTokenAddr);
 
       // Check there is enough balance to pay
-      require(ERC20token.balanceOf(address(this)) >= _amount, "not-enough-token");
-      ERC20token.approve(ctokenaddress, _amount);
+      require(erc20token.balanceOf(address(this)) >= _amount, "Not-enough-token");
+      erc20token.approve(cTokenAddr, _amount);
       cToken.repayBorrow(_amount);
     }
   }
 
   /**
-  * @dev Returns the current borrowing rate (APR) of a ETH/ERC20_Token, in ray(1e27).
-  * @param _asset: token address to query the current borrowing rate.
-  */
-  function getBorrowRateFor(address _asset) external view override returns(uint256) {
-    address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_asset);
+   * @dev Returns the current borrowing rate (APR) of a ETH/ERC20_Token, in ray(1e27).
+   * @param _asset: token address to query the current borrowing rate.
+   */
+  function getBorrowRateFor(address _asset) external view override returns (uint256) {
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).cTokenMapping(_asset);
 
     //Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: Compound uses base 1e18
-    uint256 bRateperBlock = (gencToken(ctokenaddress).borrowRatePerBlock()).mul(10**9);
+    uint256 bRateperBlock = (IGenCToken(cTokenAddr).borrowRatePerBlock()).mul(10**9);
 
     // The approximate number of blocks per year that is assumed by the Compound interest rate model
     uint256 blocksperYear = 2102400;
@@ -213,41 +239,36 @@ contract ProviderCompound is IProvider, HelperFunct {
   }
 
   /**
-  * @dev Returns the borrow balance of a ETH/ERC20_Token.
-  * @param _asset: token address to query the balance.
-  */
-  function getBorrowBalance(address _asset) external view override returns(uint256) {
-    address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_asset);
-    return gencToken(ctokenaddress).borrowBalanceStored(msg.sender);
+   * @dev Returns the borrow balance of a ETH/ERC20_Token.
+   * @param _asset: token address to query the balance.
+   */
+  function getBorrowBalance(address _asset) external view override returns (uint256) {
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).cTokenMapping(_asset);
+    return IGenCToken(cTokenAddr).borrowBalanceStored(msg.sender);
   }
 
   /**
-  * @dev Returns the deposit balance of a ETH/ERC20_Token.
-  * @param _asset: token address to query the balance.
-  */
-  function getDepositBalance(address _asset) external view override returns(uint256) {
-    address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_asset);
-    uint256 cTokenbal = gencToken(ctokenaddress).balanceOf(msg.sender);
-    uint256 exRate = gencToken(ctokenaddress).exchangeRateStored();
-    uint256 depositBal = (exRate.mul(cTokenbal).div(1e18));
-    return depositBal;
+   * @dev Returns the deposit balance of a ETH/ERC20_Token.
+   * @param _asset: token address to query the balance.
+   */
+  function getDepositBalance(address _asset) external view override returns (uint256) {
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).cTokenMapping(_asset);
+    uint256 cTokenBal = IGenCToken(cTokenAddr).balanceOf(msg.sender);
+    uint256 exRate = IGenCToken(cTokenAddr).exchangeRateStored();
+    return exRate.mul(cTokenBal).div(1e18);
   }
 
   // This function is the accurate way to get Compound Borrow Balance but it costs 84K gas
   // and is not a view function.
-  function getBorrowBalanceExact(address _asset, address who) external returns(uint256) {
-    address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_asset);
-    uint256 borrowbal = gencToken(ctokenaddress).borrowBalanceCurrent(who);
-    return borrowbal;
+  function getBorrowBalanceExact(address _asset, address who) external returns (uint256) {
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).cTokenMapping(_asset);
+    return IGenCToken(cTokenAddr).borrowBalanceCurrent(who);
   }
 
   // This function is the accurate way to get Compound Deposit Balance but it costs 84K gas
   // and is not a view function.
-  function getDepositBalanceExact(address _asset, address who) external returns(uint256) {
-    address ctokenaddress = FujiMappings(getMappingAddr()).cTokenMapping(_asset);
-    uint256 depositBal = gencToken(ctokenaddress).balanceOfUnderlying(who);
-    return depositBal;
+  function getDepositBalanceExact(address _asset, address who) external returns (uint256) {
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).cTokenMapping(_asset);
+    return IGenCToken(cTokenAddr).balanceOfUnderlying(who);
   }
-
-
 }

@@ -11,18 +11,10 @@ import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.6/interfaces/
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IFujiERC1155 } from "../FujiERC1155/IFujiERC1155.sol";
 import { IProvider } from "../Providers/IProvider.sol";
+import { IAlphaWhiteList } from "../IAlphaWhiteList.sol";
 import { Errors } from "../Libraries/Errors.sol";
 
 import "hardhat/console.sol"; //test line
-
-interface IAlphaWhitelist {
-  function whitelistRoutine(
-    address _usrAddrs,
-    uint64 _assetId,
-    uint256 _amount,
-    address _erc1155
-  ) external returns(bool);
-}
 
 interface IVaultHarvester{
   function collectRewards(uint256 _farmProtocolNum) external returns(address claimedToken);
@@ -47,13 +39,13 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   address[] public providers;
   address public override activeProvider;
 
-  IFujiAdmin private fujiAdmin;
+  IFujiAdmin private _fujiAdmin;
   address public override fujiERC1155;
   AggregatorV3Interface public oracle;
 
   modifier isAuthorized() {
     require(
-      msg.sender == fujiAdmin.getController() ||
+      msg.sender == _fujiAdmin.getController() ||
       msg.sender == owner(),
       Errors.VL_NOT_AUTHORIZED);
     _;
@@ -61,7 +53,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
 
   modifier onlyFlash() {
     require(
-      msg.sender == fujiAdmin.getFlasher(),
+      msg.sender == _fujiAdmin.getFlasher(),
       Errors.VL_NOT_AUTHORIZED);
       _;
   }
@@ -116,8 +108,8 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
 
     // Alpha Whitelist Routine
     require(
-      IAlphaWhitelist(fujiAdmin.getaWhitelist())
-        .whitelistRoutine(msg.sender, vAssets.collateralID, _collateralAmount, fujiERC1155),
+      IAlphaWhiteList(_fujiAdmin.getaWhiteList())
+        .whiteListRoutine(msg.sender, vAssets.collateralID, _collateralAmount, fujiERC1155),
       Errors.SP_ALPHA_WHITELIST
     );
 
@@ -140,7 +132,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   function withdraw(int256 _withdrawAmount) public override nonReentrant {
 
     // If call from Normal User do typical, otherwise Fliquidator
-    if(msg.sender != fujiAdmin.getFliquidator()) {
+    if(msg.sender != _fujiAdmin.getFliquidator()) {
 
       updateF1155Balances();
 
@@ -231,7 +223,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   function payback(int256 _repayAmount) public override payable {
 
     // If call from Normal User do typical, otherwise Fliquidator
-    if (msg.sender != fujiAdmin.getFliquidator()) {
+    if (msg.sender != _fujiAdmin.getFliquidator()) {
 
       updateF1155Balances();
 
@@ -329,10 +321,10 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
 
   /**
   * @dev Sets the fujiAdmin Address
-  * @param _fujiAdmin: FujiAdmin Contract Address
+  * @param _newFujiAdmin: FujiAdmin Contract Address
   */
-  function setfujiAdmin(address _fujiAdmin) public onlyOwner {
-    fujiAdmin = IFujiAdmin(_fujiAdmin);
+  function setFujiAdmin(address _newFujiAdmin) public onlyOwner {
+    _fujiAdmin = IFujiAdmin(_newFujiAdmin);
   }
 
   /**
@@ -410,12 +402,12 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   ) external view override returns(uint256) {
     if (_flash) {
       // Bonus Factors for Flash Liquidation
-      (uint64 a, uint64 b) = fujiAdmin.getBonusFlashL();
+      (uint64 a, uint64 b) = _fujiAdmin.getBonusFlashL();
       return _amount.mul(a).div(b);
     }
     else {
       //Bonus Factors for Normal Liquidation
-      (uint64 a, uint64 b) = fujiAdmin.getBonusLiq();
+      (uint64 a, uint64 b) = _fujiAdmin.getBonusLiq();
       return _amount.mul(a).div(b);
     }
   }
@@ -476,15 +468,15 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   * @param _farmProtocolNum: number per VaultHarvester Contract for specific farm
   */
   function harvestRewards(uint256 _farmProtocolNum) public onlyOwner {
-    address tokenReturned =
-    IVaultHarvester(fujiAdmin.getvaultharvester()).collectRewards(_farmProtocolNum);
-    uint256 tokenbal = IERC20(tokenReturned).balanceOf(address(this));
+    address tokenReturned = IVaultHarvester(_fujiAdmin.getVaultHarvester())
+      .collectRewards(_farmProtocolNum);
+    uint256 tokenBal = IERC20(tokenReturned).balanceOf(address(this));
     require(
       tokenReturned != address(0) &&
-      tokenbal > 0,
+      tokenBal > 0,
       Errors.VL_HARVESTING_FAILED
     );
-    IERC20(tokenReturned).uniTransfer(payable(fujiAdmin.getTreasury()),tokenbal);
+    IERC20(tokenReturned).uniTransfer(payable(_fujiAdmin.getTreasury()), tokenBal);
   }
 
 }

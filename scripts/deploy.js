@@ -38,6 +38,7 @@ const main = async () => {
     ethers.utils.parseEther("12"),
     fliquidator.address
   ]);
+  const vaultharvester = await deploy("VaultHarvester");
   const vaultdai = await deploy("VaultETHDAI");
   const vaultusdc = await deploy("VaultETHUSDC");
 
@@ -47,6 +48,7 @@ const main = async () => {
   await fujiadmin.setTreasury(treasury.address);
   await fujiadmin.setController(controller.address);
   await fujiadmin.setaWhitelist(aWhitelist.address);
+  await fujiadmin.setVaultHarvester(vaultharvester.address);
   await fliquidator.setFujiAdmin(fujiadmin.address);
   await fliquidator.setSwapper(UNISWAP_ROUTER_ADDR);
   await flasher.setFujiAdmin(fujiadmin.address);

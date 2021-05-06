@@ -13,6 +13,8 @@ import { IFujiERC1155 } from "../FujiERC1155/IFujiERC1155.sol";
 import { IProvider } from "../Providers/IProvider.sol";
 import { Errors } from "../Libraries/Errors.sol";
 
+import "hardhat/console.sol"; //test line
+
 interface IAlphaWhitelist {
   function whitelistRoutine(
     address _usrAddrs,
@@ -20,6 +22,10 @@ interface IAlphaWhitelist {
     uint256 _amount,
     address _erc1155
   ) external returns(bool);
+}
+
+interface IVaultHarvester{
+  function collectRewards(uint256 _farmProtocolNum) external returns(address claimedToken);
 }
 
 contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
@@ -463,6 +469,22 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     for(uint i = 0; i < providers.length; i++){
       value += IProvider(providers[i]).getDepositBalance(vAssets.collateralAsset);
     }
+  }
+
+  /**
+  * @dev Harvests the Rewards from baseLayer Protocols
+  * @param _farmProtocolNum: number per VaultHarvester Contract for specific farm
+  */
+  function harvestRewards(uint256 _farmProtocolNum) public onlyOwner {
+    address tokenReturned =
+    IVaultHarvester(fujiAdmin.getvaultharvester()).collectRewards(_farmProtocolNum);
+    uint256 tokenbal = IERC20(tokenReturned).balanceOf(address(this));
+    require(
+      tokenReturned != address(0) &&
+      tokenbal > 0,
+      Errors.VL_HARVESTING_FAILED
+    );
+    IERC20(tokenReturned).uniTransfer(payable(fujiAdmin.getTreasury()),tokenbal);
   }
 
 }

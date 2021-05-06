@@ -36,6 +36,7 @@ describe("Alpha", () => {
   let compound;
   let dydx;
   let aWhitelist;
+  let vaultharvester;
   let vaultdai;
   let vaultusdc;
   let vaultusdt;
@@ -76,6 +77,7 @@ describe("Alpha", () => {
     compound = _fixture.compound;
     dydx = _fixture.dydx;
     aWhitelist = _fixture.aWhitelist;
+    vaultharvester = _fixture.vaultharvester;
     vaultdai = _fixture.vaultdai;
     vaultusdc = _fixture.vaultusdc;
     vaultusdt = _fixture.vaultusdt;

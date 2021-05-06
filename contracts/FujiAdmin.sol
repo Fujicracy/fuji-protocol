@@ -7,12 +7,13 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract FujiAdmin is IFujiAdmin, Ownable {
 
-  address[] public vaults;
-  address public flasher;
-  address public fliquidator;
-  address payable public ftreasury;
-  address public controller;
-  address public aWhitelist;
+  address[] private vaults;
+  address private flasher;
+  address private fliquidator;
+  address payable private ftreasury;
+  address private controller;
+  address private aWhitelist;
+  address private vaultharvester;
 
   struct Factor {
     uint64 a;
@@ -80,6 +81,14 @@ contract FujiAdmin is IFujiAdmin, Ownable {
   }
 
   /**
+  * @dev Sets the VaultHarvester address
+  * @param _newVaultharvester: controller address
+  */
+  function setvaultharvester(address _newVaultharvester) external  onlyOwner  {
+    vaultharvester = _newVaultharvester;
+  }
+
+  /**
   * @dev Set Factors "a" and "b" for a Struct Factor
   * For bonusL; Sets the Bonus for normal Liquidation, should be < 1, a/b
   * For bonusFlashL; Sets the Bonus for flash Liquidation, should be < 1, a/b
@@ -137,6 +146,10 @@ contract FujiAdmin is IFujiAdmin, Ownable {
 
   function getaWhitelist() external override view returns(address) {
     return aWhitelist;
+  }
+
+  function getvaultharvester() external override view returns(address) {
+    return vaultharvester;
   }
 
   function getvaults() external view returns(address[] memory theVaults) {

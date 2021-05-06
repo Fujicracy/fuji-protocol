@@ -19,6 +19,7 @@ const AWhitelist = require("../artifacts/contracts/AlphaWhitelist.sol/AlphaWhite
 const VaultETHDAI = require("../artifacts/contracts/Vaults/VaultETHDAI.sol/VaultETHDAI.json");
 const VaultETHUSDC = require("../artifacts/contracts/Vaults/VaultETHUSDC.sol/VaultETHUSDC.json");
 const VaultETHUSDT = require("../artifacts/contracts/Vaults/VaultETHUSDT.sol/VaultETHUSDT.json");
+const VaultHarvester = require("../artifacts/contracts/Vaults/VaultHarvester.sol/VaultHarvester.json")
 const Aave = require("../artifacts/contracts/Providers/ProviderAave.sol/ProviderAave.json");
 const Compound = require("../artifacts/contracts/Providers/ProviderCompound.sol/ProviderCompound.json");
 const Dydx = require("../artifacts/contracts/Providers/ProviderDYDX.sol/ProviderDYDX.json")
@@ -59,6 +60,7 @@ const fixture = async ([wallet, other], provider) => {
       ethers.utils.parseEther("12"),
       fliquidator.address
     ]);
+  const vaultharvester = await deployContract(wallet, VaultHarvester, []);
   const vaultdai = await deployContract(wallet, VaultETHDAI,[]);
   const vaultusdc = await deployContract(wallet, VaultETHUSDC,[]);
   const vaultusdt = await deployContract(wallet, VaultETHUSDT,[]);
@@ -69,6 +71,7 @@ const fixture = async ([wallet, other], provider) => {
   await fujiadmin.setTreasury(treasury.address);
   await fujiadmin.setController(controller.address);
   await fujiadmin.setaWhitelist(aWhitelist.address);
+  await fujiadmin.setvaultharvester(vaultharvester.address);
   await fliquidator.setfujiAdmin(fujiadmin.address);
   await fliquidator.setSwapper(UNISWAP_ROUTER_ADDR);
   await flasher.setfujiAdmin(fujiadmin.address);
@@ -114,6 +117,7 @@ const fixture = async ([wallet, other], provider) => {
     compound,
     dydx,
     aWhitelist,
+    vaultharvester,
     vaultdai,
     vaultusdc,
     vaultusdt

@@ -264,7 +264,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   function executeSwitch(
     address _newProvider,
     uint256 _flashLoanAmount,
-    uint256 fee
+    uint256 _fee
   ) external override onlyFlash whenNotPaused {
     // Compute Ratio of transfer before payback
     uint256 ratio = (_flashLoanAmount).mul(1e18).div(borrowBalance(activeProvider));
@@ -280,10 +280,10 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     _deposit(collateraltoMove, _newProvider);
 
     // Borrow from the new provider, borrowBalance + premium
-    _borrow(_flashLoanAmount.add(fee), _newProvider);
+    _borrow(_flashLoanAmount.add(_fee), _newProvider);
 
     // return borrowed amount to Flasher
-    IERC20(vAssets.borrowAsset).uniTransfer(msg.sender, _flashLoanAmount.add(fee));
+    IERC20(vAssets.borrowAsset).uniTransfer(msg.sender, _flashLoanAmount.add(_fee));
 
     emit Switch(address(this), activeProvider, _newProvider, _flashLoanAmount, collateraltoMove);
   }

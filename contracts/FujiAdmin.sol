@@ -84,7 +84,7 @@ contract FujiAdmin is IFujiAdmin, Ownable {
   * @dev Sets the VaultHarvester address
   * @param _newVaultharvester: controller address
   */
-  function setvaultharvester(address _newVaultharvester) external  onlyOwner  {
+  function setVaultHarvester(address _newVaultharvester) external  onlyOwner  {
     vaultharvester = _newVaultharvester;
   }
 
@@ -148,7 +148,7 @@ contract FujiAdmin is IFujiAdmin, Ownable {
     return aWhitelist;
   }
 
-  function getvaultharvester() external override view returns(address) {
+  function getVaultHarvester() external override view returns(address) {
     return vaultharvester;
   }
 

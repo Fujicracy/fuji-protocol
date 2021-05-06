@@ -22,6 +22,10 @@ interface IAlphaWhitelist {
   ) external returns(bool);
 }
 
+interface IVaultHarvester{
+  function collectRewards(uint256 _farmProtocolNum) external returns(address claimedToken);
+}
+
 contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
 
   uint256 internal constant BASE = 1e18;
@@ -464,6 +468,22 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
     for(uint i = 0; i < providers.length; i++){
       value += IProvider(providers[i]).getDepositBalance(vAssets.collateralAsset);
     }
+  }
+
+  /**
+  * @dev Harvests the Rewards from baseLayer Protocols
+  * @param _farmProtocolNum: number per VaultHarvester Contract for specific farm
+  */
+  function harvestRewards(uint256 _farmProtocolNum) public onlyOwner {
+    address tokenReturned = IVaultHarvester(fujiAdmin.getVaultHarvester())
+    .collectRewards(_farmProtocolNum);
+    uint256 tokenbal = IERC20(tokenReturned).balanceOf(address(this));
+    require(
+      tokenReturned != address(0) &&
+      tokenbal > 0,
+      Errors.VL_HARVESTING_FAILED
+    );
+    IERC20(tokenReturned).uniTransfer(payable(fujiAdmin.getTreasury()),tokenbal);
   }
 
 }

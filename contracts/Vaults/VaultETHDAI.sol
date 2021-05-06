@@ -476,8 +476,8 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
   * @param _farmProtocolNum: number per VaultHarvester Contract for specific farm
   */
   function harvestRewards(uint256 _farmProtocolNum) public onlyOwner {
-    address tokenReturned =
-    IVaultHarvester(fujiAdmin.getvaultharvester()).collectRewards(_farmProtocolNum);
+    address tokenReturned = IVaultHarvester(fujiAdmin.getVaultHarvester())
+    .collectRewards(_farmProtocolNum);
     uint256 tokenbal = IERC20(tokenReturned).balanceOf(address(this));
     require(
       tokenReturned != address(0) &&

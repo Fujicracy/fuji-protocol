@@ -87,10 +87,10 @@ describe("Alpha", () => {
 
   describe("Alpha Whitelisting Functionality", () => {
 
-    it("1.- Set limit users to 5, Users[0,1,2,3,4] added to whitelist, then users[5] tries deposit and reverts", async () => {
+    it("1.- Set limit users to 4, Users[1,2,3,4] added to whitelist, then users[5] tries deposit and reverts", async () => {
 
       // Set up Limit of users to 5. This is only staged for purposes of testing.
-      await aWhitelist.connect(users[0]).updateLimitUser(5);
+      await aWhitelist.connect(users[0]).updateLimitUser(4);
 
       //Bootstrap Liquidity (1st User)
       let bootstraper = users[0];
@@ -98,10 +98,10 @@ describe("Alpha", () => {
       await vaultdai.connect(bootstraper).deposit(bstrapLiquidity,{ value: bstrapLiquidity });
 
       // Set up
-      let depositETHAmount = ethers.utils.parseEther ("5");
+      let depositETHAmount = ethers.utils.parseEther("12");
 
       // First 3 other users deposit
-      for (var i = 1; i < 4; i++) {
+      for (let i = 1; i < 4; i++) {
         await vaultdai.connect(users[i]).deposit(depositETHAmount,{value:depositETHAmount});
       }
 

@@ -35,8 +35,7 @@ const main = async () => {
   // Step 4 Of Deploy Core Money Handling Contracts
   const aWhitelist = await deploy("AlphaWhitelist", [
     "100",
-    ethers.utils.parseEther("12"),
-    fliquidator.address
+    ethers.utils.parseEther("2")
   ]);
   const vaultharvester = await deploy("VaultHarvester");
   const vaultdai = await deploy("VaultETHDAI");

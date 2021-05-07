@@ -8,8 +8,6 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { Errors } from "./Libraries/Errors.sol";
 import { IFujiERC1155 } from "./FujiERC1155/IFujiERC1155.sol";
 
-import "hardhat/console.sol"; //test line
-
 contract AlphaWhitelist is IAlphaWhiteList, ReentrancyGuard, Ownable {
   using SafeMath for uint256;
 
@@ -17,40 +15,15 @@ contract AlphaWhitelist is IAlphaWhiteList, ReentrancyGuard, Ownable {
   uint256 public limitUsers;
   uint256 public counter;
 
-  mapping(address => uint256) public whiteListed;
-
-  // Log User entered
-  event UserWhitelisted(address _userAddrs, uint256 _counter);
-
   // Log Limit Users Changed
-  event UserLimitUpdated(uint256 newUserLimit);
+  event UserLimitUpdated(uint256 _newUserLimit);
 
   // Log Cap Value Changed
-  event CapValueUpdated(uint256 newCapValue);
+  event CapValueUpdated(uint256 _newCapValue);
 
-  constructor(
-    uint256 _limitUsers,
-    uint256 _capValue,
-    address _fliquidator
-  ) public {
+  constructor(uint256 _limitUsers, uint256 _capValue) public {
     limitUsers = _limitUsers;
     ethCapValue = _capValue;
-
-    _addMeToWhitelist(_fliquidator);
-  }
-
-  /**
-   * @dev Adds a user's address to the Fuji Whitelist
-   * Emits a {UserWhitelisted} event.
-   */
-  function _addMeToWhitelist(address _usrAddr) private nonReentrant {
-    require(whiteListed[_usrAddr] == 0, Errors.SP_ALPHA_WHITELIST);
-    require(counter <= limitUsers, Errors.SP_ALPHA_WHITELIST);
-
-    whiteListed[_usrAddr] = counter;
-    counter = counter.add(1);
-
-    emit UserWhitelisted(_usrAddr, counter);
   }
 
   /**
@@ -80,7 +53,7 @@ contract AlphaWhitelist is IAlphaWhiteList, ReentrancyGuard, Ownable {
 
   /**
    * @dev Modifies the limitUsers
-   * @param _newUserLimit: New User Limint number
+   * @param _newUserLimit: New User Limit number
    */
   function updateLimitUser(uint256 _newUserLimit) public onlyOwner {
     limitUsers = _newUserLimit;

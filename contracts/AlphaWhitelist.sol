@@ -2,13 +2,11 @@
 pragma solidity >=0.4.25 <0.8.0;
 
 import { IAlphaWhiteList } from "./IAlphaWhiteList.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { Errors } from "./Libraries/Errors.sol";
 import { IFujiERC1155 } from "./FujiERC1155/IFujiERC1155.sol";
 
-contract AlphaWhitelist is IAlphaWhiteList, ReentrancyGuard, Ownable {
+contract AlphaWhitelist is IAlphaWhiteList, Ownable {
   using SafeMath for uint256;
 
   uint256 public ethCapValue;

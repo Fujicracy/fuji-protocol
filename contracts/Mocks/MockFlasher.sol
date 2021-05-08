@@ -10,16 +10,16 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IFujiAdmin } from "../IFujiAdmin.sol";
 import { Errors } from '../Libraries/Errors.sol';
 
-import { ILendingPool, IFlashLoanReceiver } from "./AaveFlashLoans.sol";
+import { ILendingPool, IFlashLoanReceiver } from "../Flashloans/AaveFlashLoans.sol";
 import {
   Actions,
   Account,
   DyDxFlashloanBase,
   ICallee,
   ISoloMargin
-} from "./DyDxFlashLoans.sol";
-import { ICTokenFlashloan, ICFlashloanReceiver  } from "./CreamFlashLoans.sol";
-import { FlashLoan } from "./LibFlashLoan.sol";
+} from "../Flashloans/DyDxFlashLoans.sol";
+import { ICTokenFlashloan, ICFlashloanReceiver  } from "../Flashloans/CreamFlashLoans.sol";
+import { FlashLoan } from "../Flashloans/LibFlashLoan.sol";
 import { IVault } from "../Vaults/IVault.sol";
 
 interface IFliquidator {
@@ -35,7 +35,7 @@ interface IFujiMappings {
 }
 
 
-contract Flasher is
+contract MockFlasher is
   DyDxFlashloanBase,
   IFlashLoanReceiver,
   ICFlashloanReceiver,
@@ -54,11 +54,11 @@ contract Flasher is
 
   receive() external payable {}
 
-  constructor() public {
+  constructor(address mockfujimapping) public {
 
     aave_lending_pool = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
     dydx_solo_margin = 0x1E0447b19BB6EcFdAe1e4AE1694b0C3659614e4e;
-    fujimaping = IFujiMappings(0x6b09443595BFb8F91eA837c7CB4Fe1255782093b);
+    fujimaping = IFujiMappings(mockfujimapping);
 
   }
 

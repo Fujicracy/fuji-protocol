@@ -41,7 +41,8 @@ library Errors {
   string public constant VL_OPTIMIZER_FEE_SMALL ='123'; //Fuji OptimizerFee has to be > 1 RAY (1e27)
   string public constant VL_UNDERCOLLATERIZED_ERROR = '124'; // Flashloan-Flashclose cannot be used when User's collateral is worth less than intended debt position to close.
   string public constant VL_MINIMUM_PAYBACK_ERROR = '125'; // Minimum Amount payback should be at least Fuji Optimizerfee accrued interest.
-  string public constant VL_HARVESTING_FAILED = '126'; //Harvesting Function failed, check provided _farmProtocolNum or no claimable balance. 
+  string public constant VL_HARVESTING_FAILED = '126'; // Harvesting Function failed, check provided _farmProtocolNum or no claimable balance.
+  string public constant VL_FLASHLOAN_FAILED = '127'; // Flashloan failed
 
   string public constant MATH_DIVISION_BY_ZERO = '201';
   string public constant MATH_ADDITION_OVERFLOW = '202';

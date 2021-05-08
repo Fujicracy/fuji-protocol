@@ -121,7 +121,7 @@ describe("Alpha", () => {
 
       let liqBalAtStart = await asset.balanceOf(liquidatorUser.address);
       //console.log("liqBalAtStart", liqBalAtStart.toString());
- 
+
       await asset.connect(liquidatorUser)
         .approve(fliquidator.address, borrowAmount.add(extraChange));
       await fliquidator.connect(liquidatorUser)
@@ -389,7 +389,7 @@ describe("Alpha", () => {
         await fliquidator.connect(liquidatorUser)
           .flashLiquidate(carelessUser.address, thevault.address, 0);
       }
- 
+
       let liqBalAtEnd = await asset.balanceOf(liquidatorUser.address);
       //console.log("liqBalAtEnd", liqBalAtEnd.toString());
 
@@ -450,7 +450,7 @@ describe("Alpha", () => {
         await fliquidator.connect(liquidatorUser)
           .flashLiquidate(carelessUser.address, thevault.address, 0);
       }
- 
+
       let liqBalAtEnd = await asset.balanceOf(liquidatorUser.address);
       //console.log("liqBalAtEnd", liqBalAtEnd.toString());
 

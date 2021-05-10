@@ -83,74 +83,7 @@ describe("Alpha", () => {
 
   describe("Alpha Controller Functionality", () => {
 
-    it("1.- Check Rates for All Vaults", async () => {
-
-      // Console log providers
-      console.log("Aave", aave.address);
-      console.log("Compound", compound.address);
-      console.log("Dydx", dydx.address);
-
-      // Set defined ActiveProviders
-      await vaultdai.setActiveProvider(dydx.address);
-      await vaultusdc.setActiveProvider(dydx.address);
-      await vaultusdt.setActiveProvider(aave.address);
-
-      // Responses
-      let responsedai = await controller.checkRates(vaultdai.address);
-      let responseusdc = await controller.checkRates(vaultusdc.address);
-      let responseusdt = await controller.checkRates(vaultusdt.address);
-      console.log(responsedai,responseusdc,responseusdt);
-
-      // Manual Rate check
-
-      let getInfo = async function (provider, assetaddr) {
-        let info = [];
-        info[0] = await provider.getBorrowRateFor(assetaddr);
-        info[0] = info[0]/1e27;
-        info[1] = provider.address;
-        return info;
-      }
-
-      //DAI
-      let dairatedydx = await getInfo(dydx, DAI_ADDR);
-      let dairateaave = await getInfo(aave, DAI_ADDR);
-      let dairatecompound = await getInfo(compound, DAI_ADDR);
-      console.log("dai markets",dairatedydx,dairateaave,dairatecompound);
-
-      let daiLowestRate;
-      daiLowestRate = dairatedydx[0] < dairateaave[0] ? dairatedydx:dairateaave;
-      daiLowestRate =  dairatecompound[0] < daiLowestRate[0] ? dairatecompound:daiLowestRate;
-
-
-      //USDC
-      let usdcratedydx = await getInfo(dydx, USDC_ADDR);
-      let usdcrateaave = await getInfo(aave, USDC_ADDR);
-      let usdcratecompound = await getInfo(compound, USDC_ADDR);
-      console.log("usdc markets",usdcratedydx,usdcrateaave,usdcratecompound);
-
-      let usdcLowestRate;
-      usdcLowestRate = usdcratedydx[0] < usdcrateaave[0] ? usdcratedydx:usdcrateaave;
-      usdcLowestRate = usdcratecompound[0] < usdcLowestRate[0] ? usdcratecompound : usdcLowestRate;
-
-
-      //USDT
-      let usdtrateaave = await getInfo(aave, USDT_ADDR);
-      let usdtratecompound = await getInfo(compound, USDT_ADDR);
-      console.log("usdt markets",usdtrateaave,usdtratecompound);
-
-      let usdtLowestRate;
-      usdtLowestRate = usdtrateaave[0] < usdtratecompound[0] ? usdtrateaave : usdtratecompound;
-
-      // Visual Check of all Results
-      console.log(daiLowestRate,usdcLowestRate,usdtLowestRate);
-
-      await expect(responsedai[1]).to.equal(daiLowestRate[1]);
-      await expect(responseusdc[1]).to.equal(usdcLowestRate[1]);
-      await expect(responseusdt[1]).to.equal(usdtLowestRate[1]);
-
-    });
-
-    it("2.- Try ForcedRefinancing VaultDai", async () => {
+    it("1.- Try ForcedRefinancing VaultDai", async () => {
 
       // Console log providers
       console.log("Aave", aave.address);
@@ -186,7 +119,7 @@ describe("Alpha", () => {
       console.log(priorRefinanceVaultDebt/1,priorRefinanceVaultCollat/1);
 
       //await advanceblocks(50);
-      await controller.connect(users[0]).forcedRefinancing(thevault.address, destinationProvider.address, 1, 1, 0, false);
+      await controller.connect(users[0]).doRefinancing(thevault.address, destinationProvider.address, 1, 1, 0, false);
 
       let afterRefinanceVaultDebt = await thevault.borrowBalance(destinationProvider.address);
       let afterRefinanceVaultCollat = await thevault.depositBalance(destinationProvider.address);

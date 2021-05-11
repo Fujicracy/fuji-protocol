@@ -19,7 +19,7 @@ contract AlphaWhitelist is IAlphaWhiteList, Ownable {
   // Log Cap Value Changed
   event CapValueUpdated(uint256 _newCapValue);
 
-  constructor(uint256 _limitUsers, uint256 _capValue) public {
+  constructor(uint256 _limitUsers, uint256 _capValue) {
     limitUsers = _limitUsers;
     ethCapValue = _capValue;
   }

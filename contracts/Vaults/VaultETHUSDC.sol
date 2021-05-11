@@ -297,7 +297,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
    * @dev Sets the fujiAdmin Address
    * @param _newFujiAdmin: FujiAdmin Contract Address
    */
-  function setFujiAdmin(address _newFujiAdmin) public onlyOwner {
+  function setFujiAdmin(address _newFujiAdmin) external onlyOwner {
     _fujiAdmin = IFujiAdmin(_newFujiAdmin);
   }
 
@@ -461,7 +461,7 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
    * @dev Harvests the Rewards from baseLayer Protocols
    * @param _farmProtocolNum: number per VaultHarvester Contract for specific farm
    */
-  function harvestRewards(uint256 _farmProtocolNum) public onlyOwner {
+  function harvestRewards(uint256 _farmProtocolNum) external onlyOwner {
     address tokenReturned =
       IVaultHarvester(_fujiAdmin.getVaultHarvester()).collectRewards(_farmProtocolNum);
     uint256 tokenBal = IERC20(tokenReturned).balanceOf(address(this));

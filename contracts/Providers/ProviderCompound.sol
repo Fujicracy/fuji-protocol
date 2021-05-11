@@ -217,7 +217,7 @@ contract ProviderCompound is IProvider, HelperFunct {
 
       // Check there is enough balance to pay
       require(erc20token.balanceOf(address(this)) >= _amount, "Not-enough-token");
-      erc20token.approve(cTokenAddr, _amount);
+      erc20token.uniApprove(address(cTokenAddr), _amount);
       cToken.repayBorrow(_amount);
     }
   }

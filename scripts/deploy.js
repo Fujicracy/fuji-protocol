@@ -17,7 +17,8 @@ const main = async () => {
   const deployerWallet = ethers.provider.getSigner();
 
   // Step 1 of Deploy: Contracts which address is required to be hardcoded in other contracts
-  //Fuji Mapping, for testing this is not required.
+  //Fuji Mapping for Compound Contracts, for testing this is not required.
+  //Fuji Mapping for CreamFinance Contracts
   const treasury = await deploy("GnosisSafe");
 
   // Step 2 Of Deploy: Functional Contracts

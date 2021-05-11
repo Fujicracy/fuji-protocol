@@ -30,7 +30,7 @@ const Flasher = require("../artifacts/contracts/Flashloans/Flasher.sol/Flasher.j
 const Controller = require("../artifacts/contracts/Controller.sol/Controller.json");
 const Treasury = require("../artifacts/contracts/Gnosis Treasury/GnosisSafe.sol/GnosisSafe.json")
 
-const MockFujiMapping = require("../artifacts/contracts/Mocks/MockFujiMapping.sol/MockFujiMapping.json");
+const FujiMapping = require("../artifacts/contracts/FujiMapping.sol/FujiMapping.json");
 const MockFlasher = require("../artifacts/contracts/Mocks/MockFlasher.sol/MockFlasher.json");
 
 const fixture = async ([wallet, other], provider) => {
@@ -43,14 +43,21 @@ const fixture = async ([wallet, other], provider) => {
   let oracle = await ethers.getContractAt("AggregatorV3Interface", CHAINLINK_ORACLE_ADDR);
 
   // Step 1 of Deploy: Contracts which address is required to be hardcoded in other contracts
-  let mockfujimapping = await deployContract(wallet, MockFujiMapping, []);
+  let creamfujimapping = await deployContract(wallet, FujiMapping, []);
   let treasury = await deployContract(wallet, Treasury, []);
+
+  // Step 1 (Only for testing of CreamFinance FlashLoans)
+  //Setting up the CreamFinance FujiMapper
+  await creamfujimapping.setMapping("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "0xD06527D5e56A3495252A528C4987003b712860eE");
+  await creamfujimapping.setMapping("0x6B175474E89094C44Da98b954EedeAC495271d0F", "0x92B767185fB3B04F881e3aC8e5B0662a027A1D9f");
+  await creamfujimapping.setMapping("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", "0x44fbeBd2F576670a6C33f6Fc0B00aA8c5753b322");
+  await creamfujimapping.setMapping("0xdAC17F958D2ee523a2206206994597C13D831ec7", "0x797AAB1ce7c01eB727ab980762bA88e7133d2157");
 
   // Step 2 Of Deploy: Functional Contracts
   let fujiadmin = await deployContract(wallet, FujiAdmin,[]);
   let fliquidator = await deployContract(wallet, Fliquidator, []);
   //let flasher = await deployContract(wallet, Flasher, []);
-  let mockflasher = await deployContract(wallet, MockFlasher, [mockfujimapping.address]);
+  let mockflasher = await deployContract(wallet, MockFlasher, [creamfujimapping.address]);
   let controller = await deployContract(wallet, Controller, []);
   let f1155 = await deployContract(wallet, F1155, []);
 
@@ -233,7 +240,7 @@ describe("Alpha", () => {
       let asset = dai;
 
       // Set a defined ActiveProviders
-      await thevault.setActiveProvider(dydx.address);
+      await thevault.setActiveProvider(compound.address);
 
       // Set - up
       let randomUser = users[6];
@@ -267,7 +274,7 @@ describe("Alpha", () => {
       let asset = usdc;
 
       // Set a defined ActiveProviders
-      await thevault.setActiveProvider(aave.address);
+      await thevault.setActiveProvider(compound.address);
 
       // Set - up
       let randomUser = users[7];
@@ -302,7 +309,7 @@ describe("Alpha", () => {
       let asset = usdt;
 
       // Set a defined ActiveProviders
-      await thevault.setActiveProvider(aave.address);
+      await thevault.setActiveProvider(compound.address);
 
       // Set - up
       let randomUser = users[8];
@@ -340,7 +347,7 @@ describe("Alpha", () => {
       let asset = usdc;
 
       // Set a defined ActiveProviders
-      await thevault.setActiveProvider(aave.address);
+      await thevault.setActiveProvider(compound.address);
 
       // Set - up
       let randomUser = users[10];
@@ -370,7 +377,6 @@ describe("Alpha", () => {
       await expect(randomUser1155balCollat1).to.be.lt(randomUser1155balCollat0);
       await expect(randomUser1155balDebt1).to.be.lt(randomUser1155balDebt0);
     });
-
 
   });
 });

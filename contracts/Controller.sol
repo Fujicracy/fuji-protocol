@@ -38,7 +38,7 @@ contract Controller is Ownable {
    * @dev Sets the fujiAdmin Address
    * @param _newFujiAdmin: FujiAdmin Contract Address
    */
-  function setFujiAdmin(address _newFujiAdmin) public onlyOwner {
+  function setFujiAdmin(address _newFujiAdmin) external onlyOwner {
     _fujiAdmin = IFujiAdmin(_newFujiAdmin);
   }
 

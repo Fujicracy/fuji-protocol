@@ -243,6 +243,7 @@ contract ProviderCompound is IProvider, HelperFunct {
    */
   function getBorrowBalance(address _asset) external view override returns (uint256) {
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+
     return IGenCToken(cTokenAddr).borrowBalanceStored(msg.sender);
   }
 
@@ -254,20 +255,23 @@ contract ProviderCompound is IProvider, HelperFunct {
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
     uint256 cTokenBal = IGenCToken(cTokenAddr).balanceOf(msg.sender);
     uint256 exRate = IGenCToken(cTokenAddr).exchangeRateStored();
+
     return exRate.mul(cTokenBal).div(1e18);
   }
 
   // This function is the accurate way to get Compound Borrow Balance but it costs 84K gas
   // and is not a view function.
-  function getBorrowBalanceExact(address _asset, address who) external returns (uint256) {
+  function getBorrowBalanceExact(address _asset, address _who) external returns (uint256) {
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
-    return IGenCToken(cTokenAddr).borrowBalanceCurrent(who);
+
+    return IGenCToken(cTokenAddr).borrowBalanceCurrent(_who);
   }
 
   // This function is the accurate way to get Compound Deposit Balance but it costs 84K gas
   // and is not a view function.
-  function getDepositBalanceExact(address _asset, address who) external returns (uint256) {
+  function getDepositBalanceExact(address _asset, address _who) external returns (uint256) {
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
-    return IGenCToken(cTokenAddr).balanceOfUnderlying(who);
+
+    return IGenCToken(cTokenAddr).balanceOfUnderlying(_who);
   }
 }

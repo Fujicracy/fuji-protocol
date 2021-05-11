@@ -142,9 +142,6 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Transfer to Liquidator the debtBalance + bonus
     IERC20(vAssets.borrowAsset).uniTransfer(msg.sender, userDebtBalance.add(bonus));
 
-    // Transfer left-over collateral to user
-    //IERC20(vAssets.collateralAsset).uniTransfer(payable(_userAddr), remainingCollat);
-
     emit Liquidate(_userAddr, msg.sender, vAssets.borrowAsset, userDebtBalance);
   }
 
@@ -222,7 +219,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     uint256 userDebtBalance = f1155.balanceOf(_userAddr, vAssets.borrowID);
 
     // Get user Collateral + Flash Close Fee to close posisition, for _amount passed
-    uint256 userCollateralinPlay =
+    uint256 userCollateralInPlay =
       IVault(_vault)
         .getNeededCollateralFor(_amount.add(_flashloanFee), false)
         .mul(flashCloseF.a)
@@ -243,17 +240,17 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       IVault(_vault).withdraw(int256(userCollateral));
 
       // Send unUsed Collateral to User
-      _userAddr.transfer(userCollateral.sub(userCollateralinPlay));
+      _userAddr.transfer(userCollateral.sub(userCollateralInPlay));
     } else {
-      f1155.burn(_userAddr, vAssets.collateralID, userCollateralinPlay);
+      f1155.burn(_userAddr, vAssets.collateralID, userCollateralInPlay);
 
       // Withdraw Collateral in play Only
-      IVault(_vault).withdraw(int256(userCollateralinPlay));
+      IVault(_vault).withdraw(int256(userCollateralInPlay));
     }
 
     // Swap Collateral for underlying to repay Flashloan
     uint256 remaining =
-      _swap(vAssets.borrowAsset, _amount.add(_flashloanFee), userCollateralinPlay);
+      _swap(vAssets.borrowAsset, _amount.add(_flashloanFee), userCollateralInPlay);
 
     // Send FlashClose Fee to FujiTreasury
     IERC20(vAssets.collateralAsset).uniTransfer(_fujiAdmin.getTreasury(), remaining);
@@ -360,8 +357,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     uint256 collateralInPlay =
       _getCollateralInPlay(vAssets.borrowAsset, userDebtBalance.add(_flashloanFee).add(bonus));
 
-    uint256 remainingCollat =
-      _swap(vAssets.borrowAsset, _amount.add(_flashloanFee).add(bonus), collateralInPlay);
+    _swap(vAssets.borrowAsset, _amount.add(_flashloanFee).add(bonus), collateralInPlay);
 
     // Send flasher the underlying to repay Flashloan
     IERC20(vAssets.borrowAsset).uniTransfer(
@@ -371,9 +367,6 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
     // Transfer Bonus bonusFlashL to liquidator
     IERC20(vAssets.borrowAsset).uniTransfer(payable(_liquidatorAddr), bonus);
-
-    // Transfer left-over collateral to user
-    //IERC20(vAssets.collateralAsset).uniTransfer(payable(_userAddr), remainingCollat);
 
     // Burn Debt f1155 tokens
     f1155.burn(_userAddr, vAssets.borrowID, userDebtBalance);

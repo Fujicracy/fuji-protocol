@@ -265,7 +265,9 @@ contract ProviderDYDX is IProvider, HelperFunct {
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
     SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
     uint256 marketId = _getMarketId(dydxContract, _asset);
+
     SoloMarginContract.Rate memory _rate = dydxContract.getMarketInterestRate(marketId);
+
     return (_rate.value).mul(1e9).mul(365 days);
   }
 
@@ -279,6 +281,7 @@ contract ProviderDYDX is IProvider, HelperFunct {
     SoloMarginContract.Info memory account =
       SoloMarginContract.Info({ owner: msg.sender, number: 0 });
     SoloMarginContract.Wei memory structbalance = dydxContract.getAccountWei(account, marketId);
+
     return structbalance.value;
   }
 
@@ -289,9 +292,11 @@ contract ProviderDYDX is IProvider, HelperFunct {
   function getDepositBalance(address _asset) external view override returns (uint256) {
     SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
     uint256 marketId = _getMarketId(dydxContract, _asset);
+
     SoloMarginContract.Info memory account =
       SoloMarginContract.Info({ owner: msg.sender, number: 0 });
     SoloMarginContract.Wei memory structbalance = dydxContract.getAccountWei(account, marketId);
+
     return structbalance.value;
   }
 }

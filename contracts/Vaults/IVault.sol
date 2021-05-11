@@ -22,8 +22,8 @@ interface IVault {
     address vault,
     address fromProviderAddrs,
     address toProviderAddr,
-    uint256 Debtamount,
-    uint256 Collattamount
+    uint256 debtamount,
+    uint256 collattamount
   );
 
   // Core Vault Functions

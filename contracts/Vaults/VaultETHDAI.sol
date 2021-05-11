@@ -16,8 +16,6 @@ import { IProvider } from "../Providers/IProvider.sol";
 import { IAlphaWhiteList } from "../IAlphaWhiteList.sol";
 import { Errors } from "../Libraries/Errors.sol";
 
-import "hardhat/console.sol"; //test line
-
 interface IVaultHarvester {
   function collectRewards(uint256 _farmProtocolNum) external returns (address claimedToken);
 }

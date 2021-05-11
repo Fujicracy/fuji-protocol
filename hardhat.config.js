@@ -6,6 +6,7 @@ const chalk = require("chalk");
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-etherscan");
 require("hardhat-contract-sizer");
+require("hardhat-gas-reporter");
 
 const { isAddress, getAddress, formatUnits, parseUnits } = utils;
 
@@ -101,6 +102,11 @@ module.exports = {
   etherscan: {
     // Obtain one at https://etherscan.io/
     apiKey: process.env.ETHERSCAN_API_KEY
+  },
+  gasReporter: {
+    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+    currency: 'USD',
+    enabled: (process.env.REPORT_GAS) ? true : false
   },
   solidity: {
     compilers: [

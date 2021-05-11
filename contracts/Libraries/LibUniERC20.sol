@@ -23,7 +23,11 @@ library UniERC20 {
     }
   }
 
-  function uniTransfer(IERC20 token, address payable to, uint256 amount) internal {
+  function uniTransfer(
+    IERC20 token,
+    address payable to,
+    uint256 amount
+  ) internal {
     if (amount > 0) {
       if (isETH(token)) {
         to.transfer(amount);
@@ -33,7 +37,11 @@ library UniERC20 {
     }
   }
 
-  function uniApprove(IERC20 token, address to, uint256 amount) internal {
+  function uniApprove(
+    IERC20 token,
+    address to,
+    uint256 amount
+  ) internal {
     require(!isETH(token), "Approve called on ETH");
 
     if (amount == 0) {

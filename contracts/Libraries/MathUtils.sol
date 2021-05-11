@@ -2,14 +2,14 @@
 pragma solidity 0.6.12;
 
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import {WadRayMath} from './WadRayMath.sol';
+import { WadRayMath } from "./WadRayMath.sol";
 
 library MathUtils {
   using SafeMath for uint256;
   using WadRayMath for uint256;
 
   /// @dev Ignoring leap years
-  uint256 internal constant SECONDS_PER_YEAR = 365 days;
+  uint256 internal constant _SECONDS_PER_YEAR = 365 days;
 
   /**
    * @dev Function to calculate the interest accumulated using a linear interest rate formula
@@ -23,10 +23,10 @@ library MathUtils {
     view
     returns (uint256)
   {
-    //solium-disable-next-line
+    //solhint-disable-next-line
     uint256 timeDifference = block.timestamp.sub(uint256(lastUpdateTimestamp));
 
-    return (rate.mul(timeDifference) / SECONDS_PER_YEAR).add(WadRayMath.ray());
+    return (rate.mul(timeDifference) / _SECONDS_PER_YEAR).add(WadRayMath.ray());
   }
 
   /**
@@ -47,7 +47,7 @@ library MathUtils {
     uint40 lastUpdateTimestamp,
     uint256 currentTimestamp
   ) internal pure returns (uint256) {
-    //solium-disable-next-line
+    //solhint-disable-next-line
     uint256 exp = currentTimestamp.sub(uint256(lastUpdateTimestamp));
 
     if (exp == 0) {
@@ -58,7 +58,7 @@ library MathUtils {
 
     uint256 expMinusTwo = exp > 2 ? exp - 2 : 0;
 
-    uint256 ratePerSecond = rate / SECONDS_PER_YEAR;
+    uint256 ratePerSecond = rate / _SECONDS_PER_YEAR;
 
     uint256 basePowerTwo = ratePerSecond.rayMul(ratePerSecond);
     uint256 basePowerThree = basePowerTwo.rayMul(ratePerSecond);
@@ -79,6 +79,7 @@ library MathUtils {
     view
     returns (uint256)
   {
+    //solhint-disable-next-line
     return calculateCompoundedInterest(rate, lastUpdateTimestamp, block.timestamp);
   }
 }

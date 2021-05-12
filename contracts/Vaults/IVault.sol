@@ -39,7 +39,7 @@ interface IVault {
   function executeSwitch(
     address _newProvider,
     uint256 _flashLoanDebt,
-    uint256 fee
+    uint256 _fee
   ) external;
 
   //Getter Functions

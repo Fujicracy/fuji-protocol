@@ -265,13 +265,18 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
     uint256 fee
   ) external override onlyFlash whenNotPaused {
     // Compute Ratio of transfer before payback
-    uint256 ratio = (_flashLoanAmount).mul(1e18).div(borrowBalance(activeProvider));
+    uint256 ratio =
+      _flashLoanAmount.mul(1e18).div(
+        IProvider(activeProvider).getBorrowBalance(vAssets.borrowAsset)
+      );
 
     // Payback current provider
     _payback(_flashLoanAmount, activeProvider);
 
     // Withdraw collateral proportional ratio from current provider
-    uint256 collateraltoMove = (depositBalance(activeProvider)).mul(ratio).div(1e18);
+    uint256 collateraltoMove =
+      IProvider(activeProvider).getDepositBalance(vAssets.collateralAsset).mul(ratio).div(1e18);
+
     _withdraw(collateraltoMove, activeProvider);
 
     // Deposit to the new provider
@@ -368,8 +373,22 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
    * @dev External Function to call updateState in F1155
    */
   function updateF1155Balances() public override {
-    IFujiERC1155(fujiERC1155).updateState(vAssets.borrowID, allborrowBalance());
-    IFujiERC1155(fujiERC1155).updateState(vAssets.collateralID, alldepositBalance());
+    uint256 borrowBals;
+    uint256 depositBals;
+
+    // take into account all balances across providers
+    uint256 length = providers.length;
+    for (uint256 i = 0; i < length; i++) {
+      borrowBals = borrowBals.add(IProvider(providers[i]).getBorrowBalance(vAssets.borrowAsset));
+    }
+    for (uint256 i = 0; i < length; i++) {
+      depositBals = depositBals.add(
+        IProvider(providers[i]).getDepositBalance(vAssets.collateralAsset)
+      );
+    }
+
+    IFujiERC1155(fujiERC1155).updateState(vAssets.borrowID, borrowBals);
+    IFujiERC1155(fujiERC1155).updateState(vAssets.collateralID, depositBals);
   }
 
   //Getter Functions
@@ -429,34 +448,16 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
    * @dev Returns the borrow balance of the Vault's underlying at a particular provider
    * @param _provider: address of a provider
    */
-  function borrowBalance(address _provider) public view override returns (uint256) {
+  function borrowBalance(address _provider) external view override returns (uint256) {
     return IProvider(_provider).getBorrowBalance(vAssets.borrowAsset);
-  }
-
-  /**
-   * @dev Returns the total borrow balance of the Vault's underlying at all providers
-   */
-  function allborrowBalance() public view returns (uint256 value) {
-    for (uint256 i = 0; i < providers.length; i++) {
-      value += IProvider(providers[i]).getBorrowBalance(vAssets.borrowAsset);
-    }
   }
 
   /**
    * @dev Returns the deposit balance of the Vault's type collateral at a particular provider
    * @param _provider: address of a provider
    */
-  function depositBalance(address _provider) public view override returns (uint256) {
+  function depositBalance(address _provider) external view override returns (uint256) {
     return IProvider(_provider).getDepositBalance(vAssets.collateralAsset);
-  }
-
-  /**
-   * @dev Returns the total deposit balance of the Vault's type collateral at all providers
-   */
-  function alldepositBalance() public view returns (uint256 value) {
-    for (uint256 i = 0; i < providers.length; i++) {
-      value += IProvider(providers[i]).getDepositBalance(vAssets.collateralAsset);
-    }
   }
 
   /**

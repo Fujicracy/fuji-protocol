@@ -373,19 +373,22 @@ contract VaultETHUSDC is IVault, VaultBase, ReentrancyGuard {
    * @dev External Function to call updateState in F1155
    */
   function updateF1155Balances() public override {
-    uint256 allBorrowBalances;
-    uint256 allDepositBalances;
+    uint256 borrowBals;
+    uint256 depositBals;
 
+    // take into account all balances across providers
     uint256 length = providers.length;
     for (uint256 i = 0; i < length; i++) {
-      allBorrowBalances += IProvider(providers[i]).getBorrowBalance(vAssets.borrowAsset);
+      borrowBals = borrowBals.add(IProvider(providers[i]).getBorrowBalance(vAssets.borrowAsset));
     }
     for (uint256 i = 0; i < length; i++) {
-      allDepositBalances += IProvider(providers[i]).getDepositBalance(vAssets.collateralAsset);
+      depositBals = depositBals.add(
+        IProvider(providers[i]).getDepositBalance(vAssets.collateralAsset)
+      );
     }
 
-    IFujiERC1155(fujiERC1155).updateState(vAssets.borrowID, allBorrowBalances);
-    IFujiERC1155(fujiERC1155).updateState(vAssets.collateralID, allDepositBalances);
+    IFujiERC1155(fujiERC1155).updateState(vAssets.borrowID, borrowBals);
+    IFujiERC1155(fujiERC1155).updateState(vAssets.collateralID, depositBals);
   }
 
   //Getter Functions

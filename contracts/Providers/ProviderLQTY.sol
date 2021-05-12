@@ -8,52 +8,64 @@ import { UniERC20 } from "../Libraries/LibUniERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IProvider } from "./IProvider.sol";
 
-interface LQTYInterface {
-
-}
+interface LQTYInterface {}
 
 contract LQTYHelpers {
-
-  function initializeTrouve() internal {
+  function _initializeTrouve() internal {
     //TODO function
   }
-
 }
 
 contract ProviderLQTY is IProvider, LQTYHelpers {
-
   using SafeMath for uint256;
   using UniERC20 for IERC20;
 
-  function deposit(address collateralAsset, uint256 collateralAmount) external override payable{
+  function deposit(address collateralAsset, uint256 collateralAmount) external payable override {
+    collateralAsset;
+    collateralAmount;
     //TODO
   }
 
-  function borrow(address borrowAsset, uint256 borrowAmount) external override payable {
+  function borrow(address borrowAsset, uint256 borrowAmount) external payable override {
+    borrowAsset;
+    borrowAmount;
     //TODO
   }
 
-  function withdraw(address collateralAsset, uint256 collateralAmount) external override payable {
+  function withdraw(address collateralAsset, uint256 collateralAmount) external payable override {
+    collateralAsset;
+    collateralAmount;
     //TODO
   }
 
-  function payback(address borrowAsset, uint256 borrowAmount) external override payable {
+  function payback(address borrowAsset, uint256 borrowAmount) external payable override {
+    borrowAsset;
+    borrowAmount;
     //TODO
   }
 
-  function getBorrowRateFor(address asset) external view override returns(uint256){
+  function getBorrowRateFor(address asset) external view override returns (uint256) {
+    asset;
     //TODO
     return 0;
-
   }
-  function getBorrowBalance(address _asset) external view override returns(uint256) {
+
+  function getBorrowBalance(address _asset) external view override returns (uint256) {
+    _asset;
     //TODO
     return 0;
   }
 
-  function getDepositBalance(address _asset) external view override returns(uint256){
+  function getBorrowBalanceOf(address _asset, address _who) external override returns (uint256) {
+    _asset;
+    _who;
     //TODO
     return 0;
   }
 
+  function getDepositBalance(address _asset) external view override returns (uint256) {
+    _asset;
+    //TODO
+    return 0;
+  }
 }

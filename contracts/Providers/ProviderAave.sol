@@ -188,6 +188,22 @@ contract ProviderAave is IProvider {
   }
 
   /**
+   * @dev Return borrow balance of ETH/ERC20_Token.
+   * @param _asset token address to query the balance.
+   * @param _who address of the account.
+   */
+  function getBorrowBalanceOf(address _asset, address _who) external override returns (uint256) {
+    AaveDataProviderInterface aaveData = _getAaveDataProvider();
+
+    bool isEth = _asset == _getEthAddr();
+    address _token = isEth ? _getWethAddr() : _asset;
+
+    (, , uint256 variableDebt, , , , , , ) = aaveData.getUserReserveData(_token, _who);
+
+    return variableDebt;
+  }
+
+  /**
    * @dev Return deposit balance of ETH/ERC20_Token.
    * @param _asset token address to query the balance.
    */

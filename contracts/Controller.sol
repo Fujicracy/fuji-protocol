@@ -24,11 +24,6 @@ interface IVaultExt is IVault {
   function vAssets() external view returns (VaultAssets memory);
 }
 
-interface IProviderExt is IProvider {
-  // Temp
-  function getBorrowBalanceExact(address _asset, address who) external returns (uint256);
-}
-
 contract Controller is Ownable {
   using SafeMath for uint256;
 
@@ -48,16 +43,14 @@ contract Controller is Ownable {
    * @param _newProvider: new provider address
    * @param _ratioA: ratio to determine how much of debtposition to move
    * @param _ratioB: _ratioA/_ratioB <= 1, and > 0
-   * @param _flashnum: integer identifier of flashloan provider
-   * @param _isCompoundActiveProvider: indicate if activeProvider is Compound
+   * @param _flashNum: integer identifier of flashloan provider
    */
   function doRefinancing(
     address _vaultAddr,
     address _newProvider,
     uint256 _ratioA,
     uint256 _ratioB,
-    uint8 _flashnum,
-    bool _isCompoundActiveProvider
+    uint8 _flashNum
   ) external onlyOwner {
     IVault vault = IVault(_vaultAddr);
     IVaultExt.VaultAssets memory vAssets = IVaultExt(_vaultAddr).vAssets();
@@ -65,12 +58,7 @@ contract Controller is Ownable {
 
     // Check Vault borrowbalance and apply ratio (consider compound or not)
     uint256 debtPosition =
-      _isCompoundActiveProvider
-        ? IProviderExt(vault.activeProvider()).getBorrowBalanceExact(
-          vAssets.borrowAsset,
-          _vaultAddr
-        )
-        : vault.borrowBalance(vault.activeProvider());
+      IProvider(vault.activeProvider()).getBorrowBalanceOf(vAssets.borrowAsset, _vaultAddr);
     uint256 applyRatiodebtPosition = debtPosition.mul(_ratioA).div(_ratioB);
 
     // Check Ratio Input and Vault Balance at ActiveProvider
@@ -92,7 +80,7 @@ contract Controller is Ownable {
         fliquidator: address(0)
       });
 
-    Flasher(payable(_fujiAdmin.getFlasher())).initiateFlashloan(info, _flashnum);
+    Flasher(payable(_fujiAdmin.getFlasher())).initiateFlashloan(info, _flashNum);
 
     IVault(_vaultAddr).setActiveProvider(_newProvider);
   }

@@ -348,14 +348,18 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Repay BaseProtocol debt to release collateral
     IVault(_vault).payback(int256(_amount));
 
-    // Withdraw collateral
-    IVault(_vault).withdraw(int256(userCollateral));
-
     // Compute the Liquidator Bonus bonusFlashL
     uint256 bonus = IVault(_vault).getLiquidationBonusFor(userDebtBalance, true);
+
     // Compute how much collateral needs to be swapt
     uint256 collateralInPlay =
       _getCollateralInPlay(vAssets.borrowAsset, userDebtBalance.add(_flashloanFee).add(bonus));
+
+    // Burn Collateral f1155 tokens
+    f1155.burn(_userAddr, vAssets.collateralID, collateralInPlay);
+
+    // Withdraw collateral
+    IVault(_vault).withdraw(int256(userCollateral));
 
     _swap(vAssets.borrowAsset, _amount.add(_flashloanFee).add(bonus), collateralInPlay);
 
@@ -370,9 +374,6 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
     // Burn Debt f1155 tokens
     f1155.burn(_userAddr, vAssets.borrowID, userDebtBalance);
-
-    // Burn Collateral f1155 tokens
-    f1155.burn(_userAddr, vAssets.collateralID, collateralInPlay);
 
     emit FlashLiquidate(_userAddr, _liquidatorAddr, vAssets.borrowAsset, userDebtBalance);
   }

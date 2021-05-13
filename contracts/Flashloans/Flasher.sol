@@ -19,17 +19,17 @@ import { IVault } from "../Vaults/IVault.sol";
 interface IFliquidator {
   function executeFlashClose(
     address _userAddr,
-    address vault,
+    address _vault,
     uint256 _amount,
-    uint256 flashloanfee
+    uint256 _flashloanfee
   ) external;
 
   function executeFlashLiquidation(
     address _userAddr,
     address _liquidatorAddr,
-    address vault,
+    address _vault,
     uint256 _debtAmount,
-    uint256 flashloanfee
+    uint256 _flashloanfee
   ) external;
 }
 
@@ -43,17 +43,11 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
 
   IFujiAdmin private _fujiAdmin;
 
-  address private immutable _aaveLendingPool;
-  address private immutable _dydxSoloMargin;
-  IFujiMappings private immutable _fujiMapping;
+  address private immutable _aaveLendingPool = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
+  address private immutable _dydxSoloMargin = 0x1E0447b19BB6EcFdAe1e4AE1694b0C3659614e4e;
+  IFujiMappings private immutable _crMappings = IFujiMappings(0x03BD587Fe413D59A20F32Fc75f31bDE1dD1CD6c9);
 
   receive() external payable {}
-
-  constructor() public {
-    _aaveLendingPool = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
-    _dydxSoloMargin = 0x1E0447b19BB6EcFdAe1e4AE1694b0C3659614e4e;
-    _fujiMapping = IFujiMappings(0x6b09443595BFb8F91eA837c7CB4Fe1255782093b);
-  }
 
   modifier isAuthorized() {
     require(
@@ -248,7 +242,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
    */
   function _initiateCreamFlashLoan(FlashLoan.Info memory info) internal {
     // Get crToken Address for Flashloan Call
-    address crToken = _fujiMapping.addressMapping(info.asset);
+    address crToken = _crMappings.addressMapping(info.asset);
 
     // Prepara data for flashloan execution
     bytes memory params = abi.encode(info);
@@ -269,7 +263,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     bytes calldata params
   ) external override {
     // Check Msg. Sender is crToken Lending Contract
-    address crToken = _fujiMapping.addressMapping(underlying);
+    address crToken = _crMappings.addressMapping(underlying);
 
     require(
       address(msg.sender) == crToken && IERC20(underlying).balanceOf(address(this)) >= amount,

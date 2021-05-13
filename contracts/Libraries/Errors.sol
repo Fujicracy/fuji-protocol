@@ -13,7 +13,7 @@ pragma solidity <0.8.0;
  *  - SP = Special 900 series
  */
 library Errors {
-
+  
   //Errors
   string public constant VL_INDEX_OVERFLOW = '100'; // index overflows uint128
   string public constant VL_INVALID_MINT_AMOUNT = '101'; //invalid amount to mint
@@ -55,7 +55,4 @@ library Errors {
   string public constant VLT_CALLER_MUST_BE_VAULT = '401'; // The caller of this function must be a vault
 
   string public constant SP_ALPHA_WHITELIST = '901'; // One ETH cap value for Alpha Version < 1 ETH
-
-
-
 }

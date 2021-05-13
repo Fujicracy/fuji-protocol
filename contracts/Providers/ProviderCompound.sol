@@ -152,7 +152,7 @@ contract ProviderCompound is IProvider, HelperFunct {
       require(erc20token.balanceOf(address(this)) >= _amount, "Not enough Balance");
 
       //Approve to move ERC20tokens
-      erc20token.approve(cTokenAddr, _amount);
+      erc20token.uniApprove(address(cTokenAddr), _amount);
 
       // Compound Protocol mints cTokens, trhow error if not
       require(cToken.mint(_amount) == 0, "Deposit-failed");
@@ -243,7 +243,21 @@ contract ProviderCompound is IProvider, HelperFunct {
    */
   function getBorrowBalance(address _asset) external view override returns (uint256) {
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+
     return IGenCToken(cTokenAddr).borrowBalanceStored(msg.sender);
+  }
+
+  /**
+   * @dev Return borrow balance of ETH/ERC20_Token.
+   * This function is the accurate way to get Compound borrow balance.
+   * It costs ~84K gas and is not a view function.
+   * @param _asset token address to query the balance.
+   * @param _who address of the account.
+   */
+  function getBorrowBalanceOf(address _asset, address _who) external override returns (uint256) {
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+
+    return IGenCToken(cTokenAddr).borrowBalanceCurrent(_who);
   }
 
   /**
@@ -254,20 +268,7 @@ contract ProviderCompound is IProvider, HelperFunct {
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
     uint256 cTokenBal = IGenCToken(cTokenAddr).balanceOf(msg.sender);
     uint256 exRate = IGenCToken(cTokenAddr).exchangeRateStored();
+
     return exRate.mul(cTokenBal).div(1e18);
-  }
-
-  // This function is the accurate way to get Compound Borrow Balance but it costs 84K gas
-  // and is not a view function.
-  function getBorrowBalanceExact(address _asset, address who) external returns (uint256) {
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
-    return IGenCToken(cTokenAddr).borrowBalanceCurrent(who);
-  }
-
-  // This function is the accurate way to get Compound Deposit Balance but it costs 84K gas
-  // and is not a view function.
-  function getDepositBalanceExact(address _asset, address who) external returns (uint256) {
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
-    return IGenCToken(cTokenAddr).balanceOfUnderlying(who);
   }
 }

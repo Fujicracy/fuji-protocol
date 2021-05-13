@@ -22,8 +22,8 @@ interface IVault {
     address vault,
     address fromProviderAddrs,
     address toProviderAddr,
-    uint256 Debtamount,
-    uint256 Collattamount
+    uint256 debtamount,
+    uint256 collattamount
   );
 
   // Core Vault Functions
@@ -39,7 +39,7 @@ interface IVault {
   function executeSwitch(
     address _newProvider,
     uint256 _flashLoanDebt,
-    uint256 fee
+    uint256 _fee
   ) external;
 
   //Getter Functions

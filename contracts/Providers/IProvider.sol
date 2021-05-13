@@ -20,4 +20,6 @@ interface IProvider {
   function getBorrowBalance(address _asset) external view returns (uint256);
 
   function getDepositBalance(address _asset) external view returns (uint256);
+
+  function getBorrowBalanceOf(address _asset, address _who) external returns (uint256);
 }

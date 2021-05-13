@@ -25,7 +25,7 @@ contract FujiAdmin is IFujiAdmin, Ownable {
   // Bonus Factor for normal Liquidation
   Factor public bonusL;
 
-  constructor() public {
+  constructor() {
     // 0.04
     bonusFlashL.a = 1;
     bonusFlashL.b = 25;

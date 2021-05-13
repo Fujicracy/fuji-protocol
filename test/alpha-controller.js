@@ -119,7 +119,9 @@ describe("Alpha", () => {
       console.log(priorRefinanceVaultDebt/1,priorRefinanceVaultCollat/1);
 
       //await advanceblocks(50);
-      await controller.connect(users[0]).doRefinancing(thevault.address, destinationProvider.address, 1, 1, 0, false);
+      // refinance the whole position
+      // by using dydx flashloans (last param "0")
+      await controller.connect(users[0]).doRefinancing(thevault.address, destinationProvider.address, 1, 1, 0);
 
       let afterRefinanceVaultDebt = await thevault.borrowBalance(destinationProvider.address);
       let afterRefinanceVaultCollat = await thevault.depositBalance(destinationProvider.address);
@@ -127,7 +129,7 @@ describe("Alpha", () => {
       // Visual Check
       console.log(afterRefinanceVaultDebt/1, afterRefinanceVaultCollat/1);
 
-      if(pre_stagedProvider == dydx || destinationProvider == dydx){
+      if (pre_stagedProvider == dydx || destinationProvider == dydx){
         priorRefinanceVaultDebt = priorRefinanceVaultDebt*1.0009;
         await expect(priorRefinanceVaultDebt/1).to.be.closeTo(afterRefinanceVaultDebt/1,1e15);
       } else {

@@ -31,7 +31,6 @@ const Controller = require("../artifacts/contracts/Controller.sol/Controller.jso
 const Treasury = require("../artifacts/contracts/Gnosis Treasury/GnosisSafe.sol/GnosisSafe.json")
 
 const FujiMapping = require("../artifacts/contracts/FujiMapping.sol/FujiMapping.json");
-const MockFlasher = require("../artifacts/contracts/Mocks/MockFlasher.sol/MockFlasher.json");
 
 const fixture = async ([wallet, other], provider) => {
 
@@ -56,8 +55,7 @@ const fixture = async ([wallet, other], provider) => {
   // Step 2 Of Deploy: Functional Contracts
   let fujiadmin = await deployContract(wallet, FujiAdmin,[]);
   let fliquidator = await deployContract(wallet, Fliquidator, []);
-  //let flasher = await deployContract(wallet, Flasher, []);
-  let mockflasher = await deployContract(wallet, MockFlasher, [creamfujimapping.address]);
+  let flasher = await deployContract(wallet, Flasher, []);
   let controller = await deployContract(wallet, Controller, []);
   let f1155 = await deployContract(wallet, F1155, []);
 
@@ -78,7 +76,7 @@ const fixture = async ([wallet, other], provider) => {
   let vaultusdt = await deployContract(wallet, VaultETHUSDT,[]);
 
   // Step 5 - General Plug-ins and Set-up Transactions
-  await fujiadmin.setFlasher(mockflasher.address);
+  await fujiadmin.setFlasher(flasher.address);
   await fujiadmin.setFliquidator(fliquidator.address);
   await fujiadmin.setTreasury(treasury.address);
   await fujiadmin.setController(controller.address);
@@ -86,7 +84,7 @@ const fixture = async ([wallet, other], provider) => {
   await fujiadmin.setVaultHarvester(vaultharvester.address);
   await fliquidator.setFujiAdmin(fujiadmin.address);
   await fliquidator.setSwapper(UNISWAP_ROUTER_ADDR);
-  await mockflasher.setFujiAdmin(fujiadmin.address);
+  await flasher.setFujiAdmin(fujiadmin.address);
   await controller.setFujiAdmin(fujiadmin.address);
   await f1155.setPermit(fliquidator.address, true);
   await f1155.setPermit(vaultdai.address, true);
@@ -122,7 +120,7 @@ const fixture = async ([wallet, other], provider) => {
     treasury,
     fujiadmin,
     fliquidator,
-    mockflasher,
+    flasher,
     controller,
     f1155,
     aave,
@@ -187,8 +185,7 @@ describe("Alpha", () => {
   let loadFixture;
   let evmSnapshotId;
 
-  let mockfujimapping;
-  let mockflasher;
+  let flasher;
 
   before(async() => {
     users = await ethers.getSigners();
@@ -226,8 +223,7 @@ describe("Alpha", () => {
     vaultusdc = _fixture.vaultusdc;
     vaultusdt = _fixture.vaultusdt;
 
-    mockfujimapping = _fixture.mockfujimapping;
-    mockflasher = _fixture.mockflasher;
+    flasher = _fixture.flasher;
 
   });
 

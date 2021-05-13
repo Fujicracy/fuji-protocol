@@ -45,7 +45,8 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
 
   address private immutable _aaveLendingPool = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
   address private immutable _dydxSoloMargin = 0x1E0447b19BB6EcFdAe1e4AE1694b0C3659614e4e;
-  IFujiMappings private immutable _crMappings = IFujiMappings(0x03BD587Fe413D59A20F32Fc75f31bDE1dD1CD6c9);
+  IFujiMappings private immutable _crMappings =
+    IFujiMappings(0x03BD587Fe413D59A20F32Fc75f31bDE1dD1CD6c9);
 
   receive() external payable {}
 
@@ -265,10 +266,8 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     // Check Msg. Sender is crToken Lending Contract
     address crToken = _crMappings.addressMapping(underlying);
 
-    require(
-      address(msg.sender) == crToken && IERC20(underlying).balanceOf(address(this)) >= amount,
-      Errors.VL_NOT_AUTHORIZED
-    );
+    require(msg.sender == crToken && address(this) == sender, Errors.VL_NOT_AUTHORIZED);
+    require(IERC20(underlying).balanceOf(address(this)) >= amount, Errors.VL_FLASHLOAN_FAILED);
 
     FlashLoan.Info memory info = abi.decode(params, (FlashLoan.Info));
 

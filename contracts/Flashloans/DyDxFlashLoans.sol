@@ -4,7 +4,7 @@ pragma solidity >=0.4.25 <0.7.5;
 pragma experimental ABIEncoderV2;
 
 library Account {
-  enum Status {Normal, Liquid, Vapor}
+  enum Status { Normal, Liquid, Vapor }
   struct Info {
     address owner; // The address that owns the account
     uint256 number; // A nonce that allows a single address to control many accounts
@@ -78,20 +78,20 @@ interface ICallee {
 
 interface ISoloMargin {
   function getNumMarkets() external view returns (uint256);
+
   function getMarketTokenAddress(uint256 marketId) external view returns (address);
-  function operate(
-    Account.Info[] memory accounts,
-    Actions.ActionArgs[] memory actions
-  ) external;
+
+  function operate(Account.Info[] memory accounts, Actions.ActionArgs[] memory actions) external;
 }
 
 contract DyDxFlashloanBase {
   // -- Internal Helper functions -- //
 
-  function _getMarketIdFromTokenAddress(
-    ISoloMargin solo,
-    address token
-  ) internal view returns (uint256) {
+  function _getMarketIdFromTokenAddress(ISoloMargin solo, address token)
+    internal
+    view
+    returns (uint256)
+  {
     uint256 numMarkets = solo.getNumMarkets();
 
     address curToken;
@@ -103,74 +103,75 @@ contract DyDxFlashloanBase {
       }
     }
 
-    revert("No marketId found for provided token");
+    revert("No marketId found");
   }
 
-  function _getAccountInfo(
-    address receiver
-  ) internal pure returns (Account.Info memory) {
+  function _getAccountInfo(address receiver) internal pure returns (Account.Info memory) {
     return Account.Info({ owner: receiver, number: 1 });
   }
 
-  function _getWithdrawAction(
-    uint marketId,
-    uint256 amount
-  ) internal view returns (Actions.ActionArgs memory) {
-    return Actions.ActionArgs({
-      actionType: Actions.ActionType.Withdraw,
-      accountId: 0,
-      amount: Types.AssetAmount({
-        sign: false,
-        denomination: Types.AssetDenomination.Wei,
-        ref: Types.AssetReference.Delta,
-        value: amount
-      }),
-      primaryMarketId: marketId,
-      secondaryMarketId: 0,
-      otherAddress: address(this),
-      otherAccountId: 0,
-      data: ""
-    });
+  function _getWithdrawAction(uint256 marketId, uint256 amount)
+    internal
+    view
+    returns (Actions.ActionArgs memory)
+  {
+    return
+      Actions.ActionArgs({
+        actionType: Actions.ActionType.Withdraw,
+        accountId: 0,
+        amount: Types.AssetAmount({
+          sign: false,
+          denomination: Types.AssetDenomination.Wei,
+          ref: Types.AssetReference.Delta,
+          value: amount
+        }),
+        primaryMarketId: marketId,
+        secondaryMarketId: 0,
+        otherAddress: address(this),
+        otherAccountId: 0,
+        data: ""
+      });
   }
 
-  function _getCallAction(
-    bytes memory data
-  ) internal view returns (Actions.ActionArgs memory) {
-    return Actions.ActionArgs({
-      actionType: Actions.ActionType.Call,
-      accountId: 0,
-      amount: Types.AssetAmount({
-        sign: false,
-        denomination: Types.AssetDenomination.Wei,
-        ref: Types.AssetReference.Delta,
-        value: 0
-      }),
-      primaryMarketId: 0,
-      secondaryMarketId: 0,
-      otherAddress: address(this),
-      otherAccountId: 0,
-      data: data
-    });
+  function _getCallAction(bytes memory data) internal view returns (Actions.ActionArgs memory) {
+    return
+      Actions.ActionArgs({
+        actionType: Actions.ActionType.Call,
+        accountId: 0,
+        amount: Types.AssetAmount({
+          sign: false,
+          denomination: Types.AssetDenomination.Wei,
+          ref: Types.AssetReference.Delta,
+          value: 0
+        }),
+        primaryMarketId: 0,
+        secondaryMarketId: 0,
+        otherAddress: address(this),
+        otherAccountId: 0,
+        data: data
+      });
   }
 
-  function _getDepositAction(
-    uint marketId,
-    uint256 amount
-  ) internal view returns (Actions.ActionArgs memory) {
-    return Actions.ActionArgs({
-      actionType: Actions.ActionType.Deposit,
-      accountId: 0,
-      amount: Types.AssetAmount({
-        sign: true,
-        denomination: Types.AssetDenomination.Wei,
-        ref: Types.AssetReference.Delta,
-        value: amount
-      }),
-      primaryMarketId: marketId,
-      secondaryMarketId: 0,
-      otherAddress: address(this),
-      otherAccountId: 0,
-      data: ""
-    });
+  function _getDepositAction(uint256 marketId, uint256 amount)
+    internal
+    view
+    returns (Actions.ActionArgs memory)
+  {
+    return
+      Actions.ActionArgs({
+        actionType: Actions.ActionType.Deposit,
+        accountId: 0,
+        amount: Types.AssetAmount({
+          sign: true,
+          denomination: Types.AssetDenomination.Wei,
+          ref: Types.AssetReference.Delta,
+          value: amount
+        }),
+        primaryMarketId: marketId,
+        secondaryMarketId: 0,
+        otherAddress: address(this),
+        otherAccountId: 0,
+        data: ""
+      });
   }
 }

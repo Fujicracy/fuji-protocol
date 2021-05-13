@@ -23,4 +23,3 @@ interface ILendingPool {
     uint16 referralCode
   ) external;
 }
-

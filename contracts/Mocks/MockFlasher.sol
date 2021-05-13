@@ -60,7 +60,7 @@ contract MockFlasher is
 
   address private immutable _aaveLendingPool;
   address private immutable _dydxSoloMargin;
-  IFujiMappings private immutable __fujiMaping;
+  IFujiMappings private immutable _fujiMaping;
 
   receive() external payable {}
 

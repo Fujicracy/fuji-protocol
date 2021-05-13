@@ -48,7 +48,7 @@
     "test:alpha-dydx": "hardhat test --network localhost test/alpha-dydx.js",
     "test:alpha-f1155": "hardhat test --network localhost test/alpha-f1155.js",
     "compile": "hardhat compile",
-    "deploy": "hardhat run scripts/deploy.js && hardhat run scripts/publish.js",
+    "deploy": "hardhat run scripts/deploy.js",
     "lint": "solhint -f table contracts/**/*.sol",
     "format": "prettier --write contracts/**/*.sol",
     "watch": "node scripts/watch.js",

@@ -196,7 +196,7 @@ describe("Alpha", () => {
 
     });
 
-    it("3.- Full Flashclose User, vaultdai", async () => {
+    it("3.- Full Flashclose User, vaultDai with cream FL", async () => {
 
       // vault to use
       let thevault = vaultdai;
@@ -220,7 +220,7 @@ describe("Alpha", () => {
       await thevault.connect(randomUser)
         .depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount });
 
-      await fliquidator.connect(randomUser).flashClose(-1, thevault.address, 0);
+      await fliquidator.connect(randomUser).flashClose(-1, thevault.address, 2);
 
       let randomUser1155balCollat = await f1155.balanceOf(randomUser.address, vAssetStruct.collateralID);
       let randomUser1155balDebt = await f1155.balanceOf(randomUser.address, vAssetStruct.borrowID);
@@ -230,7 +230,7 @@ describe("Alpha", () => {
       await expect(randomUser1155balDebt).to.equal(0);
     });
 
-    it("4.- Full Flashclose User, vaultusdc", async () => {
+    it("4.- Full Flashclose User, vaultUsdc with dYdX FL", async () => {
 
       // vault to use
       let thevault = vaultusdc;
@@ -254,7 +254,7 @@ describe("Alpha", () => {
       await thevault.connect(randomUser)
         .depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount });
 
-      await fliquidator.connect(randomUser).flashClose(-1, thevault.address,0);
+      await fliquidator.connect(randomUser).flashClose(-1, thevault.address, 1);
 
       let randomUser1155balCollat = await f1155.balanceOf(randomUser.address, vAssetStruct.collateralID);
       let randomUser1155balDebt = await f1155.balanceOf(randomUser.address, vAssetStruct.borrowID);
@@ -265,7 +265,7 @@ describe("Alpha", () => {
 
     });
 
-    it("5.- Partial Flashclose User, vaultusdt", async () => {
+    it("5.- Partial Flashclose User, vaultUsdt with aave FL", async () => {
 
       // vault to use
       let thevault = vaultusdt;
@@ -303,7 +303,7 @@ describe("Alpha", () => {
       await expect(randomUser1155balDebt1).to.be.lt(randomUser1155balDebt0);
     });
 
-    it("6.- Partial Flashclose User, vaultusdc", async () => {
+    it("6.- Partial Flashclose User, vaultUsdc with dYdX", async () => {
 
       // vault to use
       let thevault = vaultusdc;
@@ -331,7 +331,7 @@ describe("Alpha", () => {
       let randomUser1155balDebt0 = await f1155.balanceOf(randomUser.address, vAssetStruct.borrowID);
       //console.log("1155tokenbalcollat0", randomUser1155balCollat0/1, "1155tokenbaldebt0", randomUser1155balDebt0/1);
 
-      await fliquidator.connect(randomUser).flashClose(partialRepayAmount, thevault.address,0);
+      await fliquidator.connect(randomUser).flashClose(partialRepayAmount, thevault.address, 1);
 
       let randomUser1155balCollat1 = await f1155.balanceOf(randomUser.address, vAssetStruct.collateralID);
       let randomUser1155balDebt1 = await f1155.balanceOf(randomUser.address, vAssetStruct.borrowID);
@@ -341,7 +341,7 @@ describe("Alpha", () => {
       await expect(randomUser1155balDebt1).to.be.lt(randomUser1155balDebt0);
     });
 
-    it("7.- FlashLiquidation a User, vaultdai", async () => {
+    it("7.- FlashLiquidation a User, vaultDai", async () => {
 
       // vault to use
       let thevault = vaultdai;
@@ -402,7 +402,7 @@ describe("Alpha", () => {
       await expect(carelessUser1155bal1).to.be.eq(0);
     });
 
-    it("8.- FlashLiquidation a User, vaultusdc", async () => {
+    it("8.- FlashLiquidation a User, vaultUsdc", async () => {
 
       // vault to use
       let thevault = vaultusdc;

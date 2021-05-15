@@ -83,12 +83,7 @@ describe("Alpha", () => {
 
   describe("Alpha Controller Functionality", () => {
 
-    it("1.- Try ForcedRefinancing VaultDai", async () => {
-
-      // Console log providers
-      console.log("Aave", aave.address);
-      console.log("Compound", compound.address);
-      console.log("Dydx", dydx.address);
+    it("1.- Try Refinance VaultDai with Aave flashloan", async () => {
 
       // Testing Vault
       let thevault = vaultdai;
@@ -98,7 +93,6 @@ describe("Alpha", () => {
 
       // Set defined ActiveProviders
       await thevault.setActiveProvider(pre_stagedProvider.address);
-      console.log("pre_stagedProvider",pre_stagedProvider.address);
 
       //Bootstrap Liquidity
       let bootstraper = users[0];
@@ -116,7 +110,7 @@ describe("Alpha", () => {
 
       let priorRefinanceVaultDebt = await thevault.borrowBalance(pre_stagedProvider.address);
       let priorRefinanceVaultCollat = await thevault.depositBalance(pre_stagedProvider.address);
-      console.log(priorRefinanceVaultDebt/1,priorRefinanceVaultCollat/1);
+      //console.log(priorRefinanceVaultDebt/1,priorRefinanceVaultCollat/1);
 
       //await advanceblocks(50);
       // refinance the whole position
@@ -127,9 +121,59 @@ describe("Alpha", () => {
       let afterRefinanceVaultCollat = await thevault.depositBalance(destinationProvider.address);
 
       // Visual Check
-      console.log(afterRefinanceVaultDebt/1, afterRefinanceVaultCollat/1);
+      //console.log(afterRefinanceVaultDebt/1, afterRefinanceVaultCollat/1);
 
-      if (pre_stagedProvider == dydx || destinationProvider == dydx){
+      if (pre_stagedProvider == dydx || destinationProvider == dydx) {
+        priorRefinanceVaultDebt = priorRefinanceVaultDebt*1.0009;
+        await expect(priorRefinanceVaultDebt/1).to.be.closeTo(afterRefinanceVaultDebt/1,1e15);
+      } else {
+        await expect(priorRefinanceVaultDebt/1).to.be.closeTo(afterRefinanceVaultDebt/1,1e15);
+      }
+      await expect(priorRefinanceVaultCollat/1).to.be.closeTo(afterRefinanceVaultCollat/1,1e15);
+
+    });
+
+    it("2.- Try Refinance VaultDai with dYdX flashloan", async () => {
+
+      // Testing Vault
+      let thevault = vaultdai;
+      let asset = dai;
+      let pre_stagedProvider = aave;
+      let destinationProvider = compound;
+
+      // Set defined ActiveProviders
+      await thevault.setActiveProvider(pre_stagedProvider.address);
+
+      //Bootstrap Liquidity
+      let bootstraper = users[0];
+      let bstrapLiquidity = ethers.utils.parseEther("1");
+      await thevault.connect(bootstraper).deposit(bstrapLiquidity,{ value: bstrapLiquidity });
+
+      // Users deposit and borrow
+      let userX = users[2]; let depositX = ethers.utils.parseEther("10"); let borrowX = ethers.utils.parseUnits("3000",18);
+      let userY = users[3]; let depositY = ethers.utils.parseEther("5"); let borrowY = ethers.utils.parseUnits("2500",18);
+      let userW = users[4]; let depositW = ethers.utils.parseEther("5"); let borrowW = ethers.utils.parseUnits("2300",18);
+
+      await thevault.connect(userX).depositAndBorrow(depositX,borrowX,{ value: depositX });
+      await thevault.connect(userY).depositAndBorrow(depositY,borrowY,{ value: depositY });
+      await thevault.connect(userW).depositAndBorrow(depositW,borrowW,{ value: depositW });
+
+      let priorRefinanceVaultDebt = await thevault.borrowBalance(pre_stagedProvider.address);
+      let priorRefinanceVaultCollat = await thevault.depositBalance(pre_stagedProvider.address);
+      //console.log(priorRefinanceVaultDebt/1,priorRefinanceVaultCollat/1);
+
+      //await advanceblocks(50);
+      // refinance the whole position
+      // by using dydx flashloans (last param "0")
+      await controller.connect(users[0]).doRefinancing(thevault.address, destinationProvider.address, 1, 1, 1);
+
+      let afterRefinanceVaultDebt = await thevault.borrowBalance(destinationProvider.address);
+      let afterRefinanceVaultCollat = await thevault.depositBalance(destinationProvider.address);
+
+      // Visual Check
+      //console.log(afterRefinanceVaultDebt/1, afterRefinanceVaultCollat/1);
+
+      if (pre_stagedProvider == dydx || destinationProvider == dydx) {
         priorRefinanceVaultDebt = priorRefinanceVaultDebt*1.0009;
         await expect(priorRefinanceVaultDebt/1).to.be.closeTo(afterRefinanceVaultDebt/1,1e15);
       } else {

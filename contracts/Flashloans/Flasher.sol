@@ -60,14 +60,6 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     _;
   }
 
-  modifier isAuthorizedExternal() {
-    require(
-      msg.sender == _dydxSoloMargin || msg.sender == _aaveLendingPool,
-      Errors.VL_NOT_AUTHORIZED
-    );
-    _;
-  }
-
   /**
    * @dev Sets the fujiAdmin Address
    * @param _newFujiAdmin: FujiAdmin Contract Address
@@ -81,7 +73,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
    * @param info: struct information for flashLoan
    * @param _flashnum: integer identifier of flashloan provider
    */
-  function initiateFlashloan(FlashLoan.Info memory info, uint8 _flashnum) public isAuthorized {
+  function initiateFlashloan(FlashLoan.Info calldata info, uint8 _flashnum) public isAuthorized {
     if (_flashnum == 0) {
       _initiateAaveFlashLoan(info);
     } else if (_flashnum == 1) {
@@ -97,7 +89,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
    * @dev Initiates a DyDx flashloan.
    * @param info: data to be passed between functions executing flashloan logic
    */
-  function _initiateDyDxFlashLoan(FlashLoan.Info memory info) internal {
+  function _initiateDyDxFlashLoan(FlashLoan.Info calldata info) internal {
     ISoloMargin solo = ISoloMargin(_dydxSoloMargin);
 
     // Get marketId from token address
@@ -128,10 +120,13 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
    */
   function callFunction(
     address sender,
-    Account.Info memory account,
-    bytes memory data
-  ) external override isAuthorizedExternal {
-    sender;
+    Account.Info calldata account,
+    bytes calldata data
+  ) external override {
+    require(
+      msg.sender == _dydxSoloMargin && sender == address(this),
+      Errors.VL_NOT_AUTHORIZED
+    );
     account;
 
     FlashLoan.Info memory info = abi.decode(data, (FlashLoan.Info));
@@ -166,7 +161,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
    * @dev Initiates an Aave flashloan.
    * @param info: data to be passed between functions executing flashloan logic
    */
-  function _initiateAaveFlashLoan(FlashLoan.Info memory info) internal {
+  function _initiateAaveFlashLoan(FlashLoan.Info calldata info) internal {
     //Initialize Instance of Aave Lending Pool
     ILendingPool aaveLp = ILendingPool(_aaveLendingPool);
 
@@ -179,14 +174,14 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
 
     // 0 = no debt, 1 = stable, 2 = variable
     uint256[] memory modes = new uint256[](1);
-    modes[0] = 0;
+    //modes[0] = 0;
 
-    address onBehalfOf = address(this);
-    bytes memory params = abi.encode(info);
-    uint16 referralCode = 0;
+    //address onBehalfOf = address(this);
+    //bytes memory params = abi.encode(info);
+    //uint16 referralCode = 0;
 
     //Aave Flashloan initiated.
-    aaveLp.flashLoan(receiverAddress, assets, amounts, modes, onBehalfOf, params, referralCode);
+    aaveLp.flashLoan(receiverAddress, assets, amounts, modes, address(this), abi.encode(info), 0);
   }
 
   /**
@@ -199,8 +194,11 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     uint256[] calldata premiums,
     address initiator,
     bytes calldata params
-  ) external override isAuthorizedExternal returns (bool) {
-    initiator;
+  ) external override returns (bool) {
+    require(
+      msg.sender == _aaveLendingPool && initiator == address(this),
+      Errors.VL_NOT_AUTHORIZED
+    );
 
     FlashLoan.Info memory info = abi.decode(params, (FlashLoan.Info));
 
@@ -241,7 +239,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
    * @dev Initiates an CreamFinance flashloan.
    * @param info: data to be passed between functions executing flashloan logic
    */
-  function _initiateCreamFlashLoan(FlashLoan.Info memory info) internal {
+  function _initiateCreamFlashLoan(FlashLoan.Info calldata info) internal {
     // Get crToken Address for Flashloan Call
     address crToken = _crMappings.addressMapping(info.asset);
 

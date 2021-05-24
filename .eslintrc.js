@@ -19,5 +19,7 @@ module.exports = {
     "prefer-template": "off",
     "no-console": "off",
     "func-names": "off",
+    "no-await-in-loop": "off",
+    "no-plusplus": "off",
   },
 };

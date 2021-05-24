@@ -10,10 +10,12 @@ const USDT_ADDR = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
 const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 const aWETH_ADDR = "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e";
 const cETH_ADDR = "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5";
+const cyWETH_ADDR = "0x41c84c0e2EE0b740Cf0d31F63f3B6F627DC6b393";
 
 const ONE_ETH = ethers.utils.parseEther("1.0");
 
 const FujiAdmin = require("../artifacts/contracts/FujiAdmin.sol/FujiAdmin.json");
+const FujiMapping = require("../artifacts/contracts/FujiMapping.sol/FujiMapping.json");
 const Fliquidator = require("../artifacts/contracts/Fliquidator.sol/Fliquidator.json");
 const AWhitelist = require("../artifacts/contracts/AlphaWhitelist.sol/AlphaWhitelist.json");
 const VaultETHDAI = require("../artifacts/contracts/Vaults/VaultETHDAI.sol/VaultETHDAI.json");
@@ -23,6 +25,7 @@ const VaultHarvester = require("../artifacts/contracts/Vaults/VaultHarvester.sol
 const Aave = require("../artifacts/contracts/Providers/ProviderAave.sol/ProviderAave.json");
 const Compound = require("../artifacts/contracts/Providers/ProviderCompound.sol/ProviderCompound.json");
 const Dydx = require("../artifacts/contracts/Providers/ProviderDYDX.sol/ProviderDYDX.json")
+const IronBank = require("../artifacts/contracts/Providers/ProviderIronBank.sol/ProviderIronBank.json");
 const F1155 = require("../artifacts/contracts/FujiERC1155/FujiERC1155.sol/FujiERC1155.json");
 const Flasher = require("../artifacts/contracts/Flashloans/Flasher.sol/Flasher.json");
 const Controller = require("../artifacts/contracts/Controller.sol/Controller.json");
@@ -35,11 +38,21 @@ const fixture = async ([wallet, other], provider) => {
   const usdt = await ethers.getContractAt("IERC20", USDT_ADDR);
   const aweth = await ethers.getContractAt("IERC20", aWETH_ADDR);
   const ceth = await ethers.getContractAt("ICErc20", cETH_ADDR);
+  const cyweth = await ethers.getContractAt("ICyErc20", cyWETH_ADDR);
   const oracle = await ethers.getContractAt("AggregatorV3Interface", CHAINLINK_ORACLE_ADDR);
 
   // Step 1 of Deploy: Contracts which address is required to be hardcoded in other contracts
   //Fuji Mapping, for testing this is not required.
+  const fujimapping = await deployContract(wallet, FujiMapping,[]);
   const treasury = await deployContract(wallet, Treasury, []);
+
+  // Step 1.2 Set-up FujiMapping for testing purposes
+  console.log('        This is to be hardcoded in ProviderIronBank', fujimapping.address);
+  await fujimapping.setMapping("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "0x41c84c0e2EE0b740Cf0d31F63f3B6F627DC6b393");
+  await fujimapping.setMapping("0x6B175474E89094C44Da98b954EedeAC495271d0F", "0x8e595470Ed749b85C6F7669de83EAe304C2ec68F");
+  await fujimapping.setMapping("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", "0x76Eb2FE28b36B3ee97F3Adae0C69606eeDB2A37c");
+  await fujimapping.setMapping("0xdAC17F958D2ee523a2206206994597C13D831ec7","0x48759F220ED983dB51fA7A8C0D2AAb8f3ce4166a");
+
 
   // Step 2 Of Deploy: Functional Contracts
   const fujiadmin = await deployContract(wallet, FujiAdmin,[]);
@@ -52,6 +65,7 @@ const fixture = async ([wallet, other], provider) => {
   const aave = await deployContract(wallet, Aave, []);
   const compound = await deployContract(wallet, Compound, []);
   const dydx = await deployContract(wallet, Dydx, []);
+  const ironbank = await deployContract(wallet, IronBank, []);
 
   // Step 4 Of Deploy Core Money Handling Contracts
   const aWhitelist = await deployContract(wallet, AWhitelist,
@@ -105,6 +119,7 @@ const fixture = async ([wallet, other], provider) => {
     usdt,
     aweth,
     ceth,
+    cyweth,
     oracle,
     treasury,
     fujiadmin,
@@ -115,6 +130,7 @@ const fixture = async ([wallet, other], provider) => {
     aave,
     compound,
     dydx,
+    ironbank,
     aWhitelist,
     vaultharvester,
     vaultdai,

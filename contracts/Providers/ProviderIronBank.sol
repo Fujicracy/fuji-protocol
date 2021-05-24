@@ -6,7 +6,7 @@ import { UniERC20 } from "../Libraries/LibUniERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IProvider } from "./IProvider.sol";
 
-interface IGenCrToken is IERC20 {
+interface IGenCyToken is IERC20 {
   function redeem(uint256) external returns (uint256);
 
   function redeemUnderlying(uint256) external returns (uint256);
@@ -40,20 +40,20 @@ interface IGenCrToken is IERC20 {
   function getCash() external view returns (uint256);
 }
 
-interface ICrErc20 is IGenCrToken {
+interface IWeth is IERC20 {
+
+  function deposit() external payable;
+
+  function withdraw(uint wad) external;
+
+}
+
+interface ICyErc20 is IGenCyToken {
   function mint(uint256) external returns (uint256);
 
   function repayBorrow(uint256 repayAmount) external returns (uint256);
 
   function repayBorrowBehalf(address borrower, uint256 repayAmount) external returns (uint256);
-}
-
-interface ICrEth is IGenCrToken {
-  function mint() external payable;
-
-  function repayBorrow() external payable;
-
-  function repayBorrowBehalf(address borrower) external payable;
 }
 
 interface IComptroller {
@@ -83,7 +83,7 @@ contract HelperFunct {
   }
 
   function _getMappingAddr() internal pure returns (address) {
-    return ;
+    return 0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E; //Need to UPDATE
   }
 
   function _getComptrollerAddress() internal pure returns (address) {
@@ -136,27 +136,25 @@ contract ProviderIronBank is IProvider, HelperFunct {
     _enterCollatMarket(cTokenAddr);
 
     if (_isETH(_asset)) {
-      // Create a reference to the cToken contract
-      ICrEth cToken = ICrEth(cTokenAddr);
-
-      //Compound protocol Mints cTokens, ETH method
-      cToken.mint{ value: _amount }();
-    } else {
-      // Create reference to the ERC20 contract
-      IERC20 erc20token = IERC20(_asset);
-
-      // Create a reference to the cToken contract
-      ICrErc20 cToken = ICrErc20(cTokenAddr);
-
-      //Checks, Vault balance of ERC20 to make deposit
-      require(erc20token.balanceOf(address(this)) >= _amount, "Not enough Balance");
-
-      //Approve to move ERC20tokens
-      erc20token.uniApprove(address(cTokenAddr), _amount);
-
-      // Compound Protocol mints cTokens, trhow error if not
-      require(cToken.mint(_amount) == 0, "Deposit-failed");
+      // Transform ETH to WETH
+      IWeth(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).deposit{ value: _amount }();
+      _asset = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     }
+
+    // Create reference to the ERC20 contract
+    IERC20 erc20token = IERC20(_asset);
+
+    // Create a reference to the cToken contract
+    ICyErc20 cToken = ICyErc20(cTokenAddr);
+
+    //Checks, Vault balance of ERC20 to make deposit
+    require(erc20token.balanceOf(address(this)) >= _amount, "Not enough Balance");
+
+    //Approve to move ERC20tokens
+    erc20token.uniApprove(address(cTokenAddr), _amount);
+
+    // Compound Protocol mints cTokens, trhow error if not
+    require(cToken.mint(_amount) == 0, "Deposit-failed");
   }
 
   /**
@@ -169,7 +167,7 @@ contract ProviderIronBank is IProvider, HelperFunct {
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     // Create a reference to the corresponding cToken contract
-    IGenCrToken cToken = IGenCrToken(cTokenAddr);
+    IGenCyToken cToken = IGenCyToken(cTokenAddr);
 
     //Compound Protocol Redeem Process, throw errow if not.
     require(cToken.redeemUnderlying(_amount) == 0, "Withdraw-failed");
@@ -185,7 +183,7 @@ contract ProviderIronBank is IProvider, HelperFunct {
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     // Create a reference to the corresponding cToken contract
-    IGenCrToken cToken = IGenCrToken(cTokenAddr);
+    IGenCyToken cToken = IGenCyToken(cTokenAddr);
 
     //Enter and/or ensure collateral market is enacted
     //_enterCollatMarket(cTokenAddr);
@@ -204,22 +202,22 @@ contract ProviderIronBank is IProvider, HelperFunct {
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     if (_isETH(_asset)) {
-      // Create a reference to the corresponding cToken contract
-      ICrEth cToken = ICrEth(cTokenAddr);
-
-      cToken.repayBorrow{ value: msg.value }();
-    } else {
-      // Create reference to the ERC20 contract
-      IERC20 erc20token = IERC20(_asset);
-
-      // Create a reference to the corresponding cToken contract
-      ICrErc20 cToken = ICrErc20(cTokenAddr);
-
-      // Check there is enough balance to pay
-      require(erc20token.balanceOf(address(this)) >= _amount, "Not-enough-token");
-      erc20token.uniApprove(address(cTokenAddr), _amount);
-      cToken.repayBorrow(_amount);
+      // Transform ETH to WETH
+      IWeth(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).deposit{ value: _amount }();
+      _asset = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     }
+
+    // Create reference to the ERC20 contract
+    IERC20 erc20token = IERC20(_asset);
+
+    // Create a reference to the corresponding cToken contract
+    ICyErc20 cToken = ICyErc20(cTokenAddr);
+
+    // Check there is enough balance to pay
+    require(erc20token.balanceOf(address(this)) >= _amount, "Not-enough-token");
+    erc20token.uniApprove(address(cTokenAddr), _amount);
+    cToken.repayBorrow(_amount);
+    
   }
 
   /**
@@ -230,7 +228,7 @@ contract ProviderIronBank is IProvider, HelperFunct {
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     //Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: Compound uses base 1e18
-    uint256 bRateperBlock = (IGenCrToken(cTokenAddr).borrowRatePerBlock()).mul(10**9);
+    uint256 bRateperBlock = (IGenCyToken(cTokenAddr).borrowRatePerBlock()).mul(10**9);
 
     // The approximate number of blocks per year that is assumed by the Compound interest rate model
     uint256 blocksperYear = 2102400;
@@ -244,7 +242,7 @@ contract ProviderIronBank is IProvider, HelperFunct {
   function getBorrowBalance(address _asset) external view override returns (uint256) {
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    return IGenCrToken(cTokenAddr).borrowBalanceStored(msg.sender);
+    return IGenCyToken(cTokenAddr).borrowBalanceStored(msg.sender);
   }
 
   /**
@@ -257,7 +255,7 @@ contract ProviderIronBank is IProvider, HelperFunct {
   function getBorrowBalanceOf(address _asset, address _who) external override returns (uint256) {
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    return IGenCrToken(cTokenAddr).borrowBalanceCurrent(_who);
+    return IGenCyToken(cTokenAddr).borrowBalanceCurrent(_who);
   }
 
   /**
@@ -266,8 +264,8 @@ contract ProviderIronBank is IProvider, HelperFunct {
    */
   function getDepositBalance(address _asset) external view override returns (uint256) {
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
-    uint256 cTokenBal = IGenCrToken(cTokenAddr).balanceOf(msg.sender);
-    uint256 exRate = IGenCrToken(cTokenAddr).exchangeRateStored();
+    uint256 cTokenBal = IGenCyToken(cTokenAddr).balanceOf(msg.sender);
+    uint256 exRate = IGenCyToken(cTokenAddr).exchangeRateStored();
 
     return exRate.mul(cTokenBal).div(1e18);
   }

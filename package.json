@@ -51,7 +51,7 @@
     "deploy": "hardhat run scripts/deploy.js",
     "lint": "solhint -f table contracts/**/*.sol --ignore-path contracts/Gnosis*/**",
     "lint:fix": "echo 1",
-    "format": "prettier --write contracts/**/*.sol",
+    "format": "prettier --write contracts/**/*.sol '!contracts/Gnosis*/**'",
     "watch": "node scripts/watch.js",
     "accounts": "hardhat accounts",
     "balance": "hardhat balance",

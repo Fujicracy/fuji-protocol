@@ -123,10 +123,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     Account.Info calldata account,
     bytes calldata data
   ) external override {
-    require(
-      msg.sender == _dydxSoloMargin && sender == address(this),
-      Errors.VL_NOT_AUTHORIZED
-    );
+    require(msg.sender == _dydxSoloMargin && sender == address(this), Errors.VL_NOT_AUTHORIZED);
     account;
 
     FlashLoan.Info memory info = abi.decode(data, (FlashLoan.Info));
@@ -195,10 +192,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     address initiator,
     bytes calldata params
   ) external override returns (bool) {
-    require(
-      msg.sender == _aaveLendingPool && initiator == address(this),
-      Errors.VL_NOT_AUTHORIZED
-    );
+    require(msg.sender == _aaveLendingPool && initiator == address(this), Errors.VL_NOT_AUTHORIZED);
 
     FlashLoan.Info memory info = abi.decode(params, (FlashLoan.Info));
 

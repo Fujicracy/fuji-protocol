@@ -41,11 +41,9 @@ interface IGenCyToken is IERC20 {
 }
 
 interface IWeth is IERC20 {
-
   function deposit() external payable;
 
-  function withdraw(uint wad) external;
-
+  function withdraw(uint256 wad) external;
 }
 
 interface ICyErc20 is IGenCyToken {
@@ -171,6 +169,11 @@ contract ProviderIronBank is IProvider, HelperFunct {
 
     //Compound Protocol Redeem Process, throw errow if not.
     require(cToken.redeemUnderlying(_amount) == 0, "Withdraw-failed");
+
+    if (_isETH(_asset)) {
+      // Transform ETH to WETH
+      IWeth(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).withdraw(_amount);
+    }
   }
 
   /**
@@ -217,7 +220,6 @@ contract ProviderIronBank is IProvider, HelperFunct {
     require(erc20token.balanceOf(address(this)) >= _amount, "Not-enough-token");
     erc20token.uniApprove(address(cTokenAddr), _amount);
     cToken.repayBorrow(_amount);
-    
   }
 
   /**

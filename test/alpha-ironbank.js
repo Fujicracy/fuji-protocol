@@ -91,7 +91,7 @@ describe("Alpha", () => {
   });
 
   describe("Alpha IronBank Basic Functionality", () => {
-    /*
+    
     it("1.- Users[1]: deposit 11.9999 ETH to Vaultdai, check Vaultdai cyweth balance Ok", async () => {
 
       let user_X = users[1];
@@ -178,7 +178,6 @@ describe("Alpha", () => {
       await expect(vaultbal).to.be.closeTo(cywethAmount, 1000);
 
     });
-    */
 
     it("6.- Users[5]: deposit 10 ETH in Vaultdai and then withdraws 9.9999 ETH, check VaultDai cyweth balance ok", async () => {
 
@@ -303,7 +302,6 @@ describe("Alpha", () => {
       await expect(vaultusdt.connect(user_Y).withdraw(withdrawAmount)).to
             .be.revertedWith('112');
     });
-    /*
 
     it("11.- Users[16]: deposits 5 ETH to vaultdai, borrows 8000 dai, then paybacks full, and  withdraws all collateral", async () => {
 
@@ -499,7 +497,6 @@ describe("Alpha", () => {
 
       await expect(ethbalOriginal/1).to.be.closeTo(ethbalFinal, 2e16);
     });
-    */
 
   });
 });

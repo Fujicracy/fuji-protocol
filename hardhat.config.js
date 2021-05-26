@@ -1,10 +1,11 @@
-require('dotenv').config();
+require("dotenv").config();
 const { utils } = require("ethers");
 const fs = require("fs");
 const chalk = require("chalk");
 
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-etherscan");
+require("@tenderly/hardhat-tenderly");
 require("hardhat-contract-sizer");
 require("hardhat-gas-reporter");
 
@@ -29,7 +30,9 @@ function mnemonic() {
     return fs.readFileSync("./mnemonic.txt").toString().trim();
   } catch (e) {
     if (defaultNetwork !== "localhost") {
-      console.log("☢️ WARNING: No mnemonic file created for a deploy account. Try `yarn run generate` and then `yarn run account`.")
+      console.log(
+        "☢️ WARNING: No mnemonic file created for a deploy account. Try `yarn run generate` and then `yarn run account`."
+      );
     }
   }
   return "";
@@ -37,7 +40,6 @@ function mnemonic() {
 
 module.exports = {
   defaultNetwork,
-
 
   // don't forget to set your provider like:
   // REACT_APP_PROVIDER=https://dai.poa.network in packages/react-app/.env
@@ -67,10 +69,7 @@ module.exports = {
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_ID}`,
-      //accounts: [process.env.PRIVATE_KEY]
-      accounts: {
-        mnemonic: mnemonic(),
-      },
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : { mnemonic: mnemonic() },
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${process.env.INFURA_ID}`,
@@ -85,14 +84,14 @@ module.exports = {
       },
     },
     xdai: {
-      url: 'https://rpc.xdaichain.com/',
+      url: "https://rpc.xdaichain.com/",
       gasPrice: 1000000000,
       accounts: {
         mnemonic: mnemonic(),
       },
     },
     matic: {
-      url: 'https://rpc-mainnet.maticvigil.com/',
+      url: "https://rpc-mainnet.maticvigil.com/",
       gasPrice: 1000000000,
       accounts: {
         mnemonic: mnemonic(),
@@ -101,12 +100,12 @@ module.exports = {
   },
   etherscan: {
     // Obtain one at https://etherscan.io/
-    apiKey: process.env.ETHERSCAN_API_KEY
+    apiKey: process.env.ETHERSCAN_API_KEY,
   },
   gasReporter: {
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
-    currency: 'USD',
-    enabled: (process.env.REPORT_GAS) ? true : false
+    currency: "USD",
+    enabled: !!process.env.REPORT_GAS,
   },
   solidity: {
     compilers: [
@@ -115,78 +114,78 @@ module.exports = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1000
-          }
-        }
+            runs: 1000,
+          },
+        },
       },
       {
         version: "0.4.25",
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1000
-          }
-        }
+            runs: 1000,
+          },
+        },
       },
       {
         version: "0.5.3",
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1000
-          }
-        }
+            runs: 1000,
+          },
+        },
       },
       {
         version: "0.6.0",
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1000
-          }
-        }
+            runs: 1000,
+          },
+        },
       },
       {
         version: "0.6.12",
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1000
-          }
-        }
+            runs: 1000,
+          },
+        },
       },
       {
         version: "0.6.2",
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1000
-          }
-        }
+            runs: 1000,
+          },
+        },
       },
       {
         version: "0.7.0",
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1000
-          }
-        }
+            runs: 1000,
+          },
+        },
       },
       {
         version: "0.8.0",
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1000
-          }
-        }
-      }
-    ]
+            runs: 1000,
+          },
+        },
+      },
+    ],
   },
   mocha: {
-    timeout: 80000
-  }
+    timeout: 80000,
+  },
 };
 
 const DEBUG = false;
@@ -197,172 +196,164 @@ function debug(text) {
   }
 }
 
+/* eslint-disable */
 task("wallet", "Create a wallet (pk) link", async (_, { ethers }) => {
-  const randomWallet = ethers.Wallet.createRandom()
-  const privateKey = randomWallet._signingKey().privateKey
-  console.log("🔐 WALLET Generated as " + randomWallet.address + "")
-  console.log("🔗 http://localhost:3000/pk#"+privateKey)
+  const randomWallet = ethers.Wallet.createRandom();
+  const privateKey = randomWallet._signingKey().privateKey;
+  console.log("🔐 WALLET Generated as " + randomWallet.address + "");
+  console.log("🔗 http://localhost:3000/pk#" + privateKey);
 });
-
 
 task("fundedwallet", "Create a wallet (pk) link and fund it with deployer?")
   .addOptionalParam("amount", "Amount of ETH to send to wallet after generating")
   .addOptionalParam("url", "URL to add pk to")
   .setAction(async (taskArgs, { network, ethers }) => {
+    const randomWallet = ethers.Wallet.createRandom();
+    const privateKey = randomWallet._signingKey().privateKey;
+    console.log("🔐 WALLET Generated as " + randomWallet.address + "");
+    const url = taskArgs.url ? taskArgs.url : "http://localhost:3000";
 
-    const randomWallet = ethers.Wallet.createRandom()
-    const privateKey = randomWallet._signingKey().privateKey
-    console.log("🔐 WALLET Generated as " + randomWallet.address + "")
-    let url = taskArgs.url?taskArgs.url:"http://localhost:3000"
-
-    let localDeployerMnemonic
-    try{
-      localDeployerMnemonic = fs.readFileSync("./mnemonic.txt")
-      localDeployerMnemonic = localDeployerMnemonic.toString().trim()
+    let localDeployerMnemonic;
+    try {
+      localDeployerMnemonic = fs.readFileSync("./mnemonic.txt");
+      localDeployerMnemonic = localDeployerMnemonic.toString().trim();
     } catch (e) {
       /* do nothing - this file isn't always there */
     }
 
-    let amount = taskArgs.amount?taskArgs.amount:"0.01"
+    const amount = taskArgs.amount ? taskArgs.amount : "0.01";
     const tx = {
       to: randomWallet.address,
-      value: ethers.utils.parseEther(amount)
+      value: ethers.utils.parseEther(amount),
     };
 
-    //SEND USING LOCAL DEPLOYER MNEMONIC IF THERE IS ONE
+    // SEND USING LOCAL DEPLOYER MNEMONIC IF THERE IS ONE
     // IF NOT SEND USING LOCAL HARDHAT NODE:
-    if(localDeployerMnemonic){
-      let deployerWallet = new ethers.Wallet.fromMnemonic(localDeployerMnemonic)
-      deployerWallet = deployerWallet.connect(ethers.provider)
-      console.log("💵 Sending "+amount+" ETH to "+randomWallet.address+" using deployer account");
-      let sendresult = await deployerWallet.sendTransaction(tx)
-      console.log("\n"+url+"/pk#"+privateKey+"\n")
-      return
-    }else{
-      console.log("💵 Sending "+amount+" ETH to "+randomWallet.address+" using local node");
-      console.log("\n"+url+"/pk#"+privateKey+"\n")
+    if (localDeployerMnemonic) {
+      let deployerWallet = new ethers.Wallet.fromMnemonic(localDeployerMnemonic);
+      deployerWallet = deployerWallet.connect(ethers.provider);
+      console.log(
+        "💵 Sending " + amount + " ETH to " + randomWallet.address + " using deployer account"
+      );
+      const sendresult = await deployerWallet.sendTransaction(tx);
+      console.log("\n" + url + "/pk#" + privateKey + "\n");
+    } else {
+      console.log("💵 Sending " + amount + " ETH to " + randomWallet.address + " using local node");
+      console.log("\n" + url + "/pk#" + privateKey + "\n");
       return send(ethers.provider.getSigner(), tx);
     }
-
-});
-
+  });
 
 task("generate", "Create a mnemonic for builder deploys", async (_, { ethers }) => {
-  const bip39 = require("bip39")
-  const hdkey = require('ethereumjs-wallet/hdkey');
-  const mnemonic = bip39.generateMnemonic()
-  if (DEBUG) console.log("mnemonic", mnemonic)
-  const seed = await bip39.mnemonicToSeed(mnemonic)
-  if (DEBUG) console.log("seed", seed)
+  const bip39 = require("bip39");
+  const hdkey = require("ethereumjs-wallet/hdkey");
+  const mnemonic = bip39.generateMnemonic();
+  if (DEBUG) console.log("mnemonic", mnemonic);
+  const seed = await bip39.mnemonicToSeed(mnemonic);
+  if (DEBUG) console.log("seed", seed);
   const hdwallet = hdkey.fromMasterSeed(seed);
   const wallet_hdpath = "m/44'/60'/0'/0/";
-  const account_index = 0
-  let fullPath = wallet_hdpath + account_index
-  if (DEBUG) console.log("fullPath", fullPath)
+  const account_index = 0;
+  const fullPath = wallet_hdpath + account_index;
+  if (DEBUG) console.log("fullPath", fullPath);
   const wallet = hdwallet.derivePath(fullPath).getWallet();
-  const privateKey = "0x" + wallet._privKey.toString('hex');
-  if (DEBUG) console.log("privateKey", privateKey)
-  var EthUtil = require('ethereumjs-util');
-  const address = "0x" + EthUtil.privateToAddress(wallet._privKey).toString('hex')
-  console.log("🔐 Account Generated as " + address + " and set as mnemonic in packages/hardhat")
-  console.log("💬 Use 'yarn run account' to get more information about the deployment account.")
+  const privateKey = "0x" + wallet._privKey.toString("hex");
+  if (DEBUG) console.log("privateKey", privateKey);
+  const EthUtil = require("ethereumjs-util");
+  const address = "0x" + EthUtil.privateToAddress(wallet._privKey).toString("hex");
+  console.log("🔐 Account Generated as " + address + " and set as mnemonic in packages/hardhat");
+  console.log("💬 Use 'yarn run account' to get more information about the deployment account.");
 
-  fs.writeFileSync("./" + address + ".txt", mnemonic.toString())
-  fs.writeFileSync("./mnemonic.txt", mnemonic.toString())
+  fs.writeFileSync("./" + address + ".txt", mnemonic.toString());
+  fs.writeFileSync("./mnemonic.txt", mnemonic.toString());
 });
 
 task("mine", "Looks for a deployer account that will give leading zeros")
   .addParam("searchFor", "String to search for")
   .setAction(async (taskArgs, { network, ethers }) => {
+    let contract_address = "";
+    let address;
 
-  let contract_address = ""
-  let address;
+    const bip39 = require("bip39");
+    const hdkey = require("ethereumjs-wallet/hdkey");
 
-  const bip39 = require("bip39")
-  const hdkey = require('ethereumjs-wallet/hdkey');
+    let mnemonic = "";
+    while (contract_address.indexOf(taskArgs.searchFor) != 0) {
+      mnemonic = bip39.generateMnemonic();
+      if (DEBUG) console.log("mnemonic", mnemonic);
+      const seed = await bip39.mnemonicToSeed(mnemonic);
+      if (DEBUG) console.log("seed", seed);
+      const hdwallet = hdkey.fromMasterSeed(seed);
+      const wallet_hdpath = "m/44'/60'/0'/0/";
+      const account_index = 0;
+      const fullPath = wallet_hdpath + account_index;
+      if (DEBUG) console.log("fullPath", fullPath);
+      const wallet = hdwallet.derivePath(fullPath).getWallet();
+      const privateKey = "0x" + wallet._privKey.toString("hex");
+      if (DEBUG) console.log("privateKey", privateKey);
+      const EthUtil = require("ethereumjs-util");
+      address = "0x" + EthUtil.privateToAddress(wallet._privKey).toString("hex");
 
-  let mnemonic = ""
-  while(contract_address.indexOf(taskArgs.searchFor)!=0){
+      const rlp = require("rlp");
+      const keccak = require("keccak");
 
-    mnemonic = bip39.generateMnemonic()
-    if (DEBUG) console.log("mnemonic", mnemonic)
-    const seed = await bip39.mnemonicToSeed(mnemonic)
-    if (DEBUG) console.log("seed", seed)
-    const hdwallet = hdkey.fromMasterSeed(seed);
-    const wallet_hdpath = "m/44'/60'/0'/0/";
-    const account_index = 0
-    let fullPath = wallet_hdpath + account_index
-    if (DEBUG) console.log("fullPath", fullPath)
-    const wallet = hdwallet.derivePath(fullPath).getWallet();
-    const privateKey = "0x" + wallet._privKey.toString('hex');
-    if (DEBUG) console.log("privateKey", privateKey)
-    var EthUtil = require('ethereumjs-util');
-    address = "0x" + EthUtil.privateToAddress(wallet._privKey).toString('hex')
+      const nonce = 0x00; // The nonce must be a hex literal!
+      const sender = address;
 
+      const input_arr = [sender, nonce];
+      const rlp_encoded = rlp.encode(input_arr);
 
-    const rlp = require('rlp');
-    const keccak = require('keccak');
+      const contract_address_long = keccak("keccak256").update(rlp_encoded).digest("hex");
 
-    let nonce = 0x00; //The nonce must be a hex literal!
-    let sender = address;
+      contract_address = contract_address_long.substring(24); // Trim the first 24 characters.
+    }
 
-    let input_arr = [ sender, nonce ];
-    let rlp_encoded = rlp.encode(input_arr);
+    console.log("⛏  Account Mined as " + address + " and set as mnemonic in packages/hardhat");
+    console.log(
+      "📜 This will create the first contract: " + chalk.magenta("0x" + contract_address)
+    );
+    console.log("💬 Use 'yarn run account' to get more information about the deployment account.");
 
-    let contract_address_long = keccak('keccak256').update(rlp_encoded).digest('hex');
-
-    contract_address = contract_address_long.substring(24); //Trim the first 24 characters.
-
-
-  }
-
-  console.log("⛏  Account Mined as " + address + " and set as mnemonic in packages/hardhat")
-  console.log("📜 This will create the first contract: "+chalk.magenta("0x"+contract_address));
-  console.log("💬 Use 'yarn run account' to get more information about the deployment account.")
-
-  fs.writeFileSync("./" + address + "_produces"+contract_address+".txt", mnemonic.toString())
-  fs.writeFileSync("./mnemonic.txt", mnemonic.toString())
-});
+    fs.writeFileSync("./" + address + "_produces" + contract_address + ".txt", mnemonic.toString());
+    fs.writeFileSync("./mnemonic.txt", mnemonic.toString());
+  });
 
 task("account", "Get balance informations for the deployment account.", async (_, { ethers }) => {
-  const hdkey = require('ethereumjs-wallet/hdkey');
-  const bip39 = require("bip39")
-  let mnemonic = fs.readFileSync("./mnemonic.txt").toString().trim()
-  if (DEBUG) console.log("mnemonic", mnemonic)
-  const seed = await bip39.mnemonicToSeed(mnemonic)
-  if (DEBUG) console.log("seed", seed)
+  const hdkey = require("ethereumjs-wallet/hdkey");
+  const bip39 = require("bip39");
+  const mnemonic = fs.readFileSync("./mnemonic.txt").toString().trim();
+  if (DEBUG) console.log("mnemonic", mnemonic);
+  const seed = await bip39.mnemonicToSeed(mnemonic);
+  if (DEBUG) console.log("seed", seed);
   const hdwallet = hdkey.fromMasterSeed(seed);
   const wallet_hdpath = "m/44'/60'/0'/0/";
-  const account_index = 0
-  let fullPath = wallet_hdpath + account_index
-  if (DEBUG) console.log("fullPath", fullPath)
+  const account_index = 0;
+  const fullPath = wallet_hdpath + account_index;
+  if (DEBUG) console.log("fullPath", fullPath);
   const wallet = hdwallet.derivePath(fullPath).getWallet();
-  const privateKey = "0x" + wallet._privKey.toString('hex');
-  if (DEBUG) console.log("privateKey", privateKey)
-  var EthUtil = require('ethereumjs-util');
-  const address = "0x" + EthUtil.privateToAddress(wallet._privKey).toString('hex')
+  const privateKey = "0x" + wallet._privKey.toString("hex");
+  if (DEBUG) console.log("privateKey", privateKey);
+  const EthUtil = require("ethereumjs-util");
+  const address = "0x" + EthUtil.privateToAddress(wallet._privKey).toString("hex");
 
-  var qrcode = require('qrcode-terminal');
+  const qrcode = require("qrcode-terminal");
   qrcode.generate(address);
-  console.log("‍📬 Deployer Account is " + address)
-  for (let n in config.networks) {
-    //console.log(config.networks[n],n)
+  console.log("‍📬 Deployer Account is " + address);
+  for (const n in config.networks) {
+    // console.log(config.networks[n],n)
     try {
-
-      let provider = new ethers.providers.JsonRpcProvider(config.networks[n].url)
-      let balance = (await provider.getBalance(address))
-      console.log(" -- " + n + " --  -- -- 📡 ")
-      console.log("   balance: " + ethers.utils.formatEther(balance))
-      console.log("   nonce: " + (await provider.getTransactionCount(address)))
+      const provider = new ethers.providers.JsonRpcProvider(config.networks[n].url);
+      const balance = await provider.getBalance(address);
+      console.log(" -- " + n + " --  -- -- 📡 ");
+      console.log("   balance: " + ethers.utils.formatEther(balance));
+      console.log("   nonce: " + (await provider.getTransactionCount(address)));
     } catch (e) {
       if (DEBUG) {
-        console.log(e)
+        console.log(e);
       }
     }
   }
-
 });
-
 
 async function addr(ethers, addr) {
   if (isAddress(addr)) {
@@ -386,13 +377,11 @@ task("blockNumber", "Prints the block number", async (_, { ethers }) => {
 });
 
 task("balance", "Prints an account's balance")
-    .addPositionalParam("account", "The account's address")
-    .setAction(async (taskArgs, { ethers }) => {
-      const balance = await ethers.provider.getBalance(
-          await addr(ethers, taskArgs.account)
-      );
-      console.log(formatUnits(balance, "ether"), "ETH");
-    });
+  .addPositionalParam("account", "The account's address")
+  .setAction(async (taskArgs, { ethers }) => {
+    const balance = await ethers.provider.getBalance(await addr(ethers, taskArgs.account));
+    console.log(formatUnits(balance, "ether"), "ETH");
+  });
 
 function send(signer, txparams) {
   return signer.sendTransaction(txparams, (error, transactionHash) => {
@@ -426,15 +415,9 @@ task("send", "Send ETH")
     const txRequest = {
       from: await fromSigner.getAddress(),
       to,
-      value: parseUnits(
-          taskArgs.amount ? taskArgs.amount : "0",
-          "ether"
-      ).toHexString(),
+      value: parseUnits(taskArgs.amount ? taskArgs.amount : "0", "ether").toHexString(),
       nonce: await fromSigner.getTransactionCount(),
-      gasPrice: parseUnits(
-          taskArgs.gasPrice ? taskArgs.gasPrice : "1.001",
-          "gwei"
-      ).toHexString(),
+      gasPrice: parseUnits(taskArgs.gasPrice ? taskArgs.gasPrice : "1.001", "gwei").toHexString(),
       gasLimit: taskArgs.gasLimit ? taskArgs.gasLimit : 24000,
       chainId: network.config.chainId,
     };
@@ -447,4 +430,5 @@ task("send", "Send ETH")
     debug(JSON.stringify(txRequest, null, 2));
 
     return send(fromSigner, txRequest);
-});
+  });
+/* eslint-disable */

@@ -59,7 +59,7 @@ interface IComptroller {
 
   function enterMarkets(address[] calldata) external returns (uint256[] memory);
 
-  function exitMarket(address cTokenAddress) external returns (uint256);
+  function exitMarket(address cyTokenAddress) external returns (uint256);
 
   function getAccountLiquidity(address)
     external
@@ -88,30 +88,30 @@ contract HelperFunct {
     return 0xAB1c342C7bf5Ec5F02ADEA1c2270670bCa144CbB;
   }
 
-  //Compound functions
+  //IronBank functions
 
   /**
-   * @dev Approves vault's assets as collateral for Compound Protocol.
-   * @param _cTokenAddress: asset type to be approved as collateral.
+   * @dev Approves vault's assets as collateral for IronBank Protocol.
+   * @param _cyTokenAddress: asset type to be approved as collateral.
    */
-  function _enterCollatMarket(address _cTokenAddress) internal {
+  function _enterCollatMarket(address _cyTokenAddress) internal {
     // Create a reference to the corresponding network Comptroller
     IComptroller comptroller = IComptroller(_getComptrollerAddress());
 
-    address[] memory cTokenMarkets = new address[](1);
-    cTokenMarkets[0] = _cTokenAddress;
-    comptroller.enterMarkets(cTokenMarkets);
+    address[] memory cyTokenMarkets = new address[](1);
+    cyTokenMarkets[0] = _cyTokenAddress;
+    comptroller.enterMarkets(cyTokenMarkets);
   }
 
   /**
-   * @dev Removes vault's assets as collateral for Compound Protocol.
-   * @param _cTokenAddress: asset type to be removed as collateral.
+   * @dev Removes vault's assets as collateral for IronBank Protocol.
+   * @param _cyTokenAddress: asset type to be removed as collateral.
    */
-  function _exitCollatMarket(address _cTokenAddress) internal {
+  function _exitCollatMarket(address _cyTokenAddress) internal {
     // Create a reference to the corresponding network Comptroller
     IComptroller comptroller = IComptroller(_getComptrollerAddress());
 
-    comptroller.exitMarket(_cTokenAddress);
+    comptroller.exitMarket(_cyTokenAddress);
   }
 }
 
@@ -127,11 +127,11 @@ contract ProviderIronBank is IProvider, HelperFunct {
    * @param _amount: token amount to deposit.
    */
   function deposit(address _asset, uint256 _amount) external payable override {
-    //Get cToken address from mapping
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+    //Get cyToken address from mapping
+    address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     //Enter and/or ensure collateral market is enacted
-    _enterCollatMarket(cTokenAddr);
+    _enterCollatMarket(cyTokenAddr);
 
     if (_isETH(_asset)) {
       // Transform ETH to WETH
@@ -142,17 +142,17 @@ contract ProviderIronBank is IProvider, HelperFunct {
     // Create reference to the ERC20 contract
     IERC20 erc20token = IERC20(_asset);
 
-    // Create a reference to the cToken contract
-    ICyErc20 cToken = ICyErc20(cTokenAddr);
+    // Create a reference to the cyToken contract
+    ICyErc20 cyToken = ICyErc20(cyTokenAddr);
 
     //Checks, Vault balance of ERC20 to make deposit
     require(erc20token.balanceOf(address(this)) >= _amount, "Not enough Balance");
 
     //Approve to move ERC20tokens
-    erc20token.uniApprove(address(cTokenAddr), _amount);
+    erc20token.uniApprove(address(cyTokenAddr), _amount);
 
-    // Compound Protocol mints cTokens, trhow error if not
-    require(cToken.mint(_amount) == 0, "Deposit-failed");
+    // IronBank Protocol mints cyTokens, trhow error if not
+    require(cyToken.mint(_amount) == 0, "Deposit-failed");
   }
 
   /**
@@ -161,14 +161,14 @@ contract ProviderIronBank is IProvider, HelperFunct {
    * @param _amount: token amount to withdraw.
    */
   function withdraw(address _asset, uint256 _amount) external payable override {
-    //Get cToken address from mapping
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+    //Get cyToken address from mapping
+    address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    // Create a reference to the corresponding cToken contract
-    IGenCyToken cToken = IGenCyToken(cTokenAddr);
+    // Create a reference to the corresponding cyToken contract
+    IGenCyToken cyToken = IGenCyToken(cyTokenAddr);
 
-    //Compound Protocol Redeem Process, throw errow if not.
-    require(cToken.redeemUnderlying(_amount) == 0, "Withdraw-failed");
+    //IronBank Protocol Redeem Process, throw errow if not.
+    require(cyToken.redeemUnderlying(_amount) == 0, "Withdraw-failed");
 
     if (_isETH(_asset)) {
       // Transform ETH to WETH
@@ -182,17 +182,17 @@ contract ProviderIronBank is IProvider, HelperFunct {
    * @param _amount: token amount to borrow.
    */
   function borrow(address _asset, uint256 _amount) external payable override {
-    //Get cToken address from mapping
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+    //Get cyToken address from mapping
+    address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    // Create a reference to the corresponding cToken contract
-    IGenCyToken cToken = IGenCyToken(cTokenAddr);
+    // Create a reference to the corresponding cyToken contract
+    IGenCyToken cyToken = IGenCyToken(cyTokenAddr);
 
     //Enter and/or ensure collateral market is enacted
-    //_enterCollatMarket(cTokenAddr);
+    //_enterCollatMarket(cyTokenAddr);
 
-    //Compound Protocol Borrow Process, throw errow if not.
-    require(cToken.borrow(_amount) == 0, "borrow-failed");
+    //IronBank Protocol Borrow Process, throw errow if not.
+    require(cyToken.borrow(_amount) == 0, "borrow-failed");
   }
 
   /**
@@ -201,8 +201,8 @@ contract ProviderIronBank is IProvider, HelperFunct {
    * @param _amount: token amount to payback.
    */
   function payback(address _asset, uint256 _amount) external payable override {
-    //Get cToken address from mapping
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+    //Get cyToken address from mapping
+    address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     if (_isETH(_asset)) {
       // Transform ETH to WETH
@@ -213,13 +213,13 @@ contract ProviderIronBank is IProvider, HelperFunct {
     // Create reference to the ERC20 contract
     IERC20 erc20token = IERC20(_asset);
 
-    // Create a reference to the corresponding cToken contract
-    ICyErc20 cToken = ICyErc20(cTokenAddr);
+    // Create a reference to the corresponding cyToken contract
+    ICyErc20 cyToken = ICyErc20(cyTokenAddr);
 
     // Check there is enough balance to pay
     require(erc20token.balanceOf(address(this)) >= _amount, "Not-enough-token");
-    erc20token.uniApprove(address(cTokenAddr), _amount);
-    cToken.repayBorrow(_amount);
+    erc20token.uniApprove(address(cyTokenAddr), _amount);
+    cyToken.repayBorrow(_amount);
   }
 
   /**
@@ -227,12 +227,12 @@ contract ProviderIronBank is IProvider, HelperFunct {
    * @param _asset: token address to query the current borrowing rate.
    */
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+    address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    //Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: Compound uses base 1e18
-    uint256 bRateperBlock = (IGenCyToken(cTokenAddr).borrowRatePerBlock()).mul(10**9);
+    //Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: IronBank uses base 1e18
+    uint256 bRateperBlock = (IGenCyToken(cyTokenAddr).borrowRatePerBlock()).mul(10**9);
 
-    // The approximate number of blocks per year that is assumed by the Compound interest rate model
+    // The approximate number of blocks per year that is assumed by the IronBank interest rate model
     uint256 blocksperYear = 2102400;
     return bRateperBlock.mul(blocksperYear);
   }
@@ -242,22 +242,22 @@ contract ProviderIronBank is IProvider, HelperFunct {
    * @param _asset: token address to query the balance.
    */
   function getBorrowBalance(address _asset) external view override returns (uint256) {
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+    address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    return IGenCyToken(cTokenAddr).borrowBalanceStored(msg.sender);
+    return IGenCyToken(cyTokenAddr).borrowBalanceStored(msg.sender);
   }
 
   /**
    * @dev Return borrow balance of ETH/ERC20_Token.
-   * This function is the accurate way to get Compound borrow balance.
+   * This function is the accurate way to get IronBank borrow balance.
    * It costs ~84K gas and is not a view function.
    * @param _asset token address to query the balance.
    * @param _who address of the account.
    */
   function getBorrowBalanceOf(address _asset, address _who) external override returns (uint256) {
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+    address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    return IGenCyToken(cTokenAddr).borrowBalanceCurrent(_who);
+    return IGenCyToken(cyTokenAddr).borrowBalanceCurrent(_who);
   }
 
   /**
@@ -265,10 +265,10 @@ contract ProviderIronBank is IProvider, HelperFunct {
    * @param _asset: token address to query the balance.
    */
   function getDepositBalance(address _asset) external view override returns (uint256) {
-    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
-    uint256 cTokenBal = IGenCyToken(cTokenAddr).balanceOf(msg.sender);
-    uint256 exRate = IGenCyToken(cTokenAddr).exchangeRateStored();
+    address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+    uint256 cyTokenBal = IGenCyToken(cyTokenAddr).balanceOf(msg.sender);
+    uint256 exRate = IGenCyToken(cyTokenAddr).exchangeRateStored();
 
-    return exRate.mul(cTokenBal).div(1e18);
+    return exRate.mul(cyTokenBal).div(1e18);
   }
 }

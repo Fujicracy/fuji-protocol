@@ -81,7 +81,7 @@ contract HelperFunct {
   }
 
   function _getMappingAddr() internal pure returns (address) {
-    return 0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E; //Need to UPDATE
+    return 0x17525aFdb24D24ABfF18108E7319b93012f3AD24;
   }
 
   function _getComptrollerAddress() internal pure returns (address) {

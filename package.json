@@ -48,6 +48,7 @@
     "test:alpha-compound": "hardhat test --network localhost test/alpha-compound.js",
     "test:alpha-aave": "hardhat test --network localhost test/alpha-aave.js",
     "test:alpha-dydx": "hardhat test --network localhost test/alpha-dydx.js",
+    "test:alpha-ironbank": "hardhat test --network localhost test/alpha-ironbank.js",
     "test:alpha-f1155": "hardhat test --network localhost test/alpha-f1155.js",
     "compile": "hardhat compile",
     "deploy": "hardhat run scripts/deploy.js",

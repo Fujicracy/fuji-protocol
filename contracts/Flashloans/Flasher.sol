@@ -31,6 +31,15 @@ interface IFliquidator {
     uint256 _debtAmount,
     uint256 _flashloanfee
   ) external;
+
+  function executeFlashBatchLiquidation(
+    address[] calldata _userAddr,
+    address _liquidatorAddr,
+    address _vault,
+    uint256 _debtAmount,
+    uint256 _flashloanfee
+  ) external;
+
 }
 
 interface IFujiMappings {
@@ -135,10 +144,25 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     IERC20(info.asset).uniTransfer(payable(info.vault), info.amount);
 
     if (info.callType == FlashLoan.CallType.Switch) {
+
       IVault(info.vault).executeSwitch(info.newProvider, info.amount, 2);
+
     } else if (info.callType == FlashLoan.CallType.Close) {
+
       IFliquidator(info.fliquidator).executeFlashClose(info.user, info.vault, info.amount, 2);
+
+    } else if (info.callType == FlashLoan.CallType.BatchLiquidate) {
+
+      IFliquidator(info.fliquidator).executeFlashBatchLiquidation(
+          info.users,
+          info.userliquidator,
+          info.vault,
+          info.amount,
+          2
+        );
+
     } else {
+
       IFliquidator(info.fliquidator).executeFlashLiquidation(
         info.user,
         info.userliquidator,
@@ -146,6 +170,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
         info.amount,
         2
       );
+
     }
 
     //Approve DYDXSolo to spend to repay flashloan
@@ -203,15 +228,28 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     IERC20(assets[0]).uniTransfer(payable(info.vault), amounts[0]);
 
     if (info.callType == FlashLoan.CallType.Switch) {
+
       IVault(info.vault).executeSwitch(info.newProvider, amounts[0], premiums[0]);
+
     } else if (info.callType == FlashLoan.CallType.Close) {
+
       IFliquidator(info.fliquidator).executeFlashClose(
         info.user,
         info.vault,
         amounts[0],
         premiums[0]
       );
+    } else if (info.callType == FlashLoan.CallType.BatchLiquidate) {
+
+      IFliquidator(info.fliquidator).executeFlashBatchLiquidation(
+          info.users,
+          info.userliquidator,
+          info.vault,
+          info.amount,
+          2
+        );
     } else {
+
       IFliquidator(info.fliquidator).executeFlashLiquidation(
         info.user,
         info.userliquidator,

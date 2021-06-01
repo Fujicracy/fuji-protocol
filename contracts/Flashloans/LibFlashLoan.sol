@@ -8,8 +8,9 @@ library FlashLoan {
    * - Switch for executeSwitch(...)
    * - Close for executeFlashClose(...)
    * - Liquidate for executeFlashLiquidation(...)
+   * - BatchLiquidate for executeFlashBatchLiquidation(...)
    */
-  enum CallType { Switch, Close, Liquidate }
+  enum CallType { Switch, Close, Liquidate, BatchLiquidate }
 
   /**
    * @dev Struct of params to be passed between functions executing flashloan logic
@@ -30,5 +31,6 @@ library FlashLoan {
     address user;
     address userliquidator;
     address fliquidator;
+    address[] userAddrs
   }
 }

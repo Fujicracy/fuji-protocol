@@ -76,6 +76,8 @@ contract Controller is Ownable {
         vault: _vaultAddr,
         newProvider: _newProvider,
         user: address(0),
+        userAddrs: new address[](1),
+        userBalances: new uint256[](1),
         userliquidator: address(0),
         fliquidator: address(0)
       });

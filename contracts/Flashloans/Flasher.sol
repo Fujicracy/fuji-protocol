@@ -33,11 +33,12 @@ interface IFliquidator {
   ) external;
 
   function executeFlashBatchLiquidation(
-    address[] calldata _userAddr,
+    address[] calldata _userAddrs,
+    uint256[] calldata _usrsBal,
     address _liquidatorAddr,
     address _vault,
-    uint256 _debtAmount,
-    uint256 _flashloanfee
+    uint256 _amount,
+    uint256 _flashloanFee
   ) external;
 
 }
@@ -82,7 +83,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
    * @param info: struct information for flashLoan
    * @param _flashnum: integer identifier of flashloan provider
    */
-  function initiateFlashloan(FlashLoan.Info calldata info, uint8 _flashnum) public isAuthorized {
+  function initiateFlashloan(FlashLoan.Info calldata info, uint8 _flashnum) external isAuthorized {
     if (_flashnum == 0) {
       _initiateAaveFlashLoan(info);
     } else if (_flashnum == 1) {
@@ -151,26 +152,16 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
 
       IFliquidator(info.fliquidator).executeFlashClose(info.user, info.vault, info.amount, 2);
 
-    } else if (info.callType == FlashLoan.CallType.BatchLiquidate) {
+    } else {
 
       IFliquidator(info.fliquidator).executeFlashBatchLiquidation(
-          info.users,
+          info.userAddrs,
+          info.userBalances,
           info.userliquidator,
           info.vault,
           info.amount,
           2
         );
-
-    } else {
-
-      IFliquidator(info.fliquidator).executeFlashLiquidation(
-        info.user,
-        info.userliquidator,
-        info.vault,
-        info.amount,
-        2
-      );
-
     }
 
     //Approve DYDXSolo to spend to repay flashloan
@@ -239,24 +230,16 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
         amounts[0],
         premiums[0]
       );
-    } else if (info.callType == FlashLoan.CallType.BatchLiquidate) {
-
-      IFliquidator(info.fliquidator).executeFlashBatchLiquidation(
-          info.users,
-          info.userliquidator,
-          info.vault,
-          info.amount,
-          2
-        );
     } else {
 
-      IFliquidator(info.fliquidator).executeFlashLiquidation(
-        info.user,
-        info.userliquidator,
-        info.vault,
-        amounts[0],
-        premiums[0]
-      );
+      IFliquidator(info.fliquidator).executeFlashBatchLiquidation(
+          info.userAddrs,
+          info.userBalances,
+          info.userliquidator,
+          info.vault,
+          amounts[0],
+          premiums[0]
+        );
     }
 
     //Approve aaveLP to spend to repay flashloan
@@ -309,17 +292,24 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
 
     // Do task according to CallType
     if (info.callType == FlashLoan.CallType.Switch) {
+
       IVault(info.vault).executeSwitch(info.newProvider, amount, fee);
+
     } else if (info.callType == FlashLoan.CallType.Close) {
+
       IFliquidator(info.fliquidator).executeFlashClose(info.user, info.vault, amount, fee);
+
     } else {
-      IFliquidator(info.fliquidator).executeFlashLiquidation(
-        info.user,
-        info.userliquidator,
-        info.vault,
-        amount,
-        fee
-      );
+
+      IFliquidator(info.fliquidator).executeFlashBatchLiquidation(
+          info.userAddrs,
+          info.userBalances,
+          info.userliquidator,
+          info.vault,
+          amount,
+          fee
+        );
+
     }
 
     // Transfer flashloan + fee back to crToken Lending Contract

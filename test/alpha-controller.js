@@ -1,187 +1,245 @@
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
-const { solidity, createFixtureLoader } = require("ethereum-waffle");
+const { createFixtureLoader } = require("ethereum-waffle");
 
-const {
-  fixture,
-  convertToCurrencyDecimals,
-  advanceblocks,
-  convertToWei,
-  evmSnapshot,
-  evmRevert,
-  DAI_ADDR,
-  USDC_ADDR,
-  USDT_ADDR,
-  ONE_ETH
-} = require("./utils-alpha.js");
-
-//use(solidity);
+const { fixture, evmSnapshot, evmRevert } = require("./utils-alpha.js");
 
 describe("Alpha", () => {
-
-  let dai;
-  let usdc;
-  let usdt;
-  let aweth;
-  let ceth;
-  let oracle;
-  let treasury;
-  let fujiadmin;
-  let fliquidator;
-  let flasher;
-  let controller;
-  let f1155;
   let aave;
   let compound;
   let dydx;
-  let aWhitelist;
+  let controller;
   let vaultdai;
   let vaultusdc;
-  let vaultusdt;
-
   let users;
-
   let loadFixture;
   let evmSnapshotId;
 
-  before(async() => {
+  before(async () => {
     users = await ethers.getSigners();
     loadFixture = createFixtureLoader(users, ethers.provider);
     evmSnapshotId = await evmSnapshot();
-
   });
 
-  after(async() => {
+  after(async () => {
     evmRevert(evmSnapshotId);
-
   });
 
-  beforeEach(async() => {
-
-    const _fixture = await loadFixture(fixture);
-    dai = _fixture.dai;
-    usdc = _fixture.usdc;
-    usdt = _fixture.usdt;
-    aweth = _fixture.aweth;
-    ceth = _fixture.ceth;
-    oracle = _fixture.oracle;
-    treasury = _fixture.treasury;
-    fujiadmin = _fixture.fujiadmin;
-    fliquidator = _fixture.fliquidator;
-    flasher = _fixture.flasher;
-    controller = _fixture.controller;
-    f1155 = _fixture.f1155;
-    aave = _fixture.aave;
-    compound = _fixture.compound;
-    dydx = _fixture.dydx;
-    aWhitelist = _fixture.aWhitelist;
-    vaultdai = _fixture.vaultdai;
-    vaultusdc = _fixture.vaultusdc;
-    vaultusdt = _fixture.vaultusdt;
-
+  beforeEach(async () => {
+    const theFixture = await loadFixture(fixture);
+    aave = theFixture.aave;
+    compound = theFixture.compound;
+    dydx = theFixture.dydx;
+    controller = theFixture.controller;
+    vaultdai = theFixture.vaultdai;
+    vaultusdc = theFixture.vaultusdc;
   });
 
   describe("Alpha Controller Functionality", () => {
-
     it("1.- Try Refinance VaultDai with Aave flashloan", async () => {
-
       // Testing Vault
-      let thevault = vaultdai;
-      let asset = dai;
-      let pre_stagedProvider = dydx;
-      let destinationProvider = compound;
+      const theVault = vaultdai;
+      const preStagedProvider = dydx;
+      const destinationProvider = compound;
+      const flashloanprovider = 0; // Flashloan Providers: Aave = 0, dYdX = 1, CreamFinance = 2
+      // IMPORTANT! If preStagedProvider or destinationProvider = dydx, flashloan provider cannot be dYdX
 
       // Set defined ActiveProviders
-      await thevault.setActiveProvider(pre_stagedProvider.address);
+      await theVault.setActiveProvider(preStagedProvider.address);
 
-      //Bootstrap Liquidity
-      let bootstraper = users[0];
-      let bstrapLiquidity = ethers.utils.parseEther("1");
-      await thevault.connect(bootstraper).deposit(bstrapLiquidity,{ value: bstrapLiquidity });
+      // Bootstrap Liquidity
+      const bootstraper = users[0];
+      const bstrapLiquidity = ethers.utils.parseEther("1");
+      await theVault.connect(bootstraper).deposit(bstrapLiquidity, { value: bstrapLiquidity });
 
       // Users deposit and borrow
-      let userX = users[2]; let depositX = ethers.utils.parseEther("10"); let borrowX = ethers.utils.parseUnits("3000",18);
-      let userY = users[3]; let depositY = ethers.utils.parseEther("5"); let borrowY = ethers.utils.parseUnits("2500",18);
-      let userW = users[4]; let depositW = ethers.utils.parseEther("5"); let borrowW = ethers.utils.parseUnits("2300",18);
+      const userX = users[2];
+      const depositX = ethers.utils.parseEther("10");
+      const borrowX = ethers.utils.parseUnits("3000", 18);
+      const userY = users[3];
+      const depositY = ethers.utils.parseEther("5");
+      const borrowY = ethers.utils.parseUnits("2500", 18);
+      const userW = users[4];
+      const depositW = ethers.utils.parseEther("5");
+      const borrowW = ethers.utils.parseUnits("2300", 18);
 
-      await thevault.connect(userX).depositAndBorrow(depositX,borrowX,{ value: depositX });
-      await thevault.connect(userY).depositAndBorrow(depositY,borrowY,{ value: depositY });
-      await thevault.connect(userW).depositAndBorrow(depositW,borrowW,{ value: depositW });
+      await theVault.connect(userX).depositAndBorrow(depositX, borrowX, { value: depositX });
+      await theVault.connect(userY).depositAndBorrow(depositY, borrowY, { value: depositY });
+      await theVault.connect(userW).depositAndBorrow(depositW, borrowW, { value: depositW });
 
-      let priorRefinanceVaultDebt = await thevault.borrowBalance(pre_stagedProvider.address);
-      let priorRefinanceVaultCollat = await thevault.depositBalance(pre_stagedProvider.address);
-      //console.log(priorRefinanceVaultDebt/1,priorRefinanceVaultCollat/1);
+      const priorRefinanceVaultDebt = await theVault.borrowBalance(preStagedProvider.address);
+      const priorRefinanceVaultCollat = await theVault.depositBalance(preStagedProvider.address);
+      // console.log(priorRefinanceVaultDebt/1,priorRefinanceVaultCollat/1);
 
-      //await advanceblocks(50);
-      // refinance the whole position
-      // by using dydx flashloans (last param "0")
-      await controller.connect(users[0]).doRefinancing(thevault.address, destinationProvider.address, 1, 1, 0);
+      await controller
+        .connect(users[0])
+        .doRefinancing(theVault.address, destinationProvider.address, 1, 1, flashloanprovider);
 
-      let afterRefinanceVaultDebt = await thevault.borrowBalance(destinationProvider.address);
-      let afterRefinanceVaultCollat = await thevault.depositBalance(destinationProvider.address);
+      const afterRefinanceVaultDebt = await theVault.borrowBalance(destinationProvider.address);
+      const afterRefinanceVaultCollat = await theVault.depositBalance(destinationProvider.address);
 
       // Visual Check
-      //console.log(afterRefinanceVaultDebt/1, afterRefinanceVaultCollat/1);
+      // console.log(afterRefinanceVaultDebt/1, afterRefinanceVaultCollat/1);
 
-      if (pre_stagedProvider == dydx || destinationProvider == dydx) {
-        priorRefinanceVaultDebt = priorRefinanceVaultDebt*1.0009;
-        await expect(priorRefinanceVaultDebt/1).to.be.closeTo(afterRefinanceVaultDebt/1,1e15);
+      let refinanceVaultDebtPlusFees;
+
+      if (flashloanprovider === 0) {
+        refinanceVaultDebtPlusFees = priorRefinanceVaultDebt * 1.0009;
+        await expect(refinanceVaultDebtPlusFees / 1).to.be.closeTo(
+          afterRefinanceVaultDebt / 1,
+          1e15
+        );
+      } else if (flashloanprovider === 2) {
+        refinanceVaultDebtPlusFees = priorRefinanceVaultDebt * 1.0003;
+        await expect(refinanceVaultDebtPlusFees / 1).to.be.closeTo(
+          afterRefinanceVaultDebt / 1,
+          1e15
+        );
       } else {
-        await expect(priorRefinanceVaultDebt/1).to.be.closeTo(afterRefinanceVaultDebt/1,1e15);
+        await expect(priorRefinanceVaultDebt / 1).to.be.closeTo(afterRefinanceVaultDebt / 1, 1e15);
       }
-      await expect(priorRefinanceVaultCollat/1).to.be.closeTo(afterRefinanceVaultCollat/1,1e15);
 
+      await expect(priorRefinanceVaultCollat / 1).to.be.closeTo(
+        afterRefinanceVaultCollat / 1,
+        1e15
+      );
     });
 
     it("2.- Try Refinance VaultDai with dYdX flashloan", async () => {
-
       // Testing Vault
-      let thevault = vaultdai;
-      let asset = dai;
-      let pre_stagedProvider = aave;
-      let destinationProvider = compound;
+      const theVault = vaultdai;
+      const preStagedProvider = aave;
+      const destinationProvider = compound;
+      const flashloanprovider = 1; // Flashloan Providers: Aave = 0, dYdX = 1, CreamFinance = 2
+      // IMPORTANT! If preStagedProvider or destinationProvider = dydx, flashloan provider cannot be dYdX
 
       // Set defined ActiveProviders
-      await thevault.setActiveProvider(pre_stagedProvider.address);
+      await theVault.setActiveProvider(preStagedProvider.address);
 
-      //Bootstrap Liquidity
-      let bootstraper = users[0];
-      let bstrapLiquidity = ethers.utils.parseEther("1");
-      await thevault.connect(bootstraper).deposit(bstrapLiquidity,{ value: bstrapLiquidity });
+      // Bootstrap Liquidity
+      const bootstraper = users[0];
+      const bstrapLiquidity = ethers.utils.parseEther("1");
+      await theVault.connect(bootstraper).deposit(bstrapLiquidity, { value: bstrapLiquidity });
 
       // Users deposit and borrow
-      let userX = users[2]; let depositX = ethers.utils.parseEther("10"); let borrowX = ethers.utils.parseUnits("3000",18);
-      let userY = users[3]; let depositY = ethers.utils.parseEther("5"); let borrowY = ethers.utils.parseUnits("2500",18);
-      let userW = users[4]; let depositW = ethers.utils.parseEther("5"); let borrowW = ethers.utils.parseUnits("2300",18);
+      const userX = users[2];
+      const depositX = ethers.utils.parseEther("10");
+      const borrowX = ethers.utils.parseUnits("3000", 18);
+      const userY = users[3];
+      const depositY = ethers.utils.parseEther("5");
+      const borrowY = ethers.utils.parseUnits("2500", 18);
+      const userW = users[4];
+      const depositW = ethers.utils.parseEther("5");
+      const borrowW = ethers.utils.parseUnits("2300", 18);
 
-      await thevault.connect(userX).depositAndBorrow(depositX,borrowX,{ value: depositX });
-      await thevault.connect(userY).depositAndBorrow(depositY,borrowY,{ value: depositY });
-      await thevault.connect(userW).depositAndBorrow(depositW,borrowW,{ value: depositW });
+      await theVault.connect(userX).depositAndBorrow(depositX, borrowX, { value: depositX });
+      await theVault.connect(userY).depositAndBorrow(depositY, borrowY, { value: depositY });
+      await theVault.connect(userW).depositAndBorrow(depositW, borrowW, { value: depositW });
 
-      let priorRefinanceVaultDebt = await thevault.borrowBalance(pre_stagedProvider.address);
-      let priorRefinanceVaultCollat = await thevault.depositBalance(pre_stagedProvider.address);
-      //console.log(priorRefinanceVaultDebt/1,priorRefinanceVaultCollat/1);
+      const priorRefinanceVaultDebt = await theVault.borrowBalance(preStagedProvider.address);
+      const priorRefinanceVaultCollat = await theVault.depositBalance(preStagedProvider.address);
+      // console.log(priorRefinanceVaultDebt/1,priorRefinanceVaultCollat/1);
 
-      //await advanceblocks(50);
-      // refinance the whole position
-      // by using dydx flashloans (last param "0")
-      await controller.connect(users[0]).doRefinancing(thevault.address, destinationProvider.address, 1, 1, 1);
+      await controller
+        .connect(users[0])
+        .doRefinancing(theVault.address, destinationProvider.address, 1, 1, flashloanprovider);
 
-      let afterRefinanceVaultDebt = await thevault.borrowBalance(destinationProvider.address);
-      let afterRefinanceVaultCollat = await thevault.depositBalance(destinationProvider.address);
+      const afterRefinanceVaultDebt = await theVault.borrowBalance(destinationProvider.address);
+      const afterRefinanceVaultCollat = await theVault.depositBalance(destinationProvider.address);
 
       // Visual Check
-      //console.log(afterRefinanceVaultDebt/1, afterRefinanceVaultCollat/1);
+      // console.log(afterRefinanceVaultDebt/1, afterRefinanceVaultCollat/1);
 
-      if (pre_stagedProvider == dydx || destinationProvider == dydx) {
-        priorRefinanceVaultDebt = priorRefinanceVaultDebt*1.0009;
-        await expect(priorRefinanceVaultDebt/1).to.be.closeTo(afterRefinanceVaultDebt/1,1e15);
+      let refinanceVaultDebtPlusFees;
+
+      if (flashloanprovider === 0) {
+        refinanceVaultDebtPlusFees = priorRefinanceVaultDebt * 1.0009;
+        await expect(refinanceVaultDebtPlusFees / 1).to.be.closeTo(
+          afterRefinanceVaultDebt / 1,
+          1e15
+        );
+      } else if (flashloanprovider === 2) {
+        refinanceVaultDebtPlusFees = priorRefinanceVaultDebt * 1.0003;
+        await expect(refinanceVaultDebtPlusFees / 1).to.be.closeTo(
+          afterRefinanceVaultDebt / 1,
+          1e15
+        );
       } else {
-        await expect(priorRefinanceVaultDebt/1).to.be.closeTo(afterRefinanceVaultDebt/1,1e15);
+        await expect(priorRefinanceVaultDebt / 1).to.be.closeTo(afterRefinanceVaultDebt / 1, 1e15);
       }
-      await expect(priorRefinanceVaultCollat/1).to.be.closeTo(afterRefinanceVaultCollat/1,1e15);
 
+      await expect(priorRefinanceVaultCollat / 1).to.be.closeTo(
+        afterRefinanceVaultCollat / 1,
+        1e15
+      );
     });
 
+    it("3.- Try Refinance vaultusdc with CreamFlashLoans", async () => {
+      // Testing Vault
+      const theVault = vaultusdc;
+      const preStagedProvider = dydx;
+      const destinationProvider = compound;
+      const flashloanprovider = 2; // Flashloan Providers: Aave = 0, dYdX = 1, CreamFinance = 2
+      // IMPORTANT! If preStagedProvider or destinationProvider = dydx, flashloan provider cannot be dYdX
+
+      // Set defined ActiveProviders
+      await theVault.setActiveProvider(preStagedProvider.address);
+
+      // Bootstrap Liquidity
+      const bootstraper = users[0];
+      const bstrapLiquidity = ethers.utils.parseEther("1");
+      await theVault.connect(bootstraper).deposit(bstrapLiquidity, { value: bstrapLiquidity });
+
+      // Users deposit and borrow
+      const userX = users[2];
+      const depositX = ethers.utils.parseEther("10");
+      const borrowX = ethers.utils.parseUnits("3000", 6);
+      const userY = users[3];
+      const depositY = ethers.utils.parseEther("5");
+      const borrowY = ethers.utils.parseUnits("2500", 6);
+      const userW = users[4];
+      const depositW = ethers.utils.parseEther("5");
+      const borrowW = ethers.utils.parseUnits("2300", 6);
+
+      await theVault.connect(userX).depositAndBorrow(depositX, borrowX, { value: depositX });
+      await theVault.connect(userY).depositAndBorrow(depositY, borrowY, { value: depositY });
+      await theVault.connect(userW).depositAndBorrow(depositW, borrowW, { value: depositW });
+
+      const priorRefinanceVaultDebt = await theVault.borrowBalance(preStagedProvider.address);
+      const priorRefinanceVaultCollat = await theVault.depositBalance(preStagedProvider.address);
+      // console.log(priorRefinanceVaultDebt/1,priorRefinanceVaultCollat/1);
+
+      await controller
+        .connect(users[0])
+        .doRefinancing(theVault.address, destinationProvider.address, 1, 1, flashloanprovider);
+
+      const afterRefinanceVaultDebt = await theVault.borrowBalance(destinationProvider.address);
+      const afterRefinanceVaultCollat = await theVault.depositBalance(destinationProvider.address);
+
+      // Visual Check
+      // console.log(afterRefinanceVaultDebt/1, afterRefinanceVaultCollat/1);
+      let refinanceVaultDebtPlusFees;
+
+      if (flashloanprovider === 0) {
+        refinanceVaultDebtPlusFees = priorRefinanceVaultDebt * 1.0009;
+        await expect(refinanceVaultDebtPlusFees / 1).to.be.closeTo(
+          afterRefinanceVaultDebt / 1,
+          1e15
+        );
+      } else if (flashloanprovider === 2) {
+        refinanceVaultDebtPlusFees = priorRefinanceVaultDebt * 1.0003;
+        await expect(refinanceVaultDebtPlusFees / 1).to.be.closeTo(
+          afterRefinanceVaultDebt / 1,
+          1e15
+        );
+      } else {
+        await expect(priorRefinanceVaultDebt / 1).to.be.closeTo(afterRefinanceVaultDebt / 1, 1e15);
+      }
+
+      await expect(priorRefinanceVaultCollat / 1).to.be.closeTo(
+        afterRefinanceVaultCollat / 1,
+        1e15
+      );
+    });
   });
 });

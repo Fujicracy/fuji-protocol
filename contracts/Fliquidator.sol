@@ -30,10 +30,11 @@ interface IVaultExt is IVault {
   function vAssets() external view returns (VaultAssets memory);
 }
 
-interface IFujiERC1155Ext is IFujiERC1155  {
-
-    function balanceOfBatch(address[] calldata accounts, uint256[] calldata ids) external view returns (uint256[] memory);
-
+interface IFujiERC1155Ext is IFujiERC1155 {
+  function balanceOfBatch(address[] calldata accounts, uint256[] calldata ids)
+    external
+    view
+    returns (uint256[] memory);
 }
 
 contract Fliquidator is Ownable, ReentrancyGuard {
@@ -197,7 +198,6 @@ contract Fliquidator is Ownable, ReentrancyGuard {
         userBalances: new uint256[](1),
         userliquidator: address(0),
         fliquidator: address(this)
-
       });
 
     flasher.initiateFlashloan(info, _flashnum);
@@ -283,7 +283,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
    * @param _vault: The vault address where the debt position exist.
    * @param _flashnum: integer identifier of flashloan provider
    */
-   /*
+  /*
   function flashLiquidate(
     address _userAddr,
     address _vault,
@@ -336,7 +336,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
    * @param _flashloanFee: amount extra charged by flashloan provider
    * Emits a {FlashLiquidate} event.
    */
-   /*
+  /*
   function executeFlashLiquidation(
     address _userAddr,
     address _liquidatorAddr,
@@ -418,11 +418,9 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IVaultExt.VaultAssets memory vAssets = IVaultExt(_vault).vAssets();
 
     // Check tokenID array input matches those of _vault
-    for(uint i = 0; i < _userAddrs.length; i += 2 ){
-
+    for (uint256 i = 0; i < _userAddrs.length; i += 2) {
       require(tokenIDs[i] == vAssets.collateralID, "Wrong-tokenIDs");
-      require(tokenIDs[i+1] == vAssets.borrowID, "Wrong-tokenIDs");
-
+      require(tokenIDs[i + 1] == vAssets.borrowID, "Wrong-tokenIDs");
     }
 
     // Get user Collateral and Debt Balances
@@ -431,17 +429,15 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     uint256 neededCollateral;
     uint256 debtBalanceTotal;
 
-    for(uint i = 0; i < _userAddrs.length; i += 2 ){
-
+    for (uint256 i = 0; i < _userAddrs.length; i += 2) {
       // Compute Amount of Minimum Collateral Required including factors
-      neededCollateral = IVault(_vault).getNeededCollateralFor(usrsBal[i+1], true);
+      neededCollateral = IVault(_vault).getNeededCollateralFor(usrsBal[i + 1], true);
 
       // Check if User is liquidatable
       require(usrsBal[i] < neededCollateral, Errors.VL_USER_NOT_LIQUIDATABLE);
 
       // Add total debt balance to be liquidated
-      debtBalanceTotal += usrsBal[i+1];
-
+      debtBalanceTotal += usrsBal[i + 1];
     }
 
     Flasher flasher = Flasher(payable(_fujiAdmin.getFlasher()));
@@ -497,19 +493,11 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     uint256 globalBonus = IVault(_vault).getLiquidationBonusFor(_amount, true);
 
     // Compute how much collateral needs to be swapt for all liquidated Users
-    uint256 globalCollateralInPlay
-    = _getCollateralInPlay(vAssets.borrowAsset, _amount.add(_flashloanFee).add(globalBonus));
+    uint256 globalCollateralInPlay =
+      _getCollateralInPlay(vAssets.borrowAsset, _amount.add(_flashloanFee).add(globalBonus));
 
     // Burn Collateral f1155 tokens for each liquidated user
-    _burnMultiLoop(
-      _userAddrs,
-      _usrsBal,
-      _amount,
-      _flashloanFee,
-      IVault(_vault),
-      f1155,
-      vAssets
-    );
+    _burnMultiLoop(_userAddrs, _usrsBal, _amount, _flashloanFee, IVault(_vault), f1155, vAssets);
 
     // Withdraw collateral
     IVault(_vault).withdraw(int256(globalCollateralInPlay));
@@ -526,9 +514,9 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IERC20(vAssets.borrowAsset).uniTransfer(payable(_liquidatorAddr), globalBonus);
 
     // Burn Debt f1155 tokens and Emit Liquidation Event for Each Liquidated User
-    for(uint i = 0; i < _userAddrs.length; i += 2 ){
-      f1155.burn(_userAddrs[i], vAssets.borrowID, _usrsBal[i+1] );
-      emit FlashLiquidate(_userAddrs[i], _liquidatorAddr, vAssets.borrowAsset, _usrsBal[i+1]);
+    for (uint256 i = 0; i < _userAddrs.length; i += 2) {
+      f1155.burn(_userAddrs[i], vAssets.borrowID, _usrsBal[i + 1]);
+      emit FlashLiquidate(_userAddrs[i], _liquidatorAddr, vAssets.borrowAsset, _usrsBal[i + 1]);
     }
   }
 
@@ -590,20 +578,18 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IFujiERC1155 f1155,
     IVaultExt.VaultAssets memory vAssets
   ) internal {
+    uint256[] memory userFlashFeeFractions =
+      _getUserFlashFeeFractions(_usrsBal, _amount, _flashloanFee);
 
-    // uint256 bonusPerUser;
+    uint256 bonusPerUser;
     uint256 collateralInPlayPerUser;
+    uint256 sumValue;
 
-    uint256[] memory  UserFlashFeeFractions = _getUserFlashFeeFractions(_usrsBal, _amount, _flashloanFee);
+    for (uint256 i = 0; i < _userAddrs.length; i += 2) {
+      bonusPerUser = _vault.getLiquidationBonusFor(_usrsBal[i + 1], true);
+      sumValue = (_usrsBal[i + 1]).add(bonusPerUser).add(userFlashFeeFractions[i + 1]);
 
-    for(uint i = 0; i < _userAddrs.length; i += 2 ){
-
-      // bonusPerUser = IVault(_vault).getLiquidationBonusFor(_usrsBal[i+1], true);
-
-      collateralInPlayPerUser = _getCollateralInPlay(
-        vAssets.borrowAsset,
-        (_usrsBal[i+1]).add(_vault.getLiquidationBonusFor(_usrsBal[i+1], true)).add(UserFlashFeeFractions[i+1])
-      );
+      collateralInPlayPerUser = _getCollateralInPlay(vAssets.borrowAsset, sumValue);
 
       f1155.burn(_userAddrs[i], vAssets.collateralID, collateralInPlayPerUser);
     }
@@ -621,25 +607,22 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     uint256[] calldata _usrsdebtBal,
     uint256 debtBalanceTotal,
     uint256 flashLoanFee
-  ) internal view returns(uint256[] memory) {
-
+  ) internal pure returns (uint256[] memory) {
     uint256[] memory userFlashFeeFractions = new uint256[](_usrsdebtBal.length);
     uint256 debtfraction;
     uint256 feeFraction;
 
-    if(flashLoanFee <= 2) {
-      for(uint i = 0; i < _usrsdebtBal.length; i += 2 ) {
+    if (flashLoanFee <= 2) {
+      for (uint256 i = 0; i < _usrsdebtBal.length; i += 2) {
         userFlashFeeFractions[i] = 0;
-        userFlashFeeFractions[i+1] = 2;
+        userFlashFeeFractions[i + 1] = 2;
       }
-
     } else {
-
-      for(uint i = 0; i < _usrsdebtBal.length; i += 2 ) {
+      for (uint256 i = 0; i < _usrsdebtBal.length; i += 2) {
         userFlashFeeFractions[i] = 0;
-        debtfraction = ((_usrsdebtBal[i+1]).mul(1e18)).div(debtBalanceTotal); // in WAD
+        debtfraction = ((_usrsdebtBal[i + 1]).mul(1e18)).div(debtBalanceTotal); // in WAD
         feeFraction = (debtfraction.mul(flashLoanFee)).div(1e18);
-        userFlashFeeFractions[i+1] = feeFraction;
+        userFlashFeeFractions[i + 1] = feeFraction;
       }
     }
 

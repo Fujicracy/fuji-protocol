@@ -42,17 +42,9 @@ const fixture = async ([wallet, other], provider) => {
   const oracle = await ethers.getContractAt("AggregatorV3Interface", CHAINLINK_ORACLE_ADDR);
 
   // Step 1 of Deploy: Contracts which address is required to be hardcoded in other contracts
-  //Fuji Mapping, for testing this is not required.
-  const fujimapping = await deployContract(wallet, FujiMapping,[]);
+  // Fuji Mapping, for testing this is not required.
+  // const fujimapping = await deployContract(wallet, FujiMapping,[]);
   const treasury = await deployContract(wallet, Treasury, []);
-
-  // Step 1.2 Set-up FujiMapping for testing purposes
-  console.log('        This is to be hardcoded in ProviderIronBank for testing only', fujimapping.address);
-  await fujimapping.setMapping("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "0x41c84c0e2EE0b740Cf0d31F63f3B6F627DC6b393");
-  await fujimapping.setMapping("0x6B175474E89094C44Da98b954EedeAC495271d0F", "0x8e595470Ed749b85C6F7669de83EAe304C2ec68F");
-  await fujimapping.setMapping("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", "0x76Eb2FE28b36B3ee97F3Adae0C69606eeDB2A37c");
-  await fujimapping.setMapping("0xdAC17F958D2ee523a2206206994597C13D831ec7","0x48759F220ED983dB51fA7A8C0D2AAb8f3ce4166a");
-
 
   // Step 2 Of Deploy: Functional Contracts
   const fujiadmin = await deployContract(wallet, FujiAdmin,[]);

@@ -194,8 +194,8 @@ contract Fliquidator is Ownable, ReentrancyGuard {
         vault: _vault,
         newProvider: address(0),
         user: msg.sender,
-        userAddrs: new address[](1),
-        userBalances: new uint256[](1),
+        userAddrs: new address[](0),
+        userBalances: new uint256[](0),
         userliquidator: address(0),
         fliquidator: address(this)
       });
@@ -308,20 +308,20 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     }
 
     // Get user Collateral and Debt Balances
-    uint256[] memory usrsBal = f1155.balanceOfBatch(_userAddrs, tokenIDs);
+    uint256[] memory usrsBals = f1155.balanceOfBatch(_userAddrs, tokenIDs);
 
     uint256 neededCollateral;
     uint256 debtBalanceTotal;
 
     for (uint256 i = 0; i < _userAddrs.length; i += 2) {
       // Compute Amount of Minimum Collateral Required including factors
-      neededCollateral = IVault(_vault).getNeededCollateralFor(usrsBal[i + 1], true);
+      neededCollateral = IVault(_vault).getNeededCollateralFor(usrsBals[i + 1], true);
 
       // Check if User is liquidatable
-      require(usrsBal[i] < neededCollateral, Errors.VL_USER_NOT_LIQUIDATABLE);
+      require(usrsBals[i] < neededCollateral, Errors.VL_USER_NOT_LIQUIDATABLE);
 
       // Add total debt balance to be liquidated
-      debtBalanceTotal += usrsBal[i + 1];
+      debtBalanceTotal = debtBalanceTotal.add(usrsBals[i + 1]);
     }
 
     Flasher flasher = Flasher(payable(_fujiAdmin.getFlasher()));
@@ -335,7 +335,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
         newProvider: address(0),
         user: address(0),
         userAddrs: _userAddrs,
-        userBalances: usrsBal,
+        userBalances: usrsBals,
         userliquidator: msg.sender,
         fliquidator: address(this)
       });
@@ -346,7 +346,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
   /**
    * @dev Liquidate a debt position by using a flashloan
    * @param _userAddrs: array **See input of 'function flashBatchLiquidate'
-   * @param _usrsBal: array **See input of 'function flashBatchLiquidate'
+   * @param _usrsBals: array **See input of 'function flashBatchLiquidate'
    * @param _liquidatorAddr: liquidator address
    * @param _vault: Vault address
    * @param _amount: amount of debt to be repaid
@@ -355,7 +355,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
    */
   function executeFlashBatchLiquidation(
     address[] calldata _userAddrs,
-    uint256[] calldata _usrsBal,
+    uint256[] calldata _usrsBals,
     address _liquidatorAddr,
     address _vault,
     uint256 _amount,
@@ -381,7 +381,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       _getCollateralInPlay(vAssets.borrowAsset, _amount.add(_flashloanFee).add(globalBonus));
 
     // Burn Collateral f1155 tokens for each liquidated user
-    _burnMultiLoop(_userAddrs, _usrsBal, _amount, _flashloanFee, IVault(_vault), f1155, vAssets);
+    _burnMultiLoop(_userAddrs, _usrsBals, _amount, _flashloanFee, IVault(_vault), f1155, vAssets);
 
     // Withdraw collateral
     IVault(_vault).withdraw(int256(globalCollateralInPlay));
@@ -399,8 +399,8 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
     // Burn Debt f1155 tokens and Emit Liquidation Event for Each Liquidated User
     for (uint256 i = 0; i < _userAddrs.length; i += 2) {
-      f1155.burn(_userAddrs[i], vAssets.borrowID, _usrsBal[i + 1]);
-      emit FlashLiquidate(_userAddrs[i], _liquidatorAddr, vAssets.borrowAsset, _usrsBal[i + 1]);
+      f1155.burn(_userAddrs[i], vAssets.borrowID, _usrsBals[i + 1]);
+      emit FlashLiquidate(_userAddrs[i], _liquidatorAddr, vAssets.borrowAsset, _usrsBals[i + 1]);
     }
   }
 
@@ -455,57 +455,57 @@ contract Fliquidator is Ownable, ReentrancyGuard {
    */
   function _burnMultiLoop(
     address[] calldata _userAddrs,
-    uint256[] calldata _usrsBal,
+    uint256[] calldata _usrsBals,
     uint256 _amount,
     uint256 _flashloanFee,
     IVault _vault,
-    IFujiERC1155 f1155,
-    IVaultExt.VaultAssets memory vAssets
+    IFujiERC1155 _f1155,
+    IVaultExt.VaultAssets memory _vAssets
   ) internal {
     uint256[] memory userFlashFeeFractions =
-      _getUserFlashFeeFractions(_usrsBal, _amount, _flashloanFee);
+      _getUserFlashFeeFractions(_usrsBals, _amount, _flashloanFee);
 
     uint256 bonusPerUser;
     uint256 collateralInPlayPerUser;
     uint256 sumValue;
 
     for (uint256 i = 0; i < _userAddrs.length; i += 2) {
-      bonusPerUser = _vault.getLiquidationBonusFor(_usrsBal[i + 1], true);
-      sumValue = (_usrsBal[i + 1]).add(bonusPerUser).add(userFlashFeeFractions[i + 1]);
+      bonusPerUser = _vault.getLiquidationBonusFor(_usrsBals[i + 1], true);
+      sumValue = (_usrsBals[i + 1]).add(bonusPerUser).add(userFlashFeeFractions[i + 1]);
 
-      collateralInPlayPerUser = _getCollateralInPlay(vAssets.borrowAsset, sumValue);
+      collateralInPlayPerUser = _getCollateralInPlay(_vAssets.borrowAsset, sumValue);
 
-      f1155.burn(_userAddrs[i], vAssets.collateralID, collateralInPlayPerUser);
+      _f1155.burn(_userAddrs[i], _vAssets.collateralID, collateralInPlayPerUser);
     }
   }
 
   /**
    * @dev Get the corresponding fraction of flashloan fee per user to be liquidated in BatchLiquidate
-   * @param _usrsdebtBal: the array of balances from all the users to be liquidated.
+   * @param _usrsdebtBals: the array of balances from all the users to be liquidated.
    *     Note!  Even positions in _usrsdebtBal array are collateral balances, and odd positions are debtbalance
-   * @param debtBalanceTotal: total amount of debt to be liquidated from cumulative of users array
+   * @param _debtBalanceTotal: total amount of debt to be liquidated from cumulative of users array
    *    Note! Thi is the sum of all odd balances in array _usrsdebtBal
-   * @param flashLoanFee: total amount of debt to be liquidated from cumulative of users array
+   * @param _flashLoanFee: total amount of debt to be liquidated from cumulative of users array
    */
   function _getUserFlashFeeFractions(
-    uint256[] calldata _usrsdebtBal,
-    uint256 debtBalanceTotal,
-    uint256 flashLoanFee
+    uint256[] calldata _usrsdebtBals,
+    uint256 _debtBalanceTotal,
+    uint256 _flashLoanFee
   ) internal pure returns (uint256[] memory) {
-    uint256[] memory userFlashFeeFractions = new uint256[](_usrsdebtBal.length);
+    uint256[] memory userFlashFeeFractions = new uint256[](_usrsdebtBals.length);
     uint256 debtfraction;
     uint256 feeFraction;
 
-    if (flashLoanFee <= 2) {
-      for (uint256 i = 0; i < _usrsdebtBal.length; i += 2) {
+    if (_flashLoanFee <= 2) {
+      for (uint256 i = 0; i < _usrsdebtBals.length; i += 2) {
         userFlashFeeFractions[i] = 0;
         userFlashFeeFractions[i + 1] = 2;
       }
     } else {
-      for (uint256 i = 0; i < _usrsdebtBal.length; i += 2) {
+      for (uint256 i = 0; i < _usrsdebtBals.length; i += 2) {
         userFlashFeeFractions[i] = 0;
-        debtfraction = ((_usrsdebtBal[i + 1]).mul(1e18)).div(debtBalanceTotal); // in WAD
-        feeFraction = (debtfraction.mul(flashLoanFee)).div(1e18);
+        debtfraction = ((_usrsdebtBals[i + 1]).mul(1e18)).div(_debtBalanceTotal); // in WAD
+        feeFraction = (debtfraction.mul(_flashLoanFee)).div(1e18);
         userFlashFeeFractions[i + 1] = feeFraction;
       }
     }

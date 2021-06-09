@@ -34,7 +34,7 @@ interface IFliquidator {
 
   function executeFlashBatchLiquidation(
     address[] calldata _userAddrs,
-    uint256[] calldata _usrsBal,
+    uint256[] calldata _usrsBals,
     address _liquidatorAddr,
     address _vault,
     uint256 _amount,

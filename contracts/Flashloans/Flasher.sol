@@ -24,14 +24,6 @@ interface IFliquidator {
     uint256 _flashloanfee
   ) external;
 
-  function executeFlashLiquidation(
-    address _userAddr,
-    address _liquidatorAddr,
-    address _vault,
-    uint256 _debtAmount,
-    uint256 _flashloanfee
-  ) external;
-
   function executeFlashBatchLiquidation(
     address[] calldata _userAddrs,
     uint256[] calldata _usrsBals,

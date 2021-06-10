@@ -75,9 +75,8 @@ contract Controller is Ownable {
         amount: applyRatiodebtPosition,
         vault: _vaultAddr,
         newProvider: _newProvider,
-        user: address(0),
-        userAddrs: new address[](1),
-        userBalances: new uint256[](1),
+        userAddrs: new address[](0),
+        userBalances: new uint256[](0),
         userliquidator: address(0),
         fliquidator: address(0)
       });

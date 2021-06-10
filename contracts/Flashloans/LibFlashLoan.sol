@@ -18,7 +18,6 @@ library FlashLoan {
    * @param amount: Amount of asset to be borrowed with flashloan
    * @param vault: Vault's address on which the flashloan logic to be executed
    * @param newProvider: New provider's address. Used when callType is Switch
-   * @param user: User's address. Used when callType is Close or Liquidate
    * @param userAddrs: User's address array Used when callType is BatchLiquidate
    * @param userBals:  Array of user's balances, Used when callType is BatchLiquidate
    * @param userliquidator: The user's address who is  performing liquidation. Used when callType is Liquidate
@@ -30,7 +29,6 @@ library FlashLoan {
     uint256 amount;
     address vault;
     address newProvider;
-    address user;
     address[] userAddrs;
     uint256[] userBalances;
     address userliquidator;

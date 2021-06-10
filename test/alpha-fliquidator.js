@@ -48,7 +48,7 @@ describe("Alpha", () => {
   });
 
   describe("Alpha Fliquidator Functionality", () => {
-    it("1.- Normal Liquidation User, vaultDai", async () => {
+    it("1.- Normal batchLiquidate 1 User, vaultDai", async () => {
       // vault to use
       const theVault = vaultdai;
       const asset = dai;
@@ -92,7 +92,10 @@ describe("Alpha", () => {
       await asset
         .connect(liquidatorUser)
         .approve(fliquidator.address, borrowAmount.add(extraChange));
-      await fliquidator.connect(liquidatorUser).liquidate(carelessUser.address, theVault.address);
+
+      await fliquidator
+        .connect(liquidatorUser)
+        .batchLiquidate([carelessUser.address], theVault.address);
 
       const liqBalAtEnd = await asset.balanceOf(liquidatorUser.address);
       // console.log("liqBalAtEnd", liqBalAtEnd.toString());
@@ -112,40 +115,47 @@ describe("Alpha", () => {
       await expect(carelessUser1155bal1).to.be.eq(0);
     });
 
-    it("2.- Normal Liquidation User, vaultusdc", async () => {
+    it("2.- Normal batchLiquidate 3 Users, vaultusdc", async () => {
       // vault to use
       const theVault = vaultusdc;
       const asset = usdc;
+      const activeProvider = dydx;
 
       // Set a defined ActiveProviders
-      await theVault.setActiveProvider(dydx.address);
+      await theVault.setActiveProvider(activeProvider.address);
 
       // Set - up
-      const carelessUser = users[5];
+      const carelessUsers = [users[5], users[6], users[7]];
       const liquidatorUser = users[15];
       const borrowAmount = ethers.utils.parseUnits("5000", 6);
       let depositAmount = await theVault.getNeededCollateralFor(borrowAmount, true);
+      const smallExtra = ethers.utils.parseUnits("0.01", 6);
       const vAssetStruct = await theVault.vAssets();
 
       // Bootstrap Liquidity
       const bootstraper = users[0];
       const bstrapLiquidity = ethers.utils.parseEther("1");
-      const extraChange = ethers.utils.parseUnits("0.01", 6);
+      const extraChange = ethers.utils.parseUnits("1", 6);
       await theVault
         .connect(bootstraper)
         .depositAndBorrow(bstrapLiquidity, extraChange, { value: bstrapLiquidity });
       // Part of set-up > Sending Liquidator some extra change to pay for interest
       await asset.connect(bootstraper).transfer(liquidatorUser.address, extraChange);
 
-      // Set up the debt position of carelessUser
-      depositAmount = depositAmount.add(10);
-      await theVault
-        .connect(carelessUser)
-        .depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount });
+      // Set up the debt position of carelessUsers
+      depositAmount = depositAmount.add(smallExtra);
+      for (let i = 0; i < carelessUsers.length; i++) {
+        await theVault
+          .connect(carelessUsers[i])
+          .depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount });
+      }
 
       // Staged condition to make user liquidatable
       // Careless user spends Dai (transferred to Liquidator for test purpose)
-      await asset.connect(carelessUser).transfer(liquidatorUser.address, borrowAmount);
+      for (let i = 0; i < carelessUsers.length; i++) {
+        await asset.connect(carelessUsers[i]).transfer(liquidatorUser.address, borrowAmount);
+      }
+
       // For purposes of testing only way to make user liquidatable is by changing factors
       await theVault.connect(users[0]).setFactor(3, 2, false);
 
@@ -154,25 +164,43 @@ describe("Alpha", () => {
 
       await asset
         .connect(liquidatorUser)
-        .approve(fliquidator.address, borrowAmount.add(extraChange));
-      await fliquidator.connect(liquidatorUser).liquidate(carelessUser.address, theVault.address);
+        .approve(fliquidator.address, liqBalAtStart.add(extraChange));
+      await fliquidator
+        .connect(liquidatorUser)
+        .batchLiquidate(
+          [carelessUsers[0].address, carelessUsers[1].address, carelessUsers[2].address],
+          theVault.address
+        );
 
       const liqBalAtEnd = await asset.balanceOf(liquidatorUser.address);
       // console.log("liqBalAtEnd", liqBalAtEnd.toString());
 
-      const carelessUser1155bal0 = await f1155.balanceOf(
-        carelessUser.address,
-        vAssetStruct.collateralID
-      );
-      const carelessUser1155bal1 = await f1155.balanceOf(
-        carelessUser.address,
-        vAssetStruct.borrowID
-      );
-      // console.log("1155tokenbal0", carelessUser1155bal0/1, "1155tokenbal1", carelessUser1155bal1/1);
+      let carelessUser1155bal0;
+      let carelessUser1155bal1;
+
+      for (let i = 0; i < carelessUsers.length; i++) {
+        carelessUser1155bal0 = await f1155.balanceOf(
+          carelessUsers[i].address,
+          vAssetStruct.collateralID
+        );
+        carelessUser1155bal1 = await f1155.balanceOf(
+          carelessUsers[i].address,
+          vAssetStruct.borrowID
+        );
+        // console.log(`        carelessUsers[${i}]:`,"1155tokenbal0", carelessUser1155bal0/1, "1155tokenbal1", carelessUser1155bal1/1);
+
+        await expect(carelessUser1155bal0).to.be.gt(0);
+        await expect(carelessUser1155bal1).to.be.eq(0);
+      }
 
       await expect(liqBalAtEnd).to.be.gt(liqBalAtStart);
-      await expect(carelessUser1155bal0).to.be.gt(0);
-      await expect(carelessUser1155bal1).to.be.eq(0);
+
+      const vaultdebt = await activeProvider
+        .connect(bootstraper)
+        .getBorrowBalanceOf(vAssetStruct.borrowAsset, theVault.address);
+      // console.log(vaultdebt.value);
+
+      await expect(vaultdebt.value).to.equal(0);
     });
 
     it("3.- Full Flashclose User, vaultDai with cream FL", async () => {
@@ -403,12 +431,7 @@ describe("Alpha", () => {
 
       await fliquidator
         .connect(liquidatorUser)
-        .flashBatchLiquidate(
-          [carelessUser.address, carelessUser.address],
-          [vAssetStruct.collateralID, vAssetStruct.borrowID],
-          theVault.address,
-          flashLoanProvider
-        );
+        .flashBatchLiquidate([carelessUser.address], theVault.address, flashLoanProvider);
 
       const liqBalAtEnd = await asset.balanceOf(liquidatorUser.address);
       // console.log("liqBalAtEnd", liqBalAtEnd.toString());
@@ -488,27 +511,10 @@ describe("Alpha", () => {
         .flashBatchLiquidate(
           [
             carelessUsers[0].address,
-            carelessUsers[0].address,
-            carelessUsers[1].address,
             carelessUsers[1].address,
             carelessUsers[2].address,
-            carelessUsers[2].address,
-            carelessUsers[3].address,
             carelessUsers[3].address,
             carelessUsers[4].address,
-            carelessUsers[4].address,
-          ],
-          [
-            vAssetStruct.collateralID,
-            vAssetStruct.borrowID,
-            vAssetStruct.collateralID,
-            vAssetStruct.borrowID,
-            vAssetStruct.collateralID,
-            vAssetStruct.borrowID,
-            vAssetStruct.collateralID,
-            vAssetStruct.borrowID,
-            vAssetStruct.collateralID,
-            vAssetStruct.borrowID,
           ],
           theVault.address,
           flashLoanProvider

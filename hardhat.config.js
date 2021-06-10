@@ -103,9 +103,11 @@ module.exports = {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
   gasReporter: {
-    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+    //coinmarketcap: process.env.COINMARKETCAP_API_KEY,
     currency: "USD",
-    enabled: !!process.env.REPORT_GAS,
+    //enabled: !!process.env.REPORT_GAS,
+    gasPrice: 20,
+    enabled: true
   },
   solidity: {
     compilers: [

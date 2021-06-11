@@ -48,7 +48,6 @@ describe("Alpha", () => {
   });
 
   describe("Alpha Fliquidator Functionality", () => {
-
     it("1.- Normal batchLiquidate 1 User, vaultDai", async () => {
       // vault to use
       const theVault = vaultdai;
@@ -240,11 +239,10 @@ describe("Alpha", () => {
           .connect(carelessUsers[i])
           .depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount });
       }
-      //Set up Good user
+      // Set up Good user
       await theVault
         .connect(goodUser)
         .depositAndBorrow(goodDepositAmount, borrowAmount, { value: goodDepositAmount });
-
 
       // Staged condition to make user liquidatable
       // Careless user spends Dai (transferred to Liquidator for test purpose)
@@ -253,7 +251,6 @@ describe("Alpha", () => {
       }
       // goodUser spends Money (sent to liquidator for test purpose)
       await asset.connect(goodUser).transfer(liquidatorUser.address, borrowAmount);
-
 
       // For purposes of testing only way to make user liquidatable is by changing factors
       await theVault.connect(users[0]).setFactor(3, 2, false);
@@ -271,7 +268,7 @@ describe("Alpha", () => {
             carelessUsers[0].address,
             goodUser.address,
             carelessUsers[1].address,
-            carelessUsers[2].address
+            carelessUsers[2].address,
           ],
           theVault.address
         );
@@ -299,10 +296,7 @@ describe("Alpha", () => {
         await expect(carelessUser1155bal1).to.be.eq(0);
       }
 
-      goodUser1155bal1 = await f1155.balanceOf(
-        goodUser.address,
-        vAssetStruct.borrowID
-      );
+      const goodUser1155bal1 = await f1155.balanceOf(goodUser.address, vAssetStruct.borrowID);
 
       await expect(goodUser1155bal1).to.be.gt(0);
 
@@ -733,7 +727,7 @@ describe("Alpha", () => {
             goodUser.address,
             carelessUsers[2].address,
             carelessUsers[3].address,
-            carelessUsers[4].address
+            carelessUsers[4].address,
           ],
           theVault.address,
           flashLoanProvider
@@ -762,16 +756,10 @@ describe("Alpha", () => {
         await expect(carelessUser1155bal1).to.be.eq(0);
       }
 
-      const goodUser1155bal0 = await f1155.balanceOf(
-        goodUser.address,
-        vAssetStruct.collateralID
-      );
+      // const goodUser1155bal0 = await f1155.balanceOf(goodUser.address, vAssetStruct.collateralID);
 
-      const goodUser1155bal1 = await f1155.balanceOf(
-        goodUser.address,
-        vAssetStruct.borrowID
-      );
-      //console.log("            goodUserBalances", `Collateral Bal: ${goodUser1155bal0/1}`, `Borrow Bal: ${goodUser1155bal1/1}`);
+      const goodUser1155bal1 = await f1155.balanceOf(goodUser.address, vAssetStruct.borrowID);
+      // console.log("            goodUserBalances", `Collateral Bal: ${goodUser1155bal0/1}`, `Borrow Bal: ${goodUser1155bal1/1}`);
 
       await expect(goodUser1155bal1).to.be.gt(0);
 

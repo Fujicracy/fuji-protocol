@@ -107,7 +107,7 @@ module.exports = {
     currency: "USD",
     //enabled: !!process.env.REPORT_GAS,
     gasPrice: 20,
-    enabled: true
+    enabled: false
   },
   solidity: {
     compilers: [

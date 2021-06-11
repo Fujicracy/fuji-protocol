@@ -121,11 +121,21 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       neededCollateral = IVault(_vault).getNeededCollateralFor(usrsBals[i + 1], true);
 
       // Check if User is liquidatable
-      require(usrsBals[i] < neededCollateral, Errors.VL_USER_NOT_LIQUIDATABLE);
+      if(usrsBals[i] < neededCollateral) {
 
-      // Add total debt balance to be liquidated
-      debtBalanceTotal = debtBalanceTotal.add(usrsBals[i + 1]);
+        // If true, add User debt balance to the total balance to be liquidated
+        debtBalanceTotal = debtBalanceTotal.add(usrsBals[i + 1]);
+
+      } else {
+
+        // Replace User that is not liquidatable by Zero Address
+        formattedUserAddrs[i] = address(0);
+        formattedUserAddrs[i+1] = address(0);
+      }
     }
+
+    // Check there is at least one user liquidatable
+    require(debtBalanceTotal>0, Errors.VL_USER_NOT_LIQUIDATABLE);
 
     // Check Liquidator Allowance
     require(
@@ -166,8 +176,10 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
     // Burn Debt f1155 tokens and Emit Liquidation Event for Each Liquidated User
     for (uint256 i = 0; i < formattedUserAddrs.length; i += 2) {
-      f1155.burn(formattedUserAddrs[i], vAssets.borrowID, usrsBals[i + 1]);
-      emit Liquidate(formattedUserAddrs[i], msg.sender, vAssets.borrowAsset, usrsBals[i + 1]);
+      if(formattedUserAddrs[i] != address(0)) {
+        f1155.burn(formattedUserAddrs[i], vAssets.borrowID, usrsBals[i + 1]);
+        emit Liquidate(formattedUserAddrs[i], msg.sender, vAssets.borrowAsset, usrsBals[i + 1]);
+      }
     }
   }
 
@@ -340,11 +352,21 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       neededCollateral = IVault(_vault).getNeededCollateralFor(usrsBals[i + 1], true);
 
       // Check if User is liquidatable
-      require(usrsBals[i] < neededCollateral, Errors.VL_USER_NOT_LIQUIDATABLE);
+      if(usrsBals[i] < neededCollateral) {
 
-      // Add total debt balance to be liquidated
-      debtBalanceTotal = debtBalanceTotal.add(usrsBals[i + 1]);
+        // If true, add User debt balance to the total balance to be liquidated
+        debtBalanceTotal = debtBalanceTotal.add(usrsBals[i + 1]);
+
+      } else {
+
+        // Replace User that is not liquidatable by Zero Address
+        formattedUserAddrs[i] = address(0);
+        formattedUserAddrs[i+1] = address(0);
+      }
     }
+
+    // Check there is at least one user liquidatable
+    require(debtBalanceTotal>0, Errors.VL_USER_NOT_LIQUIDATABLE);
 
     Flasher flasher = Flasher(payable(_fujiAdmin.getFlasher()));
 
@@ -423,8 +445,10 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
     // Burn Debt f1155 tokens and Emit Liquidation Event for Each Liquidated User
     for (uint256 i = 0; i < _userAddrs.length; i += 2) {
-      f1155.burn(_userAddrs[i], vAssets.borrowID, _usrsBals[i + 1]);
-      emit FlashLiquidate(_userAddrs[i], _liquidatorAddr, vAssets.borrowAsset, _usrsBals[i + 1]);
+      if(_userAddrs[i] != address(0)) {
+        f1155.burn(_userAddrs[i], vAssets.borrowID, _usrsBals[i + 1]);
+        emit FlashLiquidate(_userAddrs[i], _liquidatorAddr, vAssets.borrowAsset, _usrsBals[i + 1]);
+      }
     }
   }
 
@@ -490,14 +514,18 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     uint256 collateralInPlayPerUser;
 
     for (uint256 i = 0; i < _userAddrs.length; i += 2) {
-      bonusPerUser = _vault.getLiquidationBonusFor(_usrsBals[i + 1], true);
+      if(_userAddrs[i] != address(0)){
 
-      collateralInPlayPerUser = _getCollateralInPlay(
-        _vAssets.borrowAsset,
-        _usrsBals[i + 1].add(bonusPerUser)
-      );
+        bonusPerUser = _vault.getLiquidationBonusFor(_usrsBals[i + 1], true);
 
-      _f1155.burn(_userAddrs[i], _vAssets.collateralID, collateralInPlayPerUser);
+        collateralInPlayPerUser = _getCollateralInPlay(
+          _vAssets.borrowAsset,
+          _usrsBals[i + 1].add(bonusPerUser)
+        );
+
+        _f1155.burn(_userAddrs[i], _vAssets.collateralID, collateralInPlayPerUser);
+
+      }
     }
   }
 

@@ -63,7 +63,7 @@ const fixture = async ([wallet, other], provider) => {
   const aWhitelist = await deployContract(wallet, AWhitelist,
     [
       "100",
-      ethers.utils.parseEther("12")
+      ethers.utils.parseEther("50")
     ]);
   const vaultharvester = await deployContract(wallet, VaultHarvester, []);
   const vaultdai = await deployContract(wallet, VaultETHDAI,[]);

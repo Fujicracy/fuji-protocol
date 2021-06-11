@@ -485,15 +485,17 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IFujiERC1155 _f1155,
     IVaultExt.VaultAssets memory _vAssets
   ) internal {
+
     uint256 bonusPerUser;
     uint256 collateralInPlayPerUser;
-    uint256 sumValue;
 
     for (uint256 i = 0; i < _userAddrs.length; i += 2) {
       bonusPerUser = _vault.getLiquidationBonusFor(_usrsBals[i + 1], true);
-      sumValue = (_usrsBals[i + 1]).add(bonusPerUser);
 
-      collateralInPlayPerUser = _getCollateralInPlay(_vAssets.borrowAsset, sumValue);
+      collateralInPlayPerUser = _getCollateralInPlay(
+        _vAssets.borrowAsset,
+        _usrsBals[i + 1].add(bonusPerUser)
+      );
 
       _f1155.burn(_userAddrs[i], _vAssets.collateralID, collateralInPlayPerUser);
     }

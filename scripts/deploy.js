@@ -19,7 +19,7 @@ const main = async () => {
   // Step 1 of Deploy: Contracts which address is required to be hardcoded in other contracts
   //Fuji Mapping for Compound Contracts, for testing this is not required.
   //Fuji Mapping for CreamFinance Contracts
-  const treasury = await deploy("GnosisSafe");
+  //const treasury = await deploy("GnosisSafe");
 
   // Step 2 Of Deploy: Functional Contracts
   const fujiadmin = await deploy("FujiAdmin");
@@ -32,6 +32,7 @@ const main = async () => {
   const aave = await deploy("ProviderAave");
   const compound = await deploy("ProviderCompound");
   const dydx = await deploy("ProviderDYDX");
+  const ironBank = await deploy("ProviderIronBank");
 
   // Step 4 Of Deploy Core Money Handling Contracts
   const aWhitelist = await deploy("AlphaWhitelist", [
@@ -41,11 +42,12 @@ const main = async () => {
   const vaultharvester = await deploy("VaultHarvester");
   const vaultdai = await deploy("VaultETHDAI");
   const vaultusdc = await deploy("VaultETHUSDC");
+  const vaultusdt = await deploy("VaultETHUSDT");
 
   // Step 5 - General Plug-ins and Set-up Transactions
   await fujiadmin.setFlasher(flasher.address);
   await fujiadmin.setFliquidator(fliquidator.address);
-  await fujiadmin.setTreasury(treasury.address);
+  await fujiadmin.setTreasury("0x9F5A10E45906Ef12497237cE10fB7AB9B850Ff86");
   await fujiadmin.setController(controller.address);
   await fujiadmin.setaWhitelist(aWhitelist.address);
   await fujiadmin.setVaultHarvester(vaultharvester.address);
@@ -55,20 +57,27 @@ const main = async () => {
   await controller.setFujiAdmin(fujiadmin.address);
   await f1155.setPermit(vaultdai.address, true);
   await f1155.setPermit(vaultusdc.address, true);
+  await f1155.setPermit(vaultusdt.address, true);
   await f1155.setPermit(fliquidator.address, true);
 
   // Step 6 - Vault Set-up
   await vaultdai.setFujiAdmin(fujiadmin.address)
-  await vaultdai.setProviders([compound.address, aave.address, dydx.address]);
+  await vaultdai.setProviders([compound.address, aave.address, dydx.address, ironBank.address]);
   await vaultdai.setActiveProvider(compound.address);
   await vaultdai.setFujiERC1155(f1155.address);
   await vaultdai.setOracle(CHAINLINK_ORACLE_ADDR);
 
   await vaultusdc.setFujiAdmin(fujiadmin.address);
-  await vaultusdc.setProviders([compound.address, aave.address, dydx.address]);
+  await vaultusdc.setProviders([compound.address, aave.address, dydx.address, ironBank.address]);
   await vaultusdc.setActiveProvider(compound.address);
   await vaultusdc.setFujiERC1155(f1155.address);
   await vaultusdc.setOracle(CHAINLINK_ORACLE_ADDR);
+
+  await vaultusdt.setFujiAdmin(fujiadmin.address);
+  await vaultusdt.setProviders([compound.address, aave.address, ironBank.address]);
+  await vaultusdt.setActiveProvider(compound.address);
+  await vaultusdt.setFujiERC1155(f1155.address);
+  await vaultusdt.setOracle(CHAINLINK_ORACLE_ADDR);
 
   console.log(
     " 💾  Artifacts (address, abi, and args) saved to: ",

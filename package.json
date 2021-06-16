@@ -55,7 +55,7 @@
     "lint": "echo 1",
     "lint:fix": "echo 1",
     "format": "echo 1",
-    "lint:sol": "solhint -f table contracts/**/*.sol --ignore-path contracts/Gnosis*/**",
+    "lint:sol": "solhint -f table contracts/**/*.sol",
     "format:sol": "prettier --write contracts/**/*.sol",
     "watch": "node scripts/watch.js",
     "accounts": "hardhat accounts",

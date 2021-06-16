@@ -8,5 +8,5 @@ interface IAlphaWhiteList {
     uint64 _assetId,
     uint256 _amount,
     address _erc1155
-  ) external returns(bool);
+  ) external returns (bool);
 }

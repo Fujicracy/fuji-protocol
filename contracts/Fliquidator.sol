@@ -12,7 +12,7 @@ import { FlashLoan } from "./Flashloans/LibFlashLoan.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Errors } from "./Libraries/Errors.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { UniERC20 } from "./Libraries/LibUniERC20.sol";
+import { UniversalLibERC20 } from "./Libraries/UniversalLibERC20.sol";
 import {
   IUniswapV2Router02
 } from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
@@ -39,7 +39,7 @@ interface IFujiERC1155Ext is IFujiERC1155 {
 
 contract Fliquidator is Ownable, ReentrancyGuard {
   using SafeMath for uint256;
-  using UniERC20 for IERC20;
+  using UniversalLibERC20 for IERC20;
 
   struct Factor {
     uint64 a;
@@ -89,7 +89,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
    * @param _userAddrs: Address array of users whose position is liquidatable
    * @param _vault: Address of the vault in where liquidation will occur
    */
-  function batchLiquidate(address[] calldata _userAddrs, address _vault) external {
+  function batchLiquidate(address[] calldata _userAddrs, address _vault) external nonReentrant {
     // Update Balances at FujiERC1155
     IVault(_vault).updateF1155Balances();
 
@@ -144,7 +144,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), debtBalanceTotal);
 
     // Transfer Amount to Vault
-    IERC20(vAssets.borrowAsset).transfer(_vault, debtBalanceTotal);
+    IERC20(vAssets.borrowAsset).univTransfer(payable(_vault), debtBalanceTotal);
 
     // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
@@ -169,7 +169,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     _swap(vAssets.borrowAsset, debtBalanceTotal.add(globalBonus), globalCollateralInPlay);
 
     // Transfer to Liquidator the debtBalance + bonus
-    IERC20(vAssets.borrowAsset).uniTransfer(msg.sender, debtBalanceTotal.add(globalBonus));
+    IERC20(vAssets.borrowAsset).univTransfer(msg.sender, debtBalanceTotal.add(globalBonus));
 
     // Burn Debt f1155 tokens and Emit Liquidation Event for Each Liquidated User
     for (uint256 i = 0; i < formattedUserAddrs.length; i += 2) {
@@ -279,7 +279,8 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       IVault(_vault).withdraw(int256(userCollateral));
 
       // Send unUsed Collateral to User
-      _userAddr.transfer(userCollateral.sub(userCollateralInPlay));
+      (bool sent, ) = _userAddr.call{ value: userCollateral.sub(userCollateralInPlay) }("");
+      require(sent, "Failed to send ETH");
     } else {
       f1155.burn(_userAddr, vAssets.collateralID, userCollateralInPlay);
 
@@ -292,10 +293,10 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       _swap(vAssets.borrowAsset, _amount.add(_flashloanFee), userCollateralInPlay);
 
     // Send FlashClose Fee to FujiTreasury
-    IERC20(vAssets.collateralAsset).uniTransfer(_fujiAdmin.getTreasury(), remaining);
+    IERC20(vAssets.collateralAsset).univTransfer(_fujiAdmin.getTreasury(), remaining);
 
     // Send flasher the underlying to repay Flashloan
-    IERC20(vAssets.borrowAsset).uniTransfer(
+    IERC20(vAssets.borrowAsset).univTransfer(
       payable(_fujiAdmin.getFlasher()),
       _amount.add(_flashloanFee)
     );
@@ -426,13 +427,13 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     _swap(vAssets.borrowAsset, _amount.add(_flashloanFee).add(globalBonus), globalCollateralInPlay);
 
     // Send flasher the underlying to repay Flashloan
-    IERC20(vAssets.borrowAsset).uniTransfer(
+    IERC20(vAssets.borrowAsset).univTransfer(
       payable(_fujiAdmin.getFlasher()),
       _amount.add(_flashloanFee)
     );
 
     // Transfer Bonus bonusFlashL to liquidator, minus FlashloanFee convenience
-    IERC20(vAssets.borrowAsset).uniTransfer(
+    IERC20(vAssets.borrowAsset).univTransfer(
       payable(_liquidatorAddr),
       globalBonus.sub(_flashloanFee)
     );

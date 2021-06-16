@@ -58,11 +58,10 @@ const fixture = async ([wallet]) => {
   const ironbank = await deployContract(wallet, IronBank, []);
 
   // Step 4 Of Deploy Core Money Handling Contracts
-  const aWhitelist = await deployContract(wallet, AWhitelist,
-    [
-      "100",
-      ethers.utils.parseEther("50")
-    ]);
+  const aWhitelist = await deployContract(wallet, AWhitelist, [
+    "100",
+    ethers.utils.parseEther("50"),
+  ]);
   const vaultharvester = await deployContract(wallet, VaultHarvester, []);
   const vaultdai = await deployContract(wallet, VaultETHDAI, []);
   const vaultusdc = await deployContract(wallet, VaultETHUSDC, []);

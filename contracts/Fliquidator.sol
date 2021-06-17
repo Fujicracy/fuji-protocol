@@ -74,6 +74,11 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     _;
   }
 
+  modifier isValidVault(address _vaultAddr) {
+    require(_fujiAdmin.validVault(_vaultAddr), "Invalid vault!");
+    _;
+  }
+
   constructor() public {
     // 1.013
     flashCloseF.a = 1013;
@@ -89,7 +94,10 @@ contract Fliquidator is Ownable, ReentrancyGuard {
    * @param _userAddrs: Address array of users whose position is liquidatable
    * @param _vault: Address of the vault in where liquidation will occur
    */
-  function batchLiquidate(address[] calldata _userAddrs, address _vault) external {
+  function batchLiquidate(address[] calldata _userAddrs, address _vault)
+    external
+    isValidVault(_vault)
+  {
     // Update Balances at FujiERC1155
     IVault(_vault).updateF1155Balances();
 
@@ -190,7 +198,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     int256 _amount,
     address _vault,
     uint8 _flashnum
-  ) external nonReentrant {
+  ) external nonReentrant isValidVault(_vault) {
     Flasher flasher = Flasher(payable(_fujiAdmin.getFlasher()));
 
     // Update Balances at FujiERC1155
@@ -317,7 +325,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     address[] calldata _userAddrs,
     address _vault,
     uint8 _flashnum
-  ) external nonReentrant {
+  ) external isValidVault(_vault) nonReentrant {
     // Update Balances at FujiERC1155
     IVault(_vault).updateF1155Balances();
 

@@ -1,19 +1,12 @@
 const { ethers, waffle } = require("hardhat");
-const { deployContract } = waffle;
 const { expect } = require("chai");
-const { solidity, createFixtureLoader } = require("ethereum-waffle");
+const { createFixtureLoader } = require("ethereum-waffle");
+
+const { deployContract } = waffle;
 
 const CHAINLINK_ORACLE_ADDR = "0x773616E4d11A78F511299002da57A0a94577F1f4";
 const UNISWAP_ROUTER_ADDR = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
-const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
-const DAI_ADDR = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
-const USDC_ADDR = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
-const USDT_ADDR = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
-const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
-const aWETH_ADDR = "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e";
-const cETH_ADDR = "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5";
-
-const ONE_ETH = ethers.utils.parseEther("1.0");
+const TREASURY_ADDR = "0x9F5A10E45906Ef12497237cE10fB7AB9B850Ff86";
 
 const FujiAdmin = require("../artifacts/contracts/FujiAdmin.sol/FujiAdmin.json");
 const Fliquidator = require("../artifacts/contracts/Fliquidator.sol/Fliquidator.json");
@@ -21,64 +14,65 @@ const AWhitelist = require("../artifacts/contracts/AlphaWhitelist.sol/AlphaWhite
 const VaultETHDAI = require("../artifacts/contracts/Vaults/VaultETHDAI.sol/VaultETHDAI.json");
 const VaultETHUSDC = require("../artifacts/contracts/Vaults/VaultETHUSDC.sol/VaultETHUSDC.json");
 const VaultETHUSDT = require("../artifacts/contracts/Vaults/VaultETHUSDT.sol/VaultETHUSDT.json");
-const VaultHarvester = require("../artifacts/contracts/Vaults/VaultHarvester.sol/VaultHarvester.json")
+const VaultHarvester = require("../artifacts/contracts/Vaults/VaultHarvester.sol/VaultHarvester.json");
 const Aave = require("../artifacts/contracts/Providers/ProviderAave.sol/ProviderAave.json");
 const Compound = require("../artifacts/contracts/Providers/ProviderCompound.sol/ProviderCompound.json");
-const Dydx = require("../artifacts/contracts/Providers/ProviderDYDX.sol/ProviderDYDX.json")
+const Dydx = require("../artifacts/contracts/Providers/ProviderDYDX.sol/ProviderDYDX.json");
 const F1155 = require("../artifacts/contracts/FujiERC1155/FujiERC1155.sol/FujiERC1155.json");
 const Flasher = require("../artifacts/contracts/Flashloans/Flasher.sol/Flasher.json");
 const Controller = require("../artifacts/contracts/Controller.sol/Controller.json");
-const Treasury = require("../artifacts/contracts/Gnosis Treasury/GnosisSafe.sol/GnosisSafe.json")
 
 const FujiMapping = require("../artifacts/contracts/FujiMapping.sol/FujiMapping.json");
 
-const fixture = async ([wallet, other], provider) => {
-
-  let dai = await ethers.getContractAt("IERC20", DAI_ADDR);
-  let usdc = await ethers.getContractAt("IERC20", USDC_ADDR);
-  let usdt = await ethers.getContractAt("IERC20", USDT_ADDR);
-  let aweth = await ethers.getContractAt("IERC20", aWETH_ADDR);
-  let ceth = await ethers.getContractAt("ICErc20", cETH_ADDR);
-  let oracle = await ethers.getContractAt("AggregatorV3Interface", CHAINLINK_ORACLE_ADDR);
-
+const fixture = async ([wallet]) => {
   // Step 1 of Deploy: Contracts which address is required to be hardcoded in other contracts
-  let creamfujimapping = await deployContract(wallet, FujiMapping, []);
-  let treasury = await deployContract(wallet, Treasury, []);
+  const creamfujimapping = await deployContract(wallet, FujiMapping, []);
 
   // Step 1 (Only for testing of CreamFinance FlashLoans)
-  //Setting up the CreamFinance FujiMapper
-  await creamfujimapping.setMapping("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "0xD06527D5e56A3495252A528C4987003b712860eE");
-  await creamfujimapping.setMapping("0x6B175474E89094C44Da98b954EedeAC495271d0F", "0x92B767185fB3B04F881e3aC8e5B0662a027A1D9f");
-  await creamfujimapping.setMapping("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", "0x44fbeBd2F576670a6C33f6Fc0B00aA8c5753b322");
-  await creamfujimapping.setMapping("0xdAC17F958D2ee523a2206206994597C13D831ec7", "0x797AAB1ce7c01eB727ab980762bA88e7133d2157");
+  // Setting up the CreamFinance FujiMapper
+  await creamfujimapping.setMapping(
+    "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+    "0xD06527D5e56A3495252A528C4987003b712860eE"
+  );
+  await creamfujimapping.setMapping(
+    "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    "0x92B767185fB3B04F881e3aC8e5B0662a027A1D9f"
+  );
+  await creamfujimapping.setMapping(
+    "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    "0x44fbeBd2F576670a6C33f6Fc0B00aA8c5753b322"
+  );
+  await creamfujimapping.setMapping(
+    "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    "0x797AAB1ce7c01eB727ab980762bA88e7133d2157"
+  );
 
   // Step 2 Of Deploy: Functional Contracts
-  let fujiadmin = await deployContract(wallet, FujiAdmin,[]);
-  let fliquidator = await deployContract(wallet, Fliquidator, []);
-  let flasher = await deployContract(wallet, Flasher, []);
-  let controller = await deployContract(wallet, Controller, []);
-  let f1155 = await deployContract(wallet, F1155, []);
+  const fujiadmin = await deployContract(wallet, FujiAdmin, []);
+  const fliquidator = await deployContract(wallet, Fliquidator, []);
+  const flasher = await deployContract(wallet, Flasher, []);
+  const controller = await deployContract(wallet, Controller, []);
+  const f1155 = await deployContract(wallet, F1155, []);
 
   // Step 3 Of Deploy: Provider Contracts
-  let aave = await deployContract(wallet, Aave, []);
-  let compound = await deployContract(wallet, Compound, []);
-  let dydx = await deployContract(wallet, Dydx, []);
+  const aave = await deployContract(wallet, Aave, []);
+  const compound = await deployContract(wallet, Compound, []);
+  const dydx = await deployContract(wallet, Dydx, []);
 
   // Step 4 Of Deploy Core Money Handling Contracts
-  let aWhitelist = await deployContract(wallet, AWhitelist,
-    [
-      "100",
-      ethers.utils.parseEther("12")
-    ]);
-  let vaultharvester = await deployContract(wallet, VaultHarvester, []);
-  let vaultdai = await deployContract(wallet, VaultETHDAI,[]);
-  let vaultusdc = await deployContract(wallet, VaultETHUSDC,[]);
-  let vaultusdt = await deployContract(wallet, VaultETHUSDT,[]);
+  const aWhitelist = await deployContract(wallet, AWhitelist, [
+    "100",
+    ethers.utils.parseEther("12"),
+  ]);
+  const vaultharvester = await deployContract(wallet, VaultHarvester, []);
+  const vaultdai = await deployContract(wallet, VaultETHDAI, []);
+  const vaultusdc = await deployContract(wallet, VaultETHUSDC, []);
+  const vaultusdt = await deployContract(wallet, VaultETHUSDT, []);
 
   // Step 5 - General Plug-ins and Set-up Transactions
   await fujiadmin.setFlasher(flasher.address);
   await fujiadmin.setFliquidator(fliquidator.address);
-  await fujiadmin.setTreasury(treasury.address);
+  await fujiadmin.setTreasury(TREASURY_ADDR);
   await fujiadmin.setController(controller.address);
   await fujiadmin.setaWhitelist(aWhitelist.address);
   await fujiadmin.setVaultHarvester(vaultharvester.address);
@@ -92,7 +86,7 @@ const fixture = async ([wallet, other], provider) => {
   await f1155.setPermit(vaultusdt.address, true);
 
   // Step 6 - Vault Set-up
-  await vaultdai.setFujiAdmin(fujiadmin.address)
+  await vaultdai.setFujiAdmin(fujiadmin.address);
   await vaultdai.setProviders([compound.address, aave.address, dydx.address]);
   await vaultdai.setActiveProvider(compound.address);
   await vaultdai.setFujiERC1155(f1155.address);
@@ -111,13 +105,6 @@ const fixture = async ([wallet, other], provider) => {
   await vaultusdt.setOracle(CHAINLINK_ORACLE_ADDR);
 
   return {
-    dai,
-    usdc,
-    usdt,
-    aweth,
-    ceth,
-    oracle,
-    treasury,
     fujiadmin,
     fliquidator,
     flasher,
@@ -130,20 +117,21 @@ const fixture = async ([wallet, other], provider) => {
     vaultharvester,
     vaultdai,
     vaultusdc,
-    vaultusdt
-  }
-}
+    vaultusdt,
+  };
+};
 
+/*
 const timeTravel = async (seconds) => {
   await ethers.provider.send("evm_increaseTime", [seconds]);
   await ethers.provider.send("evm_mine");
-}
+};
 
 const advanceblocks = async (blocks) => {
-  for (var i = 0; i < blocks; i++) {
+  for (let i = 0; i < blocks; i++) {
     await ethers.provider.send("evm_mine");
   }
-}
+};
 
 const convertToCurrencyDecimals = async (tokenAddr, amount) => {
   const token = await ethers.getContractAt("IERC20Detailed", tokenAddr);
@@ -153,29 +141,17 @@ const convertToCurrencyDecimals = async (tokenAddr, amount) => {
 };
 
 const convertToWei = (amount) => ethers.utils.parseUnits(`${amount}`, 18);
+*/
 
-const evmSnapshot = async () => await ethers.provider.send('evm_snapshot', []);
-const evmRevert = async (id) => ethers.provider.send('evm_revert', [id]);
+const evmSnapshot = async () => ethers.provider.send("evm_snapshot", []);
+const evmRevert = async (id) => ethers.provider.send("evm_revert", [id]);
 
-//use(solidity);
+// use(solidity);
 
 describe("Alpha", () => {
-
-  let dai;
-  let usdc;
-  let usdt;
-  let aweth;
-  let ceth;
-  let oracle;
-  let treasury;
-  let fujiadmin;
   let fliquidator;
-  let controller;
   let f1155;
-  let aave;
   let compound;
-  let dydx;
-  let aWhitelist;
   let vaultdai;
   let vaultusdc;
   let vaultusdt;
@@ -185,194 +161,202 @@ describe("Alpha", () => {
   let loadFixture;
   let evmSnapshotId;
 
-  let flasher;
-
-  before(async() => {
+  before(async () => {
     users = await ethers.getSigners();
     loadFixture = createFixtureLoader(users, ethers.provider);
     evmSnapshotId = await evmSnapshot();
-
   });
 
-  after(async() => {
+  after(async () => {
     evmRevert(evmSnapshotId);
-
   });
 
-  beforeEach(async() => {
+  beforeEach(async () => {
+    const theFixture = await loadFixture(fixture);
 
-    const _fixture = await loadFixture(fixture);
-
-
-    dai = _fixture.dai;
-    usdc = _fixture.usdc;
-    usdt = _fixture.usdt;
-    aweth = _fixture.aweth;
-    ceth = _fixture.ceth;
-    oracle = _fixture.oracle;
-    treasury = _fixture.treasury;
-    fujiadmin = _fixture.fujiadmin;
-    fliquidator = _fixture.fliquidator;
-    controller = _fixture.controller;
-    f1155 = _fixture.f1155;
-    aave = _fixture.aave;
-    compound = _fixture.compound;
-    dydx = _fixture.dydx;
-    aWhitelist = _fixture.aWhitelist;
-    vaultdai = _fixture.vaultdai;
-    vaultusdc = _fixture.vaultusdc;
-    vaultusdt = _fixture.vaultusdt;
-
-    flasher = _fixture.flasher;
-
+    fliquidator = theFixture.fliquidator;
+    f1155 = theFixture.f1155;
+    compound = theFixture.compound;
+    vaultdai = theFixture.vaultdai;
+    vaultusdc = theFixture.vaultusdc;
+    vaultusdt = theFixture.vaultusdt;
   });
 
   describe("Alpha Fliquidator-with CreamFlashLoans Functionality", () => {
-
     it("1.- Full Flashclose User, using CreamFlashLoans, vaultdai", async () => {
-
       // vault to use
-      let thevault = vaultdai;
-      let asset = dai;
+      const thevault = vaultdai;
 
       // Set a defined ActiveProviders
       await thevault.setActiveProvider(compound.address);
 
       // Set - up
-      let randomUser = users[6];
-      let borrowAmount = ethers.utils.parseUnits("3000", 18);
-      let depositAmount = ethers.utils.parseEther("5", 18);
-      let vAssetStruct = await thevault.vAssets();
+      const randomUser = users[6];
+      const borrowAmount = ethers.utils.parseUnits("3000", 18);
+      const depositAmount = ethers.utils.parseEther("5", 18);
+      const vAssetStruct = await thevault.vAssets();
 
-      //Bootstrap Liquidity
-      let bootstraper = users[0];
-      let bstrapLiquidity = ethers.utils.parseEther("1");
+      // Bootstrap Liquidity
+      const bootstraper = users[0];
+      const bstrapLiquidity = ethers.utils.parseEther("1");
       await thevault.connect(bootstraper).deposit(bstrapLiquidity, { value: bstrapLiquidity });
 
       // Set - up randomUser
-      await thevault.connect(randomUser)
+      await thevault
+        .connect(randomUser)
         .depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount });
 
       await fliquidator.connect(randomUser).flashClose(-1, thevault.address, 2);
 
-      let randomUser1155balCollat = await f1155.balanceOf(randomUser.address, vAssetStruct.collateralID);
-      let randomUser1155balDebt = await f1155.balanceOf(randomUser.address, vAssetStruct.borrowID);
-      //console.log("1155tokenbalcollat", randomUser1155balCollat/1, "1155tokenbaldebt", randomUser1155balDebt/1);
+      const randomUser1155balCollat = await f1155.balanceOf(
+        randomUser.address,
+        vAssetStruct.collateralID
+      );
+      const randomUser1155balDebt = await f1155.balanceOf(
+        randomUser.address,
+        vAssetStruct.borrowID
+      );
+      // console.log("1155tokenbalcollat", randomUser1155balCollat/1, "1155tokenbaldebt", randomUser1155balDebt/1);
 
       await expect(randomUser1155balCollat).to.equal(0);
       await expect(randomUser1155balDebt).to.equal(0);
     });
 
     it("2.- Full Flashclose User, using CreamFlashLoans, vaultusdc", async () => {
-
       // vault to use
-      let thevault = vaultusdc;
-      let asset = usdc;
+      const thevault = vaultusdc;
 
       // Set a defined ActiveProviders
       await thevault.setActiveProvider(compound.address);
 
       // Set - up
-      let randomUser = users[7];
-      let borrowAmount = ethers.utils.parseUnits("3000", 6);
-      let depositAmount = ethers.utils.parseEther("5", 18);
-      let vAssetStruct = await thevault.vAssets();
+      const randomUser = users[7];
+      const borrowAmount = ethers.utils.parseUnits("3000", 6);
+      const depositAmount = ethers.utils.parseEther("5", 18);
+      const vAssetStruct = await thevault.vAssets();
 
-      //Bootstrap Liquidity
-      let bootstraper = users[0];
-      let bstrapLiquidity = ethers.utils.parseEther("1");
+      // Bootstrap Liquidity
+      const bootstraper = users[0];
+      const bstrapLiquidity = ethers.utils.parseEther("1");
       await thevault.connect(bootstraper).deposit(bstrapLiquidity, { value: bstrapLiquidity });
 
       // Set - up randomUser
-      await thevault.connect(randomUser)
+      await thevault
+        .connect(randomUser)
         .depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount });
 
-      await fliquidator.connect(randomUser).flashClose(-1, thevault.address,2);
+      await fliquidator.connect(randomUser).flashClose(-1, thevault.address, 2);
 
-      let randomUser1155balCollat = await f1155.balanceOf(randomUser.address, vAssetStruct.collateralID);
-      let randomUser1155balDebt = await f1155.balanceOf(randomUser.address, vAssetStruct.borrowID);
-      //console.log("1155tokenbalcollat", randomUser1155balCollat/1, "1155tokenbaldebt", randomUser1155balDebt/1);
+      const randomUser1155balCollat = await f1155.balanceOf(
+        randomUser.address,
+        vAssetStruct.collateralID
+      );
+      const randomUser1155balDebt = await f1155.balanceOf(
+        randomUser.address,
+        vAssetStruct.borrowID
+      );
+      // console.log("1155tokenbalcollat", randomUser1155balCollat/1, "1155tokenbaldebt", randomUser1155balDebt/1);
 
       await expect(randomUser1155balCollat).to.equal(0);
       await expect(randomUser1155balDebt).to.equal(0);
-
     });
 
     it("3.- Partial Flashclose User,using CreamFlashLoans, vaultusdt", async () => {
-
       // vault to use
-      let thevault = vaultusdt;
-      let asset = usdt;
+      const thevault = vaultusdt;
 
       // Set a defined ActiveProviders
       await thevault.setActiveProvider(compound.address);
 
       // Set - up
-      let randomUser = users[8];
-      let depositAmount = ethers.utils.parseEther("10", 18);
-      let borrowAmount = ethers.utils.parseUnits("7500", 6);
-      let partialRepayAmount = ethers.utils.parseUnits("5000", 6);
-      let vAssetStruct = await thevault.vAssets();
+      const randomUser = users[8];
+      const depositAmount = ethers.utils.parseEther("10", 18);
+      const borrowAmount = ethers.utils.parseUnits("7500", 6);
+      const partialRepayAmount = ethers.utils.parseUnits("5000", 6);
+      const vAssetStruct = await thevault.vAssets();
 
-      //Bootstrap Liquidity
-      let bootstraper = users[0];
-      let bstrapLiquidity = ethers.utils.parseEther("1");
+      // Bootstrap Liquidity
+      const bootstraper = users[0];
+      const bstrapLiquidity = ethers.utils.parseEther("1");
       await thevault.connect(bootstraper).deposit(bstrapLiquidity, { value: bstrapLiquidity });
 
       // Set - up randomUser
-      await thevault.connect(randomUser)
+      await thevault
+        .connect(randomUser)
         .depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount });
-      let randomUser1155balCollat0 = await f1155.balanceOf(randomUser.address, vAssetStruct.collateralID);
-      let randomUser1155balDebt0 = await f1155.balanceOf(randomUser.address, vAssetStruct.borrowID);
-      //console.log("1155tokenbalcollat0", randomUser1155balCollat0/1, "1155tokenbaldebt0", randomUser1155balDebt0/1);
+      const randomUser1155balCollat0 = await f1155.balanceOf(
+        randomUser.address,
+        vAssetStruct.collateralID
+      );
+      const randomUser1155balDebt0 = await f1155.balanceOf(
+        randomUser.address,
+        vAssetStruct.borrowID
+      );
+      // console.log("1155tokenbalcollat0", randomUser1155balCollat0/1, "1155tokenbaldebt0", randomUser1155balDebt0/1);
 
       await fliquidator.connect(randomUser).flashClose(partialRepayAmount, thevault.address, 2);
 
-      let randomUser1155balCollat1 = await f1155.balanceOf(randomUser.address, vAssetStruct.collateralID);
-      let randomUser1155balDebt1 = await f1155.balanceOf(randomUser.address, vAssetStruct.borrowID);
-      //console.log("1155tokenbalcollat1", randomUser1155balCollat1/1, "1155tokenbaldebt1", randomUser1155balDebt1/1);
+      const randomUser1155balCollat1 = await f1155.balanceOf(
+        randomUser.address,
+        vAssetStruct.collateralID
+      );
+      const randomUser1155balDebt1 = await f1155.balanceOf(
+        randomUser.address,
+        vAssetStruct.borrowID
+      );
+      // console.log("1155tokenbalcollat1", randomUser1155balCollat1/1, "1155tokenbaldebt1", randomUser1155balDebt1/1);
 
       await expect(randomUser1155balCollat1).to.be.lt(randomUser1155balCollat0);
       await expect(randomUser1155balDebt1).to.be.lt(randomUser1155balDebt0);
     });
 
     it("4.- Partial Flashclose User,using CreamFlashLoans, vaultusdc", async () => {
-
       // vault to use
-      let thevault = vaultusdc;
-      let asset = usdc;
+      const thevault = vaultusdc;
 
       // Set a defined ActiveProviders
       await thevault.setActiveProvider(compound.address);
 
       // Set - up
-      let randomUser = users[10];
-      let depositAmount = ethers.utils.parseEther("10", 18);
-      let borrowAmount = ethers.utils.parseUnits("7500", 6);
-      let partialRepayAmount = ethers.utils.parseUnits("5000", 6);
-      let vAssetStruct = await thevault.vAssets();
+      const randomUser = users[10];
+      const depositAmount = ethers.utils.parseEther("10", 18);
+      const borrowAmount = ethers.utils.parseUnits("7500", 6);
+      const partialRepayAmount = ethers.utils.parseUnits("5000", 6);
+      const vAssetStruct = await thevault.vAssets();
 
-      //Bootstrap Liquidity
-      let bootstraper = users[0];
-      let bstrapLiquidity = ethers.utils.parseEther("1");
+      // Bootstrap Liquidity
+      const bootstraper = users[0];
+      const bstrapLiquidity = ethers.utils.parseEther("1");
       await thevault.connect(bootstraper).deposit(bstrapLiquidity, { value: bstrapLiquidity });
 
       // Set - up randomUser
-      await thevault.connect(randomUser)
+      await thevault
+        .connect(randomUser)
         .depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount });
-      let randomUser1155balCollat0 = await f1155.balanceOf(randomUser.address, vAssetStruct.collateralID);
-      let randomUser1155balDebt0 = await f1155.balanceOf(randomUser.address, vAssetStruct.borrowID);
-      //console.log("1155tokenbalcollat0", randomUser1155balCollat0/1, "1155tokenbaldebt0", randomUser1155balDebt0/1);
+      const randomUser1155balCollat0 = await f1155.balanceOf(
+        randomUser.address,
+        vAssetStruct.collateralID
+      );
+      const randomUser1155balDebt0 = await f1155.balanceOf(
+        randomUser.address,
+        vAssetStruct.borrowID
+      );
+      // console.log("1155tokenbalcollat0", randomUser1155balCollat0/1, "1155tokenbaldebt0", randomUser1155balDebt0/1);
 
-      await fliquidator.connect(randomUser).flashClose(partialRepayAmount, thevault.address,2);
+      await fliquidator.connect(randomUser).flashClose(partialRepayAmount, thevault.address, 2);
 
-      let randomUser1155balCollat1 = await f1155.balanceOf(randomUser.address, vAssetStruct.collateralID);
-      let randomUser1155balDebt1 = await f1155.balanceOf(randomUser.address, vAssetStruct.borrowID);
-      //console.log("1155tokenbalcollat1", randomUser1155balCollat1/1, "1155tokenbaldebt1", randomUser1155balDebt1/1);
+      const randomUser1155balCollat1 = await f1155.balanceOf(
+        randomUser.address,
+        vAssetStruct.collateralID
+      );
+      const randomUser1155balDebt1 = await f1155.balanceOf(
+        randomUser.address,
+        vAssetStruct.borrowID
+      );
+      // console.log("1155tokenbalcollat1", randomUser1155balCollat1/1, "1155tokenbaldebt1", randomUser1155balDebt1/1);
 
       await expect(randomUser1155balCollat1).to.be.lt(randomUser1155balCollat0);
       await expect(randomUser1155balDebt1).to.be.lt(randomUser1155balDebt0);
     });
-
   });
 });

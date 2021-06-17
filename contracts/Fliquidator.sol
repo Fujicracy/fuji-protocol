@@ -12,7 +12,7 @@ import { FlashLoan } from "./Flashloans/LibFlashLoan.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Errors } from "./Libraries/Errors.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { UniversalLibERC20 } from "./Libraries/UniversalLibERC20.sol";
+import { LibUniversalERC20 } from "./Libraries/LibUniversalERC20.sol";
 import {
   IUniswapV2Router02
 } from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
@@ -39,7 +39,7 @@ interface IFujiERC1155Ext is IFujiERC1155 {
 
 contract Fliquidator is Ownable, ReentrancyGuard {
   using SafeMath for uint256;
-  using UniversalLibERC20 for IERC20;
+  using LibUniversalERC20 for IERC20;
 
   struct Factor {
     uint64 a;

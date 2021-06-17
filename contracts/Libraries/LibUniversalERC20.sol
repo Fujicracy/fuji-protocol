@@ -5,7 +5,7 @@ pragma solidity ^0.6.12;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-library UniversalLibERC20 {
+library LibUniversalERC20 {
   using SafeERC20 for IERC20;
 
   IERC20 private constant _ETH_ADDRESS = IERC20(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);

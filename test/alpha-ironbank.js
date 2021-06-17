@@ -58,27 +58,25 @@ describe("Alpha", () => {
       await expect(
         await vaultdai.connect(userX).deposit(depositAmount, { value: depositAmount })
       ).to.changeEtherBalance(userX, negdepositAmount);
-      let vaultbal = await cyweth.balanceOf(vaultdai.address);
-      vaultbal /= 1;
+      const vaultbal = await cyweth.balanceOf(vaultdai.address);
       const rate = await cyweth.exchangeRateStored();
       const cywethAmount = (depositAmount * 1e18) / rate;
-      await expect(vaultbal).to.be.closeTo(cywethAmount, 100);
+      await expect(vaultbal / 1).to.be.closeTo(cywethAmount, 100);
     });
 
     it("2.- Users[1]: deposit .00001 ETH to a Vault, check theVault cyweth balance Ok", async () => {
       const userX = users[1];
-      const thevault = vaultusdt;
+      const theVault = vaultusdt;
       const depositAmount = ethers.utils.parseEther("0.00001");
       const negdepositAmount = ethers.utils.parseEther("-0.00001");
 
       await expect(
-        await thevault.connect(userX).deposit(depositAmount, { value: depositAmount })
+        await theVault.connect(userX).deposit(depositAmount, { value: depositAmount })
       ).to.changeEtherBalance(userX, negdepositAmount);
-      let vaultbal = await cyweth.balanceOf(thevault.address);
-      vaultbal /= 1;
+      const vaultbal = await cyweth.balanceOf(theVault.address);
       const rate = await cyweth.exchangeRateStored();
       const cywethAmount = (depositAmount * 1e18) / rate;
-      await expect(vaultbal).to.be.closeTo(cywethAmount, 100);
+      await expect(vaultbal / 1).to.be.closeTo(cywethAmount, 100);
     });
 
     it("3.- Users[1]: deposit 0 ETH to Vaultusdc, Should revert", async () => {
@@ -114,11 +112,10 @@ describe("Alpha", () => {
         await vaultusdc.connect(userY).deposit(depositAmountY, { value: depositAmountY })
       ).to.changeEtherBalance(userY, negdepositAmountY);
 
-      let vaultbal = await cyweth.balanceOf(vaultusdc.address);
-      vaultbal /= 1;
+      const vaultbal = await cyweth.balanceOf(vaultusdc.address);
       const rate = await cyweth.exchangeRateStored();
       const cywethAmount = depositAmount.add(depositAmountY) * (1e18 / rate);
-      await expect(vaultbal).to.be.closeTo(cywethAmount, 1000);
+      await expect(vaultbal / 1).to.be.closeTo(cywethAmount, 1000);
     });
 
     it("6.- Users[5]: deposit 10 ETH in Vaultdai and then withdraws 9.9999 ETH, check VaultDai cyweth balance ok", async () => {
@@ -302,19 +299,22 @@ describe("Alpha", () => {
 
       await expect(await usdc.balanceOf(userX.address)).to.equal(userdebt0.sub(paybackAmount));
 
+      // const ndcollat = await vaultusdc.connect(userX).getNeededCollateralFor(userdebt1, true);
+      // const collatebal = await f1155.balanceOf(userX.address, vAssetStruct.collateralID);
+
       await expect(await vaultusdc.connect(userX).withdraw(withdrawAmount)).to.changeEtherBalance(
         userX,
         withdrawAmount
       );
     });
 
-    it("13.- Users[11]: Try Deposit-and-Borrow, 3 ETH deposit, 4500 USDT borrow; Vaultusdt Check Balances ", async () => {
+    it("13.- Users[18]: Try Deposit-and-Borrow, 3 ETH deposit, 4500 USDT borrow; Vaultusdt Check Balances ", async () => {
       // Bootstrap Liquidity
       const bootstraper = users[0];
       const bstrapLiquidity = ethers.utils.parseEther("1");
       await vaultusdt.connect(bootstraper).deposit(bstrapLiquidity, { value: bstrapLiquidity });
 
-      const theCurrentUser = users[11];
+      const theCurrentUser = users[18];
       const depositAmount = ethers.utils.parseEther("3");
       const borrowAmount = ethers.utils.parseUnits("4500", 6);
 
@@ -377,10 +377,9 @@ describe("Alpha", () => {
       // const f1155totaltokebal = await f1155.totalSupply(vAssetStruct.borrowID);
       // console.log(f1155usertokebal/1,f1155totaltokebal/1);
 
-      let ethbalFinal = await theCurrentUser.getBalance();
-      ethbalFinal /= 1;
+      const ethbalFinal = await theCurrentUser.getBalance();
 
-      await expect(ethbalOriginal / 1).to.be.closeTo(ethbalFinal, 2e16);
+      await expect(ethbalOriginal / 1).to.be.closeTo(ethbalFinal / 1, 2e16);
     });
 
     it("16.- Users[8]: Try Deposit-and-Borrow, 2.5 ETH deposit, 500 Usdc borrow; then Repay-and-withdraw all, Vaultusdc Check Balances ", async () => {
@@ -416,10 +415,9 @@ describe("Alpha", () => {
       // const f1155totaltokebal = await f1155.totalSupply(vAssetStruct.borrowID);
       // console.log(f1155usertokebal/1,f1155totaltokebal/1);
 
-      let ethbalFinal = await theCurrentUser.getBalance();
-      ethbalFinal /= 1;
+      const ethbalFinal = await theCurrentUser.getBalance();
 
-      await expect(ethbalOriginal / 1).to.be.closeTo(ethbalFinal, 2e16);
+      await expect(ethbalOriginal / 1).to.be.closeTo(ethbalFinal / 1, 2e16);
     });
   });
 });

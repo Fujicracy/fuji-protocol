@@ -4,14 +4,15 @@ const { deployContract } = waffle;
 
 const CHAINLINK_ORACLE_ADDR = "0x773616E4d11A78F511299002da57A0a94577F1f4";
 const UNISWAP_ROUTER_ADDR = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
+const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 const DAI_ADDR = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
 const USDC_ADDR = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 const USDT_ADDR = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+const TREASURY_ADDR = "0x9F5A10E45906Ef12497237cE10fB7AB9B850Ff86";
 const AWETH_ADDR = "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e";
 const CETH_ADDR = "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5";
 const CYWETH_ADDR = "0x41c84c0e2EE0b740Cf0d31F63f3B6F627DC6b393";
-
-const ONE_ETH = ethers.utils.parseEther("1.0");
 
 const FujiAdmin = require("../artifacts/contracts/FujiAdmin.sol/FujiAdmin.json");
 // const FujiMapping = require("../artifacts/contracts/FujiMapping.sol/FujiMapping.json");
@@ -28,7 +29,6 @@ const IronBank = require("../artifacts/contracts/Providers/ProviderIronBank.sol/
 const F1155 = require("../artifacts/contracts/FujiERC1155/FujiERC1155.sol/FujiERC1155.json");
 const Flasher = require("../artifacts/contracts/Flashloans/Flasher.sol/Flasher.json");
 const Controller = require("../artifacts/contracts/Controller.sol/Controller.json");
-const Treasury = require("../artifacts/contracts/Gnosis Treasury/GnosisSafe.sol/GnosisSafe.json");
 
 const fixture = async ([wallet]) => {
   const dai = await ethers.getContractAt("IERC20", DAI_ADDR);
@@ -42,7 +42,7 @@ const fixture = async ([wallet]) => {
   // Step 1 of Deploy: Contracts which address is required to be hardcoded in other contracts
   // Fuji Mapping, for testing this is not required.
   // const fujimapping = await deployContract(wallet, FujiMapping,[]);
-  const treasury = await deployContract(wallet, Treasury, []);
+  // const treasury = await deployContract(wallet, Treasury, []);
 
   // Step 2 Of Deploy: Functional Contracts
   const fujiadmin = await deployContract(wallet, FujiAdmin, []);
@@ -70,7 +70,7 @@ const fixture = async ([wallet]) => {
   // Step 5 - General Plug-ins and Set-up Transactions
   await fujiadmin.setFlasher(flasher.address);
   await fujiadmin.setFliquidator(fliquidator.address);
-  await fujiadmin.setTreasury(treasury.address);
+  await fujiadmin.setTreasury(TREASURY_ADDR);
   await fujiadmin.setController(controller.address);
   await fujiadmin.setaWhitelist(aWhitelist.address);
   await fujiadmin.setVaultHarvester(vaultharvester.address);
@@ -113,7 +113,6 @@ const fixture = async ([wallet]) => {
     ceth,
     cyweth,
     oracle,
-    treasury,
     fujiadmin,
     fliquidator,
     flasher,
@@ -160,10 +159,12 @@ module.exports = {
   advanceblocks,
   convertToCurrencyDecimals,
   convertToWei,
+  ZERO_ADDR,
+  ETH_ADDR,
+  TREASURY_ADDR,
   DAI_ADDR,
   USDC_ADDR,
   USDT_ADDR,
-  ONE_ETH,
   evmSnapshot,
   evmRevert,
 };

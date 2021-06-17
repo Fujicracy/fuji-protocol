@@ -279,8 +279,10 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       IVault(_vault).withdraw(int256(userCollateral));
 
       // Send unUsed Collateral to User
-      (bool sent, ) = _userAddr.call{ value: userCollateral.sub(userCollateralInPlay) }("");
-      require(sent, "Failed to send ETH");
+      IERC20(vAssets.collateralAsset).univTransfer(
+        _userAddr,
+        userCollateral.sub(userCollateralInPlay)
+      );
     } else {
       f1155.burn(_userAddr, vAssets.collateralID, userCollateralInPlay);
 

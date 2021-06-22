@@ -29,6 +29,11 @@ contract Controller is Ownable {
 
   IFujiAdmin private _fujiAdmin;
 
+  modifier isValidVault(address _vaultAddr) {
+    require(_fujiAdmin.validVault(_vaultAddr), "Invalid vault!");
+    _;
+  }
+
   /**
    * @dev Sets the fujiAdmin Address
    * @param _newFujiAdmin: FujiAdmin Contract Address
@@ -51,7 +56,7 @@ contract Controller is Ownable {
     uint256 _ratioA,
     uint256 _ratioB,
     uint8 _flashNum
-  ) external onlyOwner {
+  ) external isValidVault(_vaultAddr) onlyOwner {
     IVault vault = IVault(_vaultAddr);
     IVaultExt.VaultAssets memory vAssets = IVaultExt(_vaultAddr).vAssets();
     vault.updateF1155Balances();

@@ -3,6 +3,8 @@
 pragma solidity >=0.6.12 <0.8.0;
 
 interface IFujiAdmin {
+  function validVault(address _vaultAddr) external view returns (bool);
+
   function getFlasher() external view returns (address);
 
   function getFliquidator() external view returns (address);

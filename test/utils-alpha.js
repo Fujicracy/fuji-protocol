@@ -89,18 +89,21 @@ const fixture = async ([wallet]) => {
   await vaultdai.setActiveProvider(compound.address);
   await vaultdai.setFujiERC1155(f1155.address);
   await vaultdai.setOracle(CHAINLINK_ORACLE_ADDR);
+  await fujiadmin.addVault(vaultdai.address);
 
   await vaultusdc.setFujiAdmin(fujiadmin.address);
   await vaultusdc.setProviders([compound.address, aave.address, dydx.address]);
   await vaultusdc.setActiveProvider(compound.address);
   await vaultusdc.setFujiERC1155(f1155.address);
   await vaultusdc.setOracle(CHAINLINK_ORACLE_ADDR);
+  await fujiadmin.addVault(vaultusdc.address);
 
   await vaultusdt.setFujiAdmin(fujiadmin.address);
   await vaultusdt.setProviders([compound.address, aave.address]);
   await vaultusdt.setActiveProvider(compound.address);
   await vaultusdt.setFujiERC1155(f1155.address);
   await vaultusdt.setOracle(CHAINLINK_ORACLE_ADDR);
+  await fujiadmin.addVault(vaultusdt.address);
 
   return {
     dai,

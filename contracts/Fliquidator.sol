@@ -12,7 +12,7 @@ import { FlashLoan } from "./Flashloans/LibFlashLoan.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Errors } from "./Libraries/Errors.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { UniversalLibERC20 } from "./Libraries/UniversalLibERC20.sol";
+import { LibUniversalERC20 } from "./Libraries/LibUniversalERC20.sol";
 import {
   IUniswapV2Router02
 } from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
@@ -39,7 +39,7 @@ interface IFujiERC1155Ext is IFujiERC1155 {
 
 contract Fliquidator is Ownable, ReentrancyGuard {
   using SafeMath for uint256;
-  using UniversalLibERC20 for IERC20;
+  using LibUniversalERC20 for IERC20;
 
   struct Factor {
     uint64 a;
@@ -74,6 +74,11 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     _;
   }
 
+  modifier isValidVault(address _vaultAddr) {
+    require(_fujiAdmin.validVault(_vaultAddr), "Invalid vault!");
+    _;
+  }
+
   constructor() public {
     // 1.013
     flashCloseF.a = 1013;
@@ -89,7 +94,11 @@ contract Fliquidator is Ownable, ReentrancyGuard {
    * @param _userAddrs: Address array of users whose position is liquidatable
    * @param _vault: Address of the vault in where liquidation will occur
    */
-  function batchLiquidate(address[] calldata _userAddrs, address _vault) external nonReentrant {
+  function batchLiquidate(address[] calldata _userAddrs, address _vault)
+    external
+    nonReentrant
+    isValidVault(_vault)
+  {
     // Update Balances at FujiERC1155
     IVault(_vault).updateF1155Balances();
 
@@ -190,7 +199,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     int256 _amount,
     address _vault,
     uint8 _flashnum
-  ) external nonReentrant {
+  ) external nonReentrant isValidVault(_vault) {
     Flasher flasher = Flasher(payable(_fujiAdmin.getFlasher()));
 
     // Update Balances at FujiERC1155
@@ -279,8 +288,10 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       IVault(_vault).withdraw(int256(userCollateral));
 
       // Send unUsed Collateral to User
-      (bool sent, ) = _userAddr.call{ value: userCollateral.sub(userCollateralInPlay) }("");
-      require(sent, "Failed to send ETH");
+      IERC20(vAssets.collateralAsset).univTransfer(
+        _userAddr,
+        userCollateral.sub(userCollateralInPlay)
+      );
     } else {
       f1155.burn(_userAddr, vAssets.collateralID, userCollateralInPlay);
 
@@ -318,7 +329,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     address[] calldata _userAddrs,
     address _vault,
     uint8 _flashnum
-  ) external nonReentrant {
+  ) external isValidVault(_vault) nonReentrant {
     // Update Balances at FujiERC1155
     IVault(_vault).updateF1155Balances();
 

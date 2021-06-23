@@ -6,13 +6,14 @@ import { IFujiAdmin } from "./IFujiAdmin.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 contract FujiAdmin is IFujiAdmin, Ownable {
-  address[] private _vaults;
   address private _flasher;
   address private _fliquidator;
   address payable private _ftreasury;
   address private _controller;
   address private _aWhiteList;
   address private _vaultHarvester;
+
+  mapping(address => bool) public override validVault;
 
   struct Factor {
     uint64 a;
@@ -26,9 +27,9 @@ contract FujiAdmin is IFujiAdmin, Ownable {
   Factor public bonusL;
 
   constructor() {
-    // 0.04
-    bonusFlashL.a = 1;
-    bonusFlashL.b = 25;
+    // 0.043
+    bonusFlashL.a = 43;
+    bonusFlashL.b = 1000;
 
     // 0.05
     bonusL.a = 1;
@@ -112,17 +113,7 @@ contract FujiAdmin is IFujiAdmin, Ownable {
    * @param _vaultAddr: Address of vault to be added
    */
   function addVault(address _vaultAddr) external onlyOwner {
-    //Loop to check if vault address is already there
-    _vaults.push(_vaultAddr);
-  }
-
-  /**
-   * @dev Overrides a Vault address at location in the vaults Array
-   * @param _position: position in the array
-   * @param _vaultAddr: new provider fuji address
-   */
-  function overrideVault(uint8 _position, address _vaultAddr) external onlyOwner {
-    _vaults[_position] = _vaultAddr;
+    validVault[_vaultAddr] = true;
   }
 
   // Getter Functions
@@ -149,10 +140,6 @@ contract FujiAdmin is IFujiAdmin, Ownable {
 
   function getVaultHarvester() external view override returns (address) {
     return _vaultHarvester;
-  }
-
-  function getvaults() external view returns (address[] memory theVaults) {
-    theVaults = _vaults;
   }
 
   function getBonusFlashL() external view override returns (uint64, uint64) {

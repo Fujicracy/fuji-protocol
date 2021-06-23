@@ -6,11 +6,11 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { UniversalLibERC20 } from "../Libraries/UniversalLibERC20.sol";
+import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
 
 contract VaultControl is Ownable, Pausable {
   using SafeMath for uint256;
-  using UniversalLibERC20 for IERC20;
+  using LibUniversalERC20 for IERC20;
 
   //Asset Struct
   struct VaultAssets {

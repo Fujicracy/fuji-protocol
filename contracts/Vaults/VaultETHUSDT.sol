@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.4.25 <0.8.0;
+pragma solidity >=0.6.12 <0.8.0;
 pragma experimental ABIEncoderV2;
 
 import { IVault } from "./IVault.sol";
@@ -236,7 +236,7 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
       );
 
       // Transfer Asset from User to Vault
-      IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), amountToPayback);
+      IERC20(vAssets.borrowAsset).univTransferFrom(msg.sender, address(this), amountToPayback);
 
       // Delegate Call Payback to current provider
       _payback(amountToPayback, address(activeProvider));

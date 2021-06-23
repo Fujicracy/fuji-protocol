@@ -57,4 +57,19 @@ library LibUniversalERC20 {
       }
     }
   }
+
+  function univTransferFrom(
+    IERC20 token,
+    address from,
+    address to,
+    uint256 amount
+  ) internal {
+    if (amount > 0) {
+      if (isETH(token)) {
+        require(msg.value > 0 && msg.value == amount, "Ether not Sent");
+      } else {
+        token.safeTransferFrom(from, to, amount);
+      }
+    }
+  }
 }

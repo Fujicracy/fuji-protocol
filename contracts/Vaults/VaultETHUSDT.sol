@@ -15,6 +15,8 @@ import { IFujiERC1155 } from "../FujiERC1155/IFujiERC1155.sol";
 import { IProvider } from "../Providers/IProvider.sol";
 import { IAlphaWhiteList } from "../IAlphaWhiteList.sol";
 import { Errors } from "../Libraries/Errors.sol";
+import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 interface IVaultHarvester {
   function collectRewards(uint256 _farmProtocolNum) external returns (address claimedToken);
@@ -163,13 +165,17 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
       _withdraw(amountToWithdraw, address(activeProvider));
 
       // Transer Assets to User
-      IERC20(vAssets.collateralAsset).univTransfer(msg.sender, amountToWithdraw);
+      LibUniversalERC20.univTransfer(IERC20(vAssets.collateralAsset), msg.sender, amountToWithdraw);
 
       emit Withdraw(msg.sender, vAssets.collateralAsset, amountToWithdraw);
     } else {
       // Logic used when called by Fliquidator
       _withdraw(uint256(_withdrawAmount), address(activeProvider));
-      IERC20(vAssets.collateralAsset).univTransfer(msg.sender, uint256(_withdrawAmount));
+      LibUniversalERC20.univTransfer(
+        IERC20(vAssets.collateralAsset),
+        msg.sender,
+        uint256(_withdrawAmount)
+      );
     }
   }
 
@@ -204,7 +210,7 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
     _borrow(_borrowAmount, address(activeProvider));
 
     // Transer Assets to User
-    IERC20(vAssets.borrowAsset).univTransfer(msg.sender, _borrowAmount);
+    LibUniversalERC20.univTransfer(IERC20(vAssets.borrowAsset), msg.sender, _borrowAmount);
 
     emit Borrow(msg.sender, vAssets.borrowAsset, _borrowAmount);
   }
@@ -236,7 +242,12 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
       );
 
       // Transfer Asset from User to Vault
-      IERC20(vAssets.borrowAsset).univTransferFrom(msg.sender, address(this), amountToPayback);
+      SafeERC20.safeTransferFrom(
+        IERC20(vAssets.borrowAsset),
+        msg.sender,
+        address(this),
+        amountToPayback
+      );
 
       // Delegate Call Payback to current provider
       _payback(amountToPayback, address(activeProvider));
@@ -286,7 +297,11 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
     _borrow(_flashLoanAmount.add(_fee), _newProvider);
 
     // return borrowed amount to Flasher
-    IERC20(vAssets.borrowAsset).univTransfer(msg.sender, _flashLoanAmount.add(_fee));
+    LibUniversalERC20.univTransfer(
+      IERC20(vAssets.borrowAsset),
+      msg.sender,
+      _flashLoanAmount.add(_fee)
+    );
 
     emit Switch(address(this), activeProvider, _newProvider, _flashLoanAmount, collateraltoMove);
   }
@@ -469,6 +484,10 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
       IVaultHarvester(_fujiAdmin.getVaultHarvester()).collectRewards(_farmProtocolNum);
     uint256 tokenBal = IERC20(tokenReturned).balanceOf(address(this));
     require(tokenReturned != address(0) && tokenBal > 0, Errors.VL_HARVESTING_FAILED);
-    IERC20(tokenReturned).univTransfer(payable(_fujiAdmin.getTreasury()), tokenBal);
+    LibUniversalERC20.univTransfer(
+      IERC20(tokenReturned),
+      payable(_fujiAdmin.getTreasury()),
+      tokenBal
+    );
   }
 }

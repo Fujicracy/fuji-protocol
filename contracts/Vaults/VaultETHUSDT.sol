@@ -44,7 +44,7 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
 
   modifier isAuthorized() {
     require(
-      msg.sender == _fujiAdmin.getController() || msg.sender == owner(),
+      msg.sender == owner() || msg.sender == _fujiAdmin.getController(),
       Errors.VL_NOT_AUTHORIZED
     );
     _;
@@ -262,7 +262,7 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
   function executeSwitch(
     address _newProvider,
     uint256 _flashLoanAmount,
-    uint256 fee
+    uint256 _fee
   ) external override onlyFlash whenNotPaused {
     // Compute Ratio of transfer before payback
     uint256 ratio =
@@ -283,21 +283,21 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
     _deposit(collateraltoMove, _newProvider);
 
     // Borrow from the new provider, borrowBalance + premium
-    _borrow(_flashLoanAmount.add(fee), _newProvider);
+    _borrow(_flashLoanAmount.add(_fee), _newProvider);
 
     // return borrowed amount to Flasher
-    IERC20(vAssets.borrowAsset).univTransfer(msg.sender, _flashLoanAmount.add(fee));
+    IERC20(vAssets.borrowAsset).univTransfer(msg.sender, _flashLoanAmount.add(_fee));
 
     emit Switch(address(this), activeProvider, _newProvider, _flashLoanAmount, collateraltoMove);
   }
 
-  //Setter, change state functions
+  // Setter, change state functions
 
   /**
    * @dev Sets the fujiAdmin Address
    * @param _newFujiAdmin: FujiAdmin Contract Address
    */
-  function setFujiAdmin(address _newFujiAdmin) public onlyOwner {
+  function setFujiAdmin(address _newFujiAdmin) external onlyOwner {
     _fujiAdmin = IFujiAdmin(_newFujiAdmin);
   }
 
@@ -312,7 +312,7 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
     emit SetActiveProvider(_provider);
   }
 
-  //Administrative functions
+  // Administrative functions
 
   /**
    * @dev Sets a fujiERC1155 Collateral and Debt Asset manager for this vault and initializes it.
@@ -433,7 +433,7 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
     override
     returns (uint256)
   {
-    // Get price of DAI in ETH
+    // Get price of USD in ETH (wei)
     (, int256 latestPrice, , , ) = oracle.latestRoundData();
     uint256 minimumReq = (_amount.mul(1e12).mul(uint256(latestPrice))).div(_BASE);
 
@@ -464,7 +464,7 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
    * @dev Harvests the Rewards from baseLayer Protocols
    * @param _farmProtocolNum: number per VaultHarvester Contract for specific farm
    */
-  function harvestRewards(uint256 _farmProtocolNum) public onlyOwner {
+  function harvestRewards(uint256 _farmProtocolNum) external onlyOwner {
     address tokenReturned =
       IVaultHarvester(_fujiAdmin.getVaultHarvester()).collectRewards(_farmProtocolNum);
     uint256 tokenBal = IERC20(tokenReturned).balanceOf(address(this));

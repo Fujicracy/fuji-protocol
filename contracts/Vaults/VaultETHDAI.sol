@@ -291,7 +291,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     emit Switch(address(this), activeProvider, _newProvider, _flashLoanAmount, collateraltoMove);
   }
 
-  //Setter, change state functions
+  // Setter, change state functions
 
   /**
    * @dev Sets a new active provider for the Vault
@@ -304,7 +304,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     emit SetActiveProvider(_provider);
   }
 
-  //Administrative functions
+  // Administrative functions
 
   /**
    * @dev Sets the fujiAdmin Address
@@ -376,7 +376,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     uint256 borrowBals;
     uint256 depositBals;
 
-    // take into balances across all providers
+    // take into account all balances across providers
     uint256 length = providers.length;
     for (uint256 i = 0; i < length; i++) {
       borrowBals = borrowBals.add(IProvider(providers[i]).getBorrowBalance(vAssets.borrowAsset));
@@ -433,7 +433,7 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     override
     returns (uint256)
   {
-    // Get price of DAI in ETH
+    // Get price of USD in ETH (wei)
     (, int256 latestPrice, , , ) = oracle.latestRoundData();
     uint256 minimumReq = (_amount.mul(uint256(latestPrice))).div(_BASE);
 
@@ -468,7 +468,6 @@ contract VaultETHDAI is IVault, VaultBase, ReentrancyGuard {
     address tokenReturned =
       IVaultHarvester(_fujiAdmin.getVaultHarvester()).collectRewards(_farmProtocolNum);
     uint256 tokenBal = IERC20(tokenReturned).balanceOf(address(this));
-
     require(tokenReturned != address(0) && tokenBal > 0, Errors.VL_HARVESTING_FAILED);
     IERC20(tokenReturned).univTransfer(payable(_fujiAdmin.getTreasury()), tokenBal);
   }

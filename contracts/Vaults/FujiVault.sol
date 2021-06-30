@@ -75,7 +75,7 @@ contract FujiVault is IVault, VaultBase, ReentrancyGuardUpgradeable {
         IERC20Extended(_borrowAsset).symbol()
       )
     );
-    _borrowAssetBase = (10**IERC20Extended(_borrowAsset).decimals());
+    _borrowAssetBase = (10**uint256(IERC20Extended(_borrowAsset).decimals()));
 
     // 1.05
     safetyF.a = 21;
@@ -397,12 +397,10 @@ contract FujiVault is IVault, VaultBase, ReentrancyGuardUpgradeable {
     // take into account all balances across providers
     uint256 length = providers.length;
     for (uint256 i = 0; i < length; i++) {
-      borrowBals = borrowBals.add(IProvider(providers[i]).getBorrowBalance(vAssets.borrowAsset));
-    }
-    for (uint256 i = 0; i < length; i++) {
       depositBals = depositBals.add(
         IProvider(providers[i]).getDepositBalance(vAssets.collateralAsset)
       );
+      borrowBals = borrowBals.add(IProvider(providers[i]).getBorrowBalance(vAssets.borrowAsset));
     }
 
     IFujiERC1155(fujiERC1155).updateState(vAssets.borrowID, borrowBals);

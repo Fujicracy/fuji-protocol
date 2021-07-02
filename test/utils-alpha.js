@@ -1,4 +1,4 @@
-const { ethers, waffle } = require("hardhat");
+const { ethers, waffle, upgrades } = require("hardhat");
 
 const { deployContract } = waffle;
 
@@ -18,9 +18,9 @@ const FujiAdmin = require("../artifacts/contracts/FujiAdmin.sol/FujiAdmin.json")
 // const FujiMapping = require("../artifacts/contracts/FujiMapping.sol/FujiMapping.json");
 const Fliquidator = require("../artifacts/contracts/Fliquidator.sol/Fliquidator.json");
 const AWhitelist = require("../artifacts/contracts/AlphaWhitelist.sol/AlphaWhitelist.json");
-const VaultETHDAI = require("../artifacts/contracts/Vaults/VaultETHDAI.sol/VaultETHDAI.json");
-const VaultETHUSDC = require("../artifacts/contracts/Vaults/VaultETHUSDC.sol/VaultETHUSDC.json");
-const VaultETHUSDT = require("../artifacts/contracts/Vaults/VaultETHUSDT.sol/VaultETHUSDT.json");
+// const VaultETHDAI = require("../artifacts/contracts/Vaults/VaultETHDAI.sol/VaultETHDAI.json");
+// const VaultETHUSDC = require("../artifacts/contracts/Vaults/VaultETHUSDC.sol/VaultETHUSDC.json");
+// const VaultETHUSDT = require("../artifacts/contracts/Vaults/VaultETHUSDT.sol/VaultETHUSDT.json");
 const VaultHarvester = require("../artifacts/contracts/Vaults/VaultHarvester.sol/VaultHarvester.json");
 const Aave = require("../artifacts/contracts/Providers/ProviderAave.sol/ProviderAave.json");
 const Compound = require("../artifacts/contracts/Providers/ProviderCompound.sol/ProviderCompound.json");
@@ -63,9 +63,27 @@ const fixture = async ([wallet]) => {
     ethers.utils.parseEther("50"),
   ]);
   const vaultharvester = await deployContract(wallet, VaultHarvester, []);
-  const vaultdai = await deployContract(wallet, VaultETHDAI, []);
-  const vaultusdc = await deployContract(wallet, VaultETHUSDC, []);
-  const vaultusdt = await deployContract(wallet, VaultETHUSDT, []);
+
+  const FujiVault = await ethers.getContractFactory("FujiVault");
+  const vaultdai = await upgrades.deployProxy(FujiVault, [
+    "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+    "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+  ]);
+  console.log(vaultdai.address);
+  const vaultusdc = await upgrades.deployProxy(FujiVault, [
+    "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+    "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  ]);
+  console.log(vaultusdc.address);
+  const vaultusdt = await upgrades.deployProxy(FujiVault, [
+    "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+    "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+  ]);
+  console.log(vaultusdt.address);
+
+  // const vaultdai = await deployContract(wallet, VaultETHDAI, []);
+  // const vaultusdc = await deployContract(wallet, VaultETHUSDC, []);
+  // const vaultusdt = await deployContract(wallet, VaultETHUSDT, []);
 
   // Step 5 - General Plug-ins and Set-up Transactions
   await fujiadmin.setFlasher(flasher.address);

@@ -3,20 +3,18 @@
 pragma solidity >=0.4.25 <0.8.0;
 pragma experimental ABIEncoderV2;
 
-import { IVault } from "./IVault.sol";
-import { VaultBase } from "./VaultBase.sol";
-import { IFujiAdmin } from "../IFujiAdmin.sol";
-import {
-  ReentrancyGuardUpgradeable
-} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import {
-  AggregatorV3Interface
-} from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IFujiERC1155 } from "../FujiERC1155/IFujiERC1155.sol";
-import { IProvider } from "../Providers/IProvider.sol";
-import { IAlphaWhiteList } from "../IAlphaWhiteList.sol";
-import { Errors } from "../Libraries/Errors.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+
+import "./IVault.sol";
+import "./VaultBaseUpgradeable.sol";
+import "../IFujiAdmin.sol";
+import "../FujiERC1155/IFujiERC1155.sol";
+import "../Providers/IProvider.sol";
+import "../IAlphaWhiteList.sol";
+import "../Libraries/Errors.sol";
+import "../Libraries/LibUniERC20.sol";
 
 interface IERC20Extended {
   function symbol() external view returns (string memory);
@@ -28,7 +26,7 @@ interface IVaultHarvester {
   function collectRewards(uint256 _farmProtocolNum) external returns (address claimedToken);
 }
 
-contract FujiVault is IVault, VaultBase, ReentrancyGuardUpgradeable {
+contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
   struct Factor {
     uint64 a;
     uint64 b;
@@ -64,17 +62,21 @@ contract FujiVault is IVault, VaultBase, ReentrancyGuardUpgradeable {
     _;
   }
 
-  function initialize(address _collateralAsset, address _borrowAsset) public initializer {
+  function initialize(address _collateralAsset, address _borrowAsset) external initializer {
+    __Ownable_init();
+    __Pausable_init();
+    __ReentrancyGuard_init();
+
     vAssets.collateralAsset = _collateralAsset;
     vAssets.borrowAsset = _borrowAsset;
 
-    name = string(
-      abi.encodePacked(
-        "Vault",
-        IERC20Extended(_collateralAsset).symbol(),
-        IERC20Extended(_borrowAsset).symbol()
-      )
-    );
+    // name = string(
+    //   abi.encodePacked(
+    //     "Vault",
+    //     IERC20Extended(_collateralAsset).symbol(),
+    //     IERC20Extended(_borrowAsset).symbol()
+    //   )
+    // );
     _borrowAssetBase = (10**uint256(IERC20Extended(_borrowAsset).decimals()));
 
     // 1.05

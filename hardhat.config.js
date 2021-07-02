@@ -8,6 +8,7 @@ require("@nomiclabs/hardhat-etherscan");
 require("@tenderly/hardhat-tenderly");
 require("hardhat-contract-sizer");
 require("hardhat-gas-reporter");
+require("@openzeppelin/hardhat-upgrades");
 
 const { isAddress, getAddress, formatUnits, parseUnits } = utils;
 
@@ -103,11 +104,11 @@ module.exports = {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
   gasReporter: {
-    //coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+    // coinmarketcap: process.env.COINMARKETCAP_API_KEY,
     currency: "USD",
-    //enabled: !!process.env.REPORT_GAS,
+    // enabled: !!process.env.REPORT_GAS,
     gasPrice: 20,
-    enabled: false
+    enabled: false,
   },
   solidity: {
     compilers: [

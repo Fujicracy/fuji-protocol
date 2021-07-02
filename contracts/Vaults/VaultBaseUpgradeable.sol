@@ -37,7 +37,7 @@ contract VaultControlUpgradeable is OwnableUpgradeable, PausableUpgradeable {
    * @dev Emergency Call to stop all basic money flow functions.
    */
   function unpause() public onlyOwner {
-    _pause();
+    _unpause();
   }
 }
 

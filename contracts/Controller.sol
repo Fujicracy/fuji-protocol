@@ -62,8 +62,10 @@ contract Controller is Ownable {
     vault.updateF1155Balances();
 
     // Check Vault borrowbalance and apply ratio (consider compound or not)
-    uint256 debtPosition =
-      IProvider(vault.activeProvider()).getBorrowBalanceOf(vAssets.borrowAsset, _vaultAddr);
+    uint256 debtPosition = IProvider(vault.activeProvider()).getBorrowBalanceOf(
+      vAssets.borrowAsset,
+      _vaultAddr
+    );
     uint256 applyRatiodebtPosition = debtPosition.mul(_ratioA).div(_ratioB);
 
     // Check Ratio Input and Vault Balance at ActiveProvider
@@ -73,18 +75,17 @@ contract Controller is Ownable {
     );
 
     //Initiate Flash Loan Struct
-    FlashLoan.Info memory info =
-      FlashLoan.Info({
-        callType: FlashLoan.CallType.Switch,
-        asset: vAssets.borrowAsset,
-        amount: applyRatiodebtPosition,
-        vault: _vaultAddr,
-        newProvider: _newProvider,
-        userAddrs: new address[](0),
-        userBalances: new uint256[](0),
-        userliquidator: address(0),
-        fliquidator: address(0)
-      });
+    FlashLoan.Info memory info = FlashLoan.Info({
+      callType: FlashLoan.CallType.Switch,
+      asset: vAssets.borrowAsset,
+      amount: applyRatiodebtPosition,
+      vault: _vaultAddr,
+      newProvider: _newProvider,
+      userAddrs: new address[](0),
+      userBalances: new uint256[](0),
+      userliquidator: address(0),
+      fliquidator: address(0)
+    });
 
     Flasher(payable(_fujiAdmin.getFlasher())).initiateFlashloan(info, _flashNum);
 

@@ -13,9 +13,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Errors } from "./Libraries/Errors.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { LibUniversalERC20 } from "./Libraries/LibUniversalERC20.sol";
-import {
-  IUniswapV2Router02
-} from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import { IUniswapV2Router02 } from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 interface IVaultExt is IVault {
@@ -165,8 +163,10 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Compute the Liquidator Bonus bonusL
     uint256 globalBonus = IVault(_vault).getLiquidationBonusFor(debtBalanceTotal, false);
     // Compute how much collateral needs to be swapt
-    uint256 globalCollateralInPlay =
-      _getCollateralInPlay(vAssets.borrowAsset, debtBalanceTotal.add(globalBonus));
+    uint256 globalCollateralInPlay = _getCollateralInPlay(
+      vAssets.borrowAsset,
+      debtBalanceTotal.add(globalBonus)
+    );
 
     // Burn Collateral f1155 tokens for each liquidated user
     _burnMultiLoop(formattedUserAddrs, usrsBals, IVault(_vault), f1155, vAssets);
@@ -226,18 +226,17 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     address[] memory userAddressArray = new address[](1);
     userAddressArray[0] = msg.sender;
 
-    FlashLoan.Info memory info =
-      FlashLoan.Info({
-        callType: FlashLoan.CallType.Close,
-        asset: vAssets.borrowAsset,
-        amount: amount,
-        vault: _vault,
-        newProvider: address(0),
-        userAddrs: userAddressArray,
-        userBalances: new uint256[](0),
-        userliquidator: address(0),
-        fliquidator: address(this)
-      });
+    FlashLoan.Info memory info = FlashLoan.Info({
+      callType: FlashLoan.CallType.Close,
+      asset: vAssets.borrowAsset,
+      amount: amount,
+      vault: _vault,
+      newProvider: address(0),
+      userAddrs: userAddressArray,
+      userBalances: new uint256[](0),
+      userliquidator: address(0),
+      fliquidator: address(this)
+    });
 
     flasher.initiateFlashloan(info, _flashnum);
   }
@@ -267,11 +266,10 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     uint256 userDebtBalance = f1155.balanceOf(_userAddr, vAssets.borrowID);
 
     // Get user Collateral + Flash Close Fee to close posisition, for _amount passed
-    uint256 userCollateralInPlay =
-      IVault(_vault)
-        .getNeededCollateralFor(_amount.add(_flashloanFee), false)
-        .mul(flashCloseF.a)
-        .div(flashCloseF.b);
+    uint256 userCollateralInPlay = IVault(_vault)
+    .getNeededCollateralFor(_amount.add(_flashloanFee), false)
+    .mul(flashCloseF.a)
+    .div(flashCloseF.b);
 
     // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
@@ -300,8 +298,11 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     }
 
     // Swap Collateral for underlying to repay Flashloan
-    uint256 remaining =
-      _swap(vAssets.borrowAsset, _amount.add(_flashloanFee), userCollateralInPlay);
+    uint256 remaining = _swap(
+      vAssets.borrowAsset,
+      _amount.add(_flashloanFee),
+      userCollateralInPlay
+    );
 
     // Send FlashClose Fee to FujiTreasury
     IERC20(vAssets.collateralAsset).univTransfer(_fujiAdmin.getTreasury(), remaining);
@@ -376,18 +377,17 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
     Flasher flasher = Flasher(payable(_fujiAdmin.getFlasher()));
 
-    FlashLoan.Info memory info =
-      FlashLoan.Info({
-        callType: FlashLoan.CallType.BatchLiquidate,
-        asset: vAssets.borrowAsset,
-        amount: debtBalanceTotal,
-        vault: _vault,
-        newProvider: address(0),
-        userAddrs: formattedUserAddrs,
-        userBalances: usrsBals,
-        userliquidator: msg.sender,
-        fliquidator: address(this)
-      });
+    FlashLoan.Info memory info = FlashLoan.Info({
+      callType: FlashLoan.CallType.BatchLiquidate,
+      asset: vAssets.borrowAsset,
+      amount: debtBalanceTotal,
+      vault: _vault,
+      newProvider: address(0),
+      userAddrs: formattedUserAddrs,
+      userBalances: usrsBals,
+      userliquidator: msg.sender,
+      fliquidator: address(this)
+    });
 
     flasher.initiateFlashloan(info, _flashnum);
   }
@@ -426,8 +426,10 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     uint256 globalBonus = IVault(_vault).getLiquidationBonusFor(_amount, true);
 
     // Compute how much collateral needs to be swapt for all liquidated Users
-    uint256 globalCollateralInPlay =
-      _getCollateralInPlay(vAssets.borrowAsset, _amount.add(_flashloanFee).add(globalBonus));
+    uint256 globalCollateralInPlay = _getCollateralInPlay(
+      vAssets.borrowAsset,
+      _amount.add(_flashloanFee).add(globalBonus)
+    );
 
     // Burn Collateral f1155 tokens for each liquidated user
     _burnMultiLoop(_userAddrs, _usrsBals, IVault(_vault), f1155, vAssets);
@@ -473,14 +475,13 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     address[] memory path = new address[](2);
     path[0] = swapper.WETH();
     path[1] = _borrowAsset;
-    uint256[] memory swapperAmounts =
-      swapper.swapETHForExactTokens{ value: _collateralAmount }(
-        _amountToReceive,
-        path,
-        address(this),
-        // solhint-disable-next-line
-        block.timestamp
-      );
+    uint256[] memory swapperAmounts = swapper.swapETHForExactTokens{ value: _collateralAmount }(
+      _amountToReceive,
+      path,
+      address(this),
+      // solhint-disable-next-line
+      block.timestamp
+    );
 
     return _collateralAmount.sub(swapperAmounts[0]);
   }

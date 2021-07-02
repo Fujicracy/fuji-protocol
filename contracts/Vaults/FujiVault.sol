@@ -27,6 +27,8 @@ interface IVaultHarvester {
 }
 
 contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
+  address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
   struct Factor {
     uint64 a;
     uint64 b;
@@ -70,13 +72,23 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
     vAssets.collateralAsset = _collateralAsset;
     vAssets.borrowAsset = _borrowAsset;
 
-    // name = string(
-    //   abi.encodePacked(
-    //     "Vault",
-    //     IERC20Extended(_collateralAsset).symbol(),
-    //     IERC20Extended(_borrowAsset).symbol()
-    //   )
-    // );
+    string memory collateralSymbol;
+    string memory borrowSymbol;
+
+    if (_collateralAsset == ETH) {
+      collateralSymbol = "ETH";
+    } else {
+      collateralSymbol = IERC20Extended(_collateralAsset).symbol();
+    }
+
+    if (_borrowAsset == ETH) {
+      borrowSymbol = "ETH";
+    } else {
+      borrowSymbol = IERC20Extended(_borrowAsset).symbol();
+    }
+
+    name = string(abi.encodePacked("Vault", collateralSymbol, borrowSymbol));
+
     _borrowAssetBase = (10**uint256(IERC20Extended(_borrowAsset).decimals()));
 
     // 1.05
@@ -154,21 +166,23 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
       updateF1155Balances();
 
       // Get User Collateral in this Vault
-      uint256 providedCollateral =
-        IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.collateralID);
+      uint256 providedCollateral = IFujiERC1155(fujiERC1155).balanceOf(
+        msg.sender,
+        vAssets.collateralID
+      );
 
       // Check User has collateral
       require(providedCollateral > 0, Errors.VL_INVALID_COLLATERAL);
 
       // Get Required Collateral with Factors to maintain debt position healthy
-      uint256 neededCollateral =
-        getNeededCollateralFor(
-          IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID),
-          true
-        );
+      uint256 neededCollateral = getNeededCollateralFor(
+        IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID),
+        true
+      );
 
-      uint256 amountToWithdraw =
-        _withdrawAmount < 0 ? providedCollateral.sub(neededCollateral) : uint256(_withdrawAmount);
+      uint256 amountToWithdraw = _withdrawAmount < 0
+        ? providedCollateral.sub(neededCollateral)
+        : uint256(_withdrawAmount);
 
       // Check Withdrawal amount, and that it will not fall undercollaterized.
       require(
@@ -201,15 +215,16 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
   function borrow(uint256 _borrowAmount) public override nonReentrant {
     updateF1155Balances();
 
-    uint256 providedCollateral =
-      IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.collateralID);
+    uint256 providedCollateral = IFujiERC1155(fujiERC1155).balanceOf(
+      msg.sender,
+      vAssets.collateralID
+    );
 
     // Get Required Collateral with Factors to maintain debt position healthy
-    uint256 neededCollateral =
-      getNeededCollateralFor(
-        _borrowAmount.add(IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID)),
-        true
-      );
+    uint256 neededCollateral = getNeededCollateralFor(
+      _borrowAmount.add(IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID)),
+      true
+    );
 
     // Check Provided Collateral is not Zero, and greater than needed to maintain healthy position
     require(
@@ -285,17 +300,18 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
     uint256 _fee
   ) external override onlyFlash whenNotPaused {
     // Compute Ratio of transfer before payback
-    uint256 ratio =
-      _flashLoanAmount.mul(1e18).div(
-        IProvider(activeProvider).getBorrowBalance(vAssets.borrowAsset)
-      );
+    uint256 ratio = _flashLoanAmount.mul(1e18).div(
+      IProvider(activeProvider).getBorrowBalance(vAssets.borrowAsset)
+    );
 
     // Payback current provider
     _payback(_flashLoanAmount, activeProvider);
 
     // Withdraw collateral proportional ratio from current provider
-    uint256 collateraltoMove =
-      IProvider(activeProvider).getDepositBalance(vAssets.collateralAsset).mul(ratio).div(1e18);
+    uint256 collateraltoMove = IProvider(activeProvider)
+    .getDepositBalance(vAssets.collateralAsset)
+    .mul(ratio)
+    .div(1e18);
 
     _withdraw(collateraltoMove, activeProvider);
 
@@ -483,8 +499,9 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
    * @param _farmProtocolNum: number per VaultHarvester Contract for specific farm
    */
   function harvestRewards(uint256 _farmProtocolNum) external onlyOwner {
-    address tokenReturned =
-      IVaultHarvester(_fujiAdmin.getVaultHarvester()).collectRewards(_farmProtocolNum);
+    address tokenReturned = IVaultHarvester(_fujiAdmin.getVaultHarvester()).collectRewards(
+      _farmProtocolNum
+    );
     uint256 tokenBal = IERC20(tokenReturned).balanceOf(address(this));
     require(tokenReturned != address(0) && tokenBal > 0, Errors.VL_HARVESTING_FAILED);
     IERC20(tokenReturned).uniTransfer(payable(_fujiAdmin.getTreasury()), tokenBal);

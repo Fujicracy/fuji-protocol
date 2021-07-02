@@ -50,8 +50,11 @@ contract VaultBaseUpgradeable is VaultControlUpgradeable {
    * @param _provider: address of provider to be used
    */
   function _deposit(uint256 _amount, address _provider) internal {
-    bytes memory data =
-      abi.encodeWithSignature("deposit(address,uint256)", vAssets.collateralAsset, _amount);
+    bytes memory data = abi.encodeWithSignature(
+      "deposit(address,uint256)",
+      vAssets.collateralAsset,
+      _amount
+    );
     _execute(_provider, data);
   }
 
@@ -61,8 +64,11 @@ contract VaultBaseUpgradeable is VaultControlUpgradeable {
    * @param _provider: address of provider to be used
    */
   function _withdraw(uint256 _amount, address _provider) internal {
-    bytes memory data =
-      abi.encodeWithSignature("withdraw(address,uint256)", vAssets.collateralAsset, _amount);
+    bytes memory data = abi.encodeWithSignature(
+      "withdraw(address,uint256)",
+      vAssets.collateralAsset,
+      _amount
+    );
     _execute(_provider, data);
   }
 
@@ -72,8 +78,11 @@ contract VaultBaseUpgradeable is VaultControlUpgradeable {
    * @param _provider: address of provider to be used
    */
   function _borrow(uint256 _amount, address _provider) internal {
-    bytes memory data =
-      abi.encodeWithSignature("borrow(address,uint256)", vAssets.borrowAsset, _amount);
+    bytes memory data = abi.encodeWithSignature(
+      "borrow(address,uint256)",
+      vAssets.borrowAsset,
+      _amount
+    );
     _execute(_provider, data);
   }
 
@@ -83,8 +92,11 @@ contract VaultBaseUpgradeable is VaultControlUpgradeable {
    * @param _provider: address of provider to be used
    */
   function _payback(uint256 _amount, address _provider) internal {
-    bytes memory data =
-      abi.encodeWithSignature("payback(address,uint256)", vAssets.borrowAsset, _amount);
+    bytes memory data = abi.encodeWithSignature(
+      "payback(address,uint256)",
+      vAssets.borrowAsset,
+      _amount
+    );
     _execute(_provider, data);
   }
 
@@ -107,10 +119,10 @@ contract VaultBaseUpgradeable is VaultControlUpgradeable {
       returndatacopy(add(response, 0x20), 0, size)
 
       switch iszero(succeeded)
-        case 1 {
-          // throw if delegatecall failed
-          revert(add(response, 0x20), size)
-        }
+      case 1 {
+        // throw if delegatecall failed
+        revert(add(response, 0x20), size)
+      }
     }
     /* solhint-disable */
   }

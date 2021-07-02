@@ -164,10 +164,8 @@ contract ProviderAave is IProvider {
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
     AaveDataProviderInterface aaveData = _getAaveDataProvider();
 
-    (, , , , uint256 variableBorrowRate, , , , , ) =
-      AaveDataProviderInterface(aaveData).getReserveData(
-        _asset == _getEthAddr() ? _getWethAddr() : _asset
-      );
+    (, , , , uint256 variableBorrowRate, , , , , ) = AaveDataProviderInterface(aaveData)
+    .getReserveData(_asset == _getEthAddr() ? _getWethAddr() : _asset);
 
     return variableBorrowRate;
   }

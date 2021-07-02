@@ -7,9 +7,7 @@ import { IVault } from "./IVault.sol";
 import { VaultBase } from "./VaultBase.sol";
 import { IFujiAdmin } from "../IFujiAdmin.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {
-  AggregatorV3Interface
-} from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IFujiERC1155 } from "../FujiERC1155/IFujiERC1155.sol";
 import { IProvider } from "../Providers/IProvider.sol";
@@ -136,21 +134,23 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
       updateF1155Balances();
 
       // Get User Collateral in this Vault
-      uint256 providedCollateral =
-        IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.collateralID);
+      uint256 providedCollateral = IFujiERC1155(fujiERC1155).balanceOf(
+        msg.sender,
+        vAssets.collateralID
+      );
 
       // Check User has collateral
       require(providedCollateral > 0, Errors.VL_INVALID_COLLATERAL);
 
       // Get Required Collateral with Factors to maintain debt position healthy
-      uint256 neededCollateral =
-        getNeededCollateralFor(
-          IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID),
-          true
-        );
+      uint256 neededCollateral = getNeededCollateralFor(
+        IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID),
+        true
+      );
 
-      uint256 amountToWithdraw =
-        _withdrawAmount < 0 ? providedCollateral.sub(neededCollateral) : uint256(_withdrawAmount);
+      uint256 amountToWithdraw = _withdrawAmount < 0
+        ? providedCollateral.sub(neededCollateral)
+        : uint256(_withdrawAmount);
 
       // Check Withdrawal amount, and that it will not fall undercollaterized.
       require(
@@ -187,15 +187,16 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
   function borrow(uint256 _borrowAmount) public override nonReentrant {
     updateF1155Balances();
 
-    uint256 providedCollateral =
-      IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.collateralID);
+    uint256 providedCollateral = IFujiERC1155(fujiERC1155).balanceOf(
+      msg.sender,
+      vAssets.collateralID
+    );
 
     // Get Required Collateral with Factors to maintain debt position healthy
-    uint256 neededCollateral =
-      getNeededCollateralFor(
-        _borrowAmount.add(IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID)),
-        true
-      );
+    uint256 neededCollateral = getNeededCollateralFor(
+      _borrowAmount.add(IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID)),
+      true
+    );
 
     // Check Provided Collateral is not Zero, and greater than needed to maintain healthy position
     require(
@@ -276,17 +277,18 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
     uint256 _fee
   ) external override onlyFlash whenNotPaused {
     // Compute Ratio of transfer before payback
-    uint256 ratio =
-      _flashLoanAmount.mul(1e18).div(
-        IProvider(activeProvider).getBorrowBalance(vAssets.borrowAsset)
-      );
+    uint256 ratio = _flashLoanAmount.mul(1e18).div(
+      IProvider(activeProvider).getBorrowBalance(vAssets.borrowAsset)
+    );
 
     // Payback current provider
     _payback(_flashLoanAmount, activeProvider);
 
     // Withdraw collateral proportional ratio from current provider
-    uint256 collateraltoMove =
-      IProvider(activeProvider).getDepositBalance(vAssets.collateralAsset).mul(ratio).div(1e18);
+    uint256 collateraltoMove = IProvider(activeProvider)
+    .getDepositBalance(vAssets.collateralAsset)
+    .mul(ratio)
+    .div(1e18);
 
     _withdraw(collateraltoMove, activeProvider);
 
@@ -480,8 +482,9 @@ contract VaultETHUSDT is IVault, VaultBase, ReentrancyGuard {
    * @param _farmProtocolNum: number per VaultHarvester Contract for specific farm
    */
   function harvestRewards(uint256 _farmProtocolNum) external onlyOwner {
-    address tokenReturned =
-      IVaultHarvester(_fujiAdmin.getVaultHarvester()).collectRewards(_farmProtocolNum);
+    address tokenReturned = IVaultHarvester(_fujiAdmin.getVaultHarvester()).collectRewards(
+      _farmProtocolNum
+    );
     uint256 tokenBal = IERC20(tokenReturned).balanceOf(address(this));
     require(tokenReturned != address(0) && tokenBal > 0, Errors.VL_HARVESTING_FAILED);
     LibUniversalERC20.univTransfer(

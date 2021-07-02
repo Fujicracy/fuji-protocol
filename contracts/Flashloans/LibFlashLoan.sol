@@ -10,7 +10,11 @@ library FlashLoan {
    * - Liquidate for executeFlashLiquidation(...)
    * - BatchLiquidate for executeFlashBatchLiquidation(...)
    */
-  enum CallType { Switch, Close, BatchLiquidate }
+  enum CallType {
+    Switch,
+    Close,
+    BatchLiquidate
+  }
 
   /**
    * @dev Struct of params to be passed between functions executing flashloan logic

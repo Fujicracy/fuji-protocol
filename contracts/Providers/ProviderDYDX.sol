@@ -31,11 +31,27 @@ interface SoloMarginContract {
     uint256 value;
   }
 
-  enum ActionType { Deposit, Withdraw, Transfer, Buy, Sell, Trade, Liquidate, Vaporize, Call }
+  enum ActionType {
+    Deposit,
+    Withdraw,
+    Transfer,
+    Buy,
+    Sell,
+    Trade,
+    Liquidate,
+    Vaporize,
+    Call
+  }
 
-  enum AssetDenomination { Wei, Par }
+  enum AssetDenomination {
+    Wei,
+    Par
+  }
 
-  enum AssetReference { Delta, Target }
+  enum AssetReference {
+    Delta,
+    Target
+  }
 
   struct AssetAmount {
     bool sign;
@@ -140,16 +156,16 @@ contract HelperFunct {
     bool _sign
   ) internal view returns (SoloMarginContract.ActionArgs[] memory) {
     SoloMarginContract.ActionArgs[] memory actions = new SoloMarginContract.ActionArgs[](1);
-    SoloMarginContract.AssetAmount memory amount =
-      SoloMarginContract.AssetAmount(
-        _sign,
-        SoloMarginContract.AssetDenomination.Wei,
-        SoloMarginContract.AssetReference.Delta,
-        _amt
-      );
+    SoloMarginContract.AssetAmount memory amount = SoloMarginContract.AssetAmount(
+      _sign,
+      SoloMarginContract.AssetDenomination.Wei,
+      SoloMarginContract.AssetReference.Delta,
+      _amt
+    );
     bytes memory empty;
-    SoloMarginContract.ActionType action =
-      _sign ? SoloMarginContract.ActionType.Deposit : SoloMarginContract.ActionType.Withdraw;
+    SoloMarginContract.ActionType action = _sign
+      ? SoloMarginContract.ActionType.Deposit
+      : SoloMarginContract.ActionType.Withdraw;
     actions[0] = SoloMarginContract.ActionArgs(
       action,
       0,
@@ -278,8 +294,10 @@ contract ProviderDYDX is IProvider, HelperFunct {
   function getBorrowBalance(address _asset) external view override returns (uint256) {
     SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
     uint256 marketId = _getMarketId(dydxContract, _asset);
-    SoloMarginContract.Info memory account =
-      SoloMarginContract.Info({ owner: msg.sender, number: 0 });
+    SoloMarginContract.Info memory account = SoloMarginContract.Info({
+      owner: msg.sender,
+      number: 0
+    });
     SoloMarginContract.Wei memory structbalance = dydxContract.getAccountWei(account, marketId);
 
     return structbalance.value;
@@ -307,8 +325,10 @@ contract ProviderDYDX is IProvider, HelperFunct {
     SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
     uint256 marketId = _getMarketId(dydxContract, _asset);
 
-    SoloMarginContract.Info memory account =
-      SoloMarginContract.Info({ owner: msg.sender, number: 0 });
+    SoloMarginContract.Info memory account = SoloMarginContract.Info({
+      owner: msg.sender,
+      number: 0
+    });
     SoloMarginContract.Wei memory structbalance = dydxContract.getAccountWei(account, marketId);
 
     return structbalance.value;

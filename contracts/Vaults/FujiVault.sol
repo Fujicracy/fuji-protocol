@@ -64,11 +64,18 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
     _;
   }
 
-  function initialize(address _collateralAsset, address _borrowAsset) external initializer {
+  function initialize(
+    address _fujiadmin,
+    address _oracle,
+    address _collateralAsset,
+    address _borrowAsset
+  ) external initializer {
     __Ownable_init();
     __Pausable_init();
     __ReentrancyGuard_init();
 
+    _fujiAdmin = IFujiAdmin(_fujiadmin);
+    oracle = AggregatorV3Interface(_oracle);
     vAssets.collateralAsset = _collateralAsset;
     vAssets.borrowAsset = _borrowAsset;
 

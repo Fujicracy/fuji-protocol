@@ -66,16 +66,22 @@ const fixture = async ([wallet]) => {
 
   const FujiVault = await ethers.getContractFactory("FujiVault");
   const vaultdai = await upgrades.deployProxy(FujiVault, [
+    fujiadmin.address,
+    CHAINLINK_ORACLE_ADDR,
     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
     "0x6B175474E89094C44Da98b954EedeAC495271d0F",
   ]);
   console.log(vaultdai.address);
   const vaultusdc = await upgrades.deployProxy(FujiVault, [
+    fujiadmin.address,
+    CHAINLINK_ORACLE_ADDR,
     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
     "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
   ]);
   console.log(vaultusdc.address);
   const vaultusdt = await upgrades.deployProxy(FujiVault, [
+    fujiadmin.address,
+    CHAINLINK_ORACLE_ADDR,
     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
     "0xdAC17F958D2ee523a2206206994597C13D831ec7",
   ]);
@@ -102,25 +108,19 @@ const fixture = async ([wallet]) => {
   await f1155.setPermit(vaultusdt.address, true);
 
   // Step 6 - Vault Set-up
-  await vaultdai.setFujiAdmin(fujiadmin.address);
   await vaultdai.setProviders([compound.address, aave.address, dydx.address]);
   await vaultdai.setActiveProvider(compound.address);
   await vaultdai.setFujiERC1155(f1155.address);
-  await vaultdai.setOracle(CHAINLINK_ORACLE_ADDR);
   await fujiadmin.addVault(vaultdai.address);
 
-  await vaultusdc.setFujiAdmin(fujiadmin.address);
   await vaultusdc.setProviders([compound.address, aave.address, dydx.address]);
   await vaultusdc.setActiveProvider(compound.address);
   await vaultusdc.setFujiERC1155(f1155.address);
-  await vaultusdc.setOracle(CHAINLINK_ORACLE_ADDR);
   await fujiadmin.addVault(vaultusdc.address);
 
-  await vaultusdt.setFujiAdmin(fujiadmin.address);
   await vaultusdt.setProviders([compound.address, aave.address]);
   await vaultusdt.setActiveProvider(compound.address);
   await vaultusdt.setFujiERC1155(f1155.address);
-  await vaultusdt.setOracle(CHAINLINK_ORACLE_ADDR);
   await fujiadmin.addVault(vaultusdt.address);
 
   return {

@@ -37,28 +37,46 @@ const main = async () => {
   const aWhitelist = await deploy("AlphaWhitelist", ["100", ethers.utils.parseEther("2")]);
   const vaultharvester = await deploy("VaultHarvester");
 
-  const FujiVault = await ethers.getContractFactory("FujiVault");
-  const vaultdai = await upgrades.deployProxy(FujiVault, [
+  const vaultdai = await deployVault("VaultETHDAI", [
     fujiadmin.address,
     CHAINLINK_ORACLE_ADDR,
     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
     "0x6B175474E89094C44Da98b954EedeAC495271d0F",
   ]);
-  console.log("VaultETHDAI deployed to: ", vaultdai.address);
-  const vaultusdc = await upgrades.deployProxy(FujiVault, [
+  const vaultusdc = await deployVault("VaultETHUSDC", [
     fujiadmin.address,
     CHAINLINK_ORACLE_ADDR,
     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
     "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
   ]);
-  console.log("VaultETHUSDC deployed to: ", vaultusdc.address);
-  const vaultusdt = await upgrades.deployProxy(FujiVault, [
+  const vaultusdt = await deployVault("VaultETHUSDT", [
     fujiadmin.address,
     CHAINLINK_ORACLE_ADDR,
     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
     "0xdAC17F958D2ee523a2206206994597C13D831ec7",
   ]);
-  console.log("VaultETHUSDT deployed to: ", vaultusdt.address);
+  // const FujiVault = await ethers.getContractFactory("FujiVault");
+  // const vaultdai = await upgrades.deployProxy(FujiVault, [
+  //   fujiadmin.address,
+  //   CHAINLINK_ORACLE_ADDR,
+  //   "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+  //   "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+  // ]);
+  // console.log("VaultETHDAI deployed to: ", vaultdai.address);
+  // const vaultusdc = await upgrades.deployProxy(FujiVault, [
+  //   fujiadmin.address,
+  //   CHAINLINK_ORACLE_ADDR,
+  //   "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+  //   "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  // ]);
+  // console.log("VaultETHUSDC deployed to: ", vaultusdc.address);
+  // const vaultusdt = await upgrades.deployProxy(FujiVault, [
+  //   fujiadmin.address,
+  //   CHAINLINK_ORACLE_ADDR,
+  //   "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+  //   "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+  // ]);
+  // console.log("VaultETHUSDT deployed to: ", vaultusdt.address);
   // const vaultdai = await deploy("VaultETHDAI");
   // const vaultusdc = await deploy("VaultETHUSDC");
   // const vaultusdt = await deploy("VaultETHUSDT");
@@ -103,6 +121,26 @@ const main = async () => {
     chalk.blue("packages/hardhat/artifacts/"),
     "\n\n"
   );
+};
+
+const deployVault = async (contractName, _args = [], overrides = {}) => {
+  console.log(` 🛰  Deploying: ${contractName}`);
+
+  const contractArgs = _args || [];
+  const FujiVault = await ethers.getContractFactory("FujiVault");
+  const deployed = await upgrades.deployProxy(FujiVault, [...contractArgs]);
+  const encoded = utils.defaultAbiCoder.encode(
+    FujiVault.interface.functions["initialize(address,address,address,address)"].inputs,
+    contractArgs
+  );
+  fs.writeFileSync(`artifacts/${contractName}.address`, deployed.address);
+
+  console.log(" 📄", chalk.cyan(contractName), "deployed to:", chalk.magenta(deployed.address));
+
+  if (!encoded || encoded.length <= 2) return deployed;
+  fs.writeFileSync(`artifacts/${contractName}.args`, encoded.slice(2));
+
+  return deployed;
 };
 
 const deploy = async (contractName, _args = [], overrides = {}) => {

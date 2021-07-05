@@ -21,5 +21,6 @@ module.exports = {
     "func-names": "off",
     "no-await-in-loop": "off",
     "no-plusplus": "off",
+    "no-unused-vars": "off",
   },
 };

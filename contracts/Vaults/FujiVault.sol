@@ -14,7 +14,7 @@ import "../FujiERC1155/IFujiERC1155.sol";
 import "../Providers/IProvider.sol";
 import "../IAlphaWhiteList.sol";
 import "../Libraries/Errors.sol";
-import "../Libraries/LibUniERC20.sol";
+import "../Libraries/LibUniversalERC20.sol";
 
 interface IERC20Extended {
   function symbol() external view returns (string memory);
@@ -204,13 +204,13 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
       _withdraw(amountToWithdraw, address(activeProvider));
 
       // Transer Assets to User
-      IERC20(vAssets.collateralAsset).uniTransfer(msg.sender, amountToWithdraw);
+      IERC20(vAssets.collateralAsset).univTransfer(msg.sender, amountToWithdraw);
 
       emit Withdraw(msg.sender, vAssets.collateralAsset, amountToWithdraw);
     } else {
       // Logic used when called by Fliquidator
       _withdraw(uint256(_withdrawAmount), address(activeProvider));
-      IERC20(vAssets.collateralAsset).uniTransfer(msg.sender, uint256(_withdrawAmount));
+      IERC20(vAssets.collateralAsset).univTransfer(msg.sender, uint256(_withdrawAmount));
     }
   }
 
@@ -246,7 +246,7 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
     _borrow(_borrowAmount, address(activeProvider));
 
     // Transer Assets to User
-    IERC20(vAssets.borrowAsset).uniTransfer(msg.sender, _borrowAmount);
+    IERC20(vAssets.borrowAsset).univTransfer(msg.sender, _borrowAmount);
 
     emit Borrow(msg.sender, vAssets.borrowAsset, _borrowAmount);
   }
@@ -329,7 +329,7 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
     _borrow(_flashLoanAmount.add(_fee), _newProvider);
 
     // return borrowed amount to Flasher
-    IERC20(vAssets.borrowAsset).uniTransfer(msg.sender, _flashLoanAmount.add(_fee));
+    IERC20(vAssets.borrowAsset).univTransfer(msg.sender, _flashLoanAmount.add(_fee));
 
     emit Switch(address(this), activeProvider, _newProvider, _flashLoanAmount, collateraltoMove);
   }
@@ -511,6 +511,6 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
     );
     uint256 tokenBal = IERC20(tokenReturned).balanceOf(address(this));
     require(tokenReturned != address(0) && tokenBal > 0, Errors.VL_HARVESTING_FAILED);
-    IERC20(tokenReturned).uniTransfer(payable(_fujiAdmin.getTreasury()), tokenBal);
+    IERC20(tokenReturned).univTransfer(payable(_fujiAdmin.getTreasury()), tokenBal);
   }
 }

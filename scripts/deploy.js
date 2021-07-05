@@ -1,12 +1,11 @@
 /* eslint no-use-before-define: "warn" */
 const fs = require("fs");
 const chalk = require("chalk");
-const { config, ethers } = require("hardhat");
+const { config, ethers, upgrades } = require("hardhat");
 const { utils } = require("ethers");
 const R = require("ramda");
 
 const main = async () => {
-
   console.log("\n\n 📡 Deploying...\n");
 
   const DAI_ADDR = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
@@ -17,9 +16,9 @@ const main = async () => {
   const deployerWallet = ethers.provider.getSigner();
 
   // Step 1 of Deploy: Contracts which address is required to be hardcoded in other contracts
-  //Fuji Mapping for Compound Contracts, for testing this is not required.
-  //Fuji Mapping for CreamFinance Contracts
-  //const treasury = await deploy("GnosisSafe");
+  // Fuji Mapping for Compound Contracts, for testing this is not required.
+  // Fuji Mapping for CreamFinance Contracts
+  // const treasury = await deploy("GnosisSafe");
 
   // Step 2 Of Deploy: Functional Contracts
   const fujiadmin = await deploy("FujiAdmin");
@@ -35,14 +34,34 @@ const main = async () => {
   const ironBank = await deploy("ProviderIronBank");
 
   // Step 4 Of Deploy Core Money Handling Contracts
-  const aWhitelist = await deploy("AlphaWhitelist", [
-    "100",
-    ethers.utils.parseEther("2")
-  ]);
+  const aWhitelist = await deploy("AlphaWhitelist", ["100", ethers.utils.parseEther("2")]);
   const vaultharvester = await deploy("VaultHarvester");
-  const vaultdai = await deploy("VaultETHDAI");
-  const vaultusdc = await deploy("VaultETHUSDC");
-  const vaultusdt = await deploy("VaultETHUSDT");
+
+  const FujiVault = await ethers.getContractFactory("FujiVault");
+  const vaultdai = await upgrades.deployProxy(FujiVault, [
+    fujiadmin.address,
+    CHAINLINK_ORACLE_ADDR,
+    "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+    "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+  ]);
+  console.log("VaultETHDAI deployed to: ", vaultdai.address);
+  const vaultusdc = await upgrades.deployProxy(FujiVault, [
+    fujiadmin.address,
+    CHAINLINK_ORACLE_ADDR,
+    "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+    "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  ]);
+  console.log("VaultETHUSDC deployed to: ", vaultusdc.address);
+  const vaultusdt = await upgrades.deployProxy(FujiVault, [
+    fujiadmin.address,
+    CHAINLINK_ORACLE_ADDR,
+    "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+    "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+  ]);
+  console.log("VaultETHUSDT deployed to: ", vaultusdt.address);
+  // const vaultdai = await deploy("VaultETHDAI");
+  // const vaultusdc = await deploy("VaultETHUSDC");
+  // const vaultusdt = await deploy("VaultETHUSDT");
 
   // Step 5 - General Plug-ins and Set-up Transactions
   await fujiadmin.setFlasher(flasher.address);
@@ -61,7 +80,7 @@ const main = async () => {
   await f1155.setPermit(fliquidator.address, true);
 
   // Step 6 - Vault Set-up
-  await vaultdai.setFujiAdmin(fujiadmin.address)
+  await vaultdai.setFujiAdmin(fujiadmin.address);
   await vaultdai.setProviders([compound.address, aave.address, dydx.address, ironBank.address]);
   await vaultdai.setActiveProvider(compound.address);
   await vaultdai.setFujiERC1155(f1155.address);
@@ -95,12 +114,7 @@ const deploy = async (contractName, _args = [], overrides = {}) => {
   const encoded = abiEncodeArgs(deployed, contractArgs);
   fs.writeFileSync(`artifacts/${contractName}.address`, deployed.address);
 
-  console.log(
-    " 📄",
-    chalk.cyan(contractName),
-    "deployed to:",
-    chalk.magenta(deployed.address),
-  );
+  console.log(" 📄", chalk.cyan(contractName), "deployed to:", chalk.magenta(deployed.address));
 
   if (!encoded || encoded.length <= 2) return deployed;
   fs.writeFileSync(`artifacts/${contractName}.args`, encoded.slice(2));
@@ -115,17 +129,10 @@ const deploy = async (contractName, _args = [], overrides = {}) => {
 // for example, on Etherscan
 const abiEncodeArgs = (deployed, contractArgs) => {
   // not writing abi encoded args if this does not pass
-  if (
-    !contractArgs ||
-    !deployed ||
-    !R.hasPath(["interface", "deploy"], deployed)
-  ) {
+  if (!contractArgs || !deployed || !R.hasPath(["interface", "deploy"], deployed)) {
     return "";
   }
-  const encoded = utils.defaultAbiCoder.encode(
-    deployed.interface.deploy.inputs,
-    contractArgs
-  );
+  const encoded = utils.defaultAbiCoder.encode(deployed.interface.deploy.inputs, contractArgs);
   return encoded;
 };
 

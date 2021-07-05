@@ -7,11 +7,11 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../Libraries/LibUniERC20.sol";
+import "../Libraries/LibUniversalERC20.sol";
 
 contract VaultControlUpgradeable is OwnableUpgradeable, PausableUpgradeable {
   using SafeMathUpgradeable for uint256;
-  using UniERC20 for IERC20;
+  using LibUniversalERC20 for IERC20;
 
   //Asset Struct
   struct VaultAssets {

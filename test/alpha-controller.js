@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { createFixtureLoader } = require("ethereum-waffle");
 
-const { fixture, evmSnapshot, evmRevert } = require("./utils-alpha.js");
+const { fixture, evmSnapshot, evmRevert } = require("./utils-alpha");
 
 describe("Alpha", () => {
   let aave;

@@ -68,28 +68,39 @@ const fixture = async ([wallet]) => {
   const vaultdai = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
     CHAINLINK_ORACLE_ADDR,
-    "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-    "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    ETH_ADDR,
+    DAI_ADDR,
   ]);
-  console.log(vaultdai.address);
   const vaultusdc = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
     CHAINLINK_ORACLE_ADDR,
-    "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-    "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    ETH_ADDR,
+    USDC_ADDR,
   ]);
-  console.log(vaultusdc.address);
   const vaultusdt = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
     CHAINLINK_ORACLE_ADDR,
-    "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-    "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    ETH_ADDR,
+    USDT_ADDR,
   ]);
-  console.log(vaultusdt.address);
-
-  // const vaultdai = await deployContract(wallet, VaultETHDAI, []);
-  // const vaultusdc = await deployContract(wallet, VaultETHUSDC, []);
-  // const vaultusdt = await deployContract(wallet, VaultETHUSDT, []);
+  const vaultdaiusdc = await upgrades.deployProxy(FujiVault, [
+    fujiadmin.address,
+    CHAINLINK_ORACLE_ADDR,
+    DAI_ADDR,
+    USDC_ADDR,
+  ]);
+  const vaultdaiusdt = await upgrades.deployProxy(FujiVault, [
+    fujiadmin.address,
+    CHAINLINK_ORACLE_ADDR,
+    DAI_ADDR,
+    USDT_ADDR,
+  ]);
+  const vaultdaieth = await upgrades.deployProxy(FujiVault, [
+    fujiadmin.address,
+    CHAINLINK_ORACLE_ADDR,
+    DAI_ADDR,
+    USDT_ADDR,
+  ]);
 
   // Step 5 - General Plug-ins and Set-up Transactions
   await fujiadmin.setFlasher(flasher.address);
@@ -145,6 +156,9 @@ const fixture = async ([wallet]) => {
     vaultdai,
     vaultusdc,
     vaultusdt,
+    vaultdaiusdc,
+    vaultdaiusdt,
+    vaultdaieth,
   };
 };
 

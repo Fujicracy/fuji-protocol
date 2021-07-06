@@ -456,13 +456,15 @@ describe("Alpha", () => {
       let depositAmount = ethers.utils.parseEther("3");
       let borrowAmount = ethers.utils.parseUnits("4500", 18);
 
+      const daiBalanceBefore = ethers.BigNumber.from(await dai.balanceOf(firstUser.address));
       await expect(
         await vaultdai
           .connect(firstUser)
           .depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount })
-      )
-        .to.changeEtherBalance(firstUser, ethers.utils.parseEther("-3"))
-        .to.changeTokenBalance(dai, firstUser, ethers.utils.parseUnits("4500", 18));
+      ).to.changeEtherBalance(firstUser, ethers.utils.parseEther("-3"));
+      expect(await dai.balanceOf(firstUser.address)).to.be.equal(
+        daiBalanceBefore.add(borrowAmount)
+      );
 
       const secondUser = users[5];
       await dai
@@ -474,11 +476,13 @@ describe("Alpha", () => {
       await dai.connect(secondUser).approve(vaultdaiusdc.address, depositAmount);
 
       console.log("start borrow");
+      const usdcBalanceBefore = ethers.BigNumber.from(await usdc.balanceOf(secondUser.address));
       await expect(
         await vaultdaiusdc.connect(secondUser).depositAndBorrow(depositAmount, borrowAmount)
-      )
-        .to.changeTokenBalance(dai, secondUser, ethers.utils.parseUnits("-4500", 18))
-        .to.changeTokenBalance(usdc, secondUser, ethers.utils.parseUnits("2000", 6));
+      ).to.changeTokenBalance(dai, secondUser, ethers.utils.parseUnits("-4500", 18));
+      expect(await usdc.balanceOf(secondUser.address)).to.be.equal(
+        usdcBalanceBefore.add(borrowAmount)
+      );
 
       // Facilitate userX some extra amount to pay for debt + accrued interest
       const someextrausdc = ethers.utils.parseUnits("200", 6);

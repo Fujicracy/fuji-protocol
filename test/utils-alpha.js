@@ -85,21 +85,21 @@ const fixture = async ([wallet]) => {
   ]);
   const vaultdaiusdc = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
-    CHAINLINK_ORACLE_ADDR,
+    "0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9",
     DAI_ADDR,
     USDC_ADDR,
   ]);
   const vaultdaiusdt = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
-    CHAINLINK_ORACLE_ADDR,
+    "0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9",
     DAI_ADDR,
     USDT_ADDR,
   ]);
   const vaultdaieth = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
-    CHAINLINK_ORACLE_ADDR,
+    "0x773616E4d11A78F511299002da57A0a94577F1f4",
     DAI_ADDR,
-    USDT_ADDR,
+    ETH_ADDR,
   ]);
 
   // Step 5 - General Plug-ins and Set-up Transactions
@@ -117,6 +117,9 @@ const fixture = async ([wallet]) => {
   await f1155.setPermit(vaultdai.address, true);
   await f1155.setPermit(vaultusdc.address, true);
   await f1155.setPermit(vaultusdt.address, true);
+  await f1155.setPermit(vaultdaiusdc.address, true);
+  await f1155.setPermit(vaultdaiusdt.address, true);
+  await f1155.setPermit(vaultdaieth.address, true);
 
   // Step 6 - Vault Set-up
   await vaultdai.setProviders([compound.address, aave.address, dydx.address]);
@@ -133,6 +136,21 @@ const fixture = async ([wallet]) => {
   await vaultusdt.setActiveProvider(compound.address);
   await vaultusdt.setFujiERC1155(f1155.address);
   await fujiadmin.addVault(vaultusdt.address);
+
+  await vaultdaiusdc.setProviders([compound.address, aave.address, dydx.address]);
+  await vaultdaiusdc.setActiveProvider(compound.address);
+  await vaultdaiusdc.setFujiERC1155(f1155.address);
+  await fujiadmin.addVault(vaultdaiusdc.address);
+
+  await vaultdaiusdt.setProviders([compound.address, aave.address]);
+  await vaultdaiusdt.setActiveProvider(compound.address);
+  await vaultdaiusdt.setFujiERC1155(f1155.address);
+  await fujiadmin.addVault(vaultdaiusdt.address);
+
+  await vaultdaieth.setProviders([compound.address, aave.address, dydx.address]);
+  await vaultdaieth.setActiveProvider(compound.address);
+  await vaultdaieth.setFujiERC1155(f1155.address);
+  await fujiadmin.addVault(vaultdaieth.address);
 
   return {
     dai,

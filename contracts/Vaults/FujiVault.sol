@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 
 import "./IVault.sol";
@@ -27,6 +28,8 @@ interface IVaultHarvester {
 }
 
 contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
+  using SafeERC20 for IERC20;
+
   address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
   struct Factor {
@@ -90,13 +93,13 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
 
     if (_borrowAsset == ETH) {
       borrowSymbol = "ETH";
+      _borrowAssetBase = 10**18;
     } else {
       borrowSymbol = IERC20Extended(_borrowAsset).symbol();
+      _borrowAssetBase = (10**uint256(IERC20Extended(_borrowAsset).decimals()));
     }
 
     name = string(abi.encodePacked("Vault", collateralSymbol, borrowSymbol));
-
-    _borrowAssetBase = (10**uint256(IERC20Extended(_borrowAsset).decimals()));
 
     // 1.05
     safetyF.a = 21;
@@ -138,18 +141,16 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
    * Emits a {Deposit} event.
    */
   function deposit(uint256 _collateralAmount) public payable override {
-    require(msg.value == _collateralAmount && _collateralAmount != 0, Errors.VL_AMOUNT_ERROR);
-
-    // Alpha Whitelist Routine
-    require(
-      IAlphaWhiteList(_fujiAdmin.getaWhiteList()).whiteListRoutine(
+    if (vAssets.collateralAsset == ETH) {
+      require(msg.value == _collateralAmount && _collateralAmount != 0, Errors.VL_AMOUNT_ERROR);
+    } else {
+      require(_collateralAmount != 0, Errors.VL_AMOUNT_ERROR);
+      IERC20(vAssets.collateralAsset).safeTransferFrom(
         msg.sender,
-        vAssets.collateralID,
-        _collateralAmount,
-        fujiERC1155
-      ),
-      Errors.SP_ALPHA_WHITELIST
-    );
+        address(this),
+        _collateralAmount
+      );
+    }
 
     // Delegate Call Deposit to current provider
     _deposit(_collateralAmount, address(activeProvider));

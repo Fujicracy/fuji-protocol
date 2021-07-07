@@ -53,6 +53,9 @@ describe("Alpha", () => {
     await vaultdai.setActiveProvider(aave.address);
     await vaultusdc.setActiveProvider(aave.address);
     await vaultusdt.setActiveProvider(aave.address);
+    await vaultdaiusdc.setActiveProvider(aave.address);
+    await vaultdaiusdt.setActiveProvider(aave.address);
+    await vaultdaieth.setActiveProvider(aave.address);
   });
 
   describe("Alpha Aave Basic Functionality", () => {
@@ -451,12 +454,13 @@ describe("Alpha", () => {
       await expect(ethbalOriginal / 1).to.be.closeTo(ethbalFinal / 1, 5e16);
     });
 
-    it.only("17.- Users[1]: 3 ETH deposit, 4500 DAI borrow, User[5]: 4500 DAI deposit, 2000 USDC borrow, 2000 USDC pay back and withdraw all ", async () => {
+    it("17.- Users[1]: 3 ETH deposit, 4500 DAI borrow, User[6]: 4500 DAI deposit, 2000 USDC borrow, 2000 USDC pay back and withdraw all ", async () => {
       const firstUser = users[1];
       let depositAmount = ethers.utils.parseEther("3");
       let borrowAmount = ethers.utils.parseUnits("4500", 18);
 
-      const daiBalanceBefore = ethers.BigNumber.from(await dai.balanceOf(firstUser.address));
+      // eth -> dai borrow
+      let daiBalanceBefore = ethers.BigNumber.from(await dai.balanceOf(firstUser.address));
       await expect(
         await vaultdai
           .connect(firstUser)
@@ -466,7 +470,8 @@ describe("Alpha", () => {
         daiBalanceBefore.add(borrowAmount)
       );
 
-      const secondUser = users[5];
+      // dai transfer to second user
+      const secondUser = users[6];
       await dai
         .connect(firstUser)
         .transfer(secondUser.address, ethers.utils.parseUnits("4500", 18));
@@ -475,23 +480,26 @@ describe("Alpha", () => {
       console.log((await dai.balanceOf(secondUser.address)).toString());
       await dai.connect(secondUser).approve(vaultdaiusdc.address, depositAmount);
 
-      console.log("start borrow");
+      // usdc -> dai borrow
       const usdcBalanceBefore = ethers.BigNumber.from(await usdc.balanceOf(secondUser.address));
-      await expect(
-        await vaultdaiusdc.connect(secondUser).depositAndBorrow(depositAmount, borrowAmount)
-      ).to.changeTokenBalance(dai, secondUser, ethers.utils.parseUnits("-4500", 18));
+      await vaultdaiusdc.connect(secondUser).depositAndBorrow(depositAmount, borrowAmount);
       expect(await usdc.balanceOf(secondUser.address)).to.be.equal(
         usdcBalanceBefore.add(borrowAmount)
       );
 
+      // repay
       // Facilitate userX some extra amount to pay for debt + accrued interest
-      const someextrausdc = ethers.utils.parseUnits("200", 6);
+      await usdc.connect(secondUser).approve(vaultdaiusdc.address, borrowAmount);
+      await vaultdaiusdc.connect(secondUser).payback(borrowAmount);
+      await expect(await usdc.balanceOf(secondUser.address)).to.be.equal(0);
 
-      await usdc.connect(secondUser).approve(vaultusdc.address, borrowAmount.add(someextrausdc));
-
-      await vaultusdc.connect(secondUser).paybackAndWithdraw(-1, -1);
-
-      await expect(await usdc.balanceOf(secondUser.address)).to.be.lt(someextrausdc);
+      // withdraw
+      daiBalanceBefore = ethers.BigNumber.from(await dai.balanceOf(secondUser.address));
+      const withdrawAmount = ethers.utils.parseUnits("2000", 18);
+      await vaultdaiusdc.connect(secondUser).withdraw(withdrawAmount);
+      expect(await dai.balanceOf(secondUser.address)).to.be.equal(
+        daiBalanceBefore.add(withdrawAmount)
+      );
     });
   });
 });

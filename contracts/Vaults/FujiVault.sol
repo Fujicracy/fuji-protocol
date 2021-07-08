@@ -272,14 +272,21 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
       // If passed argument amount is negative do MAX
       uint256 amountToPayback = _repayAmount < 0 ? userDebtBalance : uint256(_repayAmount);
 
-      // Check User Allowance
-      require(
-        IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this)) >= amountToPayback,
-        Errors.VL_MISSING_ERC20_ALLOWANCE
-      );
+      if (vAssets.borrowAsset == ETH) {
+        require(msg.value >= amountToPayback, Errors.VL_AMOUNT_ERROR);
+        if (msg.value > amountToPayback) {
+          IERC20(vAssets.borrowAsset).univTransfer(msg.sender, msg.value.sub(amountToPayback));
+        }
+      } else {
+        // Check User Allowance
+        require(
+          IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this)) >= amountToPayback,
+          Errors.VL_MISSING_ERC20_ALLOWANCE
+        );
 
-      // Transfer Asset from User to Vault
-      IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), amountToPayback);
+        // Transfer Asset from User to Vault
+        IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), amountToPayback);
+      }
 
       // Delegate Call Payback to current provider
       _payback(amountToPayback, address(activeProvider));

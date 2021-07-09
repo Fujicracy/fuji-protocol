@@ -129,74 +129,26 @@ contract FujiBaseERC1155 is IERC1155, ERC165, Context {
    * @dev See {IERC1155-safeTransferFrom}.
    */
   function safeTransferFrom(
-    address from,
-    address to,
-    uint256 id,
-    uint256 amount,
-    bytes memory data
+    address, // from
+    address, // to
+    uint256, // id
+    uint256, // amount
+    bytes memory // data
   ) public virtual override {
-    require(to != address(0), Errors.VL_ZERO_ADDR_1155);
-    require(
-      from == _msgSender() || isApprovedForAll(from, _msgSender()),
-      Errors.VL_MISSING_ERC1155_APPROVAL
-    );
-
-    address operator = _msgSender();
-
-    _beforeTokenTransfer(
-      operator,
-      from,
-      to,
-      _asSingletonArray(id),
-      _asSingletonArray(amount),
-      data
-    );
-
-    uint256 fromBalance = _balances[id][from];
-    require(fromBalance >= amount, Errors.VL_NO_ERC1155_BALANCE);
-
-    _balances[id][from] = fromBalance.sub(amount);
-    _balances[id][to] = uint256(_balances[id][to]).add(amount);
-
-    emit TransferSingle(operator, from, to, id, amount);
-
-    _doSafeTransferAcceptanceCheck(operator, from, to, id, amount, data);
+    revert(Errors.VL_ERC1155_NOT_TRANSFERABLE);
   }
 
   /**
    * @dev See {IERC1155-safeBatchTransferFrom}.
    */
   function safeBatchTransferFrom(
-    address from,
-    address to,
-    uint256[] memory ids,
-    uint256[] memory amounts,
-    bytes memory data
+    address, // from
+    address, // to
+    uint256[] memory, // ids
+    uint256[] memory, // amounts
+    bytes memory //  data
   ) public virtual override {
-    require(ids.length == amounts.length, Errors.VL_INPUT_ERROR);
-    require(to != address(0), Errors.VL_ZERO_ADDR_1155);
-    require(
-      from == _msgSender() || isApprovedForAll(from, _msgSender()),
-      Errors.VL_MISSING_ERC1155_APPROVAL
-    );
-
-    address operator = _msgSender();
-
-    _beforeTokenTransfer(operator, from, to, ids, amounts, data);
-
-    for (uint256 i = 0; i < ids.length; ++i) {
-      uint256 id = ids[i];
-      uint256 amount = amounts[i];
-
-      uint256 fromBalance = _balances[id][from];
-      require(fromBalance >= amount, Errors.VL_NO_ERC1155_BALANCE);
-      _balances[id][from] = fromBalance.sub(amount);
-      _balances[id][to] = uint256(_balances[id][to]).add(amount);
-    }
-
-    emit TransferBatch(operator, from, to, ids, amounts);
-
-    _doSafeBatchTransferAcceptanceCheck(operator, from, to, ids, amounts, data);
+    revert(Errors.VL_ERC1155_NOT_TRANSFERABLE);
   }
 
   function _doSafeTransferAcceptanceCheck(

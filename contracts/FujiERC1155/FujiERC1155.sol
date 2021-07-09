@@ -7,7 +7,6 @@ import { IFujiERC1155 } from "./IFujiERC1155.sol";
 import { FujiBaseERC1155 } from "./FujiBaseERC1155.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { WadRayMath } from "../Libraries/WadRayMath.sol";
-import { MathUtils } from "../Libraries/MathUtils.sol";
 import { Errors } from "../Libraries/Errors.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 
@@ -31,32 +30,19 @@ contract F1155Manager is Ownable {
 contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   using WadRayMath for uint256;
 
-  //FujiERC1155 Asset ID Mapping
+  // FujiERC1155 Asset ID Mapping
 
-  //AssetType => asset reference address => ERC1155 Asset ID
+  // AssetType => asset reference address => ERC1155 Asset ID
   mapping(AssetType => mapping(address => uint256)) public assetIDs;
 
-  //Control mapping that returns the AssetType of an AssetID
+  // Control mapping that returns the AssetType of an AssetID
   mapping(uint256 => AssetType) public assetIDtype;
 
   uint64 public override qtyOfManagedAssets;
 
-  //Asset ID  Liquidity Index mapping
-  //AssetId => Liquidity index for asset ID
+  // Asset ID  Liquidity Index mapping
+  // AssetId => Liquidity index for asset ID
   mapping(uint256 => uint256) public indexes;
-
-  // Optimizer Fee expressed in Ray, where 1 ray = 100% APR
-  //uint256 public optimizerFee;
-  //uint256 public lastUpdateTimestamp;
-  //uint256 public fujiIndex;
-
-  /// @dev Ignoring leap years
-  //uint256 internal constant SECONDS_PER_YEAR = 365 days;
-
-  constructor() public {
-    //fujiIndex = WadRayMath.ray();
-    //optimizerFee = 1e24;
-  }
 
   /**
    * @dev Updates Index of AssetID
@@ -79,20 +65,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
       indexes[_assetID] = uint128(result);
 
       // TODO: calculate interest rate for a fujiOptimizer Fee.
-      /*
-      if(lastUpdateTimestamp==0){
-        lastUpdateTimestamp = block.timestamp;
-      }
-
-      uint256 accrued = _calculateCompoundedInterest(
-        optimizerFee,
-        lastUpdateTimestamp,
-        block.timestamp
-      ).rayMul(fujiIndex);
-
-      fujiIndex = accrued;
-      lastUpdateTimestamp = block.timestamp;
-      */
     }
   }
 
@@ -136,26 +108,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   }
 
   /**
-   * @dev Returns the balance of User, split into owed amounts to BaseProtocol and FujiProtocol
-   * @param _account: address of the User
-   * @param _assetID: ERC1155 ID of the asset which state will be updated.
-   **/
-  /*
-  function splitBalanceOf(
-    address _account,
-    uint256 _assetID
-  ) public view override returns (uint256,uint256) {
-    uint256 scaledBalance = super.balanceOf(_account, _assetID);
-    if (scaledBalance == 0) {
-      return (0,0);
-    } else {
-    TO DO COMPUTATION
-      return (baseprotocol, fuji);
-    }
-  }
-  */
-
-  /**
    * @dev Returns Scaled Balance of the user (e.g. balance/index)
    * @param _account: address of the User
    * @param _assetID: ERC1155 ID of the asset which state will be updated.
@@ -168,23 +120,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   {
     return super.balanceOf(_account, _assetID);
   }
-
-  /**
-   * @dev Returns the sum of balance of the user for an AssetType.
-   * This function is used for when AssetType have units of account of the same value (e.g stablecoins)
-   * @param _account: address of the User
-   * @param _type: enum AssetType, 0 = Collateral asset, 1 = debt asset
-   **/
-  /*
-  function balanceOfBatchType(address _account, AssetType _type) external view override returns (uint256 total) {
-
-    uint256[] memory IDs = engagedIDsOf(_account, _type);
-
-    for(uint i; i < IDs.length; i++ ){
-      total = total.add(balanceOf(_account, IDs[i]));
-    }
-  }
-  */
 
   /**
    * @dev Mints tokens for Collateral and Debt receipts for the Fuji Protocol
@@ -338,17 +273,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   //Setter Functions
 
   /**
-   * @dev Sets the FujiProtocol Fee to be charged
-   * @param _fee; Fee in Ray(1e27) to charge users for optimizerFee (1 ray = 100% APR)
-   */
-  /*
-  function setoptimizerFee(uint256 _fee) public onlyOwner {
-    require(_fee >= WadRayMath.ray(), Errors.VL_OPTIMIZER_FEE_SMALL);
-    optimizerFee = _fee;
-  }
-  */
-
-  /**
    * @dev Sets a new URI for all token types, by relying on the token type ID
    */
   function setURI(string memory _newUri) public onlyOwner {
@@ -377,45 +301,4 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
 
     return qtyOfManagedAssets - 1;
   }
-  /**
-   * @dev Function to calculate the interest using a compounded interest rate formula
-   * To avoid expensive exponentiation, the calculation is performed using a binomial approximation:
-   *
-   *  (1+x)^n = 1+n*x+[n/2*(n-1)]*x^2+[n/6*(n-1)*(n-2)*x^3...
-   *
-   * The approximation slightly underpays liquidity providers and undercharges borrowers, with the advantage of great gas cost reductions
-   * The whitepaper contains reference to the approximation and a table showing the margin of error per different time periods
-   *
-   * @param _rate The interest rate, in ray
-   * @param _lastUpdateTimestamp The timestamp of the last update of the interest
-   * @return The interest rate compounded during the timeDelta, in ray
-   **/
-  /*
-  function _calculateCompoundedInterest(
-    uint256 _rate,
-    uint256 _lastUpdateTimestamp,
-    uint256 currentTimestamp
-  ) internal pure returns (uint256) {
-    //solium-disable-next-line
-    uint256 exp = currentTimestamp.sub(uint256(_lastUpdateTimestamp));
-
-    if (exp == 0) {
-      return WadRayMath.ray();
-    }
-
-    uint256 expMinusOne = exp - 1;
-
-    uint256 expMinusTwo = exp > 2 ? exp - 2 : 0;
-
-    uint256 ratePerSecond = _rate / SECONDS_PER_YEAR;
-
-    uint256 basePowerTwo = ratePerSecond.rayMul(ratePerSecond);
-    uint256 basePowerThree = basePowerTwo.rayMul(ratePerSecond);
-
-    uint256 secondTerm = exp.mul(expMinusOne).mul(basePowerTwo) / 2;
-    uint256 thirdTerm = exp.mul(expMinusOne).mul(expMinusTwo).mul(basePowerThree) / 6;
-
-    return WadRayMath.ray().add(ratePerSecond.mul(exp)).add(secondTerm).add(thirdTerm);
-  }
-  */
 }

@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { UniERC20 } from "../Libraries/LibUniERC20.sol";
+import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IFujiAdmin } from "../IFujiAdmin.sol";
 import { Errors } from "../Libraries/Errors.sol";
@@ -40,7 +40,7 @@ interface IFujiMappings {
 
 contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, ICallee, Ownable {
   using SafeMath for uint256;
-  using UniERC20 for IERC20;
+  using LibUniversalERC20 for IERC20;
 
   IFujiAdmin private _fujiAdmin;
 
@@ -133,7 +133,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     uint256 amountOwing = info.amount.add(2);
 
     // Transfer to Vault the flashloan Amount
-    IERC20(info.asset).uniTransfer(payable(info.vault), info.amount);
+    IERC20(info.asset).univTransfer(payable(info.vault), info.amount);
 
     if (info.callType == FlashLoan.CallType.Switch) {
       IVault(info.vault).executeSwitch(info.newProvider, info.amount, 2);
@@ -207,7 +207,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     uint256 amountOwing = amounts[0].add(premiums[0]);
 
     // Transfer to the vault ERC20
-    IERC20(assets[0]).uniTransfer(payable(info.vault), amounts[0]);
+    IERC20(assets[0]).univTransfer(payable(info.vault), amounts[0]);
 
     if (info.callType == FlashLoan.CallType.Switch) {
       IVault(info.vault).executeSwitch(info.newProvider, amounts[0], premiums[0]);
@@ -230,7 +230,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     }
 
     //Approve aaveLP to spend to repay flashloan
-    IERC20(assets[0]).uniApprove(payable(_aaveLendingPool), amountOwing);
+    IERC20(assets[0]).univApprove(payable(_aaveLendingPool), amountOwing);
 
     return true;
   }
@@ -275,7 +275,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     uint256 amountOwing = amount.add(fee);
 
     // Transfer to the vault ERC20
-    IERC20(underlying).uniTransfer(payable(info.vault), amount);
+    IERC20(underlying).univTransfer(payable(info.vault), amount);
 
     // Do task according to CallType
     if (info.callType == FlashLoan.CallType.Switch) {
@@ -294,6 +294,6 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     }
 
     // Transfer flashloan + fee back to crToken Lending Contract
-    IERC20(underlying).uniTransfer(payable(crToken), amountOwing);
+    IERC20(underlying).univTransfer(payable(crToken), amountOwing);
   }
 }

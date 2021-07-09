@@ -10,7 +10,6 @@ contract FujiAdmin is IFujiAdmin, Ownable {
   address private _fliquidator;
   address payable private _ftreasury;
   address private _controller;
-  address private _aWhiteList;
   address private _vaultHarvester;
 
   mapping(address => bool) public override validVault;
@@ -71,14 +70,6 @@ contract FujiAdmin is IFujiAdmin, Ownable {
   }
 
   /**
-   * @dev Sets the Whitelistingcontract address
-   * @param _newAWhiteList: controller address
-   */
-  function setaWhitelist(address _newAWhiteList) external onlyOwner {
-    _aWhiteList = _newAWhiteList;
-  }
-
-  /**
    * @dev Sets the VaultHarvester address
    * @param _newVaultHarverster: controller address
    */
@@ -132,10 +123,6 @@ contract FujiAdmin is IFujiAdmin, Ownable {
 
   function getController() external view override returns (address) {
     return _controller;
-  }
-
-  function getaWhiteList() external view override returns (address) {
-    return _aWhiteList;
   }
 
   function getVaultHarvester() external view override returns (address) {

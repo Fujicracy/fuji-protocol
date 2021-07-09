@@ -42,16 +42,13 @@ library Errors {
   string public constant VL_MINIMUM_PAYBACK_ERROR = "125"; // Minimum Amount payback should be at least Fuji Optimizerfee accrued interest.
   string public constant VL_HARVESTING_FAILED = "126"; // Harvesting Function failed, check provided _farmProtocolNum or no claimable balance.
   string public constant VL_FLASHLOAN_FAILED = "127"; // Flashloan failed
+  string public constant VL_ERC1155_NOT_TRANSFERABLE = "128"; // ERC1155: Not Transferable
 
   string public constant MATH_DIVISION_BY_ZERO = "201";
   string public constant MATH_ADDITION_OVERFLOW = "202";
   string public constant MATH_MULTIPLICATION_OVERFLOW = "203";
 
-  string public constant RF_NO_GREENLIGHT = "300"; // Conditions for refinancing are not met, greenLight, deltaAPRThreshold, deltatimestampThreshold
   string public constant RF_INVALID_RATIO_VALUES = "301"; // Ratio Value provided is invalid, _ratioA/_ratioB <= 1, and > 0, or activeProvider borrowBalance = 0
-  string public constant RF_CHECK_RATES_FALSE = "302"; //Check Rates routine returned False
 
   string public constant VLT_CALLER_MUST_BE_VAULT = "401"; // The caller of this function must be a vault
-
-  string public constant SP_ALPHA_WHITELIST = "901"; // One ETH cap value for Alpha Version < 1 ETH
 }

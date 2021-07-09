@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { createFixtureLoader } = require("ethereum-waffle");
 
-const { fixture, evmSnapshot, evmRevert, TREASURY_ADDR } = require("./utils-alpha.js");
+const { fixture, evmSnapshot, evmRevert, TREASURY_ADDR } = require("./utils-alpha");
 
 // use(solidity);
 
@@ -12,7 +12,6 @@ describe("Alpha", () => {
   let flasher;
   let controller;
   let compound;
-  let aWhitelist;
   let vaultdai;
   let vaultusdc;
 
@@ -38,7 +37,6 @@ describe("Alpha", () => {
     flasher = theFixture.flasher;
     controller = theFixture.controller;
     compound = theFixture.compound;
-    aWhitelist = theFixture.aWhitelist;
     vaultdai = theFixture.vaultdai;
     vaultusdc = theFixture.vaultusdc;
 
@@ -52,7 +50,6 @@ describe("Alpha", () => {
       await expect(await fujiadmin.getFliquidator()).to.equal(fliquidator.address);
       await expect(await fujiadmin.getController()).to.equal(controller.address);
       await expect(await fujiadmin.getTreasury()).to.equal(TREASURY_ADDR);
-      await expect(await fujiadmin.getaWhitelist()).to.equal(aWhitelist.address);
     });
   });
 });

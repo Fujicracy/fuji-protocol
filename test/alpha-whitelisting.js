@@ -8,7 +8,6 @@ const { fixture, evmSnapshot, evmRevert } = require("./utils-alpha");
 
 describe("Alpha", () => {
   let aave;
-  let aWhitelist;
   let vaultdai;
   let vaultusdc;
   let vaultusdt;
@@ -31,7 +30,6 @@ describe("Alpha", () => {
   beforeEach(async () => {
     const theFixture = await loadFixture(fixture);
     aave = theFixture.aave;
-    aWhitelist = theFixture.aWhitelist;
     vaultdai = theFixture.vaultdai;
     vaultusdc = theFixture.vaultusdc;
     vaultusdt = theFixture.vaultusdt;
@@ -43,9 +41,6 @@ describe("Alpha", () => {
 
   describe("Alpha Whitelisting Functionality", () => {
     it("1.- Set limit users to 4, Users[1,2,3,4] added to whitelist, then users[5] tries deposit and reverts", async () => {
-      // Set up Limit of users to 5. This is only staged for purposes of testing.
-      await aWhitelist.connect(users[0]).updateLimitUser(4);
-
       // Bootstrap Liquidity (1st User)
       const bootstraper = users[0];
       const bstrapLiquidity = ethers.utils.parseEther("1");
@@ -66,9 +61,6 @@ describe("Alpha", () => {
     });
 
     it("2.- Set ETH_CAP_VALUE to 2 eth, and Users[2] tries to deposit 4 ETH, and then 1 ETH and reverts ", async () => {
-      // Set up Limit of users to 5. This is only staged for purposes of testing.
-      await aWhitelist.connect(users[0]).updateCap(ethers.utils.parseEther("2"));
-
       // Bootstrap Liquidity (1st User)
       const bootstraper = users[0];
       const bstrapLiquidity = ethers.utils.parseEther("1");

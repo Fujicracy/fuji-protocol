@@ -4,7 +4,7 @@ pragma solidity >=0.4.25 <0.7.0;
 pragma experimental ABIEncoderV2;
 
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { UniERC20 } from "../Libraries/LibUniERC20.sol";
+import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IProvider } from "./IProvider.sol";
 
@@ -112,7 +112,7 @@ interface AaveAddressProviderRegistryInterface {
 
 contract ProviderAave is IProvider {
   using SafeMath for uint256;
-  using UniERC20 for IERC20;
+  using LibUniversalERC20 for IERC20;
 
   function _getAaveProvider() internal pure returns (AaveLendingPoolProviderInterface) {
     return AaveLendingPoolProviderInterface(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5); //mainnet

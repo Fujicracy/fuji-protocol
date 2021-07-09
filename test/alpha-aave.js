@@ -258,7 +258,7 @@ describe("Alpha", () => {
 
       await vaultdai.connect(userX).borrow(borrowAmount);
 
-      await expect(await dai.balanceOf(userX.address)).to.be.gt(borrowAmount);
+      await expect(await dai.balanceOf(userX.address)).to.be.gte(borrowAmount);
 
       const vAssetStruct = await vaultdai.vAssets();
 

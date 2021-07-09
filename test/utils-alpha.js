@@ -15,12 +15,7 @@ const CETH_ADDR = "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5";
 const CYWETH_ADDR = "0x41c84c0e2EE0b740Cf0d31F63f3B6F627DC6b393";
 
 const FujiAdmin = require("../artifacts/contracts/FujiAdmin.sol/FujiAdmin.json");
-// const FujiMapping = require("../artifacts/contracts/FujiMapping.sol/FujiMapping.json");
 const Fliquidator = require("../artifacts/contracts/Fliquidator.sol/Fliquidator.json");
-const AWhitelist = require("../artifacts/contracts/AlphaWhitelist.sol/AlphaWhitelist.json");
-// const VaultETHDAI = require("../artifacts/contracts/Vaults/VaultETHDAI.sol/VaultETHDAI.json");
-// const VaultETHUSDC = require("../artifacts/contracts/Vaults/VaultETHUSDC.sol/VaultETHUSDC.json");
-// const VaultETHUSDT = require("../artifacts/contracts/Vaults/VaultETHUSDT.sol/VaultETHUSDT.json");
 const VaultHarvester = require("../artifacts/contracts/Vaults/VaultHarvester.sol/VaultHarvester.json");
 const Aave = require("../artifacts/contracts/Providers/ProviderAave.sol/ProviderAave.json");
 const Compound = require("../artifacts/contracts/Providers/ProviderCompound.sol/ProviderCompound.json");
@@ -58,10 +53,6 @@ const fixture = async ([wallet]) => {
   const ironbank = await deployContract(wallet, IronBank, []);
 
   // Step 4 Of Deploy Core Money Handling Contracts
-  const aWhitelist = await deployContract(wallet, AWhitelist, [
-    "100",
-    ethers.utils.parseEther("50"),
-  ]);
   const vaultharvester = await deployContract(wallet, VaultHarvester, []);
 
   const FujiVault = await ethers.getContractFactory("FujiVault");
@@ -107,7 +98,6 @@ const fixture = async ([wallet]) => {
   await fujiadmin.setFliquidator(fliquidator.address);
   await fujiadmin.setTreasury(TREASURY_ADDR);
   await fujiadmin.setController(controller.address);
-  await fujiadmin.setaWhitelist(aWhitelist.address);
   await fujiadmin.setVaultHarvester(vaultharvester.address);
   await fliquidator.setFujiAdmin(fujiadmin.address);
   await fliquidator.setSwapper(UNISWAP_ROUTER_ADDR);
@@ -169,7 +159,6 @@ const fixture = async ([wallet]) => {
     compound,
     dydx,
     ironbank,
-    aWhitelist,
     vaultharvester,
     vaultdai,
     vaultusdc,

@@ -34,7 +34,6 @@ const main = async () => {
   const ironBank = await deploy("ProviderIronBank");
 
   // Step 4 Of Deploy Core Money Handling Contracts
-  const aWhitelist = await deploy("AlphaWhitelist", ["100", ethers.utils.parseEther("2")]);
   const vaultharvester = await deploy("VaultHarvester");
 
   const vaultdai = await deployVault("VaultETHDAI", [
@@ -55,38 +54,12 @@ const main = async () => {
     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
     "0xdAC17F958D2ee523a2206206994597C13D831ec7",
   ]);
-  // const FujiVault = await ethers.getContractFactory("FujiVault");
-  // const vaultdai = await upgrades.deployProxy(FujiVault, [
-  //   fujiadmin.address,
-  //   CHAINLINK_ORACLE_ADDR,
-  //   "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-  //   "0x6B175474E89094C44Da98b954EedeAC495271d0F",
-  // ]);
-  // console.log("VaultETHDAI deployed to: ", vaultdai.address);
-  // const vaultusdc = await upgrades.deployProxy(FujiVault, [
-  //   fujiadmin.address,
-  //   CHAINLINK_ORACLE_ADDR,
-  //   "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-  //   "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-  // ]);
-  // console.log("VaultETHUSDC deployed to: ", vaultusdc.address);
-  // const vaultusdt = await upgrades.deployProxy(FujiVault, [
-  //   fujiadmin.address,
-  //   CHAINLINK_ORACLE_ADDR,
-  //   "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-  //   "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-  // ]);
-  // console.log("VaultETHUSDT deployed to: ", vaultusdt.address);
-  // const vaultdai = await deploy("VaultETHDAI");
-  // const vaultusdc = await deploy("VaultETHUSDC");
-  // const vaultusdt = await deploy("VaultETHUSDT");
 
   // Step 5 - General Plug-ins and Set-up Transactions
   await fujiadmin.setFlasher(flasher.address);
   await fujiadmin.setFliquidator(fliquidator.address);
   await fujiadmin.setTreasury("0x9F5A10E45906Ef12497237cE10fB7AB9B850Ff86");
   await fujiadmin.setController(controller.address);
-  await fujiadmin.setaWhitelist(aWhitelist.address);
   await fujiadmin.setVaultHarvester(vaultharvester.address);
   await fliquidator.setFujiAdmin(fujiadmin.address);
   await fliquidator.setSwapper(UNISWAP_ROUTER_ADDR);

@@ -2,13 +2,7 @@ const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { createFixtureLoader } = require("ethereum-waffle");
 
-const {
-  fixture,
-  evmSnapshot,
-  evmRevert,
-  advanceblocks,
-  TREASURY_ADDR,
-} = require("./utils-alpha.js");
+const { fixture, evmSnapshot, evmRevert, advanceblocks, TREASURY_ADDR } = require("./utils-alpha");
 
 // use(solidity);
 
@@ -17,7 +11,6 @@ describe("Alpha", () => {
   let fujiadmin;
   let aave;
   let compound;
-  let aWhitelist;
   let vaultdai;
   let vaultusdc;
   let vaultusdt;
@@ -43,7 +36,6 @@ describe("Alpha", () => {
     fujiadmin = theFixture.fujiadmin;
     aave = theFixture.aave;
     compound = theFixture.compound;
-    aWhitelist = theFixture.aWhitelist;
     vaultdai = theFixture.vaultdai;
     vaultusdc = theFixture.vaultusdc;
     vaultusdt = theFixture.vaultusdt;
@@ -162,9 +154,6 @@ describe("Alpha", () => {
       // For COMP set up compound as provider
       await thevault.setActiveProvider(compound.address);
 
-      // Set up high Deposit Limit. This is only staged for purposes of testing.
-      await aWhitelist.connect(users[0]).updateCap(ethers.utils.parseEther("1000"));
-
       // Do a deposit
       await thevault
         .connect(userX)
@@ -197,9 +186,6 @@ describe("Alpha", () => {
 
       // For stkAave set up Aave as provider
       await thevault.setActiveProvider(aave.address);
-
-      // Set up high Deposit Limit. This is only staged for purposes of testing.
-      await aWhitelist.connect(users[0]).updateCap(ethers.utils.parseEther("1000"));
 
       // Do a deposit
       await thevault

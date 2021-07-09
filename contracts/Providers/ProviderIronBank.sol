@@ -2,7 +2,7 @@
 pragma solidity >=0.4.25 <0.7.5;
 
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { UniERC20 } from "../Libraries/LibUniERC20.sol";
+import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IProvider } from "./IProvider.sol";
 
@@ -117,7 +117,7 @@ contract HelperFunct {
 
 contract ProviderIronBank is IProvider, HelperFunct {
   using SafeMath for uint256;
-  using UniERC20 for IERC20;
+  using LibUniversalERC20 for IERC20;
 
   //Provider Core Functions
 
@@ -149,7 +149,7 @@ contract ProviderIronBank is IProvider, HelperFunct {
     require(erc20token.balanceOf(address(this)) >= _amount, "Not enough Balance");
 
     //Approve to move ERC20tokens
-    erc20token.uniApprove(address(cyTokenAddr), _amount);
+    erc20token.univApprove(address(cyTokenAddr), _amount);
 
     // IronBank Protocol mints cyTokens, trhow error if not
     require(cyToken.mint(_amount) == 0, "Deposit-failed");
@@ -218,7 +218,7 @@ contract ProviderIronBank is IProvider, HelperFunct {
 
     // Check there is enough balance to pay
     require(erc20token.balanceOf(address(this)) >= _amount, "Not-enough-token");
-    erc20token.uniApprove(address(cyTokenAddr), _amount);
+    erc20token.univApprove(address(cyTokenAddr), _amount);
     cyToken.repayBorrow(_amount);
   }
 

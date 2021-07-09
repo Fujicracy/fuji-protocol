@@ -1,4 +1,4 @@
-const { ethers, waffle } = require("hardhat");
+const { ethers, waffle, upgrades } = require("hardhat");
 const { expect } = require("chai");
 const { createFixtureLoader } = require("ethereum-waffle");
 
@@ -10,10 +10,6 @@ const TREASURY_ADDR = "0x9F5A10E45906Ef12497237cE10fB7AB9B850Ff86";
 
 const FujiAdmin = require("../artifacts/contracts/FujiAdmin.sol/FujiAdmin.json");
 const Fliquidator = require("../artifacts/contracts/Fliquidator.sol/Fliquidator.json");
-const AWhitelist = require("../artifacts/contracts/AlphaWhitelist.sol/AlphaWhitelist.json");
-const VaultETHDAI = require("../artifacts/contracts/Vaults/VaultETHDAI.sol/VaultETHDAI.json");
-const VaultETHUSDC = require("../artifacts/contracts/Vaults/VaultETHUSDC.sol/VaultETHUSDC.json");
-const VaultETHUSDT = require("../artifacts/contracts/Vaults/VaultETHUSDT.sol/VaultETHUSDT.json");
 const VaultHarvester = require("../artifacts/contracts/Vaults/VaultHarvester.sol/VaultHarvester.json");
 const Aave = require("../artifacts/contracts/Providers/ProviderAave.sol/ProviderAave.json");
 const Compound = require("../artifacts/contracts/Providers/ProviderCompound.sol/ProviderCompound.json");
@@ -23,6 +19,7 @@ const Flasher = require("../artifacts/contracts/Flashloans/Flasher.sol/Flasher.j
 const Controller = require("../artifacts/contracts/Controller.sol/Controller.json");
 
 const FujiMapping = require("../artifacts/contracts/FujiMapping.sol/FujiMapping.json");
+const { ETH_ADDR, DAI_ADDR, USDC_ADDR, USDT_ADDR } = require("./utils-alpha");
 
 const fixture = async ([wallet]) => {
   // Step 1 of Deploy: Contracts which address is required to be hardcoded in other contracts
@@ -60,21 +57,32 @@ const fixture = async ([wallet]) => {
   const dydx = await deployContract(wallet, Dydx, []);
 
   // Step 4 Of Deploy Core Money Handling Contracts
-  const aWhitelist = await deployContract(wallet, AWhitelist, [
-    "100",
-    ethers.utils.parseEther("12"),
-  ]);
   const vaultharvester = await deployContract(wallet, VaultHarvester, []);
-  const vaultdai = await deployContract(wallet, VaultETHDAI, []);
-  const vaultusdc = await deployContract(wallet, VaultETHUSDC, []);
-  const vaultusdt = await deployContract(wallet, VaultETHUSDT, []);
+  const FujiVault = await ethers.getContractFactory("FujiVault");
+  const vaultdai = await upgrades.deployProxy(FujiVault, [
+    fujiadmin.address,
+    CHAINLINK_ORACLE_ADDR,
+    ETH_ADDR,
+    DAI_ADDR,
+  ]);
+  const vaultusdc = await upgrades.deployProxy(FujiVault, [
+    fujiadmin.address,
+    CHAINLINK_ORACLE_ADDR,
+    ETH_ADDR,
+    USDC_ADDR,
+  ]);
+  const vaultusdt = await upgrades.deployProxy(FujiVault, [
+    fujiadmin.address,
+    CHAINLINK_ORACLE_ADDR,
+    ETH_ADDR,
+    USDT_ADDR,
+  ]);
 
   // Step 5 - General Plug-ins and Set-up Transactions
   await fujiadmin.setFlasher(flasher.address);
   await fujiadmin.setFliquidator(fliquidator.address);
   await fujiadmin.setTreasury(TREASURY_ADDR);
   await fujiadmin.setController(controller.address);
-  await fujiadmin.setaWhitelist(aWhitelist.address);
   await fujiadmin.setVaultHarvester(vaultharvester.address);
   await fliquidator.setFujiAdmin(fujiadmin.address);
   await fliquidator.setSwapper(UNISWAP_ROUTER_ADDR);
@@ -113,7 +121,6 @@ const fixture = async ([wallet]) => {
     aave,
     compound,
     dydx,
-    aWhitelist,
     vaultharvester,
     vaultdai,
     vaultusdc,

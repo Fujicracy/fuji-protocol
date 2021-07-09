@@ -3,7 +3,7 @@ pragma solidity >=0.4.25 <0.7.5;
 pragma experimental ABIEncoderV2;
 
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { UniERC20 } from "../Libraries/LibUniERC20.sol";
+import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IProvider } from "./IProvider.sol";
 
@@ -182,7 +182,7 @@ contract HelperFunct {
 
 contract ProviderDYDX is IProvider, HelperFunct {
   using SafeMath for uint256;
-  using UniERC20 for IERC20;
+  using LibUniversalERC20 for IERC20;
 
   bool public donothing = true;
 

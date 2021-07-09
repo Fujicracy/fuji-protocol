@@ -35,14 +35,6 @@ contract FujiBaseERC1155 is IERC1155, ERC165, Context {
   // Mapping from token ID to totalSupply
   mapping(uint256 => uint256) internal _totalSupply;
 
-  //Fuji ERC1155 Transfer Control
-  bool public transfersActive;
-
-  modifier isTransferActive() {
-    require(transfersActive, Errors.VL_NOT_AUTHORIZED);
-    _;
-  }
-
   //URI for all token types by relying on ID substitution
   //https://token.fujiDao.org/{id}.json
   string internal _uri;
@@ -142,7 +134,7 @@ contract FujiBaseERC1155 is IERC1155, ERC165, Context {
     uint256 id,
     uint256 amount,
     bytes memory data
-  ) public virtual override isTransferActive {
+  ) public virtual override {
     require(to != address(0), Errors.VL_ZERO_ADDR_1155);
     require(
       from == _msgSender() || isApprovedForAll(from, _msgSender()),
@@ -180,7 +172,7 @@ contract FujiBaseERC1155 is IERC1155, ERC165, Context {
     uint256[] memory ids,
     uint256[] memory amounts,
     bytes memory data
-  ) public virtual override isTransferActive {
+  ) public virtual override {
     require(ids.length == amounts.length, Errors.VL_INPUT_ERROR);
     require(to != address(0), Errors.VL_ZERO_ADDR_1155);
     require(

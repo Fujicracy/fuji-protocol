@@ -13,7 +13,6 @@ import "./VaultBaseUpgradeable.sol";
 import "../IFujiAdmin.sol";
 import "../FujiERC1155/IFujiERC1155.sol";
 import "../Providers/IProvider.sol";
-import "../IAlphaWhiteList.sol";
 import "../Libraries/Errors.sol";
 import "../Libraries/LibUniversalERC20.sol";
 

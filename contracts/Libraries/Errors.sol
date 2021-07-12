@@ -51,4 +51,7 @@ library Errors {
   string public constant RF_INVALID_RATIO_VALUES = "301"; // Ratio Value provided is invalid, _ratioA/_ratioB <= 1, and > 0, or activeProvider borrowBalance = 0
 
   string public constant VLT_CALLER_MUST_BE_VAULT = "401"; // The caller of this function must be a vault
+
+  string public constant ORACLE_INVALID_LENGTH = "501"; // The assets length and price feeds length doesn't match
+  string public constant ORACLE_NONE_PRICE_FEED = "502"; // The price feed is not found
 }

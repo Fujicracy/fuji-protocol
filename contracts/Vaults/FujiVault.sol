@@ -11,6 +11,7 @@ import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "./IVault.sol";
 import "./VaultBaseUpgradeable.sol";
 import "../IFujiAdmin.sol";
+import "../IFujiOracle.sol";
 import "../FujiERC1155/IFujiERC1155.sol";
 import "../Providers/IProvider.sol";
 import "../Libraries/Errors.sol";
@@ -48,10 +49,11 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
 
   IFujiAdmin private _fujiAdmin;
   address public override fujiERC1155;
-  AggregatorV3Interface public oracle;
+  IFujiOracle public oracle;
 
   string public name;
-  uint256 internal _borrowAssetBase;
+
+  uint256 internal constant _BASE_DECIMAL = 18;
 
   modifier isAuthorized() {
     require(
@@ -77,7 +79,7 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
     __ReentrancyGuard_init();
 
     _fujiAdmin = IFujiAdmin(_fujiadmin);
-    oracle = AggregatorV3Interface(_oracle);
+    oracle = IFujiOracle(_oracle);
     vAssets.collateralAsset = _collateralAsset;
     vAssets.borrowAsset = _borrowAsset;
 
@@ -88,14 +90,6 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
       collateralSymbol = "ETH";
     } else {
       collateralSymbol = IERC20Extended(_collateralAsset).symbol();
-    }
-
-    if (_borrowAsset == ETH) {
-      borrowSymbol = "ETH";
-      _borrowAssetBase = 10**18;
-    } else {
-      borrowSymbol = IERC20Extended(_borrowAsset).symbol();
-      _borrowAssetBase = (10**uint256(IERC20Extended(_borrowAsset).decimals()));
     }
 
     name = string(abi.encodePacked("Vault", collateralSymbol, borrowSymbol));
@@ -408,7 +402,7 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
    * @param _oracle: new Oracle address
    */
   function setOracle(address _oracle) external isAuthorized {
-    oracle = AggregatorV3Interface(_oracle);
+    oracle = IFujiOracle(_oracle);
   }
 
   /**
@@ -481,9 +475,9 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
     override
     returns (uint256)
   {
-    // Get price of USD in ETH (wei)
-    (, int256 latestPrice, , , ) = oracle.latestRoundData();
-    uint256 minimumReq = (_amount.mul(uint256(latestPrice))).div(_borrowAssetBase);
+    // Get exchange rate
+    uint256 price = oracle.getPriceOf(vAssets.collateralAsset, vAssets.borrowAsset, _BASE_DECIMAL);
+    uint256 minimumReq = (_amount.mul(price)).div(10**_BASE_DECIMAL);
 
     if (_withFactors) {
       return minimumReq.mul(collatF.a).mul(safetyF.a).div(collatF.b).div(safetyF.b);

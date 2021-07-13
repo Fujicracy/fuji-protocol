@@ -26,7 +26,7 @@ contract FujiOracle is IFujiOracle, Ownable {
     usdPriceFeeds[_asset] = _priceFeed;
   }
 
-  /// @dev Calculates the exchange rate n given decimals
+  /// @dev Calculates the exchange rate n given decimals (_borrowAsset / _collateralAsset Exchange Rate)
   /// @param _collateralAsset the collateral asset, zero-address for USD
   /// @param _borrowAsset the borrow asset, zero-address for USD
   /// @param _decimals the decimals of the price output
@@ -38,14 +38,14 @@ contract FujiOracle is IFujiOracle, Ownable {
   ) external view override returns (uint256 price) {
     price = 10**_decimals;
 
-    if (_collateralAsset != address(0)) {
-      price = price.mul(getUSDPrice(_collateralAsset));
+    if (_borrowAsset != address(0)) {
+      price = price.mul(_getUSDPrice(_borrowAsset));
     } else {
       price = price.mul(10**8);
     }
 
-    if (_borrowAsset != address(0)) {
-      price = price.div(_getUSDPrice(_borrowAsset));
+    if (_collateralAsset != address(0)) {
+      price = price.div(_getUSDPrice(_collateralAsset));
     } else {
       price = price.div(10**8);
     }

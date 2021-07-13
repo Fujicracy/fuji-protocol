@@ -14,6 +14,11 @@ const AWETH_ADDR = "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e";
 const CETH_ADDR = "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5";
 const CYWETH_ADDR = "0x41c84c0e2EE0b740Cf0d31F63f3B6F627DC6b393";
 
+const DAI_CHAINLINK_ORACLE = "0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9";
+const USDC_CHAINLINK_ORACLE = "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6";
+const USDT_CHAINLINK_ORACLE = "0x3E7d1eAB13ad0104d2750B8863b489D65364e32D";
+const ETH_CHAINLINK_ORACLE = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419";
+
 const FujiAdmin = require("../artifacts/contracts/FujiAdmin.sol/FujiAdmin.json");
 const Fliquidator = require("../artifacts/contracts/Fliquidator.sol/Fliquidator.json");
 const VaultHarvester = require("../artifacts/contracts/Vaults/VaultHarvester.sol/VaultHarvester.json");
@@ -24,6 +29,7 @@ const IronBank = require("../artifacts/contracts/Providers/ProviderIronBank.sol/
 const F1155 = require("../artifacts/contracts/FujiERC1155/FujiERC1155.sol/FujiERC1155.json");
 const Flasher = require("../artifacts/contracts/Flashloans/Flasher.sol/Flasher.json");
 const Controller = require("../artifacts/contracts/Controller.sol/Controller.json");
+const FujiOracle = require("../artifacts/contracts/FujiOracle.sol/FujiOracle.json");
 
 const fixture = async ([wallet]) => {
   const dai = await ethers.getContractAt("IERC20", DAI_ADDR);
@@ -32,7 +38,6 @@ const fixture = async ([wallet]) => {
   const aweth = await ethers.getContractAt("IERC20", AWETH_ADDR);
   const ceth = await ethers.getContractAt("ICErc20", CETH_ADDR);
   const cyweth = await ethers.getContractAt("ICyErc20", CYWETH_ADDR);
-  const oracle = await ethers.getContractAt("AggregatorV3Interface", CHAINLINK_ORACLE_ADDR);
 
   // Step 1 of Deploy: Contracts which address is required to be hardcoded in other contracts
   // Fuji Mapping, for testing this is not required.
@@ -45,6 +50,10 @@ const fixture = async ([wallet]) => {
   const flasher = await deployContract(wallet, Flasher, []);
   const controller = await deployContract(wallet, Controller, []);
   const f1155 = await deployContract(wallet, F1155, []);
+  const oracle = await deployContract(wallet, FujiOracle, [
+    [DAI_ADDR, USDT_ADDR, USDC_ADDR, ETH_ADDR],
+    [DAI_CHAINLINK_ORACLE, USDT_CHAINLINK_ORACLE, USDC_CHAINLINK_ORACLE, ETH_CHAINLINK_ORACLE],
+  ]);
 
   // Step 3 Of Deploy: Provider Contracts
   const aave = await deployContract(wallet, Aave, []);
@@ -58,37 +67,37 @@ const fixture = async ([wallet]) => {
   const FujiVault = await ethers.getContractFactory("FujiVault");
   const vaultdai = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
-    CHAINLINK_ORACLE_ADDR,
+    oracle.address,
     ETH_ADDR,
     DAI_ADDR,
   ]);
   const vaultusdc = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
-    CHAINLINK_ORACLE_ADDR,
+    oracle.address,
     ETH_ADDR,
     USDC_ADDR,
   ]);
   const vaultusdt = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
-    CHAINLINK_ORACLE_ADDR,
+    oracle.address,
     ETH_ADDR,
     USDT_ADDR,
   ]);
   const vaultdaiusdc = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
-    "0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9",
+    oracle.address,
     DAI_ADDR,
     USDC_ADDR,
   ]);
   const vaultdaiusdt = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
-    "0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9",
+    oracle.address,
     DAI_ADDR,
     USDT_ADDR,
   ]);
   const vaultdaieth = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
-    "0x773616E4d11A78F511299002da57A0a94577F1f4",
+    oracle.address,
     DAI_ADDR,
     ETH_ADDR,
   ]);

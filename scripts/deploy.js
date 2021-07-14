@@ -8,10 +8,26 @@ const R = require("ramda");
 const main = async () => {
   console.log("\n\n 📡 Deploying...\n");
 
-  const DAI_ADDR = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
-  const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
   const UNISWAP_ROUTER_ADDR = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
-  const CHAINLINK_ORACLE_ADDR = "0x773616E4d11A78F511299002da57A0a94577F1f4";
+
+  const ASSETS = {
+    DAI: {
+      address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+      oracle: "0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9",
+    },
+    USDC: {
+      address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      oracle: "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6",
+    },
+    USDT: {
+      address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+      oracle: "0x3E7d1eAB13ad0104d2750B8863b489D65364e32D",
+    },
+    ETH: {
+      address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+      oracle: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
+    },
+  };
 
   const deployerWallet = ethers.provider.getSigner();
 
@@ -26,6 +42,10 @@ const main = async () => {
   const flasher = await deploy("Flasher");
   const controller = await deploy("Controller");
   const f1155 = await deploy("FujiERC1155");
+  const oracle = await deploy("FujiOracle", [
+    Object.values(ASSETS).map((asset) => asset.address),
+    Object.values(ASSETS).map((asset) => asset.oracle),
+  ]);
 
   // Step 3 Of Deploy: Provider Contracts
   const aave = await deploy("ProviderAave");
@@ -38,21 +58,21 @@ const main = async () => {
 
   const vaultdai = await deployVault("VaultETHDAI", [
     fujiadmin.address,
-    CHAINLINK_ORACLE_ADDR,
-    "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-    "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    oracle.address,
+    ASSETS.ETH.address,
+    ASSETS.DAI.address,
   ]);
   const vaultusdc = await deployVault("VaultETHUSDC", [
     fujiadmin.address,
-    CHAINLINK_ORACLE_ADDR,
-    "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-    "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    oracle.address,
+    ASSETS.ETH.address,
+    ASSETS.USDC.address,
   ]);
   const vaultusdt = await deployVault("VaultETHUSDT", [
     fujiadmin.address,
-    CHAINLINK_ORACLE_ADDR,
-    "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-    "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    oracle.address,
+    ASSETS.ETH.address,
+    ASSETS.USDT.address,
   ]);
 
   // Step 5 - General Plug-ins and Set-up Transactions
@@ -71,23 +91,20 @@ const main = async () => {
   await f1155.setPermit(fliquidator.address, true);
 
   // Step 6 - Vault Set-up
-  await vaultdai.setFujiAdmin(fujiadmin.address);
   await vaultdai.setProviders([compound.address, aave.address, dydx.address, ironBank.address]);
   await vaultdai.setActiveProvider(compound.address);
   await vaultdai.setFujiERC1155(f1155.address);
-  await vaultdai.setOracle(CHAINLINK_ORACLE_ADDR);
+  await fujiadmin.addVault(vaultdai.address);
 
-  await vaultusdc.setFujiAdmin(fujiadmin.address);
   await vaultusdc.setProviders([compound.address, aave.address, dydx.address, ironBank.address]);
   await vaultusdc.setActiveProvider(compound.address);
   await vaultusdc.setFujiERC1155(f1155.address);
-  await vaultusdc.setOracle(CHAINLINK_ORACLE_ADDR);
+  await fujiadmin.addVault(vaultusdc.address);
 
-  await vaultusdt.setFujiAdmin(fujiadmin.address);
   await vaultusdt.setProviders([compound.address, aave.address, ironBank.address]);
   await vaultusdt.setActiveProvider(compound.address);
   await vaultusdt.setFujiERC1155(f1155.address);
-  await vaultusdt.setOracle(CHAINLINK_ORACLE_ADDR);
+  await fujiadmin.addVault(vaultusdt.address);
 
   console.log(
     " 💾  Artifacts (address, abi, and args) saved to: ",

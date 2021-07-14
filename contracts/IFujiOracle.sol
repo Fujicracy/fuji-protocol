@@ -1,0 +1,11 @@
+// SPDX-License-Identifier: MIT
+
+pragma solidity >=0.6.12 <0.8.0;
+
+interface IFujiOracle {
+  function getPriceOf(
+    address _collateralAsset,
+    address _borrowAsset,
+    uint256 _decimals
+  ) external view returns (uint256);
+}

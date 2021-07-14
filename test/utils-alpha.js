@@ -2,17 +2,31 @@ const { ethers, waffle, upgrades } = require("hardhat");
 
 const { deployContract } = waffle;
 
-const CHAINLINK_ORACLE_ADDR = "0x773616E4d11A78F511299002da57A0a94577F1f4";
 const UNISWAP_ROUTER_ADDR = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
 const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
-const DAI_ADDR = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
-const USDC_ADDR = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
-const USDT_ADDR = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
-const ETH_ADDR = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 const TREASURY_ADDR = "0x9F5A10E45906Ef12497237cE10fB7AB9B850Ff86";
 const AWETH_ADDR = "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e";
 const CETH_ADDR = "0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5";
 const CYWETH_ADDR = "0x41c84c0e2EE0b740Cf0d31F63f3B6F627DC6b393";
+
+const ASSETS = {
+  DAI: {
+    address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    oracle: "0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9",
+  },
+  USDC: {
+    address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    oracle: "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6",
+  },
+  USDT: {
+    address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    oracle: "0x3E7d1eAB13ad0104d2750B8863b489D65364e32D",
+  },
+  ETH: {
+    address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+    oracle: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
+  },
+};
 
 const FujiAdmin = require("../artifacts/contracts/FujiAdmin.sol/FujiAdmin.json");
 const Fliquidator = require("../artifacts/contracts/Fliquidator.sol/Fliquidator.json");
@@ -24,15 +38,15 @@ const IronBank = require("../artifacts/contracts/Providers/ProviderIronBank.sol/
 const F1155 = require("../artifacts/contracts/FujiERC1155/FujiERC1155.sol/FujiERC1155.json");
 const Flasher = require("../artifacts/contracts/Flashloans/Flasher.sol/Flasher.json");
 const Controller = require("../artifacts/contracts/Controller.sol/Controller.json");
+const FujiOracle = require("../artifacts/contracts/FujiOracle.sol/FujiOracle.json");
 
 const fixture = async ([wallet]) => {
-  const dai = await ethers.getContractAt("IERC20", DAI_ADDR);
-  const usdc = await ethers.getContractAt("IERC20", USDC_ADDR);
-  const usdt = await ethers.getContractAt("IERC20", USDT_ADDR);
+  const dai = await ethers.getContractAt("IERC20", ASSETS.DAI.address);
+  const usdc = await ethers.getContractAt("IERC20", ASSETS.USDC.address);
+  const usdt = await ethers.getContractAt("IERC20", ASSETS.USDT.address);
   const aweth = await ethers.getContractAt("IERC20", AWETH_ADDR);
   const ceth = await ethers.getContractAt("ICErc20", CETH_ADDR);
   const cyweth = await ethers.getContractAt("ICyErc20", CYWETH_ADDR);
-  const oracle = await ethers.getContractAt("AggregatorV3Interface", CHAINLINK_ORACLE_ADDR);
 
   // Step 1 of Deploy: Contracts which address is required to be hardcoded in other contracts
   // Fuji Mapping, for testing this is not required.
@@ -45,6 +59,10 @@ const fixture = async ([wallet]) => {
   const flasher = await deployContract(wallet, Flasher, []);
   const controller = await deployContract(wallet, Controller, []);
   const f1155 = await deployContract(wallet, F1155, []);
+  const oracle = await deployContract(wallet, FujiOracle, [
+    Object.values(ASSETS).map((asset) => asset.address),
+    Object.values(ASSETS).map((asset) => asset.oracle),
+  ]);
 
   // Step 3 Of Deploy: Provider Contracts
   const aave = await deployContract(wallet, Aave, []);
@@ -58,39 +76,39 @@ const fixture = async ([wallet]) => {
   const FujiVault = await ethers.getContractFactory("FujiVault");
   const vaultdai = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
-    CHAINLINK_ORACLE_ADDR,
-    ETH_ADDR,
-    DAI_ADDR,
+    oracle.address,
+    ASSETS.ETH.address,
+    ASSETS.DAI.address,
   ]);
   const vaultusdc = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
-    CHAINLINK_ORACLE_ADDR,
-    ETH_ADDR,
-    USDC_ADDR,
+    oracle.address,
+    ASSETS.ETH.address,
+    ASSETS.USDC.address,
   ]);
   const vaultusdt = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
-    CHAINLINK_ORACLE_ADDR,
-    ETH_ADDR,
-    USDT_ADDR,
+    oracle.address,
+    ASSETS.ETH.address,
+    ASSETS.USDT.address,
   ]);
   const vaultdaiusdc = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
-    "0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9",
-    DAI_ADDR,
-    USDC_ADDR,
+    oracle.address,
+    ASSETS.DAI.address,
+    ASSETS.USDC.address,
   ]);
   const vaultdaiusdt = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
-    "0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9",
-    DAI_ADDR,
-    USDT_ADDR,
+    oracle.address,
+    ASSETS.DAI.address,
+    ASSETS.USDT.address,
   ]);
   const vaultdaieth = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
-    "0x773616E4d11A78F511299002da57A0a94577F1f4",
-    DAI_ADDR,
-    ETH_ADDR,
+    oracle.address,
+    ASSETS.DAI.address,
+    ASSETS.ETH.address,
   ]);
 
   // Step 5 - General Plug-ins and Set-up Transactions
@@ -199,11 +217,8 @@ module.exports = {
   convertToCurrencyDecimals,
   convertToWei,
   ZERO_ADDR,
-  ETH_ADDR,
+  ASSETS,
   TREASURY_ADDR,
-  DAI_ADDR,
-  USDC_ADDR,
-  USDT_ADDR,
   evmSnapshot,
   evmRevert,
 };

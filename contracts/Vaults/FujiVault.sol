@@ -268,7 +268,10 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
       if (vAssets.borrowAsset == ETH) {
         require(msg.value >= amountToPayback, Errors.VL_AMOUNT_ERROR);
         if (msg.value > amountToPayback) {
-          IERC20(vAssets.borrowAsset).univTransfer(payable(msg.sender), msg.value - amountToPayback);
+          IERC20(vAssets.borrowAsset).univTransfer(
+            payable(msg.sender),
+            msg.value - amountToPayback
+          );
         }
       } else {
         // Check User Allowance

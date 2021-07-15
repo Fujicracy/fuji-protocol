@@ -25,12 +25,12 @@ library LibUniversalERC20 {
 
   function univTransfer(
     IERC20 token,
-    address to,
+    address payable to,
     uint256 amount
   ) internal {
     if (amount > 0) {
       if (isETH(token)) {
-        (bool sent, ) = payable(to).call{ value: amount }("");
+        (bool sent, ) = to.call{ value: amount }("");
         require(sent, "Failed to send Ether");
       } else {
         token.safeTransfer(to, amount);

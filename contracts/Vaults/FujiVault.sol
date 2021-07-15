@@ -198,13 +198,13 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
       _withdraw(amountToWithdraw, address(activeProvider));
 
       // Transer Assets to User
-      IERC20(vAssets.collateralAsset).univTransfer(msg.sender, amountToWithdraw);
+      IERC20(vAssets.collateralAsset).univTransfer(payable(msg.sender), amountToWithdraw);
 
       emit Withdraw(msg.sender, vAssets.collateralAsset, amountToWithdraw);
     } else {
       // Logic used when called by Fliquidator
       _withdraw(uint256(_withdrawAmount), address(activeProvider));
-      IERC20(vAssets.collateralAsset).univTransfer(msg.sender, uint256(_withdrawAmount));
+      IERC20(vAssets.collateralAsset).univTransfer(payable(msg.sender), uint256(_withdrawAmount));
     }
   }
 
@@ -240,7 +240,7 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
     _borrow(_borrowAmount, address(activeProvider));
 
     // Transer Assets to User
-    IERC20(vAssets.borrowAsset).univTransfer(msg.sender, _borrowAmount);
+    IERC20(vAssets.borrowAsset).univTransfer(payable(msg.sender), _borrowAmount);
 
     emit Borrow(msg.sender, vAssets.borrowAsset, _borrowAmount);
   }
@@ -268,7 +268,7 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
       if (vAssets.borrowAsset == ETH) {
         require(msg.value >= amountToPayback, Errors.VL_AMOUNT_ERROR);
         if (msg.value > amountToPayback) {
-          IERC20(vAssets.borrowAsset).univTransfer(msg.sender, msg.value - amountToPayback);
+          IERC20(vAssets.borrowAsset).univTransfer(payable(msg.sender), msg.value - amountToPayback);
         }
       } else {
         // Check User Allowance
@@ -328,7 +328,7 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
     _borrow(_flashLoanAmount + _fee, _newProvider);
 
     // return borrowed amount to Flasher
-    IERC20(vAssets.borrowAsset).univTransfer(msg.sender, _flashLoanAmount + _fee);
+    IERC20(vAssets.borrowAsset).univTransfer(payable(msg.sender), _flashLoanAmount + _fee);
 
     emit Switch(address(this), activeProvider, _newProvider, _flashLoanAmount, collateraltoMove);
   }

@@ -175,7 +175,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     _swap(vAssets.borrowAsset, debtBalanceTotal + globalBonus, globalCollateralInPlay);
 
     // Transfer to Liquidator the debtBalance + bonus
-    IERC20(vAssets.borrowAsset).univTransfer(msg.sender, debtBalanceTotal + globalBonus);
+    IERC20(vAssets.borrowAsset).univTransfer(payable(msg.sender), debtBalanceTotal + globalBonus);
 
     // Burn Debt f1155 tokens and Emit Liquidation Event for Each Liquidated User
     for (uint256 i = 0; i < formattedUserAddrs.length; i += 2) {

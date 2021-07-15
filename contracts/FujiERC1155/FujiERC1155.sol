@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 import { IFujiERC1155 } from "./IFujiERC1155.sol";
@@ -53,11 +53,11 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
     uint256 total = totalSupply(_assetID);
 
     if (newBalance > 0 && total > 0 && newBalance > total) {
-      uint256 diff = newBalance.sub(total);
+      uint256 diff = newBalance - total;
 
       uint256 amountToIndexRatio = (diff.wadToRay()).rayDiv(total.wadToRay());
 
-      uint256 result = amountToIndexRatio.add(WadRayMath.ray());
+      uint256 result = amountToIndexRatio + WadRayMath.ray();
 
       result = result.rayMul(indexes[_assetID]);
       require(result <= type(uint128).max, Errors.VL_INDEX_OVERFLOW);
@@ -146,8 +146,8 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
 
     require(amountScaled != 0, Errors.VL_INVALID_MINT_AMOUNT);
 
-    _balances[_id][_account] = accountBalance.add(amountScaled);
-    _totalSupply[_id] = assetTotalBalance.add(amountScaled);
+    _balances[_id][_account] = accountBalance + amountScaled;
+    _totalSupply[_id] = assetTotalBalance + amountScaled;
 
     emit TransferSingle(operator, address(0), _account, _id, _amount);
 
@@ -184,8 +184,8 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
 
       require(amountScaled != 0, Errors.VL_INVALID_MINT_AMOUNT);
 
-      _balances[_ids[i]][_to] = accountBalance.add(amountScaled);
-      _totalSupply[_ids[i]] = assetTotalBalance.add(amountScaled);
+      _balances[_ids[i]][_to] = accountBalance + amountScaled;
+      _totalSupply[_ids[i]] = assetTotalBalance + amountScaled;
     }
 
     emit TransferBatch(operator, address(0), _to, _ids, _amounts);
@@ -216,8 +216,8 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
 
     require(amountScaled != 0 && accountBalance >= amountScaled, Errors.VL_INVALID_BURN_AMOUNT);
 
-    _balances[_id][_account] = accountBalance.sub(amountScaled);
-    _totalSupply[_id] = assetTotalBalance.sub(amountScaled);
+    _balances[_id][_account] = accountBalance - amountScaled;
+    _totalSupply[_id] = assetTotalBalance - amountScaled;
 
     emit TransferSingle(operator, _account, address(0), _id, _amount);
   }
@@ -251,8 +251,8 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
 
       require(amountScaled != 0 && accountBalance >= amountScaled, Errors.VL_INVALID_BURN_AMOUNT);
 
-      _balances[_ids[i]][_account] = accountBalance.sub(amount);
-      _totalSupply[_ids[i]] = assetTotalBalance.sub(amount);
+      _balances[_ids[i]][_account] = accountBalance - amount;
+      _totalSupply[_ids[i]] = assetTotalBalance - amount;
     }
 
     emit TransferBatch(operator, _account, address(0), _ids, _amounts);

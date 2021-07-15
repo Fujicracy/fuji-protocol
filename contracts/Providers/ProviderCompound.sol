@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.4.25 <0.7.5;
+pragma solidity ^0.8.0;
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IProvider } from "./IProvider.sol";
@@ -118,7 +117,6 @@ contract HelperFunct {
 }
 
 contract ProviderCompound is IProvider, HelperFunct {
-  using SafeMath for uint256;
   using LibUniversalERC20 for IERC20;
 
   //Provider Core Functions
@@ -230,11 +228,11 @@ contract ProviderCompound is IProvider, HelperFunct {
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     //Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: Compound uses base 1e18
-    uint256 bRateperBlock = (IGenCToken(cTokenAddr).borrowRatePerBlock()).mul(10**9);
+    uint256 bRateperBlock = (IGenCToken(cTokenAddr).borrowRatePerBlock()) * (10**9);
 
     // The approximate number of blocks per year that is assumed by the Compound interest rate model
     uint256 blocksperYear = 2102400;
-    return bRateperBlock.mul(blocksperYear);
+    return bRateperBlock * blocksperYear;
   }
 
   /**
@@ -269,6 +267,6 @@ contract ProviderCompound is IProvider, HelperFunct {
     uint256 cTokenBal = IGenCToken(cTokenAddr).balanceOf(msg.sender);
     uint256 exRate = IGenCToken(cTokenAddr).exchangeRateStored();
 
-    return exRate.mul(cTokenBal).div(1e18);
+    return (exRate * cTokenBal) / 1e18;
   }
 }

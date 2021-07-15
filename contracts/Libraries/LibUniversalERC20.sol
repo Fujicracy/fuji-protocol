@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.12;
+pragma solidity ^0.8.0;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 library LibUniversalERC20 {
   using SafeERC20 for IERC20;
@@ -25,12 +25,12 @@ library LibUniversalERC20 {
 
   function univTransfer(
     IERC20 token,
-    address payable to,
+    address to,
     uint256 amount
   ) internal {
     if (amount > 0) {
       if (isETH(token)) {
-        (bool sent, ) = to.call{ value: amount }("");
+        (bool sent, ) = payable(to).call{ value: amount }("");
         require(sent, "Failed to send Ether");
       } else {
         token.safeTransfer(to, amount);

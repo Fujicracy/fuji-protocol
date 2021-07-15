@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 import { IVault } from "./Vaults/IVault.sol";
@@ -11,10 +11,9 @@ import { Flasher } from "./Flashloans/Flasher.sol";
 import { FlashLoan } from "./Flashloans/LibFlashLoan.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Errors } from "./Libraries/Errors.sol";
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { LibUniversalERC20 } from "./Libraries/LibUniversalERC20.sol";
 import { IUniswapV2Router02 } from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 interface IVaultExt is IVault {
   //Asset Struct
@@ -36,7 +35,6 @@ interface IFujiERC1155Ext is IFujiERC1155 {
 }
 
 contract Fliquidator is Ownable, ReentrancyGuard {
-  using SafeMath for uint256;
   using LibUniversalERC20 for IERC20;
 
   struct Factor {
@@ -77,7 +75,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     _;
   }
 
-  constructor() public {
+  constructor() {
     // 1.013
     flashCloseF.a = 1013;
     flashCloseF.b = 1000;
@@ -130,7 +128,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       // Check if User is liquidatable
       if (usrsBals[i] < neededCollateral) {
         // If true, add User debt balance to the total balance to be liquidated
-        debtBalanceTotal = debtBalanceTotal.add(usrsBals[i + 1]);
+        debtBalanceTotal = debtBalanceTotal + usrsBals[i + 1];
       } else {
         // Replace User that is not liquidatable by Zero Address
         formattedUserAddrs[i] = address(0);
@@ -165,7 +163,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Compute how much collateral needs to be swapt
     uint256 globalCollateralInPlay = _getCollateralInPlay(
       vAssets.borrowAsset,
-      debtBalanceTotal.add(globalBonus)
+      debtBalanceTotal + globalBonus
     );
 
     // Burn Collateral f1155 tokens for each liquidated user
@@ -175,10 +173,10 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IVault(_vault).withdraw(int256(globalCollateralInPlay));
 
     // Swap Collateral
-    _swap(vAssets.borrowAsset, debtBalanceTotal.add(globalBonus), globalCollateralInPlay);
+    _swap(vAssets.borrowAsset, debtBalanceTotal + globalBonus, globalCollateralInPlay);
 
     // Transfer to Liquidator the debtBalance + bonus
-    IERC20(vAssets.borrowAsset).univTransfer(msg.sender, debtBalanceTotal.add(globalBonus));
+    IERC20(vAssets.borrowAsset).univTransfer(msg.sender, debtBalanceTotal + globalBonus);
 
     // Burn Debt f1155 tokens and Emit Liquidation Event for Each Liquidated User
     for (uint256 i = 0; i < formattedUserAddrs.length; i += 2) {
@@ -266,10 +264,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     uint256 userDebtBalance = f1155.balanceOf(_userAddr, vAssets.borrowID);
 
     // Get user Collateral + Flash Close Fee to close posisition, for _amount passed
-    uint256 userCollateralInPlay = IVault(_vault)
-    .getNeededCollateralFor(_amount.add(_flashloanFee), false)
-    .mul(flashCloseF.a)
-    .div(flashCloseF.b);
+    uint256 userCollateralInPlay = IVault(_vault).getNeededCollateralFor(_amount + _flashloanFee, false) * flashCloseF.a / flashCloseF.b;
 
     // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
@@ -288,7 +283,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       // Send unUsed Collateral to User
       IERC20(vAssets.collateralAsset).univTransfer(
         _userAddr,
-        userCollateral.sub(userCollateralInPlay)
+        userCollateral - userCollateralInPlay
       );
     } else {
       f1155.burn(_userAddr, vAssets.collateralID, userCollateralInPlay);
@@ -300,7 +295,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Swap Collateral for underlying to repay Flashloan
     uint256 remaining = _swap(
       vAssets.borrowAsset,
-      _amount.add(_flashloanFee),
+      _amount + _flashloanFee,
       userCollateralInPlay
     );
 
@@ -310,7 +305,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Send flasher the underlying to repay Flashloan
     IERC20(vAssets.borrowAsset).univTransfer(
       payable(_fujiAdmin.getFlasher()),
-      _amount.add(_flashloanFee)
+      _amount + _flashloanFee
     );
 
     // Burn Debt f1155 tokens
@@ -364,7 +359,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       // Check if User is liquidatable
       if (usrsBals[i] < neededCollateral) {
         // If true, add User debt balance to the total balance to be liquidated
-        debtBalanceTotal = debtBalanceTotal.add(usrsBals[i + 1]);
+        debtBalanceTotal = debtBalanceTotal + usrsBals[i + 1];
       } else {
         // Replace User that is not liquidatable by Zero Address
         formattedUserAddrs[i] = address(0);
@@ -428,7 +423,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Compute how much collateral needs to be swapt for all liquidated Users
     uint256 globalCollateralInPlay = _getCollateralInPlay(
       vAssets.borrowAsset,
-      _amount.add(_flashloanFee).add(globalBonus)
+      _amount + _flashloanFee + globalBonus
     );
 
     // Burn Collateral f1155 tokens for each liquidated user
@@ -437,18 +432,18 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Withdraw collateral
     IVault(_vault).withdraw(int256(globalCollateralInPlay));
 
-    _swap(vAssets.borrowAsset, _amount.add(_flashloanFee).add(globalBonus), globalCollateralInPlay);
+    _swap(vAssets.borrowAsset, _amount + _flashloanFee + globalBonus, globalCollateralInPlay);
 
     // Send flasher the underlying to repay Flashloan
     IERC20(vAssets.borrowAsset).univTransfer(
       payable(_fujiAdmin.getFlasher()),
-      _amount.add(_flashloanFee)
+      _amount + _flashloanFee
     );
 
     // Transfer Bonus bonusFlashL to liquidator, minus FlashloanFee convenience
     IERC20(vAssets.borrowAsset).univTransfer(
       payable(_liquidatorAddr),
-      globalBonus.sub(_flashloanFee)
+      globalBonus - _flashloanFee
     );
 
     // Burn Debt f1155 tokens and Emit Liquidation Event for Each Liquidated User
@@ -483,7 +478,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       block.timestamp
     );
 
-    return _collateralAmount.sub(swapperAmounts[0]);
+    return _collateralAmount - swapperAmounts[0];
   }
 
   /**
@@ -525,7 +520,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
         collateralInPlayPerUser = _getCollateralInPlay(
           _vAssets.borrowAsset,
-          _usrsBals[i + 1].add(bonusPerUser)
+          _usrsBals[i + 1] + bonusPerUser
         );
 
         _f1155.burn(_userAddrs[i], _vAssets.collateralID, collateralInPlayPerUser);

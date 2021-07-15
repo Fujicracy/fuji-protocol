@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.4.25 <0.7.5;
+pragma solidity ^0.8.0;
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IProvider } from "./IProvider.sol";
@@ -116,7 +115,6 @@ contract HelperFunct {
 }
 
 contract ProviderIronBank is IProvider, HelperFunct {
-  using SafeMath for uint256;
   using LibUniversalERC20 for IERC20;
 
   //Provider Core Functions
@@ -230,11 +228,11 @@ contract ProviderIronBank is IProvider, HelperFunct {
     address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     //Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: IronBank uses base 1e18
-    uint256 bRateperBlock = (IGenCyToken(cyTokenAddr).borrowRatePerBlock()).mul(10**9);
+    uint256 bRateperBlock = (IGenCyToken(cyTokenAddr).borrowRatePerBlock()) * (10**9);
 
     // The approximate number of blocks per year that is assumed by the IronBank interest rate model
     uint256 blocksperYear = 2102400;
-    return bRateperBlock.mul(blocksperYear);
+    return bRateperBlock * blocksperYear;
   }
 
   /**
@@ -269,6 +267,6 @@ contract ProviderIronBank is IProvider, HelperFunct {
     uint256 cyTokenBal = IGenCyToken(cyTokenAddr).balanceOf(msg.sender);
     uint256 exRate = IGenCyToken(cyTokenAddr).exchangeRateStored();
 
-    return exRate.mul(cyTokenBal).div(1e18);
+    return (exRate * cyTokenBal) / 1e18;
   }
 }

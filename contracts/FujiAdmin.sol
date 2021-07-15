@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12 <0.8.0;
+pragma solidity ^0.8.0;
 
 import { IFujiAdmin } from "./IFujiAdmin.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";

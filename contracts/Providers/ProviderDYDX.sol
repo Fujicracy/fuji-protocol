@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.4.25 <0.7.5;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IProvider } from "./IProvider.sol";
@@ -181,7 +180,6 @@ contract HelperFunct {
 }
 
 contract ProviderDYDX is IProvider, HelperFunct {
-  using SafeMath for uint256;
   using LibUniversalERC20 for IERC20;
 
   bool public donothing = true;
@@ -284,7 +282,7 @@ contract ProviderDYDX is IProvider, HelperFunct {
 
     SoloMarginContract.Rate memory _rate = dydxContract.getMarketInterestRate(marketId);
 
-    return (_rate.value).mul(1e9).mul(365 days);
+    return (_rate.value) * 1e9 * 365 days;
   }
 
   /**
@@ -308,7 +306,12 @@ contract ProviderDYDX is IProvider, HelperFunct {
    * @param _asset: token address to query the balance.
    * @param _who: address of the account.
    */
-  function getBorrowBalanceOf(address _asset, address _who) external override returns (uint256) {
+  function getBorrowBalanceOf(address _asset, address _who)
+    external
+    view
+    override
+    returns (uint256)
+  {
     SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
     uint256 marketId = _getMarketId(dydxContract, _asset);
     SoloMarginContract.Info memory account = SoloMarginContract.Info({ owner: _who, number: 0 });

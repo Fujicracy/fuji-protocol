@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.4.25 <0.8.0;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 
 import "./IVault.sol";
@@ -29,6 +29,7 @@ interface IVaultHarvester {
 
 contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
   using SafeERC20 for IERC20;
+  using LibUniversalERC20 for IERC20;
 
   address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -182,12 +183,12 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
       );
 
       uint256 amountToWithdraw = _withdrawAmount < 0
-        ? providedCollateral.sub(neededCollateral)
+        ? providedCollateral - neededCollateral
         : uint256(_withdrawAmount);
 
       // Check Withdrawal amount, and that it will not fall undercollaterized.
       require(
-        amountToWithdraw != 0 && providedCollateral.sub(amountToWithdraw) >= neededCollateral,
+        amountToWithdraw != 0 && providedCollateral - amountToWithdraw >= neededCollateral,
         Errors.VL_INVALID_WITHDRAW_AMOUNT
       );
 
@@ -223,7 +224,7 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
 
     // Get Required Collateral with Factors to maintain debt position healthy
     uint256 neededCollateral = getNeededCollateralFor(
-      _borrowAmount.add(IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID)),
+      _borrowAmount + IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID),
       true
     );
 
@@ -268,7 +269,7 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
       if (vAssets.borrowAsset == ETH) {
         require(msg.value >= amountToPayback, Errors.VL_AMOUNT_ERROR);
         if (msg.value > amountToPayback) {
-          IERC20(vAssets.borrowAsset).univTransfer(msg.sender, msg.value.sub(amountToPayback));
+          IERC20(vAssets.borrowAsset).univTransfer(msg.sender, msg.value - amountToPayback);
         }
       } else {
         // Check User Allowance
@@ -308,18 +309,16 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
     uint256 _fee
   ) external override onlyFlash whenNotPaused {
     // Compute Ratio of transfer before payback
-    uint256 ratio = _flashLoanAmount.mul(1e18).div(
-      IProvider(activeProvider).getBorrowBalance(vAssets.borrowAsset)
-    );
+    uint256 ratio = (_flashLoanAmount * 1e18) /
+      (IProvider(activeProvider).getBorrowBalance(vAssets.borrowAsset));
 
     // Payback current provider
     _payback(_flashLoanAmount, activeProvider);
 
     // Withdraw collateral proportional ratio from current provider
-    uint256 collateraltoMove = IProvider(activeProvider)
-    .getDepositBalance(vAssets.collateralAsset)
-    .mul(ratio)
-    .div(1e18);
+    uint256 collateraltoMove = (IProvider(activeProvider).getDepositBalance(
+      vAssets.collateralAsset
+    ) * ratio) / 1e18;
 
     _withdraw(collateraltoMove, activeProvider);
 
@@ -327,10 +326,10 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
     _deposit(collateraltoMove, _newProvider);
 
     // Borrow from the new provider, borrowBalance + premium
-    _borrow(_flashLoanAmount.add(_fee), _newProvider);
+    _borrow(_flashLoanAmount + _fee, _newProvider);
 
     // return borrowed amount to Flasher
-    IERC20(vAssets.borrowAsset).univTransfer(msg.sender, _flashLoanAmount.add(_fee));
+    IERC20(vAssets.borrowAsset).univTransfer(msg.sender, _flashLoanAmount + _fee);
 
     emit Switch(address(this), activeProvider, _newProvider, _flashLoanAmount, collateraltoMove);
   }
@@ -423,10 +422,10 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
     // take into account all balances across providers
     uint256 length = providers.length;
     for (uint256 i = 0; i < length; i++) {
-      depositBals = depositBals.add(
-        IProvider(providers[i]).getDepositBalance(vAssets.collateralAsset)
-      );
-      borrowBals = borrowBals.add(IProvider(providers[i]).getBorrowBalance(vAssets.borrowAsset));
+      depositBals =
+        depositBals +
+        IProvider(providers[i]).getDepositBalance(vAssets.collateralAsset);
+      borrowBals = borrowBals + (IProvider(providers[i]).getBorrowBalance(vAssets.borrowAsset));
     }
 
     IFujiERC1155(fujiERC1155).updateState(vAssets.borrowID, borrowBals);
@@ -456,11 +455,11 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
     if (_flash) {
       // Bonus Factors for Flash Liquidation
       (uint64 a, uint64 b) = _fujiAdmin.getBonusFlashL();
-      return _amount.mul(a).div(b);
+      return (_amount * (a)) / (b);
     } else {
       //Bonus Factors for Normal Liquidation
       (uint64 a, uint64 b) = _fujiAdmin.getBonusLiq();
-      return _amount.mul(a).div(b);
+      return (_amount * (a)) / (b);
     }
   }
 
@@ -477,10 +476,10 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
   {
     // Get exchange rate
     uint256 price = oracle.getPriceOf(vAssets.collateralAsset, vAssets.borrowAsset, _BASE_DECIMAL);
-    uint256 minimumReq = (_amount.mul(price)).div(10**_BASE_DECIMAL);
+    uint256 minimumReq = (_amount * (price)) / (10**_BASE_DECIMAL);
 
     if (_withFactors) {
-      return minimumReq.mul(collatF.a).mul(safetyF.a).div(collatF.b).div(safetyF.b);
+      return (minimumReq * (collatF.a) * (safetyF.a)) / (collatF.b) / (safetyF.b);
     } else {
       return minimumReq;
     }

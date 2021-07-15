@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IVault } from "./Vaults/IVault.sol";
 import { IProvider } from "./Providers/IProvider.sol";
@@ -25,8 +24,6 @@ interface IVaultExt is IVault {
 }
 
 contract Controller is Ownable {
-  using SafeMath for uint256;
-
   IFujiAdmin private _fujiAdmin;
 
   modifier isValidVault(address _vaultAddr) {
@@ -66,7 +63,7 @@ contract Controller is Ownable {
       vAssets.borrowAsset,
       _vaultAddr
     );
-    uint256 applyRatiodebtPosition = debtPosition.mul(_ratioA).div(_ratioB);
+    uint256 applyRatiodebtPosition = debtPosition * _ratioA / _ratioB;
 
     // Check Ratio Input and Vault Balance at ActiveProvider
     require(

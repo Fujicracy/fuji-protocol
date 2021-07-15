@@ -6,7 +6,6 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 
 import "./IVault.sol";
 import "./VaultBaseUpgradeable.sol";
@@ -16,6 +15,7 @@ import "../FujiERC1155/IFujiERC1155.sol";
 import "../Providers/IProvider.sol";
 import "../Libraries/Errors.sol";
 import "../Libraries/LibUniversalERC20.sol";
+import "../Interfaces/AggregatorV3Interface.sol";
 
 interface IERC20Extended {
   function symbol() external view returns (string memory);

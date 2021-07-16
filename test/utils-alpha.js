@@ -28,7 +28,7 @@ const ASSETS = {
   },
 };
 
-const FujiAdmin = require("../artifacts/contracts/FujiAdmin.sol/FujiAdmin.json");
+// const FujiAdmin = require("../artifacts/contracts/FujiAdmin.sol/FujiAdmin.json");
 const Fliquidator = require("../artifacts/contracts/Fliquidator.sol/Fliquidator.json");
 const VaultHarvester = require("../artifacts/contracts/Vaults/VaultHarvester.sol/VaultHarvester.json");
 const Aave = require("../artifacts/contracts/Providers/ProviderAave.sol/ProviderAave.json");
@@ -54,7 +54,8 @@ const fixture = async ([wallet]) => {
   // const treasury = await deployContract(wallet, Treasury, []);
 
   // Step 2 Of Deploy: Functional Contracts
-  const fujiadmin = await deployContract(wallet, FujiAdmin, []);
+  const FujiAdmin = await ethers.getContractFactory("FujiAdmin");
+  const fujiadmin = await upgrades.deployProxy(FujiAdmin, []);
   const fliquidator = await deployContract(wallet, Fliquidator, []);
   const flasher = await deployContract(wallet, Flasher, []);
   const controller = await deployContract(wallet, Controller, []);
@@ -133,32 +134,32 @@ const fixture = async ([wallet]) => {
   await vaultdai.setProviders([compound.address, aave.address, dydx.address]);
   await vaultdai.setActiveProvider(compound.address);
   await vaultdai.setFujiERC1155(f1155.address);
-  await fujiadmin.addVault(vaultdai.address);
+  await fujiadmin.allowVault(vaultdai.address, true);
 
   await vaultusdc.setProviders([compound.address, aave.address, dydx.address]);
   await vaultusdc.setActiveProvider(compound.address);
   await vaultusdc.setFujiERC1155(f1155.address);
-  await fujiadmin.addVault(vaultusdc.address);
+  await fujiadmin.allowVault(vaultusdc.address, true);
 
   await vaultusdt.setProviders([compound.address, aave.address]);
   await vaultusdt.setActiveProvider(compound.address);
   await vaultusdt.setFujiERC1155(f1155.address);
-  await fujiadmin.addVault(vaultusdt.address);
+  await fujiadmin.allowVault(vaultusdt.address, true);
 
   await vaultdaiusdc.setProviders([compound.address, aave.address, dydx.address]);
   await vaultdaiusdc.setActiveProvider(compound.address);
   await vaultdaiusdc.setFujiERC1155(f1155.address);
-  await fujiadmin.addVault(vaultdaiusdc.address);
+  await fujiadmin.allowVault(vaultdaiusdc.address, true);
 
   await vaultdaiusdt.setProviders([compound.address, aave.address]);
   await vaultdaiusdt.setActiveProvider(compound.address);
   await vaultdaiusdt.setFujiERC1155(f1155.address);
-  await fujiadmin.addVault(vaultdaiusdt.address);
+  await fujiadmin.allowVault(vaultdaiusdt.address, true);
 
   await vaultdaieth.setProviders([compound.address, aave.address, dydx.address]);
   await vaultdaieth.setActiveProvider(compound.address);
   await vaultdaieth.setFujiERC1155(f1155.address);
-  await fujiadmin.addVault(vaultdaieth.address);
+  await fujiadmin.allowVault(vaultdaieth.address, true);
 
   return {
     dai,

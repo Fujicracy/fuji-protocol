@@ -43,6 +43,12 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
   // Collateralization factor
   Factor public collatF;
 
+  // Bonus Factor for Flash Liquidation
+  Factor public bonusFlashLiqF;
+
+  // Bonus Factor for normal Liquidation
+  Factor public bonusLiqF;
+
   //State variables
   address[] public providers;
   address public override activeProvider;
@@ -101,6 +107,14 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
     // 1.269
     collatF.a = 80;
     collatF.b = 63;
+
+    // 0.043
+    bonusFlashLiqF.a = 43;
+    bonusFlashLiqF.b = 1000;
+
+    // 0.05
+    bonusLiqF.a = 1;
+    bonusLiqF.b = 20;
   }
 
   receive() external payable {}
@@ -382,19 +396,25 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
    * For collatF; Sets Collateral Factor of Vault, should be > 1, a/b
    * @param _newFactorA: Nominator
    * @param _newFactorB: Denominator
-   * @param _isSafety: safetyF or collatF
+   * @param _type: safetyF or collatF or bonusFlashLiqF or bonusLiqF
    */
   function setFactor(
     uint64 _newFactorA,
     uint64 _newFactorB,
-    bool _isSafety
+    bytes calldata _type
   ) external isAuthorized {
-    if (_isSafety) {
-      safetyF.a = _newFactorA;
-      safetyF.b = _newFactorB;
-    } else {
+    if (keccak256(_type) == keccak256("collatF")) {
       collatF.a = _newFactorA;
       collatF.b = _newFactorB;
+    } else if (keccak256(_type) == keccak256("safetyF")) {
+      safetyF.a = _newFactorA;
+      safetyF.b = _newFactorB;
+    } else if (keccak256(_type) == keccak256("bonusFlashLiqF")) {
+      bonusFlashLiqF.a = _newFactorA;
+      bonusFlashLiqF.b = _newFactorB;
+    } else if (keccak256(_type) == keccak256("bonusLiqF")) {
+      safetyF.a = _newFactorA;
+      bonusLiqF.b = _newFactorB;
     }
   }
 
@@ -456,12 +476,10 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
   {
     if (_flash) {
       // Bonus Factors for Flash Liquidation
-      (uint64 a, uint64 b) = _fujiAdmin.getBonusFlashL();
-      return (_amount * (a)) / (b);
+      return (_amount * bonusFlashLiqF.a) / bonusFlashLiqF.b;
     } else {
       //Bonus Factors for Normal Liquidation
-      (uint64 a, uint64 b) = _fujiAdmin.getBonusLiq();
-      return (_amount * (a)) / (b);
+      return (_amount * bonusLiqF.a) / bonusLiqF.b;
     }
   }
 

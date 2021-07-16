@@ -84,7 +84,7 @@ describe("Alpha", () => {
       // Careless user spends Dai (transferred to Liquidator for test purpose)
       await asset.connect(carelessUser).transfer(liquidatorUser.address, borrowAmount);
       // For purposes of testing only way to make user liquidatable is by changing factors
-      await theVault.connect(users[0]).setFactor(3, 2, false);
+      await theVault.connect(users[0]).setFactor(3, 2, "collatF");
 
       const liqBalAtStart = await asset.balanceOf(liquidatorUser.address);
       // console.log("liqBalAtStart", liqBalAtStart.toString());
@@ -157,7 +157,7 @@ describe("Alpha", () => {
       }
 
       // For purposes of testing only way to make user liquidatable is by changing factors
-      await theVault.connect(users[0]).setFactor(3, 2, false);
+      await theVault.connect(users[0]).setFactor(3, 2, "collatF");
 
       const liqBalAtStart = await asset.balanceOf(liquidatorUser.address);
       // console.log("liqBalAtStart", liqBalAtStart.toString());
@@ -253,7 +253,7 @@ describe("Alpha", () => {
       await asset.connect(goodUser).transfer(liquidatorUser.address, borrowAmount);
 
       // For purposes of testing only way to make user liquidatable is by changing factors
-      await theVault.connect(users[0]).setFactor(3, 2, false);
+      await theVault.connect(users[0]).setFactor(3, 2, "collatF");
 
       const liqBalAtStart = await asset.balanceOf(liquidatorUser.address);
       // console.log("liqBalAtStart", liqBalAtStart.toString());
@@ -517,7 +517,7 @@ describe("Alpha", () => {
       // Careless user spends Dai (transferred out of wallet for test purpose)
       await asset.connect(carelessUser).transfer(bootstraper.address, borrowAmount);
       // For purposes of testing only way to make user liquidatable is by changing factors
-      await theVault.connect(users[0]).setFactor(3, 2, false);
+      await theVault.connect(users[0]).setFactor(3, 2, "collatF");
 
       const liqBalAtStart = await asset.balanceOf(liquidatorUser.address);
       // console.log("liqBalAtStart", liqBalAtStart.toString());
@@ -594,7 +594,7 @@ describe("Alpha", () => {
       }
 
       // For purposes of testing only way to make user liquidatable is by changing factors
-      await theVault.connect(users[0]).setFactor(3, 2, false);
+      await theVault.connect(users[0]).setFactor(3, 2, "collatF");
 
       const liqBalAtStart = await asset.balanceOf(liquidatorUser.address);
       // console.log("liqBalAtStart", liqBalAtStart.toString());
@@ -701,7 +701,7 @@ describe("Alpha", () => {
       await asset.connect(goodUser).transfer(bootstraper.address, borrowAmount);
 
       // For purposes of testing only way to make user liquidatable is by changing factors
-      await theVault.connect(users[0]).setFactor(3, 2, false);
+      await theVault.connect(users[0]).setFactor(3, 2, "collatF");
 
       const liqBalAtStart = await asset.balanceOf(liquidatorUser.address);
       // console.log("liqBalAtStart", liqBalAtStart.toString());

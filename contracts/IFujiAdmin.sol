@@ -14,8 +14,4 @@ interface IFujiAdmin {
   function getTreasury() external view returns (address payable);
 
   function getVaultHarvester() external view returns (address);
-
-  function getBonusFlashL() external view returns (uint64, uint64);
-
-  function getBonusLiq() external view returns (uint64, uint64);
 }

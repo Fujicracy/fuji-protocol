@@ -37,7 +37,7 @@ const main = async () => {
   // const treasury = await deploy("GnosisSafe");
 
   // Step 2 Of Deploy: Functional Contracts
-  const fujiadmin = await deploy("FujiAdmin");
+  const fujiadmin = await deployFujiAdmin("FujiAdmin");
   const fliquidator = await deploy("Fliquidator");
   const flasher = await deploy("Flasher");
   const controller = await deploy("Controller");
@@ -94,23 +94,43 @@ const main = async () => {
   await vaultdai.setProviders([compound.address, aave.address, dydx.address, ironBank.address]);
   await vaultdai.setActiveProvider(compound.address);
   await vaultdai.setFujiERC1155(f1155.address);
-  await fujiadmin.addVault(vaultdai.address);
+  await fujiadmin.allowVault(vaultdai.address, true);
 
   await vaultusdc.setProviders([compound.address, aave.address, dydx.address, ironBank.address]);
   await vaultusdc.setActiveProvider(compound.address);
   await vaultusdc.setFujiERC1155(f1155.address);
-  await fujiadmin.addVault(vaultusdc.address);
+  await fujiadmin.allowVault(vaultusdc.address, true);
 
   await vaultusdt.setProviders([compound.address, aave.address, ironBank.address]);
   await vaultusdt.setActiveProvider(compound.address);
   await vaultusdt.setFujiERC1155(f1155.address);
-  await fujiadmin.addVault(vaultusdt.address);
+  await fujiadmin.allowVault(vaultusdt.address, true);
 
   console.log(
     " 💾  Artifacts (address, abi, and args) saved to: ",
     chalk.blue("packages/hardhat/artifacts/"),
     "\n\n"
   );
+};
+
+const deployFujiAdmin = async (contractName, _args = [], overrides = {}) => {
+  console.log(` 🛰  Deploying: ${contractName}`);
+
+  const contractArgs = _args || [];
+  const FujiAdmin = await ethers.getContractFactory("FujiAdmin");
+  const deployed = await upgrades.deployProxy(FujiAdmin, [...contractArgs]);
+  const encoded = utils.defaultAbiCoder.encode(
+    FujiAdmin.interface.functions["initialize()"].inputs,
+    contractArgs
+  );
+  fs.writeFileSync(`artifacts/${contractName}.address`, deployed.address);
+
+  console.log(" 📄", chalk.cyan(contractName), "deployed to:", chalk.magenta(deployed.address));
+
+  if (!encoded || encoded.length <= 2) return deployed;
+  fs.writeFileSync(`artifacts/${contractName}.args`, encoded.slice(2));
+
+  return deployed;
 };
 
 const deployVault = async (contractName, _args = [], overrides = {}) => {

@@ -3,9 +3,9 @@
 pragma solidity ^0.8.0;
 
 import { IFujiAdmin } from "./IFujiAdmin.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract FujiAdmin is IFujiAdmin, Ownable {
+contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
   address private _flasher;
   address private _fliquidator;
   address payable private _ftreasury;
@@ -14,25 +14,8 @@ contract FujiAdmin is IFujiAdmin, Ownable {
 
   mapping(address => bool) public override validVault;
 
-  struct Factor {
-    uint64 a;
-    uint64 b;
-  }
-
-  // Bonus Factor for Flash Liquidation
-  Factor public bonusFlashL;
-
-  // Bonus Factor for normal Liquidation
-  Factor public bonusL;
-
-  constructor() {
-    // 0.043
-    bonusFlashL.a = 43;
-    bonusFlashL.b = 1000;
-
-    // 0.05
-    bonusL.a = 1;
-    bonusL.b = 20;
+  function initialize() external initializer {
+    __Ownable_init();
   }
 
   // Setter Functions
@@ -78,33 +61,11 @@ contract FujiAdmin is IFujiAdmin, Ownable {
   }
 
   /**
-   * @dev Set Factors "a" and "b" for a Struct Factor
-   * For bonusL; Sets the Bonus for normal Liquidation, should be < 1, a/b
-   * For bonusFlashL; Sets the Bonus for flash Liquidation, should be < 1, a/b
-   * @param _newFactorA: A number
-   * @param _newFactorB: A number
-   * @param _isbonusFlash: is bonusFlashFactor
-   */
-  function setFactor(
-    uint64 _newFactorA,
-    uint64 _newFactorB,
-    bool _isbonusFlash
-  ) external onlyOwner {
-    if (_isbonusFlash) {
-      bonusFlashL.a = _newFactorA;
-      bonusFlashL.b = _newFactorB;
-    } else {
-      bonusL.a = _newFactorA;
-      bonusL.b = _newFactorB;
-    }
-  }
-
-  /**
    * @dev Adds a Vault.
    * @param _vaultAddr: Address of vault to be added
    */
-  function addVault(address _vaultAddr) external onlyOwner {
-    validVault[_vaultAddr] = true;
+  function allowVault(address _vaultAddr, bool _allowed) external onlyOwner {
+    validVault[_vaultAddr] = _allowed;
   }
 
   // Getter Functions
@@ -127,13 +88,5 @@ contract FujiAdmin is IFujiAdmin, Ownable {
 
   function getVaultHarvester() external view override returns (address) {
     return _vaultHarvester;
-  }
-
-  function getBonusFlashL() external view override returns (uint64, uint64) {
-    return (bonusFlashL.a, bonusFlashL.b);
-  }
-
-  function getBonusLiq() external view override returns (uint64, uint64) {
-    return (bonusL.a, bonusL.b);
   }
 }

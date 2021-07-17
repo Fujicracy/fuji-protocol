@@ -162,7 +162,7 @@ contract ProviderCompound is IProvider, HelperFunct {
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     //Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: Compound uses base 1e18
-    uint256 bRateperBlock = (IGenCToken(cTokenAddr).borrowRatePerBlock()) * (10**9);
+    uint256 bRateperBlock = IGenCToken(cTokenAddr).borrowRatePerBlock() * 10**9;
 
     // The approximate number of blocks per year that is assumed by the Compound interest rate model
     uint256 blocksperYear = 2102400;

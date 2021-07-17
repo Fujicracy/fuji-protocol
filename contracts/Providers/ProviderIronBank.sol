@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IProvider } from "./IProvider.sol";
+import { IComptroller } from "./ICompound.sol";
 
 interface IGenCyToken is IERC20 {
   function redeem(uint256) external returns (uint256);
@@ -20,23 +21,9 @@ interface IGenCyToken is IERC20 {
 
   function balanceOfUnderlying(address owner) external returns (uint256);
 
-  function getAccountSnapshot(address account)
-    external
-    view
-    returns (
-      uint256,
-      uint256,
-      uint256,
-      uint256
-    );
-
-  function totalBorrowsCurrent() external returns (uint256);
-
   function borrowBalanceCurrent(address account) external returns (uint256);
 
   function borrowBalanceStored(address account) external view returns (uint256);
-
-  function getCash() external view returns (uint256);
 }
 
 interface IWeth is IERC20 {
@@ -51,23 +38,6 @@ interface ICyErc20 is IGenCyToken {
   function repayBorrow(uint256 repayAmount) external returns (uint256);
 
   function repayBorrowBehalf(address borrower, uint256 repayAmount) external returns (uint256);
-}
-
-interface IComptroller {
-  function markets(address) external returns (bool, uint256);
-
-  function enterMarkets(address[] calldata) external returns (uint256[] memory);
-
-  function exitMarket(address cyTokenAddress) external returns (uint256);
-
-  function getAccountLiquidity(address)
-    external
-    view
-    returns (
-      uint256,
-      uint256,
-      uint256
-    );
 }
 
 interface IFujiMappings {
@@ -228,7 +198,7 @@ contract ProviderIronBank is IProvider, HelperFunct {
     address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     //Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: IronBank uses base 1e18
-    uint256 bRateperBlock = (IGenCyToken(cyTokenAddr).borrowRatePerBlock()) * (10**9);
+    uint256 bRateperBlock = IGenCyToken(cyTokenAddr).borrowRatePerBlock() * 10**9;
 
     // The approximate number of blocks per year that is assumed by the IronBank interest rate model
     uint256 blocksperYear = 2102400;

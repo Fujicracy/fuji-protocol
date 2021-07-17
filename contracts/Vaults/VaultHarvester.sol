@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol"; //test line
+//import "hardhat/console.sol"; //test line
 
-interface IComptroller {
+interface ICmptr {
   function claimComp(address holder) external;
 }
 
@@ -27,7 +27,7 @@ contract VaultHarvester {
   address[] private _aaveClaimAddrs;
   IAaveLiquidityMining private _aaVeLM =
     IAaveLiquidityMining(0xd784927Ff2f95ba542BfC824c8a8a98F3495f6b5);
-  IComptroller private _comppTLR = IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
+  ICmptr private _compTLR = ICmptr(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
 
   constructor() {
     _aaveClaimAddrs.push(address(0x030bA81f1c18d280636F32af80b9AAd02Cf0854e)); //aWETH
@@ -45,7 +45,7 @@ contract VaultHarvester {
    */
   function collectRewards(uint256 _farmProtocolNum) external returns (address claimedToken) {
     if (_farmProtocolNum == 0) {
-      _comppTLR.claimComp(msg.sender);
+      _compTLR.claimComp(msg.sender);
       claimedToken = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
     } else if (_farmProtocolNum == 1) {
       //uint256 rewards = _aaVeLM.getRewardsBalance(_aaveClaimAddrs, msg.sender);

@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.4.25 <0.7.5;
+pragma solidity ^0.8.0;
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IProvider } from "./IProvider.sol";
-import { IGenCToken, ICErc20, ICEth, IComptroller } from "./ICompound.sol";
+import { IGenCToken, ICErc20, ICEth, IFuseComptroller } from "./ICompound.sol";
 
 contract HelperFunct {
   function _isETH(address token) internal pure returns (bool) {
@@ -19,11 +18,11 @@ contract HelperFunct {
   function _getCTokenAddr(address _asset) internal view returns (address cTokenAddr) {
     if (_isETH(_asset)) {
       // Rari Fuse ETH is 0x0000000000000000000000000000000000000000
-      cTokenAddr = IComptroller(_getComptrollerAddress()).cTokensByUnderlying(
+      cTokenAddr = IFuseComptroller(_getComptrollerAddress()).cTokensByUnderlying(
         0x0000000000000000000000000000000000000000
       );
     } else {
-      cTokenAddr = IComptroller(_getComptrollerAddress()).cTokensByUnderlying(_asset);
+      cTokenAddr = IFuseComptroller(_getComptrollerAddress()).cTokensByUnderlying(_asset);
     }
   }
 
@@ -35,7 +34,7 @@ contract HelperFunct {
    */
   function _enterCollatMarket(address _cTokenAddress) internal {
     // Create a reference to the corresponding network Comptroller
-    IComptroller comptroller = IComptroller(_getComptrollerAddress());
+    IFuseComptroller comptroller = IFuseComptroller(_getComptrollerAddress());
 
     address[] memory cTokenMarkets = new address[](1);
     cTokenMarkets[0] = _cTokenAddress;
@@ -48,14 +47,13 @@ contract HelperFunct {
    */
   function _exitCollatMarket(address _cTokenAddress) internal {
     // Create a reference to the corresponding network Comptroller
-    IComptroller comptroller = IComptroller(_getComptrollerAddress());
+    IFuseComptroller comptroller = IFuseComptroller(_getComptrollerAddress());
 
     comptroller.exitMarket(_cTokenAddress);
   }
 }
 
 contract ProviderFuse18 is IProvider, HelperFunct {
-  using SafeMath for uint256;
   using LibUniversalERC20 for IERC20;
 
   //Provider Core Functions
@@ -167,11 +165,11 @@ contract ProviderFuse18 is IProvider, HelperFunct {
     address cTokenAddr = _getCTokenAddr(_asset);
 
     //Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: Compound uses base 1e18
-    uint256 bRateperBlock = (IGenCToken(cTokenAddr).borrowRatePerBlock()).mul(10**9);
+    uint256 bRateperBlock = IGenCToken(cTokenAddr).borrowRatePerBlock() * 10**9;
 
     // The approximate number of blocks per year that is assumed by the Compound interest rate model
     uint256 blocksperYear = 2102400;
-    return bRateperBlock.mul(blocksperYear);
+    return bRateperBlock * blocksperYear;
   }
 
   /**
@@ -206,6 +204,6 @@ contract ProviderFuse18 is IProvider, HelperFunct {
     uint256 cTokenBal = IGenCToken(cTokenAddr).balanceOf(msg.sender);
     uint256 exRate = IGenCToken(cTokenAddr).exchangeRateStored();
 
-    return exRate.mul(cTokenBal).div(1e18);
+    return (exRate * cTokenBal) / 1e18;
   }
 }

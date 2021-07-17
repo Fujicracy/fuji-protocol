@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.8.0;
 
 import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
-import { IERC1155MetadataURI } from "@openzeppelin/contracts/token/ERC1155/IERC1155MetadataURI.sol";
-import { ERC165 } from "@openzeppelin/contracts/introspection/ERC165.sol";
-import { IERC165 } from "@openzeppelin/contracts/introspection/IERC165.sol";
+import { IERC1155MetadataURI } from "@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol";
+import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { Errors } from "../Libraries/Errors.sol";
 
 /**
@@ -23,8 +21,6 @@ import { Errors } from "../Libraries/Errors.sol";
 
 contract FujiBaseERC1155 is IERC1155, ERC165, Context {
   using Address for address;
-
-  using SafeMath for uint256;
 
   // Mapping from token ID to account balances
   mapping(uint256 => mapping(address => uint256)) internal _balances;

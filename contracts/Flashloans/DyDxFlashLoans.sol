@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.4.25 <0.7.5;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.8.0;
 
 library Account {
   enum Status {

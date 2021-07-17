@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 //FujiMapping for two addresses
 
-pragma solidity >=0.4.25 <0.8.0;
+pragma solidity ^0.8.0;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 

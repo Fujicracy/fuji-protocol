@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.4.25 <0.7.0;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.8.0;
 
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IProvider } from "./IProvider.sol";
@@ -111,7 +109,6 @@ interface AaveAddressProviderRegistryInterface {
 }
 
 contract ProviderAave is IProvider {
-  using SafeMath for uint256;
   using LibUniversalERC20 for IERC20;
 
   function _getAaveProvider() internal pure returns (AaveLendingPoolProviderInterface) {
@@ -190,7 +187,12 @@ contract ProviderAave is IProvider {
    * @param _asset token address to query the balance.
    * @param _who address of the account.
    */
-  function getBorrowBalanceOf(address _asset, address _who) external override returns (uint256) {
+  function getBorrowBalanceOf(address _asset, address _who)
+    external
+    view
+    override
+    returns (uint256)
+  {
     AaveDataProviderInterface aaveData = _getAaveDataProvider();
 
     bool isEth = _asset == _getEthAddr();
@@ -231,10 +233,10 @@ contract ProviderAave is IProvider {
     ITokenInterface tokenContract = ITokenInterface(_token);
 
     if (isEth) {
-      _amount = _amount == uint256(-1) ? address(this).balance : _amount;
+      _amount = _amount == type(uint256).max ? address(this).balance : _amount;
       _convertEthToWeth(isEth, tokenContract, _amount);
     } else {
-      _amount = _amount == uint256(-1) ? tokenContract.balanceOf(address(this)) : _amount;
+      _amount = _amount == type(uint256).max ? tokenContract.balanceOf(address(this)) : _amount;
     }
 
     tokenContract.approve(address(aave), _amount);
@@ -277,7 +279,7 @@ contract ProviderAave is IProvider {
 
     aave.withdraw(_token, _amount, address(this));
     uint256 finalBal = tokenContract.balanceOf(address(this));
-    _amount = finalBal.sub(initialBal);
+    _amount = finalBal - initialBal;
 
     _convertWethToEth(isEth, tokenContract, _amount);
   }
@@ -298,7 +300,7 @@ contract ProviderAave is IProvider {
     ITokenInterface tokenContract = ITokenInterface(_token);
 
     (, , uint256 variableDebt, , , , , , ) = aaveData.getUserReserveData(_token, address(this));
-    _amount = _amount == uint256(-1) ? variableDebt : _amount;
+    _amount = _amount == type(uint256).max ? variableDebt : _amount;
 
     if (isEth) _convertEthToWeth(isEth, tokenContract, _amount);
 

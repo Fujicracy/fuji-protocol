@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12 <0.8.0;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.8.0;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
 import { IFujiAdmin } from "../IFujiAdmin.sol";
 import { Errors } from "../Libraries/Errors.sol";
 
@@ -39,7 +37,6 @@ interface IFujiMappings {
 }
 
 contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, ICallee, Ownable {
-  using SafeMath for uint256;
   using LibUniversalERC20 for IERC20;
 
   IFujiAdmin private _fujiAdmin;
@@ -105,7 +102,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     // Encode FlashLoan.Info for callFunction
     operations[1] = _getCallAction(abi.encode(info));
     // add fee of 2 wei
-    operations[2] = _getDepositAction(marketId, info.amount.add(2));
+    operations[2] = _getDepositAction(marketId, info.amount + 2);
 
     Account.Info[] memory accountInfos = new Account.Info[](1);
     accountInfos[0] = _getAccountInfo(address(this));
@@ -130,7 +127,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     FlashLoan.Info memory info = abi.decode(data, (FlashLoan.Info));
 
     //Estimate flashloan payback + premium fee of 2 wei,
-    uint256 amountOwing = info.amount.add(2);
+    uint256 amountOwing = info.amount + 2;
 
     // Transfer to Vault the flashloan Amount
     IERC20(info.asset).univTransfer(payable(info.vault), info.amount);
@@ -204,7 +201,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     FlashLoan.Info memory info = abi.decode(params, (FlashLoan.Info));
 
     //Estimate flashloan payback + premium fee,
-    uint256 amountOwing = amounts[0].add(premiums[0]);
+    uint256 amountOwing = amounts[0] + premiums[0];
 
     // Transfer to the vault ERC20
     IERC20(assets[0]).univTransfer(payable(info.vault), amounts[0]);
@@ -272,7 +269,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     FlashLoan.Info memory info = abi.decode(params, (FlashLoan.Info));
 
     // Estimate flashloan payback + premium fee,
-    uint256 amountOwing = amount.add(fee);
+    uint256 amountOwing = amount + fee;
 
     // Transfer to the vault ERC20
     IERC20(underlying).univTransfer(payable(info.vault), amount);

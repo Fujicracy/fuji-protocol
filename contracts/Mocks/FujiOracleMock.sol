@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12 <0.8.0;
+pragma solidity ^0.8.0;
 
 import "../IFujiOracle.sol";
 
-contract FujiOracle is IFujiOracle {
+contract FujiOracleMock is IFujiOracle {
   mapping(address => mapping(address => uint256)) public prices;
 
   function setPriceOf(

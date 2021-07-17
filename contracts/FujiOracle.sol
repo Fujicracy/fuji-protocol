@@ -1,17 +1,14 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.12 <0.8.0;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
+import "./Interfaces/AggregatorV3Interface.sol";
 
 import "./IFujiOracle.sol";
 import "./Libraries/Errors.sol";
 
 contract FujiOracle is IFujiOracle, Ownable {
-  using SafeMath for uint256;
-
   // mapping from asset address to its price feed oracle in USD - decimals: 8
   mapping(address => address) public usdPriceFeeds;
 
@@ -39,15 +36,15 @@ contract FujiOracle is IFujiOracle, Ownable {
     price = 10**_decimals;
 
     if (_borrowAsset != address(0)) {
-      price = price.mul(_getUSDPrice(_borrowAsset));
+      price = price * _getUSDPrice(_borrowAsset);
     } else {
-      price = price.mul(10**8);
+      price = price * 10**8;
     }
 
     if (_collateralAsset != address(0)) {
-      price = price.div(_getUSDPrice(_collateralAsset));
+      price = price / _getUSDPrice(_collateralAsset);
     } else {
-      price = price.div(10**8);
+      price = price / 10**8;
     }
   }
 

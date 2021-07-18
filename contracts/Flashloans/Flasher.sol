@@ -36,10 +36,21 @@ interface IFujiMappings {
   function addressMapping(address) external view returns (address);
 }
 
+interface IWETH {
+  //function approve(address, uint256) external;
+
+  function deposit() external payable;
+
+  function withdraw(uint256) external;
+}
+
 contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, ICallee, Ownable {
   using LibUniversalERC20 for IERC20;
 
   IFujiAdmin private _fujiAdmin;
+
+  address private constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+  address private constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
   address private immutable _aaveLendingPool = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
   address private immutable _dydxSoloMargin = 0x1E0447b19BB6EcFdAe1e4AE1694b0C3659614e4e;
@@ -91,7 +102,10 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     ISoloMargin solo = ISoloMargin(_dydxSoloMargin);
 
     // Get marketId from token address
-    uint256 marketId = _getMarketIdFromTokenAddress(solo, info.asset);
+    uint256 marketId = _getMarketIdFromTokenAddress(
+      solo,
+      info.asset == ETH ? WETH : info.asset
+    );
 
     // 1. Withdraw $
     // 2. Call callFunction(...)
@@ -129,7 +143,12 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     //Estimate flashloan payback + premium fee of 2 wei,
     uint256 amountOwing = info.amount + 2;
 
+    //address asset = info.asset == ETH ? WETH : info.asset;
+
     // Transfer to Vault the flashloan Amount
+    if (info.asset == ETH) {
+      _convertWethToEth(info.amount);
+    }
     IERC20(info.asset).univTransfer(payable(info.vault), info.amount);
 
     if (info.callType == FlashLoan.CallType.Switch) {
@@ -153,7 +172,12 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     }
 
     //Approve DYDXSolo to spend to repay flashloan
-    IERC20(info.asset).approve(_dydxSoloMargin, amountOwing);
+    if (info.asset == ETH) {
+      _convertEthToWeth(amountOwing);
+      IERC20(WETH).univApprove(_dydxSoloMargin, amountOwing);
+    } else {
+      IERC20(info.asset).univApprove(_dydxSoloMargin, amountOwing);
+    }
   }
 
   // ===================== Aave FlashLoan ===================================
@@ -292,5 +316,15 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
 
     // Transfer flashloan + fee back to crToken Lending Contract
     IERC20(underlying).univTransfer(payable(crToken), amountOwing);
+  }
+
+  function _convertEthToWeth(uint256 _amount) internal {
+    IWETH(WETH).deposit{ value: _amount }();
+  }
+
+  function _convertWethToEth(uint256 _amount) internal {
+    IWETH token = IWETH(WETH);
+    //token.approve(WETH, _amount);
+    token.withdraw(_amount);
   }
 }

@@ -59,7 +59,8 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
 
   string public name;
 
-  uint256 internal constant _BASE_DECIMAL = 18;
+  uint256 internal _collateralAssetDecimals;
+  uint256 internal _borrowAssetDecimals;
 
   modifier isAuthorized() {
     require(
@@ -94,8 +95,18 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
 
     if (_collateralAsset == ETH) {
       collateralSymbol = "ETH";
+      _collateralAssetDecimals = 18;
     } else {
       collateralSymbol = IERC20Extended(_collateralAsset).symbol();
+      _collateralAssetDecimals = uint256(IERC20Extended(_collateralAsset).decimals());
+    }
+
+    if (_borrowAsset == ETH) {
+      borrowSymbol = "ETH";
+      _borrowAssetDecimals = 18;
+    } else {
+      borrowSymbol = IERC20Extended(_borrowAsset).symbol();
+      _borrowAssetDecimals = uint256(IERC20Extended(_borrowAsset).decimals());
     }
 
     name = string(abi.encodePacked("Vault", collateralSymbol, borrowSymbol));
@@ -495,9 +506,12 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
     returns (uint256)
   {
     // Get exchange rate
-    uint256 price = oracle.getPriceOf(vAssets.collateralAsset, vAssets.borrowAsset, _BASE_DECIMAL);
-    uint256 minimumReq = (_amount * (price)) / (10**_BASE_DECIMAL);
-
+    uint256 price = oracle.getPriceOf(
+      vAssets.collateralAsset,
+      vAssets.borrowAsset,
+      _collateralAssetDecimals
+    );
+    uint256 minimumReq = (_amount * price) / (10**_borrowAssetDecimals);
     if (_withFactors) {
       return (minimumReq * (collatF.a) * (safetyF.a)) / (collatF.b) / (safetyF.b);
     } else {

@@ -38,13 +38,13 @@ contract FujiOracle is IFujiOracle, Ownable {
     if (_borrowAsset != address(0)) {
       price = price * _getUSDPrice(_borrowAsset);
     } else {
-      price = price * 10**8;
+      price = price * (10**8);
     }
 
     if (_collateralAsset != address(0)) {
       price = price / _getUSDPrice(_collateralAsset);
     } else {
-      price = price / 10**8;
+      price = price / (10**8);
     }
   }
 

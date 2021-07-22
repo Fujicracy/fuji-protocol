@@ -37,7 +37,7 @@ const main = async () => {
   // const treasury = await deploy("GnosisSafe");
 
   // Step 2 Of Deploy: Functional Contracts
-  const fujiadmin = await deployFujiAdmin("FujiAdmin");
+  const fujiadmin = await deployProxy("FujiAdmin", "FujiAdmin");
   const fliquidator = await deploy("Fliquidator");
   const flasher = await deploy("Flasher");
   const controller = await deploy("Controller");
@@ -56,19 +56,19 @@ const main = async () => {
   // Step 4 Of Deploy Core Money Handling Contracts
   const vaultharvester = await deploy("VaultHarvester");
 
-  const vaultdai = await deployVault("VaultETHDAI", [
+  const vaultdai = await deployProxy("VaultETHDAI", "FujiVault", [
     fujiadmin.address,
     oracle.address,
     ASSETS.ETH.address,
     ASSETS.DAI.address,
   ]);
-  const vaultusdc = await deployVault("VaultETHUSDC", [
+  const vaultusdc = await deployProxy("VaultETHUSDC", "FujiVault", [
     fujiadmin.address,
     oracle.address,
     ASSETS.ETH.address,
     ASSETS.USDC.address,
   ]);
-  const vaultusdt = await deployVault("VaultETHUSDT", [
+  const vaultusdt = await deployProxy("VaultETHUSDT", "FujiVault", [
     fujiadmin.address,
     oracle.address,
     ASSETS.ETH.address,
@@ -113,42 +113,25 @@ const main = async () => {
   );
 };
 
-const deployFujiAdmin = async (contractName, _args = [], overrides = {}) => {
-  console.log(` 🛰  Deploying: ${contractName}`);
+const deployProxy = async (proxyName, contractName, _args = [], overrides = {}) => {
+  console.log(` 🛰  Deploying: ${proxyName}`);
 
   const contractArgs = _args || [];
-  const FujiAdmin = await ethers.getContractFactory("FujiAdmin");
-  const deployed = await upgrades.deployProxy(FujiAdmin, [...contractArgs]);
+  const contractArtifacts = await ethers.getContractFactory(contractName);
+  const deployed = await upgrades.deployProxy(contractArtifacts, [...contractArgs]);
+  const initializeFunction = Object.keys(contractArtifacts.interface.functions).find((fname) =>
+    fname.startsWith("initialize")
+  );
   const encoded = utils.defaultAbiCoder.encode(
-    FujiAdmin.interface.functions["initialize()"].inputs,
+    contractArtifacts.interface.functions[initializeFunction].inputs,
     contractArgs
   );
-  fs.writeFileSync(`artifacts/${contractName}.address`, deployed.address);
+  fs.writeFileSync(`artifacts/${proxyName}.address`, deployed.address);
 
-  console.log(" 📄", chalk.cyan(contractName), "deployed to:", chalk.magenta(deployed.address));
-
-  if (!encoded || encoded.length <= 2) return deployed;
-  fs.writeFileSync(`artifacts/${contractName}.args`, encoded.slice(2));
-
-  return deployed;
-};
-
-const deployVault = async (contractName, _args = [], overrides = {}) => {
-  console.log(` 🛰  Deploying: ${contractName}`);
-
-  const contractArgs = _args || [];
-  const FujiVault = await ethers.getContractFactory("FujiVault");
-  const deployed = await upgrades.deployProxy(FujiVault, [...contractArgs]);
-  const encoded = utils.defaultAbiCoder.encode(
-    FujiVault.interface.functions["initialize(address,address,address,address)"].inputs,
-    contractArgs
-  );
-  fs.writeFileSync(`artifacts/${contractName}.address`, deployed.address);
-
-  console.log(" 📄", chalk.cyan(contractName), "deployed to:", chalk.magenta(deployed.address));
+  console.log(" 📄", chalk.cyan(proxyName), "deployed to:", chalk.magenta(deployed.address));
 
   if (!encoded || encoded.length <= 2) return deployed;
-  fs.writeFileSync(`artifacts/${contractName}.args`, encoded.slice(2));
+  fs.writeFileSync(`artifacts/${proxyName}.args`, encoded.slice(2));
 
   return deployed;
 };

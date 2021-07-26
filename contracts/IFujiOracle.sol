@@ -6,6 +6,6 @@ interface IFujiOracle {
   function getPriceOf(
     address _collateralAsset,
     address _borrowAsset,
-    uint256 _decimals
+    uint8 _decimals
   ) external view returns (uint256);
 }

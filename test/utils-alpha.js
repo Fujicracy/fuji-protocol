@@ -26,6 +26,10 @@ const ASSETS = {
     address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
     oracle: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
   },
+  WETH: {
+    address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+    oracle: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"
+  },
 };
 
 // const FujiAdmin = require("../artifacts/contracts/FujiAdmin.sol/FujiAdmin.json");
@@ -200,7 +204,7 @@ const advanceblocks = async (blocks) => {
 };
 
 const convertToCurrencyDecimals = async (tokenAddr, amount) => {
-  const token = await ethers.getContractAt("IERC20Detailed", tokenAddr);
+  const token = await ethers.getContractAt("IERC20Extended", tokenAddr);
   const decimals = (await token.decimals()).toString();
 
   return ethers.utils.parseUnits(`${amount}`, decimals);
@@ -220,6 +224,7 @@ module.exports = {
   ZERO_ADDR,
   ASSETS,
   TREASURY_ADDR,
+  UNISWAP_ROUTER_ADDR,
   evmSnapshot,
   evmRevert,
 };

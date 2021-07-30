@@ -155,6 +155,7 @@ const deployContracts = async () => {
   await fujiadmin.setController(controller.address);
   await fujiadmin.setVaultHarvester(vaultharvester.address);
   await fliquidator.setFujiAdmin(fujiadmin.address);
+  await fliquidator.setFujiOracle(oracle.address);
   await fliquidator.setSwapper(UNISWAP_ROUTER_ADDR);
   await flasher.setFujiAdmin(fujiadmin.address);
   await controller.setFujiAdmin(fujiadmin.address);

@@ -4,7 +4,9 @@ pragma solidity ^0.8.0;
 
 import { IVault } from "./Vaults/IVault.sol";
 import { IFujiAdmin } from "./IFujiAdmin.sol";
+import { IFujiOracle } from "./IFujiOracle.sol";
 import { IFujiERC1155 } from "./FujiERC1155/IFujiERC1155.sol";
+import { IERC20Extended } from "./Interfaces/IERC20Extended.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Flasher } from "./Flashloans/Flasher.sol";
 import { FlashLoan } from "./Flashloans/LibFlashLoan.sol";
@@ -38,6 +40,10 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
   address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
+  // slippage limit to 2%
+  uint256 public constant SLIPPAGE_LIMIT_NUMERATOR = 2;
+  uint256 public constant SLIPPAGE_LIMIT_DENOMINATOR = 100;
+
   struct Factor {
     uint64 a;
     uint64 b;
@@ -47,6 +53,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
   Factor public flashCloseF;
 
   IFujiAdmin private _fujiAdmin;
+  IFujiOracle private oracle;
   IUniswapV2Router02 public swapper;
 
   // Log Liquidation
@@ -179,7 +186,8 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       vAssets.collateralAsset,
       vAssets.borrowAsset,
       debtBalanceTotal + globalBonus,
-      globalCollateralInPlay
+      globalCollateralInPlay,
+      true
     );
 
     // Transfer to Liquidator the debtBalance + bonus
@@ -307,7 +315,8 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       vAssets.collateralAsset,
       vAssets.borrowAsset,
       _amount + _flashloanFee,
-      userCollateralInPlay
+      userCollateralInPlay,
+      false
     );
 
     // Send FlashClose Fee to FujiTreasury
@@ -448,7 +457,8 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       vAssets.collateralAsset,
       vAssets.borrowAsset,
       _amount + _flashloanFee + globalBonus,
-      globalCollateralInPlay
+      globalCollateralInPlay,
+      true
     );
 
     // Send flasher the underlying to repay Flashloan
@@ -480,8 +490,40 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     address _collateralAsset,
     address _borrowAsset,
     uint256 _amountToReceive,
-    uint256 _collateralAmount
+    uint256 _collateralAmount,
+    bool _checkSlippage
   ) internal returns (uint256) {
+    if (_checkSlippage) {
+      uint8 _collateralAssetDecimals;
+      uint8 _borrowAssetDecimals;
+      if (_collateralAsset == ETH) {
+        _collateralAssetDecimals = 18;
+      } else {
+        _collateralAssetDecimals = IERC20Extended(_collateralAsset).decimals();
+      }
+      if (_borrowAsset == ETH) {
+        _borrowAssetDecimals = 18;
+      } else {
+        _borrowAssetDecimals = IERC20Extended(_borrowAsset).decimals();
+      }
+
+      uint256 priceFromSwapper = (_collateralAmount * (10**uint256(_borrowAssetDecimals))) /
+        _amountToReceive;
+      uint256 priceFromOracle = oracle.getPriceOf(
+        _collateralAsset,
+        _borrowAsset,
+        _collateralAssetDecimals
+      );
+      uint256 priceDelta = priceFromSwapper > priceFromOracle
+        ? priceFromSwapper - priceFromOracle
+        : priceFromOracle - priceFromSwapper;
+
+      require(
+        (priceDelta * SLIPPAGE_LIMIT_DENOMINATOR) / priceFromOracle < SLIPPAGE_LIMIT_NUMERATOR,
+        Errors.VL_SWAP_SLIPPAGE_LIMIT_EXCEED
+      );
+    }
+
     // Swap Collateral Asset to Borrow Asset
     address weth = swapper.WETH();
     address[] memory path;
@@ -629,5 +671,13 @@ contract Fliquidator is Ownable, ReentrancyGuard {
    */
   function setSwapper(address _newSwapper) external isAuthorized {
     swapper = IUniswapV2Router02(_newSwapper);
+  }
+
+  /**
+   * @dev Changes the Oracle contract address
+   * @param _newFujiOracle: address of new oracle contract
+   */
+  function setFujiOracle(address _newFujiOracle) external isAuthorized {
+    oracle = IFujiOracle(_newFujiOracle);
   }
 }

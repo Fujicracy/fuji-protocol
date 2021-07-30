@@ -43,6 +43,7 @@ library Errors {
   string public constant VL_HARVESTING_FAILED = "126"; // Harvesting Function failed, check provided _farmProtocolNum or no claimable balance.
   string public constant VL_FLASHLOAN_FAILED = "127"; // Flashloan failed
   string public constant VL_ERC1155_NOT_TRANSFERABLE = "128"; // ERC1155: Not Transferable
+  string public constant VL_SWAP_SLIPPAGE_LIMIT_EXCEED = "129"; // ERC1155: Not Transferable
 
   string public constant MATH_DIVISION_BY_ZERO = "201";
   string public constant MATH_ADDITION_OVERFLOW = "202";

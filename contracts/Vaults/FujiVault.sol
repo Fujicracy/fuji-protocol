@@ -15,12 +15,7 @@ import "../Providers/IProvider.sol";
 import "../Libraries/Errors.sol";
 import "../Libraries/LibUniversalERC20.sol";
 import "../Interfaces/AggregatorV3Interface.sol";
-
-interface IERC20Extended {
-  function symbol() external view returns (string memory);
-
-  function decimals() external view returns (uint8);
-}
+import "../Interfaces/IERC20Extended.sol";
 
 interface IVaultHarvester {
   function collectRewards(uint256 _farmProtocolNum) external returns (address claimedToken);

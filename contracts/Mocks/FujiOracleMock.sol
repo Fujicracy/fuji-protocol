@@ -18,7 +18,7 @@ contract FujiOracleMock is IFujiOracle {
   function getPriceOf(
     address _collateralAsset,
     address _borrowAsset,
-    uint256
+    uint8
   ) external view override returns (uint256) {
     return prices[_collateralAsset][_borrowAsset];
   }

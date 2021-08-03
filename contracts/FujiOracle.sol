@@ -31,20 +31,20 @@ contract FujiOracle is IFujiOracle, Ownable {
   function getPriceOf(
     address _collateralAsset,
     address _borrowAsset,
-    uint256 _decimals
+    uint8 _decimals
   ) external view override returns (uint256 price) {
-    price = 10**_decimals;
+    price = 10**uint256(_decimals);
 
     if (_borrowAsset != address(0)) {
       price = price * _getUSDPrice(_borrowAsset);
     } else {
-      price = price * 10**8;
+      price = price * (10**8);
     }
 
     if (_collateralAsset != address(0)) {
       price = price / _getUSDPrice(_collateralAsset);
     } else {
-      price = price / 10**8;
+      price = price / (10**8);
     }
   }
 

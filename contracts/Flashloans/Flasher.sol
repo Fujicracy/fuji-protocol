@@ -334,18 +334,18 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
   ) internal {
     if (_isETH) {
       _convertEthToWeth(_amount);
-      IERC20(WETH).univApprove(payable(_spender), _amount);
+      IERC20(_WETH).univApprove(payable(_spender), _amount);
     } else {
       IERC20(_asset).univApprove(payable(_spender), _amount);
     }
   }
 
   function _convertEthToWeth(uint256 _amount) internal {
-    IWETH(WETH).deposit{ value: _amount }();
+    IWETH(_WETH).deposit{ value: _amount }();
   }
 
   function _convertWethToEth(uint256 _amount) internal {
-    IWETH token = IWETH(WETH);
+    IWETH token = IWETH(_WETH);
     token.withdraw(_amount);
   }
 }

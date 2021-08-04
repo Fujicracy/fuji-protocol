@@ -39,7 +39,7 @@ interface IVault {
     address _newProvider,
     uint256 _flashLoanDebt,
     uint256 _fee
-  ) external;
+  ) external payable;
 
   //Getter Functions
 

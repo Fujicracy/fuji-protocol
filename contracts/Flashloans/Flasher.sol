@@ -49,8 +49,8 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
 
   IFujiAdmin private _fujiAdmin;
 
-  address private constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-  address private constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+  address private constant _ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+  address private constant _WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
   address private immutable _aaveLendingPool = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
   address private immutable _dydxSoloMargin = 0x1E0447b19BB6EcFdAe1e4AE1694b0C3659614e4e;
@@ -102,10 +102,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     ISoloMargin solo = ISoloMargin(_dydxSoloMargin);
 
     // Get marketId from token address
-    uint256 marketId = _getMarketIdFromTokenAddress(
-      solo,
-      info.asset == ETH ? WETH : info.asset
-    );
+    uint256 marketId = _getMarketIdFromTokenAddress(solo, info.asset == _ETH ? _WETH : info.asset);
 
     // 1. Withdraw $
     // 2. Call callFunction(...)
@@ -140,19 +137,19 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
 
     FlashLoan.Info memory info = abi.decode(data, (FlashLoan.Info));
 
-    //Estimate flashloan payback + premium fee of 2 wei,
-    uint256 amountOwing = info.amount + 2;
-
-    //address asset = info.asset == ETH ? WETH : info.asset;
-
-    // Transfer to Vault the flashloan Amount
-    if (info.asset == ETH) {
+    uint256 _value;
+    if (info.asset == _ETH) {
+      // Convert WETH to ETH and assign amount to be set as msg.value
       _convertWethToEth(info.amount);
+      _value = info.amount;
+    } else {
+      // Transfer to Vault the flashloan Amount
+      // _value is 0
+      IERC20(info.asset).univTransfer(payable(info.vault), info.amount);
     }
-    IERC20(info.asset).univTransfer(payable(info.vault), info.amount);
 
     if (info.callType == FlashLoan.CallType.Switch) {
-      IVault(info.vault).executeSwitch(info.newProvider, info.amount, 2);
+      IVault(info.vault).executeSwitch{ value: _value }(info.newProvider, info.amount, 2);
     } else if (info.callType == FlashLoan.CallType.Close) {
       IFliquidator(info.fliquidator).executeFlashClose(
         info.userAddrs[0],
@@ -171,13 +168,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
       );
     }
 
-    //Approve DYDXSolo to spend to repay flashloan
-    if (info.asset == ETH) {
-      _convertEthToWeth(amountOwing);
-      IERC20(WETH).univApprove(_dydxSoloMargin, amountOwing);
-    } else {
-      IERC20(info.asset).univApprove(_dydxSoloMargin, amountOwing);
-    }
+    _approveBeforeRepay(info.asset == _ETH, info.asset, info.amount + 2, _dydxSoloMargin);
   }
 
   // ===================== Aave FlashLoan ===================================
@@ -193,7 +184,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     //Passing arguments to construct Aave flashloan -limited to 1 asset type for now.
     address receiverAddress = address(this);
     address[] memory assets = new address[](1);
-    assets[0] = address(info.asset);
+    assets[0] = address(info.asset == _ETH ? _WETH : info.asset);
     uint256[] memory amounts = new uint256[](1);
     amounts[0] = info.amount;
 
@@ -224,14 +215,19 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
 
     FlashLoan.Info memory info = abi.decode(params, (FlashLoan.Info));
 
-    //Estimate flashloan payback + premium fee,
-    uint256 amountOwing = amounts[0] + premiums[0];
-
-    // Transfer to the vault ERC20
-    IERC20(assets[0]).univTransfer(payable(info.vault), amounts[0]);
+    uint256 _value;
+    if (info.asset == _ETH) {
+      // Convert WETH to ETH and assign amount to be set as msg.value
+      _convertWethToEth(amounts[0]);
+      _value = info.amount;
+    } else {
+      // Transfer to Vault the flashloan Amount
+      // _value is 0
+      IERC20(assets[0]).univTransfer(payable(info.vault), amounts[0]);
+    }
 
     if (info.callType == FlashLoan.CallType.Switch) {
-      IVault(info.vault).executeSwitch(info.newProvider, amounts[0], premiums[0]);
+      IVault(info.vault).executeSwitch{ value: _value }(info.newProvider, amounts[0], premiums[0]);
     } else if (info.callType == FlashLoan.CallType.Close) {
       IFliquidator(info.fliquidator).executeFlashClose(
         info.userAddrs[0],
@@ -251,7 +247,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     }
 
     //Approve aaveLP to spend to repay flashloan
-    IERC20(assets[0]).univApprove(payable(_aaveLendingPool), amountOwing);
+    _approveBeforeRepay(info.asset == _ETH, assets[0], amounts[0] + premiums[0], _aaveLendingPool);
 
     return true;
   }
@@ -264,7 +260,10 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
    */
   function _initiateCreamFlashLoan(FlashLoan.Info calldata info) internal {
     // Get crToken Address for Flashloan Call
-    address crToken = _crMappings.addressMapping(info.asset);
+    // from IronBank because ETH on Cream cannot perform a flashloan
+    address crToken = info.asset == _ETH
+      ? 0x41c84c0e2EE0b740Cf0d31F63f3B6F627DC6b393
+      : _crMappings.addressMapping(info.asset);
 
     // Prepara data for flashloan execution
     bytes memory params = abi.encode(info);
@@ -285,22 +284,30 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     bytes calldata params
   ) external override {
     // Check Msg. Sender is crToken Lending Contract
-    address crToken = _crMappings.addressMapping(underlying);
+    // from IronBank because ETH on Cream cannot perform a flashloan
+    address crToken = underlying == _WETH
+      ? 0x41c84c0e2EE0b740Cf0d31F63f3B6F627DC6b393
+      : _crMappings.addressMapping(underlying);
 
     require(msg.sender == crToken && address(this) == sender, Errors.VL_NOT_AUTHORIZED);
     require(IERC20(underlying).balanceOf(address(this)) >= amount, Errors.VL_FLASHLOAN_FAILED);
 
     FlashLoan.Info memory info = abi.decode(params, (FlashLoan.Info));
 
-    // Estimate flashloan payback + premium fee,
-    uint256 amountOwing = amount + fee;
-
-    // Transfer to the vault ERC20
-    IERC20(underlying).univTransfer(payable(info.vault), amount);
+    uint256 _value;
+    if (info.asset == _ETH) {
+      // Convert WETH to _ETH and assign amount to be set as msg.value
+      _convertWethToEth(amount);
+      _value = amount;
+    } else {
+      // Transfer to Vault the flashloan Amount
+      // _value is 0
+      IERC20(underlying).univTransfer(payable(info.vault), amount);
+    }
 
     // Do task according to CallType
     if (info.callType == FlashLoan.CallType.Switch) {
-      IVault(info.vault).executeSwitch(info.newProvider, amount, fee);
+      IVault(info.vault).executeSwitch{ value: _value }(info.newProvider, amount, fee);
     } else if (info.callType == FlashLoan.CallType.Close) {
       IFliquidator(info.fliquidator).executeFlashClose(info.userAddrs[0], info.vault, amount, fee);
     } else {
@@ -314,8 +321,23 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
       );
     }
 
+    if (info.asset == _ETH) _convertEthToWeth(amount + fee);
     // Transfer flashloan + fee back to crToken Lending Contract
-    IERC20(underlying).univTransfer(payable(crToken), amountOwing);
+    IERC20(underlying).univTransfer(payable(crToken), amount + fee);
+  }
+
+  function _approveBeforeRepay(
+    bool _isETH,
+    address _asset,
+    uint256 _amount,
+    address _spender
+  ) internal {
+    if (_isETH) {
+      _convertEthToWeth(_amount);
+      IERC20(WETH).univApprove(payable(_spender), _amount);
+    } else {
+      IERC20(_asset).univApprove(payable(_spender), _amount);
+    }
   }
 
   function _convertEthToWeth(uint256 _amount) internal {
@@ -324,7 +346,6 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
 
   function _convertWethToEth(uint256 _amount) internal {
     IWETH token = IWETH(WETH);
-    //token.approve(WETH, _amount);
     token.withdraw(_amount);
   }
 }

@@ -49,57 +49,62 @@ describe("Alpha", () => {
 
   describe("Alpha Fliquidator Functionality", () => {
     it("1.- Normal batchLiquidate 1 User, vaultDai", async () => {
-      // vault to use
       const theVault = vaultdai;
+      const vAssetStruct = await theVault.vAssets();
       const asset = dai;
+      const activeProvider = compound;
 
-      // Set a defined ActiveProviders
-      await theVault.setActiveProvider(compound.address);
-
-      // Set - up
+      const bootstraper = users[0];
       const carelessUser = users[5];
       const liquidatorUser = users[15];
-      const borrowAmount = ethers.utils.parseUnits("5000", 18);
-      let depositAmount = await theVault.getNeededCollateralFor(borrowAmount, true);
       const smallExtra = ethers.utils.parseEther("0.01");
-      const vAssetStruct = await theVault.vAssets();
 
-      // Bootstrap Liquidity
-      const bootstraper = users[0];
+      await theVault.setActiveProvider(activeProvider.address);
+
+      // 1. User Borrows 5000 dai
+      const borrowAmount = ethers.utils.parseUnits("5000", 18);
+      const depositAmount = (await theVault.getNeededCollateralFor(borrowAmount, true)).add(
+        smallExtra
+      );
+
+      await theVault
+        .connect(carelessUser)
+        .depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount });
+
+      // 2. Liquidator prepares dai for liquidation
+      // - User sends borrowed dai to liquidator. Liquidator needs dai to execute liquidation.
+      await asset.connect(carelessUser).transfer(liquidatorUser.address, borrowAmount);
+
+      // - Bootstraper borrows and sends some extra dai to liquidator. Liquidator needs to pay for the interest
       const bstrapLiquidity = ethers.utils.parseEther("1");
       const extraChange = ethers.utils.parseUnits("1", 18);
       await theVault
         .connect(bootstraper)
         .depositAndBorrow(bstrapLiquidity, extraChange, { value: bstrapLiquidity });
-      // Part of set-up > Sending Liquidator some extra change to pay for interest
       await asset.connect(bootstraper).transfer(liquidatorUser.address, extraChange);
 
-      // Set up the debt position of carelessUser
-      depositAmount = depositAmount.add(smallExtra);
-      await theVault
-        .connect(carelessUser)
-        .depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount });
-
-      // Staged condition to make user liquidatable
-      // Careless user spends Dai (transferred to Liquidator for test purpose)
-      await asset.connect(carelessUser).transfer(liquidatorUser.address, borrowAmount);
-      // For purposes of testing only way to make user liquidatable is by changing factors
+      // 3. Make users position as liquidatable by changing factors
       await theVault.connect(users[0]).setFactor(3, 2, "collatF");
 
+      // 4. Liquidation executes batchLiquidate
+
       const liqBalAtStart = await asset.balanceOf(liquidatorUser.address);
-      // console.log("liqBalAtStart", liqBalAtStart.toString());
 
       await asset
         .connect(liquidatorUser)
         .approve(fliquidator.address, borrowAmount.add(extraChange));
-
       await fliquidator
         .connect(liquidatorUser)
         .batchLiquidate([carelessUser.address], theVault.address);
 
+      // - Check liquidator's balance
       const liqBalAtEnd = await asset.balanceOf(liquidatorUser.address);
-      // console.log("liqBalAtEnd", liqBalAtEnd.toString());
+      await expect(liqBalAtEnd).to.be.gt(
+        liqBalAtStart,
+        "Liquidator should get some dai after liquidation"
+      );
 
+      // - Check user's borrow position
       const carelessUser1155bal0 = await f1155.balanceOf(
         carelessUser.address,
         vAssetStruct.collateralID
@@ -108,59 +113,55 @@ describe("Alpha", () => {
         carelessUser.address,
         vAssetStruct.borrowID
       );
-      // console.log("1155tokenbal0", carelessUser1155bal0/1, "1155tokenbal1", carelessUser1155bal1/1);
-
-      await expect(liqBalAtEnd).to.be.gt(liqBalAtStart);
-      await expect(carelessUser1155bal0).to.be.gt(0);
-      await expect(carelessUser1155bal1).to.be.eq(0);
+      await expect(carelessUser1155bal0).to.be.gt(0, "User's borrow position should be removed");
+      await expect(carelessUser1155bal1).to.be.eq(0, "User's borrow position should be removed");
     });
 
-    it("2a.- Normal batchLiquidate 3 Users, vaultusdc", async () => {
+    it("2a.- Normal batchLiquidate 3 Users, vaultUsdc", async () => {
       // vault to use
       const theVault = vaultusdc;
+      const vAssetStruct = await theVault.vAssets();
       const asset = usdc;
       const activeProvider = dydx;
 
-      // Set a defined ActiveProviders
-      await theVault.setActiveProvider(activeProvider.address);
-
-      // Set - up
+      const bootstraper = users[0];
       const carelessUsers = [users[5], users[6], users[7]];
       const liquidatorUser = users[15];
-      const borrowAmount = ethers.utils.parseUnits("5000", 6);
-      let depositAmount = await theVault.getNeededCollateralFor(borrowAmount, true);
       const smallExtra = ethers.utils.parseUnits("0.01", 6);
-      const vAssetStruct = await theVault.vAssets();
 
-      // Bootstrap Liquidity
-      const bootstraper = users[0];
-      const bstrapLiquidity = ethers.utils.parseEther("1");
-      const extraChange = ethers.utils.parseUnits("1", 6);
-      await theVault
-        .connect(bootstraper)
-        .depositAndBorrow(bstrapLiquidity, extraChange, { value: bstrapLiquidity });
-      // Part of set-up > Sending Liquidator some extra change to pay for interest
-      await asset.connect(bootstraper).transfer(liquidatorUser.address, extraChange);
+      await theVault.setActiveProvider(activeProvider.address);
 
-      // Set up the debt position of carelessUsers
-      depositAmount = depositAmount.add(smallExtra);
+      // 1. Users Borrows 5000 usdc
+      const borrowAmount = ethers.utils.parseUnits("5000", 6);
+      const depositAmount = (await theVault.getNeededCollateralFor(borrowAmount, true)).add(
+        smallExtra
+      );
       for (let i = 0; i < carelessUsers.length; i++) {
         await theVault
           .connect(carelessUsers[i])
           .depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount });
       }
 
-      // Staged condition to make user liquidatable
-      // Careless user spends Dai (transferred to Liquidator for test purpose)
+      // 2. Liquidator prepares dai for liquidation
+      // - User sends borrowed dai to liquidator. Liquidator needs dai to execute liquidation.
       for (let i = 0; i < carelessUsers.length; i++) {
         await asset.connect(carelessUsers[i]).transfer(liquidatorUser.address, borrowAmount);
       }
 
-      // For purposes of testing only way to make user liquidatable is by changing factors
+      // - Bootstraper borrows and sends some extra dai to liquidator. Liquidator needs to pay for the interest
+      const bstrapLiquidity = ethers.utils.parseEther("1");
+      const extraChange = ethers.utils.parseUnits("1", 6);
+      await theVault
+        .connect(bootstraper)
+        .depositAndBorrow(bstrapLiquidity, extraChange, { value: bstrapLiquidity });
+      await asset.connect(bootstraper).transfer(liquidatorUser.address, extraChange);
+
+      // 3. Make users position as liquidatable by changing factors
       await theVault.connect(users[0]).setFactor(3, 2, "collatF");
 
+      // 4. Liquidation executes batchLiquidate
+
       const liqBalAtStart = await asset.balanceOf(liquidatorUser.address);
-      // console.log("liqBalAtStart", liqBalAtStart.toString());
 
       await asset
         .connect(liquidatorUser)
@@ -172,35 +173,26 @@ describe("Alpha", () => {
           theVault.address
         );
 
+      // - Check liquidator's balance
       const liqBalAtEnd = await asset.balanceOf(liquidatorUser.address);
-      // console.log("liqBalAtEnd", liqBalAtEnd.toString());
+      await expect(liqBalAtEnd).to.be.gt(
+        liqBalAtStart,
+        "Liquidator should get some usdc after liquidation"
+      );
 
-      let carelessUser1155bal0;
-      let carelessUser1155bal1;
-
+      // - Check user's borrow position
       for (let i = 0; i < carelessUsers.length; i++) {
-        carelessUser1155bal0 = await f1155.balanceOf(
+        const carelessUser1155bal0 = await f1155.balanceOf(
           carelessUsers[i].address,
           vAssetStruct.collateralID
         );
-        carelessUser1155bal1 = await f1155.balanceOf(
+        const carelessUser1155bal1 = await f1155.balanceOf(
           carelessUsers[i].address,
           vAssetStruct.borrowID
         );
-        // console.log(`        carelessUsers[${i}]:`,"1155tokenbal0", carelessUser1155bal0/1, "1155tokenbal1", carelessUser1155bal1/1);
-
-        await expect(carelessUser1155bal0).to.be.gt(0);
-        await expect(carelessUser1155bal1).to.be.eq(0);
+        await expect(carelessUser1155bal0).to.be.gt(0, "User's borrow position should be removed");
+        await expect(carelessUser1155bal1).to.be.eq(0, "User's borrow position should be removed");
       }
-
-      await expect(liqBalAtEnd).to.be.gt(liqBalAtStart);
-
-      const vaultdebt = await activeProvider
-        .connect(bootstraper)
-        .getBorrowBalanceOf(vAssetStruct.borrowAsset, theVault.address);
-      // console.log(vaultdebt.value);
-
-      await expect(vaultdebt.value).to.equal(0);
     });
 
     it("2b.- Normal batchLiquidate 3 Users + 1 non-liquidatable, vaultusdc", async () => {
@@ -299,13 +291,6 @@ describe("Alpha", () => {
       const goodUser1155bal1 = await f1155.balanceOf(goodUser.address, vAssetStruct.borrowID);
 
       await expect(goodUser1155bal1).to.be.gt(0);
-
-      const vaultdebt = await activeProvider
-        .connect(bootstraper)
-        .getBorrowBalanceOf(vAssetStruct.borrowAsset, theVault.address);
-      // console.log(vaultdebt.value);
-
-      await expect(vaultdebt.value).to.equal(0);
     });
 
     it("3.- Full Flashclose User, vaultDai with cream FL", async () => {

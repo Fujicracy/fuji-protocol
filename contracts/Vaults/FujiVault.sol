@@ -334,7 +334,7 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
     address _newProvider,
     uint256 _flashLoanAmount,
     uint256 _fee
-  ) external override onlyFlash whenNotPaused {
+  ) external payable override onlyFlash whenNotPaused {
     // Compute Ratio of transfer before payback
     uint256 ratio = (_flashLoanAmount * 1e18) /
       (IProvider(activeProvider).getBorrowBalance(vAssets.borrowAsset));

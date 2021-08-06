@@ -100,6 +100,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
    */
   function batchLiquidate(address[] calldata _userAddrs, address _vault)
     external
+    payable
     nonReentrant
     isValidVault(_vault)
   {
@@ -147,14 +148,18 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Check there is at least one user liquidatable
     require(debtBalanceTotal > 0, Errors.VL_USER_NOT_LIQUIDATABLE);
 
-    // Check Liquidator Allowance
-    require(
-      IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this)) >= debtBalanceTotal,
-      Errors.VL_MISSING_ERC20_ALLOWANCE
-    );
+    if (vAssets.borrowAsset == ETH) {
+      require(msg.value >= debtBalanceTotal, Errors.VL_AMOUNT_ERROR);
+    } else {
+      // Check Liquidator Allowance
+      require(
+        IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this)) >= debtBalanceTotal,
+        Errors.VL_MISSING_ERC20_ALLOWANCE
+      );
 
-    // Transfer borrowAsset funds from the Liquidator to Here
-    IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), debtBalanceTotal);
+      // Transfer borrowAsset funds from the Liquidator to Here
+      IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), debtBalanceTotal);
+    }
 
     // Transfer Amount to Vault
     IERC20(vAssets.borrowAsset).univTransfer(payable(_vault), debtBalanceTotal);

@@ -1,7 +1,6 @@
-const { ethers, waffle } = require("hardhat");
+const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { createFixtureLoader } = require("ethereum-waffle");
-const { deployContract } = waffle;
 const { getContractAt, provider } = ethers;
 
 const {
@@ -58,7 +57,7 @@ describe("Rari Fuse", function() {
     evmSnapshot0 = await evmSnapshot();
 
     for (let x = 0; x < 4; x += 1) {
-      const block = await ethers.provider.getBlock();
+      const block = await provider.getBlock();
       await f.swapper.connect(users[x]).swapETHForExactTokens(
         parseUnits(10000),
         [ASSETS.WETH.address, ASSETS.DAI.address],
@@ -68,7 +67,7 @@ describe("Rari Fuse", function() {
       );
     }
     for (let x = 0; x < 4; x += 1) {
-      const block = await ethers.provider.getBlock();
+      const block = await provider.getBlock();
       await f.swapper.connect(users[x]).swapETHForExactTokens(
         10000e6,
         [ASSETS.WETH.address, ASSETS.USDC.address],
@@ -78,7 +77,7 @@ describe("Rari Fuse", function() {
       );
     }
     for (let x = 0; x < 4; x += 1) {
-      const block = await ethers.provider.getBlock();
+      const block = await provider.getBlock();
       await f.swapper.connect(users[x]).swapETHForExactTokens(
         parseUnits(10000),
         [ASSETS.WETH.address, ASSETS.FEI.address],

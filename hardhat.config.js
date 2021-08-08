@@ -12,14 +12,12 @@ require("@openzeppelin/hardhat-upgrades");
 
 const { isAddress, getAddress, formatUnits, parseUnits } = utils;
 
-/*
-      📡 This is where you configure your deploy configuration for 🏗 scaffold-eth
-
-      check out `packages/scripts/deploy.js` to customize your deployment
-
-      out of the box it will auto deploy anything in the `contracts` folder and named *.sol
-      plus it will use *.args for constructor args
-*/
+if (!process.env.ALCHEMY_ID || !process.env.INFURA_ID) {
+  throw "Please set ALCHEMY_ID or INFURA_ID in ./packages/hardhat/.env";
+}
+const mainnetUrl = process.env.ALCHEMY_ID
+  ? `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_ID}`
+  : `https://mainnet.infura.io/v3/${process.env.INFURA_ID}`;
 
 //
 // Select the network you want to deploy to here:
@@ -41,13 +39,13 @@ function mnemonic() {
 
 module.exports = {
   defaultNetwork,
-
-  // don't forget to set your provider like:
-  // REACT_APP_PROVIDER=https://dai.poa.network in packages/react-app/.env
-  // (then your frontend will talk to your contracts on the live network!)
-  // (you will need to restart the `yarn run start` dev server after editing the .env)
-
   networks: {
+    hardhat: {
+      forking: {
+        url: mainnetUrl,
+        //blockNumber: 12962882, //before London
+      },
+    },
     localhost: {
       url: "http://localhost:8545",
       timeout: 200000,
@@ -69,7 +67,7 @@ module.exports = {
       },
     },
     mainnet: {
-      url: `https://mainnet.infura.io/v3/${process.env.INFURA_ID}`,
+      url: mainnetUrl,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : { mnemonic: mnemonic() },
     },
     ropsten: {

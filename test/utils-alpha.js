@@ -11,24 +11,39 @@ const CYWETH_ADDR = "0x41c84c0e2EE0b740Cf0d31F63f3B6F627DC6b393";
 
 const ASSETS = {
   DAI: {
+    name: "dai",
+    nameUp: "DAI",
     address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
     oracle: "0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9",
+    decimals: 18,
   },
   USDC: {
+    name: "usdc",
+    nameUp: "USDC",
     address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
     oracle: "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6",
+    decimals: 6,
   },
   USDT: {
+    name: "usdt",
+    nameUp: "USDT",
     address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
     oracle: "0x3E7d1eAB13ad0104d2750B8863b489D65364e32D",
+    decimals: 6,
   },
   ETH: {
+    name: "eth",
+    nameUp: "ETH",
     address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
     oracle: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
+    decimals: 18,
   },
   WETH: {
+    name: "weth",
+    nameUp: "WETH",
     address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-    oracle: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"
+    oracle: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
+    decimals: 18,
   },
 };
 
@@ -103,6 +118,12 @@ const fixture = async ([wallet]) => {
     ASSETS.DAI.address,
     ASSETS.USDC.address,
   ]);
+  const vaultusdcdai = await upgrades.deployProxy(FujiVault, [
+    fujiadmin.address,
+    oracle.address,
+    ASSETS.USDC.address,
+    ASSETS.DAI.address,
+  ]);
   const vaultdaiusdt = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
     oracle.address,
@@ -131,6 +152,7 @@ const fixture = async ([wallet]) => {
   await f1155.setPermit(vaultusdc.address, true);
   await f1155.setPermit(vaultusdt.address, true);
   await f1155.setPermit(vaultdaiusdc.address, true);
+  await f1155.setPermit(vaultusdcdai.address, true);
   await f1155.setPermit(vaultdaiusdt.address, true);
   await f1155.setPermit(vaultdaieth.address, true);
 
@@ -154,6 +176,11 @@ const fixture = async ([wallet]) => {
   await vaultdaiusdc.setActiveProvider(compound.address);
   await vaultdaiusdc.setFujiERC1155(f1155.address);
   await fujiadmin.allowVault(vaultdaiusdc.address, true);
+
+  await vaultusdcdai.setProviders([compound.address, aave.address, dydx.address]);
+  await vaultusdcdai.setActiveProvider(compound.address);
+  await vaultusdcdai.setFujiERC1155(f1155.address);
+  await fujiadmin.allowVault(vaultusdcdai.address, true);
 
   await vaultdaiusdt.setProviders([compound.address, aave.address]);
   await vaultdaiusdt.setActiveProvider(compound.address);
@@ -187,6 +214,7 @@ const fixture = async ([wallet]) => {
     vaultusdc,
     vaultusdt,
     vaultdaiusdc,
+    vaultusdcdai,
     vaultdaiusdt,
     vaultdaieth,
   };
@@ -203,14 +231,23 @@ const advanceblocks = async (blocks) => {
   }
 };
 
-const convertToCurrencyDecimals = async (tokenAddr, amount) => {
+const parseUnits = (amount, decimals = 18) => ethers.utils.parseUnits(`${amount}`, decimals);
+const parseUnitsOfCurrency = async (tokenAddr, amount) => {
   const token = await ethers.getContractAt("IERC20Extended", tokenAddr);
   const decimals = (await token.decimals()).toString();
 
   return ethers.utils.parseUnits(`${amount}`, decimals);
 };
 
-const convertToWei = (amount) => ethers.utils.parseUnits(`${amount}`, 18);
+const formatUnitsToNum = (amount, decimals = 18) => Number(ethers.utils.formatUnits(amount, decimals));
+const formatUnitsOfCurrency = async (tokenAddr, amount) => {
+  const token = await ethers.getContractAt("IERC20Extended", tokenAddr);
+  const decimals = (await token.decimals()).toString();
+
+  return ethers.utils.formatUnits(amount, decimals);
+}
+
+const toBN = (amount) => ethers.BigNumber.from(`${amount}`);
 
 const evmSnapshot = async () => ethers.provider.send("evm_snapshot", []);
 const evmRevert = async (id) => ethers.provider.send("evm_revert", [id]);
@@ -219,8 +256,11 @@ module.exports = {
   fixture,
   timeTravel,
   advanceblocks,
-  convertToCurrencyDecimals,
-  convertToWei,
+  parseUnits,
+  parseUnitsOfCurrency,
+  formatUnitsToNum,
+  formatUnitsOfCurrency,
+  toBN,
   ZERO_ADDR,
   ASSETS,
   TREASURY_ADDR,

@@ -2,17 +2,17 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Interfaces/AggregatorV3Interface.sol";
 
+import "./Claimable.sol";
 import "./IFujiOracle.sol";
 import "./Libraries/Errors.sol";
 
-contract FujiOracle is IFujiOracle, Ownable {
+contract FujiOracle is IFujiOracle, Claimable {
   // mapping from asset address to its price feed oracle in USD - decimals: 8
   mapping(address => address) public usdPriceFeeds;
 
-  constructor(address[] memory _assets, address[] memory _priceFeeds) Ownable() {
+  constructor(address[] memory _assets, address[] memory _priceFeeds) Claimable() {
     require(_assets.length == _priceFeeds.length, Errors.ORACLE_INVALID_LENGTH);
     for (uint256 i = 0; i < _assets.length; i++) {
       usdPriceFeeds[_assets[i]] = _priceFeeds[i];

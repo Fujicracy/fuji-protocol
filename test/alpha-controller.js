@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { createFixtureLoader } = require("ethereum-waffle");
 
-const { fixture, evmSnapshot, evmRevert } = require("./utils-alpha");
+const { fixture, evmSnapshot, evmRevert, ZERO_ADDR } = require("./utils-alpha");
 
 describe("Alpha", () => {
   let aave;
@@ -12,11 +12,17 @@ describe("Alpha", () => {
   let vaultdai;
   let vaultusdc;
   let users;
+  let owner;
+  let newOwner;
+  let user;
   let loadFixture;
   let evmSnapshotId;
 
   before(async () => {
     users = await ethers.getSigners();
+    owner = users[0];
+    newOwner = users[1];
+    user = users[2];
     loadFixture = createFixtureLoader(users, ethers.provider);
     evmSnapshotId = await evmSnapshot();
   });
@@ -240,6 +246,62 @@ describe("Alpha", () => {
         afterRefinanceVaultCollat / 1,
         1e15
       );
+    });
+
+    describe("Testing ownership transfer", () => {
+      it("Revert: User tricks to have ownership of the contract", async () => {
+        await expect(controller.connect(user).transferOwnership(user.address)).to.be.revertedWith(
+          "Ownable: caller is not the owner"
+        );
+      });
+
+      it("Revert: Owner tries to transfer ownership to zero-address", async () => {
+        await expect(controller.connect(owner).transferOwnership(ZERO_ADDR)).to.be.reverted;
+      });
+
+      it("Success: Owner tries to transfer ownership to new Owner", async () => {
+        expect(await controller.pendingOwner()).to.be.equal(ZERO_ADDR);
+
+        await controller.connect(owner).transferOwnership(newOwner.address);
+
+        expect(await controller.pendingOwner()).to.be.equal(newOwner.address);
+      });
+
+      it("Revert: User tries to claim ownership", async () => {
+        await expect(controller.connect(user).claimOwnership()).to.be.reverted;
+      });
+
+      it("Success: New owner tries to claim ownership", async () => {
+        expect(await controller.pendingOwner()).to.be.equal(newOwner.address);
+        expect(await controller.owner()).to.be.equal(owner.address);
+
+        await controller.connect(newOwner).claimOwnership();
+
+        expect(await controller.pendingOwner()).to.be.equal(ZERO_ADDR);
+        expect(await controller.owner()).to.be.equal(newOwner.address);
+      });
+
+      it("Revert: Owner tries to call cancelTransferOwnership", async () => {
+        await expect(controller.connect(owner).cancelTransferOwnership()).to.be.revertedWith(
+          "Ownable: caller is not the owner"
+        );
+      });
+
+      it("Revert: New owner tries to call cancelTransferOwnership before calling transferOwnership", async () => {
+        await expect(controller.connect(newOwner).cancelTransferOwnership()).to.be.reverted;
+      });
+
+      it("Success: New owner tries to call cancelTransferOwnership after calling transferOwnership", async () => {
+        expect(await controller.pendingOwner()).to.be.equal(ZERO_ADDR);
+
+        await controller.connect(newOwner).transferOwnership(owner.address);
+
+        expect(await controller.pendingOwner()).to.be.equal(owner.address);
+
+        await controller.connect(newOwner).cancelTransferOwnership();
+
+        expect(await controller.pendingOwner()).to.be.equal(ZERO_ADDR);
+      });
     });
   });
 });

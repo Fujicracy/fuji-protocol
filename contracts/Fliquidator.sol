@@ -53,7 +53,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
   Factor public flashCloseF;
 
   IFujiAdmin private _fujiAdmin;
-  IFujiOracle private oracle;
+  IFujiOracle private _oracle;
   IUniswapV2Router02 public swapper;
 
   // Log Liquidation
@@ -516,7 +516,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
       uint256 priceFromSwapper = (_collateralAmount * (10**uint256(_borrowAssetDecimals))) /
         _amountToReceive;
-      uint256 priceFromOracle = oracle.getPriceOf(
+      uint256 priceFromOracle = _oracle.getPriceOf(
         _collateralAsset,
         _borrowAsset,
         _collateralAssetDecimals
@@ -685,6 +685,6 @@ contract Fliquidator is Ownable, ReentrancyGuard {
    * @param _newFujiOracle: address of new oracle contract
    */
   function setFujiOracle(address _newFujiOracle) external isAuthorized {
-    oracle = IFujiOracle(_newFujiOracle);
+    _oracle = IFujiOracle(_newFujiOracle);
   }
 }

@@ -12,7 +12,7 @@ require("@openzeppelin/hardhat-upgrades");
 
 const { isAddress, getAddress, formatUnits, parseUnits } = utils;
 
-if (!process.env.ALCHEMY_ID || !process.env.INFURA_ID) {
+if (!process.env.ALCHEMY_ID && !process.env.INFURA_ID) {
   throw "Please set ALCHEMY_ID or INFURA_ID in ./packages/hardhat/.env";
 }
 const mainnetUrl = process.env.ALCHEMY_ID

@@ -20,7 +20,7 @@ interface IFliquidator {
     address _vault,
     uint256 _amount,
     uint256 _flashloanfee
-  ) external;
+  ) external payable;
 
   function executeFlashBatchLiquidation(
     address[] calldata _userAddrs,
@@ -29,7 +29,7 @@ interface IFliquidator {
     address _vault,
     uint256 _amount,
     uint256 _flashloanFee
-  ) external;
+  ) external payable;
 }
 
 interface IFujiMappings {
@@ -148,25 +148,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
       IERC20(info.asset).univTransfer(payable(info.vault), info.amount);
     }
 
-    if (info.callType == FlashLoan.CallType.Switch) {
-      IVault(info.vault).executeSwitch{ value: _value }(info.newProvider, info.amount, 2);
-    } else if (info.callType == FlashLoan.CallType.Close) {
-      IFliquidator(info.fliquidator).executeFlashClose(
-        info.userAddrs[0],
-        info.vault,
-        info.amount,
-        2
-      );
-    } else {
-      IFliquidator(info.fliquidator).executeFlashBatchLiquidation(
-        info.userAddrs,
-        info.userBalances,
-        info.userliquidator,
-        info.vault,
-        info.amount,
-        2
-      );
-    }
+    _executeAction(info, info.amount, 2, _value);
 
     _approveBeforeRepay(info.asset == _ETH, info.asset, info.amount + 2, _dydxSoloMargin);
   }
@@ -226,25 +208,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
       IERC20(assets[0]).univTransfer(payable(info.vault), amounts[0]);
     }
 
-    if (info.callType == FlashLoan.CallType.Switch) {
-      IVault(info.vault).executeSwitch{ value: _value }(info.newProvider, amounts[0], premiums[0]);
-    } else if (info.callType == FlashLoan.CallType.Close) {
-      IFliquidator(info.fliquidator).executeFlashClose(
-        info.userAddrs[0],
-        info.vault,
-        amounts[0],
-        premiums[0]
-      );
-    } else {
-      IFliquidator(info.fliquidator).executeFlashBatchLiquidation(
-        info.userAddrs,
-        info.userBalances,
-        info.userliquidator,
-        info.vault,
-        amounts[0],
-        premiums[0]
-      );
-    }
+    _executeAction(info, amounts[0], premiums[0], _value);
 
     //Approve aaveLP to spend to repay flashloan
     _approveBeforeRepay(info.asset == _ETH, assets[0], amounts[0] + premiums[0], _aaveLendingPool);
@@ -306,24 +270,38 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     }
 
     // Do task according to CallType
-    if (info.callType == FlashLoan.CallType.Switch) {
-      IVault(info.vault).executeSwitch{ value: _value }(info.newProvider, amount, fee);
-    } else if (info.callType == FlashLoan.CallType.Close) {
-      IFliquidator(info.fliquidator).executeFlashClose(info.userAddrs[0], info.vault, amount, fee);
-    } else {
-      IFliquidator(info.fliquidator).executeFlashBatchLiquidation(
-        info.userAddrs,
-        info.userBalances,
-        info.userliquidator,
-        info.vault,
-        amount,
-        fee
-      );
-    }
+    _executeAction(info, amount, fee, _value);
 
     if (info.asset == _ETH) _convertEthToWeth(amount + fee);
     // Transfer flashloan + fee back to crToken Lending Contract
     IERC20(underlying).univTransfer(payable(crToken), amount + fee);
+  }
+
+  function _executeAction(
+    FlashLoan.Info memory _info,
+    uint256 _amount,
+    uint256 _fee,
+    uint256 _value
+  ) internal {
+    if (_info.callType == FlashLoan.CallType.Switch) {
+      IVault(_info.vault).executeSwitch{ value: _value }(_info.newProvider, _amount, _fee);
+    } else if (_info.callType == FlashLoan.CallType.Close) {
+      IFliquidator(_info.fliquidator).executeFlashClose{ value: _value }(
+        _info.userAddrs[0],
+        _info.vault,
+        _amount,
+        _fee
+      );
+    } else {
+      IFliquidator(_info.fliquidator).executeFlashBatchLiquidation{ value: _value }(
+        _info.userAddrs,
+        _info.userBalances,
+        _info.userliquidator,
+        _info.vault,
+        _amount,
+        _fee
+      );
+    }
   }
 
   function _approveBeforeRepay(

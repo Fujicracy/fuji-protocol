@@ -272,7 +272,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     address _vault,
     uint256 _amount,
     uint256 _flashloanFee
-  ) external onlyFlash {
+  ) external payable onlyFlash {
     // Create Instance of FujiERC1155
     IFujiERC1155 f1155 = IFujiERC1155(IVault(_vault).fujiERC1155());
 
@@ -292,7 +292,8 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
     // Repay BaseProtocol debt
-    IVault(_vault).payback(int256(_amount));
+    uint256 _value = vAssets.borrowAsset == ETH ? _amount : 0;
+    IVault(_vault).payback{ value: _value }(int256(_amount));
 
     //TODO: Transfer corresponding Debt Amount to Fuji Treasury
 
@@ -429,7 +430,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     address _vault,
     uint256 _amount,
     uint256 _flashloanFee
-  ) external onlyFlash {
+  ) external payable onlyFlash {
     // Create Instance of FujiERC1155
     IFujiERC1155 f1155 = IFujiERC1155(IVault(_vault).fujiERC1155());
 
@@ -440,7 +441,8 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // TODO: Transfer corresponding Debt Amount to Fuji Treasury
 
     // Repay BaseProtocol debt to release collateral
-    IVault(_vault).payback(int256(_amount));
+    uint256 _value = vAssets.borrowAsset == ETH ? _amount : 0;
+    IVault(_vault).payback{ value: _value }(int256(_amount));
 
     // Compute the Liquidator Bonus bonusFlashL
     uint256 globalBonus = IVault(_vault).getLiquidationBonusFor(_amount, true);

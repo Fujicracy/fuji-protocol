@@ -62,7 +62,7 @@ contract Controller is Ownable {
       vAssets.borrowAsset,
       _vaultAddr
     );
-    uint256 applyRatiodebtPosition = debtPosition * _ratioA / _ratioB;
+    uint256 applyRatiodebtPosition = (debtPosition * _ratioA) / _ratioB;
 
     // Check Ratio Input and Vault Balance at ActiveProvider
     require(

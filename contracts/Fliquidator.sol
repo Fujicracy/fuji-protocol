@@ -4,7 +4,9 @@ pragma solidity ^0.8.0;
 
 import { IVault } from "./Vaults/IVault.sol";
 import { IFujiAdmin } from "./IFujiAdmin.sol";
+import { IFujiOracle } from "./IFujiOracle.sol";
 import { IFujiERC1155 } from "./FujiERC1155/IFujiERC1155.sol";
+import { IERC20Extended } from "./Interfaces/IERC20Extended.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Flasher } from "./Flashloans/Flasher.sol";
 import { FlashLoan } from "./Flashloans/LibFlashLoan.sol";
@@ -36,6 +38,12 @@ interface IFujiERC1155Ext is IFujiERC1155 {
 contract Fliquidator is Ownable, ReentrancyGuard {
   using LibUniversalERC20 for IERC20;
 
+  address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+  // slippage limit to 2%
+  uint256 public constant SLIPPAGE_LIMIT_NUMERATOR = 2;
+  uint256 public constant SLIPPAGE_LIMIT_DENOMINATOR = 100;
+
   struct Factor {
     uint64 a;
     uint64 b;
@@ -45,6 +53,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
   Factor public flashCloseF;
 
   IFujiAdmin private _fujiAdmin;
+  IFujiOracle private oracle;
   IUniswapV2Router02 public swapper;
 
   // Log Liquidation
@@ -91,6 +100,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
    */
   function batchLiquidate(address[] calldata _userAddrs, address _vault)
     external
+    payable
     nonReentrant
     isValidVault(_vault)
   {
@@ -138,14 +148,18 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Check there is at least one user liquidatable
     require(debtBalanceTotal > 0, Errors.VL_USER_NOT_LIQUIDATABLE);
 
-    // Check Liquidator Allowance
-    require(
-      IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this)) >= debtBalanceTotal,
-      Errors.VL_MISSING_ERC20_ALLOWANCE
-    );
+    if (vAssets.borrowAsset == ETH) {
+      require(msg.value >= debtBalanceTotal, Errors.VL_AMOUNT_ERROR);
+    } else {
+      // Check Liquidator Allowance
+      require(
+        IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this)) >= debtBalanceTotal,
+        Errors.VL_MISSING_ERC20_ALLOWANCE
+      );
 
-    // Transfer borrowAsset funds from the Liquidator to Here
-    IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), debtBalanceTotal);
+      // Transfer borrowAsset funds from the Liquidator to Here
+      IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), debtBalanceTotal);
+    }
 
     // Transfer Amount to Vault
     IERC20(vAssets.borrowAsset).univTransfer(payable(_vault), debtBalanceTotal);
@@ -161,6 +175,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     uint256 globalBonus = IVault(_vault).getLiquidationBonusFor(debtBalanceTotal, false);
     // Compute how much collateral needs to be swapt
     uint256 globalCollateralInPlay = _getCollateralInPlay(
+      vAssets.collateralAsset,
       vAssets.borrowAsset,
       debtBalanceTotal + globalBonus
     );
@@ -172,7 +187,13 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     IVault(_vault).withdraw(int256(globalCollateralInPlay));
 
     // Swap Collateral
-    _swap(vAssets.borrowAsset, debtBalanceTotal + globalBonus, globalCollateralInPlay);
+    _swap(
+      vAssets.collateralAsset,
+      vAssets.borrowAsset,
+      debtBalanceTotal + globalBonus,
+      globalCollateralInPlay,
+      true
+    );
 
     // Transfer to Liquidator the debtBalance + bonus
     IERC20(vAssets.borrowAsset).univTransfer(payable(msg.sender), debtBalanceTotal + globalBonus);
@@ -263,7 +284,10 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     uint256 userDebtBalance = f1155.balanceOf(_userAddr, vAssets.borrowID);
 
     // Get user Collateral + Flash Close Fee to close posisition, for _amount passed
-    uint256 userCollateralInPlay = IVault(_vault).getNeededCollateralFor(_amount + _flashloanFee, false) * flashCloseF.a / flashCloseF.b;
+    uint256 userCollateralInPlay = (IVault(_vault).getNeededCollateralFor(
+      _amount + _flashloanFee,
+      false
+    ) * flashCloseF.a) / flashCloseF.b;
 
     // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
@@ -293,9 +317,11 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
     // Swap Collateral for underlying to repay Flashloan
     uint256 remaining = _swap(
+      vAssets.collateralAsset,
       vAssets.borrowAsset,
       _amount + _flashloanFee,
-      userCollateralInPlay
+      userCollateralInPlay,
+      false
     );
 
     // Send FlashClose Fee to FujiTreasury
@@ -421,6 +447,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
     // Compute how much collateral needs to be swapt for all liquidated Users
     uint256 globalCollateralInPlay = _getCollateralInPlay(
+      vAssets.collateralAsset,
       vAssets.borrowAsset,
       _amount + _flashloanFee + globalBonus
     );
@@ -431,7 +458,13 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     // Withdraw collateral
     IVault(_vault).withdraw(int256(globalCollateralInPlay));
 
-    _swap(vAssets.borrowAsset, _amount + _flashloanFee + globalBonus, globalCollateralInPlay);
+    _swap(
+      vAssets.collateralAsset,
+      vAssets.borrowAsset,
+      _amount + _flashloanFee + globalBonus,
+      globalCollateralInPlay,
+      true
+    );
 
     // Send flasher the underlying to repay Flashloan
     IERC20(vAssets.borrowAsset).univTransfer(
@@ -440,10 +473,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
     );
 
     // Transfer Bonus bonusFlashL to liquidator, minus FlashloanFee convenience
-    IERC20(vAssets.borrowAsset).univTransfer(
-      payable(_liquidatorAddr),
-      globalBonus - _flashloanFee
-    );
+    IERC20(vAssets.borrowAsset).univTransfer(payable(_liquidatorAddr), globalBonus - _flashloanFee);
 
     // Burn Debt f1155 tokens and Emit Liquidation Event for Each Liquidated User
     for (uint256 i = 0; i < _userAddrs.length; i += 2) {
@@ -456,43 +486,134 @@ contract Fliquidator is Ownable, ReentrancyGuard {
 
   /**
    * @dev Swap an amount of underlying
+   * @param _collateralAsset: Address of vault collateralAsset
    * @param _borrowAsset: Address of vault borrowAsset
    * @param _amountToReceive: amount of underlying to receive
    * @param _collateralAmount: collateral Amount sent for swap
    */
   function _swap(
+    address _collateralAsset,
     address _borrowAsset,
     uint256 _amountToReceive,
-    uint256 _collateralAmount
+    uint256 _collateralAmount,
+    bool _checkSlippage
   ) internal returns (uint256) {
+    if (_checkSlippage) {
+      uint8 _collateralAssetDecimals;
+      uint8 _borrowAssetDecimals;
+      if (_collateralAsset == ETH) {
+        _collateralAssetDecimals = 18;
+      } else {
+        _collateralAssetDecimals = IERC20Extended(_collateralAsset).decimals();
+      }
+      if (_borrowAsset == ETH) {
+        _borrowAssetDecimals = 18;
+      } else {
+        _borrowAssetDecimals = IERC20Extended(_borrowAsset).decimals();
+      }
+
+      uint256 priceFromSwapper = (_collateralAmount * (10**uint256(_borrowAssetDecimals))) /
+        _amountToReceive;
+      uint256 priceFromOracle = oracle.getPriceOf(
+        _collateralAsset,
+        _borrowAsset,
+        _collateralAssetDecimals
+      );
+      uint256 priceDelta = priceFromSwapper > priceFromOracle
+        ? priceFromSwapper - priceFromOracle
+        : priceFromOracle - priceFromSwapper;
+
+      require(
+        (priceDelta * SLIPPAGE_LIMIT_DENOMINATOR) / priceFromOracle < SLIPPAGE_LIMIT_NUMERATOR,
+        Errors.VL_SWAP_SLIPPAGE_LIMIT_EXCEED
+      );
+    }
+
     // Swap Collateral Asset to Borrow Asset
-    address[] memory path = new address[](2);
-    path[0] = swapper.WETH();
-    path[1] = _borrowAsset;
-    uint256[] memory swapperAmounts = swapper.swapETHForExactTokens{ value: _collateralAmount }(
-      _amountToReceive,
-      path,
-      address(this),
-      // solhint-disable-next-line
-      block.timestamp
-    );
+    address weth = swapper.WETH();
+    address[] memory path;
+    uint256[] memory swapperAmounts;
+
+    if (_collateralAsset == ETH) {
+      path = new address[](2);
+      path[0] = weth;
+      path[1] = _borrowAsset;
+
+      swapperAmounts = swapper.swapETHForExactTokens{ value: _collateralAmount }(
+        _amountToReceive,
+        path,
+        address(this),
+        // solhint-disable-next-line
+        block.timestamp
+      );
+    } else if (_borrowAsset == ETH) {
+      path = new address[](2);
+      path[0] = _collateralAsset;
+      path[1] = weth;
+
+      IERC20(_collateralAsset).univApprove(address(swapper), _collateralAmount);
+      swapperAmounts = swapper.swapTokensForExactETH(
+        _amountToReceive,
+        _collateralAmount,
+        path,
+        address(this),
+        // solhint-disable-next-line
+        block.timestamp
+      );
+    } else {
+      if (_collateralAsset == weth || _borrowAsset == weth) {
+        path = new address[](2);
+        path[0] = _collateralAsset;
+        path[1] = _borrowAsset;
+      } else {
+        path = new address[](3);
+        path[0] = _collateralAsset;
+        path[1] = weth;
+        path[2] = _borrowAsset;
+      }
+
+      IERC20(_collateralAsset).univApprove(address(swapper), _collateralAmount);
+      swapperAmounts = swapper.swapTokensForExactTokens(
+        _amountToReceive,
+        _collateralAmount,
+        path,
+        address(this),
+        // solhint-disable-next-line
+        block.timestamp
+      );
+    }
 
     return _collateralAmount - swapperAmounts[0];
   }
 
   /**
    * @dev Get exact amount of collateral to be swapt
+   * @param _collateralAsset: Address of vault collateralAsset
    * @param _borrowAsset: Address of vault borrowAsset
    * @param _amountToReceive: amount of underlying to receive
    */
-  function _getCollateralInPlay(address _borrowAsset, uint256 _amountToReceive)
-    internal
-    view
-    returns (uint256)
-  {
-    address[] memory path = new address[](2);
-    path[0] = swapper.WETH();
-    path[1] = _borrowAsset;
+  function _getCollateralInPlay(
+    address _collateralAsset,
+    address _borrowAsset,
+    uint256 _amountToReceive
+  ) internal view returns (uint256) {
+    address weth = swapper.WETH();
+    address[] memory path;
+    if (_collateralAsset == ETH || _collateralAsset == weth) {
+      path = new address[](2);
+      path[0] = weth;
+      path[1] = _borrowAsset;
+    } else if (_borrowAsset == ETH || _borrowAsset == weth) {
+      path = new address[](2);
+      path[0] = _collateralAsset;
+      path[1] = weth;
+    } else {
+      path = new address[](3);
+      path[0] = _collateralAsset;
+      path[1] = weth;
+      path[2] = _borrowAsset;
+    }
+
     uint256[] memory amounts = swapper.getAmountsIn(_amountToReceive, path);
 
     return amounts[0];
@@ -518,6 +639,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
         bonusPerUser = _vault.getLiquidationBonusFor(_usrsBals[i + 1], true);
 
         collateralInPlayPerUser = _getCollateralInPlay(
+          _vAssets.collateralAsset,
           _vAssets.borrowAsset,
           _usrsBals[i + 1] + bonusPerUser
         );
@@ -554,5 +676,13 @@ contract Fliquidator is Ownable, ReentrancyGuard {
    */
   function setSwapper(address _newSwapper) external isAuthorized {
     swapper = IUniswapV2Router02(_newSwapper);
+  }
+
+  /**
+   * @dev Changes the Oracle contract address
+   * @param _newFujiOracle: address of new oracle contract
+   */
+  function setFujiOracle(address _newFujiOracle) external isAuthorized {
+    oracle = IFujiOracle(_newFujiOracle);
   }
 }

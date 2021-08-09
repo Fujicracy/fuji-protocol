@@ -17,9 +17,10 @@ const Dydx = require("../artifacts/contracts/Providers/ProviderDYDX.sol/Provider
 const F1155 = require("../artifacts/contracts/FujiERC1155/FujiERC1155.sol/FujiERC1155.json");
 const Flasher = require("../artifacts/contracts/Flashloans/Flasher.sol/Flasher.json");
 const Controller = require("../artifacts/contracts/Controller.sol/Controller.json");
+const FujiOracle = require("../artifacts/contracts/FujiOracle.sol/FujiOracle.json");
 
 const FujiMapping = require("../artifacts/contracts/FujiMapping.sol/FujiMapping.json");
-const { ETH_ADDR, DAI_ADDR, USDC_ADDR, USDT_ADDR } = require("./utils-alpha");
+const { ETH_ADDR, DAI_ADDR, USDC_ADDR, USDT_ADDR, ASSETS } = require("./utils-alpha");
 
 const fixture = async ([wallet]) => {
   // Step 1 of Deploy: Contracts which address is required to be hardcoded in other contracts
@@ -50,6 +51,10 @@ const fixture = async ([wallet]) => {
   const flasher = await deployContract(wallet, Flasher, []);
   const controller = await deployContract(wallet, Controller, []);
   const f1155 = await deployContract(wallet, F1155, []);
+  const oracle = await deployContract(wallet, FujiOracle, [
+    Object.values(ASSETS).map((asset) => asset.address),
+    Object.values(ASSETS).map((asset) => asset.oracle),
+  ]);
 
   // Step 3 Of Deploy: Provider Contracts
   const aave = await deployContract(wallet, Aave, []);
@@ -61,19 +66,19 @@ const fixture = async ([wallet]) => {
   const FujiVault = await ethers.getContractFactory("FujiVault");
   const vaultdai = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
-    CHAINLINK_ORACLE_ADDR,
+    oracle.address,
     ETH_ADDR,
     DAI_ADDR,
   ]);
   const vaultusdc = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
-    CHAINLINK_ORACLE_ADDR,
+    oracle.address,
     ETH_ADDR,
     USDC_ADDR,
   ]);
   const vaultusdt = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
-    CHAINLINK_ORACLE_ADDR,
+    oracle.address,
     ETH_ADDR,
     USDT_ADDR,
   ]);
@@ -85,6 +90,7 @@ const fixture = async ([wallet]) => {
   await fujiadmin.setController(controller.address);
   await fujiadmin.setVaultHarvester(vaultharvester.address);
   await fliquidator.setFujiAdmin(fujiadmin.address);
+  await fliquidator.setFujiOracle(oracle.address);
   await fliquidator.setSwapper(UNISWAP_ROUTER_ADDR);
   await flasher.setFujiAdmin(fujiadmin.address);
   await controller.setFujiAdmin(fujiadmin.address);

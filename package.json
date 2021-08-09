@@ -47,7 +47,7 @@
     "format": "echo 1",
     "lint:sol": "solhint -f table contracts/**/*.sol",
     "lint:js": "eslint -f table test/*.js",
-    "format:sol": "prettier --write contracts/**/*.sol",
+    "format:sol": "prettier --write contracts/*.sol contracts/**/*.sol",
     "format:js": "prettier --write test/*.js",
     "watch": "node scripts/watch.js",
     "accounts": "hardhat accounts",

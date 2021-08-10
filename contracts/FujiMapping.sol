@@ -3,9 +3,9 @@
 
 pragma solidity ^0.8.0;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Claimable } from "./Claimable.sol";
 
-contract FujiMapping is Ownable {
+contract FujiMapping is Claimable {
   // Address 1 =>  Address 2 (e.g. erc20 => cToken, contract a L1 => contract b L2, etc)
   mapping(address => address) public addressMapping;
 

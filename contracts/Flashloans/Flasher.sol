@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
 import { IFujiAdmin } from "../IFujiAdmin.sol";
@@ -12,6 +11,7 @@ import { ILendingPool, IFlashLoanReceiver } from "./AaveFlashLoans.sol";
 import { Actions, Account, DyDxFlashloanBase, ICallee, ISoloMargin } from "./DyDxFlashLoans.sol";
 import { ICTokenFlashloan, ICFlashloanReceiver } from "./CreamFlashLoans.sol";
 import { FlashLoan } from "./LibFlashLoan.sol";
+import { Claimable } from "../Claimable.sol";
 import { IVault } from "../Vaults/IVault.sol";
 
 interface IFliquidator {
@@ -44,7 +44,7 @@ interface IWETH {
   function withdraw(uint256) external;
 }
 
-contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, ICallee, Ownable {
+contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, ICallee, Claimable {
   using LibUniversalERC20 for IERC20;
 
   IFujiAdmin private _fujiAdmin;

@@ -4,12 +4,12 @@ pragma solidity ^0.8.0;
 
 import { IFujiERC1155 } from "./IFujiERC1155.sol";
 import { FujiBaseERC1155 } from "./FujiBaseERC1155.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Claimable } from "../Claimable.sol";
 import { WadRayMath } from "../Libraries/WadRayMath.sol";
 import { Errors } from "../Libraries/Errors.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 
-contract F1155Manager is Ownable {
+contract F1155Manager is Claimable {
   using Address for address;
 
   // Controls for Mint-Burn Operations

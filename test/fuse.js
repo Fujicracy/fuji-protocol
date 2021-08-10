@@ -38,6 +38,8 @@ const {
   vaultfeieth,
 } = _vaults;
 
+const [DEPOSIT_ERC20, BORROW_ERC20, DEPOSIT_ETH, BORROW_ETH] = [7000, 4000, 2, 1];
+
 describe("Rari Fuse", function() {
   let f;
 
@@ -108,8 +110,8 @@ describe("Rari Fuse", function() {
         const cTokenAddr = await fuseComptroller.cTokensByUnderlying(ZERO_ADDR);
         const cETH = await getContractAt("ICEth", cTokenAddr);
 
-        const depositAmount = parseUnits(1);
-        const negdepositAmount = parseUnits(-1);
+        const depositAmount = parseUnits(DEPOSIT_ETH);
+        const negdepositAmount = parseUnits(-DEPOSIT_ETH);
 
         await expect(
           await f[vault.name].connect(user1).deposit(depositAmount, { value: depositAmount })
@@ -137,8 +139,8 @@ describe("Rari Fuse", function() {
         const cTokenAddr = await fuseComptroller.cTokensByUnderlying(collateral.address);
         const cToken = await getContractAt("ICErc20", cTokenAddr);
 
-        const depositAmount = parseUnits(100, collateral.decimals);
-        const negdepositAmount = parseUnits(-100, collateral.decimals);
+        const depositAmount = parseUnits(DEPOSIT_ERC20, collateral.decimals);
+        const negdepositAmount = parseUnits(-DEPOSIT_ERC20, collateral.decimals);
 
         await f[collateral.name].connect(user1).approve(f[name].address, depositAmount);
         await expect(
@@ -162,9 +164,9 @@ describe("Rari Fuse", function() {
     for (let i = 0; i < vaults.length; i += 1) {
       const { name, collateral, debt } = vaults[i];
       it(`borrow ERC20 -> ${debt.nameUp} after depositing ETH as collateral`, async() => {
-        const depositAmount = parseUnits(2);
-        const negdepositAmount = parseUnits(-2);
-        const borrowAmount = parseUnits(3000, debt.decimals);
+        const depositAmount = parseUnits(DEPOSIT_ETH);
+        const negdepositAmount = parseUnits(-DEPOSIT_ETH);
+        const borrowAmount = parseUnits(BORROW_ERC20, debt.decimals);
         const { collateralID, borrowID } = await f[name].vAssets();
 
         await expect(
@@ -185,9 +187,9 @@ describe("Rari Fuse", function() {
         const { name, collateral, debt } = vaults[i];
         it(`borrow ERC20 -> ${debt.nameUp} after depositing ERC20 -> ${collateral.nameUp} as collateral`,
           async() => {
-            const depositAmount = parseUnits(5000, collateral.decimals);
-            const negdepositAmount = parseUnits(-5000, collateral.decimals);
-            const borrowAmount = parseUnits(3000, debt.decimals);
+            const depositAmount = parseUnits(DEPOSIT_ERC20, collateral.decimals);
+            const negdepositAmount = parseUnits(-DEPOSIT_ERC20, collateral.decimals);
+            const borrowAmount = parseUnits(BORROW_ERC20, debt.decimals);
             const { collateralID, borrowID } = await f[name].vAssets();
 
             await f[collateral.name].connect(user1).approve(f[name].address, depositAmount);
@@ -208,9 +210,9 @@ describe("Rari Fuse", function() {
       for (let i = 0; i < vaults.length; i += 1) {
         const { name, collateral, debt } = vaults[i];
         it(`borrow ETH after depositing ERC20 -> ${collateral.nameUp} as collateral`, async() => {
-          const depositAmount = parseUnits(5000, collateral.decimals);
-          const negdepositAmount = parseUnits(-5000, collateral.decimals);
-          const borrowAmount = parseUnits(1);
+          const depositAmount = parseUnits(DEPOSIT_ERC20, collateral.decimals);
+          const negdepositAmount = parseUnits(-DEPOSIT_ERC20, collateral.decimals);
+          const borrowAmount = parseUnits(BORROW_ETH);
           const { collateralID, borrowID } = await f[name].vAssets();
 
           await f[collateral.name].connect(user1).approve(f[name].address, depositAmount);
@@ -231,10 +233,10 @@ describe("Rari Fuse", function() {
     for (let i = 0; i < vaults.length; i += 1) {
       const { name, collateral, debt } = vaults[i];
       it(`payback ERC20 -> ${debt.nameUp} and withdraw ETH`, async function() {
-        const depositAmount = parseUnits(2);
-        const borrowAmount = parseUnits(3000, debt.decimals);
+        const depositAmount = parseUnits(DEPOSIT_ETH);
+        const borrowAmount = parseUnits(BORROW_ERC20, debt.decimals);
         const one = parseUnits(1, debt.decimals);
-        const negborrowAmount = parseUnits(-3000, debt.decimals);
+        const negborrowAmount = parseUnits(-BORROW_ERC20, debt.decimals);
         const { collateralID, borrowID } = await f[name].vAssets();
         // boostrap vault
         await f[name].connect(users[0]).deposit(depositAmount, { value: depositAmount });
@@ -267,9 +269,9 @@ describe("Rari Fuse", function() {
     for (let i = 0; i < vaults.length; i += 1) {
       const { name, collateral, debt } = vaults[i];
       it(`payback ERC20 -> ${debt.nameUp} and withdraw ERC20 -> ${collateral.nameUp}`, async() => {
-        const depositAmount = parseUnits(5000, collateral.decimals);
-        const borrowAmount = parseUnits(3000, debt.decimals);
-        const negborrowAmount = parseUnits(-3000, debt.decimals);
+        const depositAmount = parseUnits(DEPOSIT_ERC20, collateral.decimals);
+        const borrowAmount = parseUnits(BORROW_ERC20, debt.decimals);
+        const negborrowAmount = parseUnits(-BORROW_ERC20, debt.decimals);
         const { collateralID, borrowID } = await f[name].vAssets();
         // boostrap vault
         await f[collateral.name].connect(users[0]).approve(f[name].address, depositAmount);
@@ -305,9 +307,9 @@ describe("Rari Fuse", function() {
     for (let i = 0; i < vaults.length; i += 1) {
       const { name, collateral, debt } = vaults[i];
       it(`payback ETH and withdraw ERC20 -> ${collateral.nameUp}`, async() => {
-        const depositAmount = parseUnits(5000, collateral.decimals);
-        const borrowAmount = parseUnits(1);
-        const negborrowAmount = parseUnits(-1);
+        const depositAmount = parseUnits(DEPOSIT_ERC20, collateral.decimals);
+        const borrowAmount = parseUnits(BORROW_ETH);
+        const negborrowAmount = parseUnits(-BORROW_ETH);
         const { collateralID, borrowID } = await f[name].vAssets();
         // boostrap vault
         await f[collateral.name].connect(users[0]).approve(f[name].address, depositAmount);
@@ -342,8 +344,8 @@ describe("Rari Fuse", function() {
     for (let i = 0; i < vaults.length; i += 1) {
       const { name, collateral, debt } = vaults[i];
       it(`refinance ERC20 -> ${debt.nameUp} debt with ETH as collateral`, async() => {
-        const depositAmount = parseUnits(2);
-        const borrowAmount = parseUnits(3000, debt.decimals);
+        const depositAmount = parseUnits(3);
+        const borrowAmount = parseUnits(BORROW_ERC20, debt.decimals);
 
         await f[name].connect(users[1]).depositAndBorrow(
           depositAmount,
@@ -366,7 +368,7 @@ describe("Rari Fuse", function() {
         let postVaultCollat = await f[name].depositBalance(f[to].address);
         postVaultCollat = formatUnitsToNum(postVaultCollat);
 
-        await expect(preVaultDebt).to.be.closeTo(postVaultDebt, 1);
+        await expect(preVaultDebt).to.be.closeTo(postVaultDebt, 1.3);
         await expect(preVaultCollat).to.be.closeTo(postVaultCollat, 0.001);
       });
     }
@@ -376,8 +378,8 @@ describe("Rari Fuse", function() {
     for (let i = 0; i < vaults.length; i += 1) {
       const { name, collateral, debt } = vaults[i];
       it(`refinance ERC20 -> ${debt.nameUp} debt with ERC20 -> ${collateral.nameUp} as collateral`, async() => {
-        const depositAmount = parseUnits(5000, collateral.decimals);
-        const borrowAmount = parseUnits(3000, debt.decimals);
+        const depositAmount = parseUnits(DEPOSIT_ERC20, collateral.decimals);
+        const borrowAmount = parseUnits(BORROW_ERC20, debt.decimals);
 
         await f[collateral.name].connect(users[1]).approve(f[name].address, depositAmount);
         await f[name].connect(users[1]).depositAndBorrow(
@@ -410,8 +412,8 @@ describe("Rari Fuse", function() {
     for (let i = 0; i < vaults.length; i += 1) {
       const { name, collateral, debt } = vaults[i];
       it(`refinance ETH debt with ERC20 -> ${collateral.nameUp} as collateral`, async() => {
-        const depositAmount = parseUnits(5000, collateral.decimals);
-        const borrowAmount = parseUnits(1);
+        const depositAmount = parseUnits(DEPOSIT_ERC20, collateral.decimals);
+        const borrowAmount = parseUnits(BORROW_ETH);
 
         await f[collateral.name].connect(users[1]).approve(f[name].address, depositAmount);
         await f[name].connect(users[1]).depositAndBorrow(

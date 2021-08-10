@@ -18,7 +18,6 @@ interface IVault {
   event SetActiveProvider(address providerAddr);
   // Log Switch providers
   event Switch(
-    address vault,
     address fromProviderAddrs,
     address toProviderAddr,
     uint256 debtamount,

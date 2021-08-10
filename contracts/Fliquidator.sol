@@ -8,6 +8,7 @@ import { IFujiOracle } from "./IFujiOracle.sol";
 import { IFujiERC1155 } from "./FujiERC1155/IFujiERC1155.sol";
 import { IERC20Extended } from "./Interfaces/IERC20Extended.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Flasher } from "./Flashloans/Flasher.sol";
 import { FlashLoan } from "./Flashloans/LibFlashLoan.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
@@ -36,6 +37,7 @@ interface IFujiERC1155Ext is IFujiERC1155 {
 }
 
 contract Fliquidator is Ownable, ReentrancyGuard {
+  using SafeERC20 for IERC20;
   using LibUniversalERC20 for IERC20;
 
   address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -158,7 +160,7 @@ contract Fliquidator is Ownable, ReentrancyGuard {
       );
 
       // Transfer borrowAsset funds from the Liquidator to Here
-      IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), debtBalanceTotal);
+      IERC20(vAssets.borrowAsset).safeTransferFrom(msg.sender, address(this), debtBalanceTotal);
     }
 
     // Transfer Amount to Vault

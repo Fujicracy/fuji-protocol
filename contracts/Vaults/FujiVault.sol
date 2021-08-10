@@ -301,7 +301,7 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
         );
 
         // Transfer Asset from User to Vault
-        IERC20(vAssets.borrowAsset).transferFrom(msg.sender, address(this), amountToPayback);
+        IERC20(vAssets.borrowAsset).safeTransferFrom(msg.sender, address(this), amountToPayback);
       }
 
       // Delegate Call Payback to current provider
@@ -353,7 +353,7 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
     // return borrowed amount to Flasher
     IERC20(vAssets.borrowAsset).univTransfer(payable(msg.sender), _flashLoanAmount + _fee);
 
-    emit Switch(address(this), activeProvider, _newProvider, _flashLoanAmount, collateraltoMove);
+    emit Switch(activeProvider, _newProvider, _flashLoanAmount, collateraltoMove);
   }
 
   // Setter, change state functions
@@ -372,6 +372,7 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
    * Emits a {SetActiveProvider} event.
    */
   function setActiveProvider(address _provider) external override isAuthorized {
+    require(_provider != address(0), Errors.VL_ZERO_ADDR);
     activeProvider = _provider;
 
     emit SetActiveProvider(_provider);
@@ -384,6 +385,7 @@ contract FujiVault is IVault, VaultBaseUpgradeable, ReentrancyGuardUpgradeable {
    * @param _fujiERC1155: fuji ERC1155 address
    */
   function setFujiERC1155(address _fujiERC1155) external isAuthorized {
+    require(_fujiERC1155 != address(0), Errors.VL_ZERO_ADDR);
     fujiERC1155 = _fujiERC1155;
 
     vAssets.collateralID = IFujiERC1155(_fujiERC1155).addInitializeAsset(

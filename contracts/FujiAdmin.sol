@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 
 import { IFujiAdmin } from "./IFujiAdmin.sol";
+import { Errors } from "./Libraries/Errors.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
@@ -25,6 +26,7 @@ contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
    * @param _newFlasher: flasher address
    */
   function setFlasher(address _newFlasher) external onlyOwner {
+    require(_newFlasher != address(0), Errors.VL_ZERO_ADDR);
     _flasher = _newFlasher;
   }
 
@@ -33,6 +35,7 @@ contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
    * @param _newFliquidator: new fliquidator address
    */
   function setFliquidator(address _newFliquidator) external onlyOwner {
+    require(_newFliquidator != address(0), Errors.VL_ZERO_ADDR);
     _fliquidator = _newFliquidator;
   }
 
@@ -41,6 +44,7 @@ contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
    * @param _newTreasury: new Fuji Treasury address
    */
   function setTreasury(address payable _newTreasury) external onlyOwner {
+    require(_newTreasury != address(0), Errors.VL_ZERO_ADDR);
     _ftreasury = _newTreasury;
   }
 
@@ -49,6 +53,7 @@ contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
    * @param _newController: controller address
    */
   function setController(address _newController) external onlyOwner {
+    require(_newController != address(0), Errors.VL_ZERO_ADDR);
     _controller = _newController;
   }
 
@@ -57,6 +62,7 @@ contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
    * @param _newVaultHarverster: controller address
    */
   function setVaultHarvester(address _newVaultHarverster) external onlyOwner {
+    require(_newVaultHarverster != address(0), Errors.VL_ZERO_ADDR);
     _vaultHarvester = _newVaultHarverster;
   }
 

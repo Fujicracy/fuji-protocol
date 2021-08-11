@@ -2,12 +2,12 @@
 
 pragma solidity ^0.8.0;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IVault } from "./Vaults/IVault.sol";
 import { IProvider } from "./Providers/IProvider.sol";
 import { Flasher } from "./Flashloans/Flasher.sol";
 import { FlashLoan } from "./Flashloans/LibFlashLoan.sol";
 import { IFujiAdmin } from "./IFujiAdmin.sol";
+import { Claimable } from "./Claimable.sol";
 import { Errors } from "./Libraries/Errors.sol";
 
 interface IVaultExt is IVault {
@@ -22,7 +22,7 @@ interface IVaultExt is IVault {
   function vAssets() external view returns (VaultAssets memory);
 }
 
-contract Controller is Ownable {
+contract Controller is Claimable {
   IFujiAdmin private _fujiAdmin;
 
   modifier isValidVault(address _vaultAddr) {

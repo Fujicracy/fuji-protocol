@@ -11,7 +11,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Flasher } from "./Flashloans/Flasher.sol";
 import { FlashLoan } from "./Flashloans/LibFlashLoan.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Claimable } from "./Claimable.sol";
 import { Errors } from "./Libraries/Errors.sol";
 import { LibUniversalERC20 } from "./Libraries/LibUniversalERC20.sol";
 import { IUniswapV2Router02 } from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
@@ -36,7 +36,7 @@ interface IFujiERC1155Ext is IFujiERC1155 {
     returns (uint256[] memory);
 }
 
-contract Fliquidator is Ownable, ReentrancyGuard {
+contract Fliquidator is Claimable, ReentrancyGuard {
   using SafeERC20 for IERC20;
   using LibUniversalERC20 for IERC20;
 

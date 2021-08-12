@@ -94,15 +94,6 @@ describe("Alpha", () => {
       ).to.revertedWith("103");
     });
 
-    it("4.- Users[1]: deposit 950 ETH to Vaultdai, exceeds ETH-CAP, should revert", async () => {
-      const userX = users[1];
-      const depositAmount = ethers.utils.parseEther("950");
-
-      await expect(
-        vaultdai.connect(userX).deposit(depositAmount, { value: depositAmount })
-      ).to.revertedWith("901");
-    });
-
     it("5.- Users[2,4]: Two deposits to Vaultusdc, checks Vaultusdc aweTH balance Ok", async () => {
       const userX = users[2];
       const depositAmount = ethers.utils.parseEther("3");

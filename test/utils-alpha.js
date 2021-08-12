@@ -240,13 +240,14 @@ const parseUnitsOfCurrency = async (tokenAddr, amount) => {
   return ethers.utils.parseUnits(`${amount}`, decimals);
 };
 
-const formatUnitsToNum = (amount, decimals = 18) => Number(ethers.utils.formatUnits(amount, decimals));
+const formatUnitsToNum = (amount, decimals = 18) =>
+  Number(ethers.utils.formatUnits(amount, decimals));
 const formatUnitsOfCurrency = async (tokenAddr, amount) => {
   const token = await ethers.getContractAt("IERC20Extended", tokenAddr);
   const decimals = (await token.decimals()).toString();
 
   return ethers.utils.formatUnits(amount, decimals);
-}
+};
 
 const toBN = (amount) => ethers.BigNumber.from(`${amount}`);
 

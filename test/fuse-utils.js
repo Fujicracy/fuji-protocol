@@ -46,7 +46,7 @@ const ASSETS = {
     address: "0x956F47F50A910163D8BF957Cf5846D573E7f87CA",
     oracle: "0x31e0a88fecB6eC0a411DBe0e9E76391498296EE9",
     decimals: 18,
-  }
+  },
 };
 
 // iterate through all ASSETS and create pairs
@@ -59,13 +59,13 @@ const getVaults = () => {
         vaults.push({
           name: `vault${collateral.name}${debt.name}`,
           collateral,
-          debt
+          debt,
         });
       }
     });
   });
   return vaults;
-}
+};
 
 const fixture = async ([wallet]) => {
   // Step 0: Common
@@ -94,7 +94,7 @@ const fixture = async ([wallet]) => {
   const FujiOracle = await getContractFactory("FujiOracle");
   const oracle = await FujiOracle.deploy(
     Object.values(ASSETS).map((asset) => asset.address),
-    Object.values(ASSETS).map((asset) => asset.oracle),
+    Object.values(ASSETS).map((asset) => asset.oracle)
   );
 
   // Step 2: Providers
@@ -147,11 +147,11 @@ const fixture = async ([wallet]) => {
     controller,
     f1155,
     swapper,
-  }
-}
+  };
+};
 
 module.exports = {
   fixture,
   ASSETS,
   VAULTS: getVaults(),
-}
+};

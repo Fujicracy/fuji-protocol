@@ -102,6 +102,10 @@ const fixture = async ([wallet]) => {
   const fuse3 = await Fuse3.deploy([]);
   const Fuse6 = await getContractFactory("ProviderFuse6");
   const fuse6 = await Fuse6.deploy([]);
+  const Fuse7 = await getContractFactory("ProviderFuse7");
+  const fuse7 = await Fuse7.deploy([]);
+  const Fuse8 = await getContractFactory("ProviderFuse8");
+  const fuse8 = await Fuse8.deploy([]);
   const Fuse18 = await getContractFactory("ProviderFuse18");
   const fuse18 = await Fuse18.deploy([]);
 
@@ -139,6 +143,8 @@ const fixture = async ([wallet]) => {
     ...vaults,
     fuse3,
     fuse6,
+    fuse7,
+    fuse8,
     fuse18,
     oracle,
     fujiadmin,

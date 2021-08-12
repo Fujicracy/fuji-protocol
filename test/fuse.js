@@ -17,6 +17,8 @@ const { fixture, ASSETS, VAULTS } = require("./fuse-utils.js");
 const fuseAddrs = {
   fuse3Comptroller: "0x6E7fb6c5865e8533D5ED31b6d43fD95f4C411834",
   fuse6Comptroller: "0x814b02C1ebc9164972D888495927fe1697F0Fb4c",
+  fuse7Comptroller: "0xFB558eCD2D24886e8d2956775C619deb22f154EF",
+  fuse8Comptroller: "0xc54172e34046c1653d1920d40333Dd358c7a1aF4",
   fuse18Comptroller: "0x621579DD26774022F33147D3852ef4E00024b763",
 };
 const _vaults = {};
@@ -32,6 +34,10 @@ const {
   vaultdaieth,
   vaultethfei,
   vaultfeieth,
+  vaultfeiusdc,
+  vaultusdcfei,
+  vaultdaifei,
+  vaultfeidai,
 } = _vaults;
 
 const [DEPOSIT_ERC20, BORROW_ERC20, DEPOSIT_ETH, BORROW_ETH] = [7000, 4000, 2, 1];
@@ -413,7 +419,7 @@ describe("Rari Fuse", function () {
         let postVaultCollat = await f[name].depositBalance(f[to].address);
         postVaultCollat = formatUnitsToNum(postVaultCollat, collateral.decimals);
 
-        await expect(preVaultDebt).to.be.closeTo(postVaultDebt, 1);
+        await expect(preVaultDebt).to.be.closeTo(postVaultDebt, 1.3);
         await expect(preVaultCollat).to.be.closeTo(postVaultCollat, 1);
       });
     }
@@ -480,7 +486,8 @@ describe("Rari Fuse", function () {
 
   describe("Pool 6", function () {
     before(async function () {
-      evmRevert(evmSnapshot1);
+      // REVERT to 2
+      evmRevert(evmSnapshot2);
 
       for (let i = 0; i < VAULTS.length; i += 1) {
         const vault = VAULTS[i];
@@ -513,6 +520,65 @@ describe("Rari Fuse", function () {
     //testRefinance3([vaultdaieth], "fuse6", "fuse18", 1);
   });
 
+  describe("Pool 7", function () {
+    before(async function () {
+      // REVERT to 2
+      evmRevert(evmSnapshot2);
+
+      for (let i = 0; i < VAULTS.length; i += 1) {
+        const vault = VAULTS[i];
+        await f[vault.name].setProviders([f.fuse7.address]);
+        await f[vault.name].setActiveProvider(f.fuse7.address);
+      }
+    });
+
+    testDeposit1(fuseAddrs.fuse7Comptroller, [vaultethusdc, vaultethfei]);
+    testDeposit2(fuseAddrs.fuse7Comptroller, [vaultfeiusdc, vaultusdcfei]);
+
+    testBorrow1([vaultethusdc, vaultethfei]);
+    testBorrow2([vaultfeiusdc, vaultusdcfei]);
+    // borrowing ETH is paused on this pool
+    //testBorrow3([vaultdaieth, vaultfeieth]);
+
+    testPaybackAndWithdraw1([vaultethusdc, vaultethfei]);
+    testPaybackAndWithdraw2([vaultfeiusdc, vaultusdcfei]);
+    // borrowing ETH is paused on this pool
+    //testPaybackAndWithdraw3([vaultdaieth, vaultfeieth]);
+
+    testRefinance1([vaultethfei, vaultethusdc], "fuse7", "fuse18", 2);
+    testRefinance2([vaultusdcfei], "fuse7", "fuse18", 2);
+    // borrowing ETH is paused on this pool
+    //testRefinance3([vaultfeieth], "fuse7", "fuse18", 1);
+  });
+
+  describe("Pool 8", function () {
+    before(async function () {
+      // REVERT to 2
+      evmRevert(evmSnapshot2);
+
+      for (let i = 0; i < VAULTS.length; i += 1) {
+        const vault = VAULTS[i];
+        await f[vault.name].setProviders([f.fuse8.address]);
+        await f[vault.name].setActiveProvider(f.fuse8.address);
+      }
+    });
+
+    testDeposit1(fuseAddrs.fuse8Comptroller, [vaultethdai, vaultethfei]);
+    testDeposit2(fuseAddrs.fuse8Comptroller, [vaultfeidai, vaultdaifei]);
+
+    testBorrow1([vaultethdai, vaultethfei]);
+    testBorrow2([vaultfeidai, vaultdaifei]);
+    testBorrow3([vaultdaieth, vaultfeieth]);
+
+    testPaybackAndWithdraw1([vaultethdai, vaultethfei]);
+    testPaybackAndWithdraw2([vaultfeidai, vaultdaifei]);
+    testPaybackAndWithdraw3([vaultdaieth, vaultfeieth]);
+
+    testRefinance1([vaultethfei, vaultethdai], "fuse8", "fuse18", 2);
+    testRefinance2([vaultdaifei, vaultfeidai], "fuse8", "fuse18", 2);
+    testRefinance3([vaultdaieth, vaultfeieth], "fuse8", "fuse18", 1);
+  });
+
   describe("Pool 18", function () {
     before(async function () {
       // REVERT to 2
@@ -535,17 +601,14 @@ describe("Rari Fuse", function () {
 
     testBorrow1([vaultethdai, vaultethusdc, vaultethfei]);
     testBorrow2([vaultdaiusdc, vaultusdcdai]);
-    // borrowing ETH is paused on this pool
-    //testBorrow3([vaultdaieth, vaultfeieth]);
+    testBorrow3([vaultdaieth, vaultfeieth]);
 
     testPaybackAndWithdraw1([vaultethdai, vaultethusdc, vaultethfei]);
     testPaybackAndWithdraw2([vaultdaiusdc, vaultusdcdai]);
-    // borrowing ETH is paused on this pool
-    //testPaybackAndWithdraw3([vaultdaieth, vaultfeieth]);
+    testPaybackAndWithdraw3([vaultdaieth, vaultfeieth]);
 
     testRefinance1([vaultethfei, vaultethusdc], "fuse18", "fuse6", 2);
     testRefinance2([vaultusdcdai], "fuse18", "fuse3", 1);
-    // borrowing ETH is paused on this pool
-    //testRefinance3([vaultdaieth], "fuse18", "fuse3", 1);
+    testRefinance3([vaultdaieth, vaultfeieth], "fuse18", "fuse8", 2);
   });
 });

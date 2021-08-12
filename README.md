@@ -26,7 +26,12 @@ yarn fork
 
 ### 3. Deploy contracts
 ```
-yarn deploy
+# main markets
+npx hardhat run scripts/deploy.js
+```
+```
+# fuse markets
+npx hardhat run scripts/deploy-fuse.js
 ```
 
 ### 4. Tests

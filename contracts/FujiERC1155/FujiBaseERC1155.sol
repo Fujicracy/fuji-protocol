@@ -2,13 +2,13 @@
 
 pragma solidity ^0.8.0;
 
-import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
-import { IERC1155MetadataURI } from "@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol";
-import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { IERC1155Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
+import { IERC1155ReceiverUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol";
+import { IERC1155MetadataURIUpgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/IERC1155MetadataURIUpgradeable.sol";
+import { ERC165Upgradeable } from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
+import { IERC165Upgradeable } from "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
+import { ContextUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
-import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { Errors } from "../Libraries/Errors.sol";
 
 /**
@@ -19,7 +19,7 @@ import { Errors } from "../Libraries/Errors.sol";
  *
  */
 
-contract FujiBaseERC1155 is IERC1155, ERC165, Context {
+abstract contract FujiBaseERC1155 is IERC1155Upgradeable, ERC165Upgradeable, ContextUpgradeable {
   using Address for address;
 
   // Mapping from token ID to account balances
@@ -48,12 +48,12 @@ contract FujiBaseERC1155 is IERC1155, ERC165, Context {
   function supportsInterface(bytes4 interfaceId)
     public
     view
-    override(ERC165, IERC165)
+    override(ERC165Upgradeable, IERC165Upgradeable)
     returns (bool)
   {
     return
-      interfaceId == type(IERC1155).interfaceId ||
-      interfaceId == type(IERC1155MetadataURI).interfaceId ||
+      interfaceId == type(IERC1155Upgradeable).interfaceId ||
+      interfaceId == type(IERC1155MetadataURIUpgradeable).interfaceId ||
       super.supportsInterface(interfaceId);
   }
 
@@ -156,10 +156,10 @@ contract FujiBaseERC1155 is IERC1155, ERC165, Context {
     bytes memory data
   ) internal {
     if (to.isContract()) {
-      try IERC1155Receiver(to).onERC1155Received(operator, from, id, amount, data) returns (
-        bytes4 response
-      ) {
-        if (response != IERC1155Receiver(to).onERC1155Received.selector) {
+      try
+        IERC1155ReceiverUpgradeable(to).onERC1155Received(operator, from, id, amount, data)
+      returns (bytes4 response) {
+        if (response != IERC1155ReceiverUpgradeable(to).onERC1155Received.selector) {
           revert(Errors.VL_RECEIVER_REJECT_1155);
         }
       } catch Error(string memory reason) {
@@ -179,10 +179,10 @@ contract FujiBaseERC1155 is IERC1155, ERC165, Context {
     bytes memory data
   ) internal {
     if (to.isContract()) {
-      try IERC1155Receiver(to).onERC1155BatchReceived(operator, from, ids, amounts, data) returns (
-        bytes4 response
-      ) {
-        if (response != IERC1155Receiver(to).onERC1155BatchReceived.selector) {
+      try
+        IERC1155ReceiverUpgradeable(to).onERC1155BatchReceived(operator, from, ids, amounts, data)
+      returns (bytes4 response) {
+        if (response != IERC1155ReceiverUpgradeable(to).onERC1155BatchReceived.selector) {
           revert(Errors.VL_RECEIVER_REJECT_1155);
         }
       } catch Error(string memory reason) {

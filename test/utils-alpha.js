@@ -54,7 +54,6 @@ const Aave = require("../artifacts/contracts/Providers/ProviderAave.sol/Provider
 const Compound = require("../artifacts/contracts/Providers/ProviderCompound.sol/ProviderCompound.json");
 const Dydx = require("../artifacts/contracts/Providers/ProviderDYDX.sol/ProviderDYDX.json");
 const IronBank = require("../artifacts/contracts/Providers/ProviderIronBank.sol/ProviderIronBank.json");
-const F1155 = require("../artifacts/contracts/FujiERC1155/FujiERC1155.sol/FujiERC1155.json");
 const Flasher = require("../artifacts/contracts/Flashloans/Flasher.sol/Flasher.json");
 const Controller = require("../artifacts/contracts/Controller.sol/Controller.json");
 const FujiOracle = require("../artifacts/contracts/FujiOracle.sol/FujiOracle.json");
@@ -78,7 +77,8 @@ const fixture = async ([wallet]) => {
   const fliquidator = await deployContract(wallet, Fliquidator, []);
   const flasher = await deployContract(wallet, Flasher, []);
   const controller = await deployContract(wallet, Controller, []);
-  const f1155 = await deployContract(wallet, F1155, []);
+  const FujiERC1155 = await ethers.getContractFactory("FujiERC1155");
+  const f1155 = await upgrades.deployProxy(FujiERC1155, []);
   const oracle = await deployContract(wallet, FujiOracle, [
     Object.values(ASSETS).map((asset) => asset.address),
     Object.values(ASSETS).map((asset) => asset.oracle),

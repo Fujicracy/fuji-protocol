@@ -4,12 +4,12 @@ pragma solidity ^0.8.0;
 
 import { IFujiERC1155 } from "./IFujiERC1155.sol";
 import { FujiBaseERC1155 } from "./FujiBaseERC1155.sol";
-import { Claimable } from "../Claimable.sol";
+import { ClaimableUpgradeable } from "../ClaimableUpgradeable.sol";
 import { WadRayMath } from "../Libraries/WadRayMath.sol";
 import { Errors } from "../Libraries/Errors.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 
-contract F1155Manager is Claimable {
+abstract contract F1155Manager is ClaimableUpgradeable {
   using Address for address;
 
   // Controls for Mint-Burn Operations
@@ -42,6 +42,12 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   // Asset ID  Liquidity Index mapping
   // AssetId => Liquidity index for asset ID
   mapping(uint256 => uint256) public indexes;
+
+  function initialize() external initializer {
+    __ERC165_init();
+    __Context_init();
+    __Climable_init();
+  }
 
   /**
    * @dev Updates Index of AssetID

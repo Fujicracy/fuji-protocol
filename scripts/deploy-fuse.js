@@ -117,7 +117,7 @@ const deployContracts = async () => {
   const fliquidator = await deploy("Fliquidator");
   const flasher = await deploy("Flasher");
   const controller = await deploy("Controller");
-  const f1155 = await deploy("FujiERC1155");
+  const f1155 = await deployProxy("FujiERC1155", "FujiERC1155", []);
   const oracle = await deploy("FujiOracle", [
     Object.values(ASSETS).map((asset) => asset.address),
     Object.values(ASSETS).map((asset) => asset.oracle),

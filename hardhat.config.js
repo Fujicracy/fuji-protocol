@@ -135,6 +135,17 @@ function debug(text) {
 }
 
 /* eslint-disable */
+function writeFiles(chainId, market, deployData) {
+  fs.writeFileSync(
+    `../bots/contracts/${chainId}-${market}.deployment.json`,
+    JSON.stringify(deployData, null, 2)
+  );
+  fs.writeFileSync(
+    `../react-app/src/contracts/${chainId}-${market}.deployment.json`,
+    JSON.stringify(deployData, null, 2)
+  );
+};
+
 task("publish", "Publish deployment data to other packages")
   .addOptionalParam("market", "Markets: fuse, core", "core")
   .setAction(async ({ market }, { ethers, config }) => {
@@ -145,8 +156,23 @@ task("publish", "Publish deployment data to other packages")
       fs.readFileSync(`${config.paths.artifacts}/${network.chainId}-${market}.deploy`).toString()
     );
 
-    fs.writeFileSync(`../react-app/src/contracts/${network.chainId}-${market}.deployment.json`, deployData);
-    fs.writeFileSync(`../bots/contracts/${network.chainId}-${market}.deployment.json`, deployData);
+    writeFiles(network.chainId, market, deployData);
+  });
+
+task("sync", "Sync mainnet deployment data to be used in current network")
+  .setAction(async (_, { ethers, config }) => {
+
+    const network = await ethers.provider.getNetwork();
+
+    const deployDataCore = JSON.parse(
+      fs.readFileSync(`${config.paths.artifacts}/1-core.deploy`).toString()
+    );
+    const deployDataFuse = JSON.parse(
+      fs.readFileSync(`${config.paths.artifacts}/1-fuse.deploy`).toString()
+    );
+
+    writeFiles(network.chainId, "core", deployDataCore);
+    writeFiles(network.chainId, "fuse", deployDataFuse);
   });
 
 task("wallet", "Create a wallet (pk) link", async (_, { ethers }) => {

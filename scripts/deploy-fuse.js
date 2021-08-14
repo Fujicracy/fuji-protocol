@@ -181,7 +181,7 @@ const main = async () => {
 
   const network = await ethers.provider.getNetwork();
 
-  fs.writeFileSync(`artifacts/${network.chainId}.deploy`, JSON.stringify(deployData, null, 2));
+  fs.writeFileSync(`artifacts/${network.chainId}-fuse.deploy`, JSON.stringify(deployData, null, 2));
 };
 
 main()

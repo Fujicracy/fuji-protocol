@@ -135,6 +135,20 @@ function debug(text) {
 }
 
 /* eslint-disable */
+task("publish", "Publish deployment data to other packages")
+  .addOptionalParam("market", "Markets: fuse, core", "core")
+  .setAction(async ({ market }, { ethers, config }) => {
+
+    const network = await ethers.provider.getNetwork();
+
+    const deployData = JSON.parse(
+      fs.readFileSync(`${config.paths.artifacts}/${network.chainId}-${market}.deploy`).toString()
+    );
+
+    fs.writeFileSync(`../react-app/src/contracts/${network.chainId}-${market}.deployment.json`, deployData);
+    fs.writeFileSync(`../bots/contracts/${network.chainId}-${market}.deployment.json`, deployData);
+  });
+
 task("wallet", "Create a wallet (pk) link", async (_, { ethers }) => {
   const randomWallet = ethers.Wallet.createRandom();
   const privateKey = randomWallet._signingKey().privateKey;

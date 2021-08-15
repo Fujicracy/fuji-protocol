@@ -79,6 +79,7 @@ const deployContracts = async () => {
   await controller.setFujiAdmin(fujiadmin.address);
   await f1155.setPermit(vaultethfei.address, true);
   await f1155.setPermit(vaultethusdc.address, true);
+  await f1155.setPermit(fliquidator.address, true);
 
   // Vaults Set-up
   await vaultethfei.setProviders([fuse8.address]);

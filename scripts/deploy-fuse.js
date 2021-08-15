@@ -58,7 +58,7 @@ const deployContracts = async () => {
     fujiadmin.address,
     oracle.address,
     ASSETS.ETH.address,
-    ASSETS.DAI.address,
+    ASSETS.FEI.address,
   ]);
   const vaultethusdc = await deployProxy("VaultETHUSDC", "FujiVault", [
     fujiadmin.address,

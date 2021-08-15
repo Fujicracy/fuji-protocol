@@ -1,39 +1,15 @@
 const chalk = require("chalk");
 const { ethers } = require("hardhat");
-const { deployProxy, deploy, setMarket } = require("./utils");
+const { deployProxy, deploy, setMarket, ASSETS } = require("./utils");
 
 const UNISWAP_ROUTER_ADDR = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
-
-const ASSETS = {
-  DAI: {
-    address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
-    oracle: "0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9",
-  },
-  USDC: {
-    address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-    oracle: "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6",
-  },
-  USDT: {
-    address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
-    oracle: "0x3E7d1eAB13ad0104d2750B8863b489D65364e32D",
-  },
-  ETH: {
-    address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-    oracle: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
-  },
-};
 
 const deployContracts = async () => {
   console.log("\n\n 📡 Deploying...\n");
 
   const deployerWallet = ethers.provider.getSigner();
 
-  // Step 1 of Deploy: Contracts which address is required to be hardcoded in other contracts
-  // Fuji Mapping for Compound Contracts, for testing this is not required.
-  // Fuji Mapping for CreamFinance Contracts
-  // const treasury = await deploy("GnosisSafe");
-
-  // Step 2 Of Deploy: Functional Contracts
+  // Functional Contracts
   const fujiadmin = await deployProxy("FujiAdmin", "FujiAdmin");
   const fliquidator = await deploy("Fliquidator");
   const flasher = await deploy("Flasher");
@@ -44,13 +20,13 @@ const deployContracts = async () => {
     Object.values(ASSETS).map((asset) => asset.oracle),
   ]);
 
-  // Step 3 Of Deploy: Provider Contracts
+  // Provider Contracts
   const aave = await deploy("ProviderAave");
   const compound = await deploy("ProviderCompound");
   const dydx = await deploy("ProviderDYDX");
   const ironBank = await deploy("ProviderIronBank");
 
-  // Step 4 Of Deploy Core Money Handling Contracts
+  // Deploy Core Money Handling Contracts
   const vaultharvester = await deploy("VaultHarvester");
 
   const vaultdai = await deployProxy("VaultETHDAI", "FujiVault", [
@@ -72,7 +48,7 @@ const deployContracts = async () => {
     ASSETS.USDT.address,
   ]);
 
-  // Step 5 - General Plug-ins and Set-up Transactions
+  // General Plug-ins and Set-up Transactions
   await fujiadmin.setFlasher(flasher.address);
   await fujiadmin.setFliquidator(fliquidator.address);
   await fujiadmin.setTreasury("0x9F5A10E45906Ef12497237cE10fB7AB9B850Ff86");
@@ -88,7 +64,7 @@ const deployContracts = async () => {
   await f1155.setPermit(vaultusdt.address, true);
   await f1155.setPermit(fliquidator.address, true);
 
-  // Step 6 - Vault Set-up
+  // Vault Set-up
   await vaultdai.setProviders([compound.address, aave.address, dydx.address, ironBank.address]);
   await vaultdai.setActiveProvider(compound.address);
   await vaultdai.setFujiERC1155(f1155.address);

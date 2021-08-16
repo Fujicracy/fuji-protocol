@@ -89,7 +89,7 @@ const fixture = async ([wallet]) => {
   const controller = await Controller.deploy([]);
 
   const F1155 = await getContractFactory("FujiERC1155");
-  const f1155 = await F1155.deploy([]);
+  const f1155 = await upgrades.deployProxy(F1155, []);
 
   const FujiOracle = await getContractFactory("FujiOracle");
   const oracle = await FujiOracle.deploy(

@@ -64,7 +64,7 @@ const fixture = async ([wallet]) => {
   const usdt = await ethers.getContractAt("IERC20", ASSETS.USDT.address);
   const aweth = await ethers.getContractAt("IERC20", AWETH_ADDR);
   const ceth = await ethers.getContractAt("ICErc20", CETH_ADDR);
-  const cyweth = await ethers.getContractAt("ICyErc20", CYWETH_ADDR);
+  const cyweth = await ethers.getContractAt("ICErc20", CYWETH_ADDR);
 
   // Step 1 of Deploy: Contracts which address is required to be hardcoded in other contracts
   // Fuji Mapping, for testing this is not required.

@@ -19,9 +19,9 @@ interface IFujiERC1155 {
 
   function balanceOf(address _account, uint256 _id) external view returns (uint256);
 
-  //function splitBalanceOf(address account,uint256 _AssetID) external view  returns (uint256,uint256);
+  // function splitBalanceOf(address account,uint256 _AssetID) external view  returns (uint256,uint256);
 
-  //function balanceOfBatchType(address account, AssetType _Type) external view returns (uint256);
+  // function balanceOfBatchType(address account, AssetType _Type) external view returns (uint256);
 
   //Permit Controlled  Functions
   function mint(

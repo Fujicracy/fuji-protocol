@@ -1,48 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IProvider } from "./IProvider.sol";
-import { IComptroller } from "./ICompound.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IGenCyToken is IERC20 {
-  function redeem(uint256) external returns (uint256);
-
-  function redeemUnderlying(uint256) external returns (uint256);
-
-  function borrow(uint256 borrowAmount) external returns (uint256);
-
-  function exchangeRateCurrent() external returns (uint256);
-
-  function exchangeRateStored() external view returns (uint256);
-
-  function borrowRatePerBlock() external view returns (uint256);
-
-  function balanceOfUnderlying(address owner) external returns (uint256);
-
-  function borrowBalanceCurrent(address account) external returns (uint256);
-
-  function borrowBalanceStored(address account) external view returns (uint256);
-}
-
-interface IWeth is IERC20 {
-  function deposit() external payable;
-
-  function withdraw(uint256 wad) external;
-}
-
-interface ICyErc20 is IGenCyToken {
-  function mint(uint256) external returns (uint256);
-
-  function repayBorrow(uint256 repayAmount) external returns (uint256);
-
-  function repayBorrowBehalf(address borrower, uint256 repayAmount) external returns (uint256);
-}
-
-interface IFujiMappings {
-  function addressMapping(address) external view returns (address);
-}
+import "../Interfaces/IProvider.sol";
+import "../Interfaces/IWETH.sol";
+import "../Interfaces/IFujiMappings.sol";
+import "../Interfaces/Compound/IGenCToken.sol";
+import "../Interfaces/Compound/ICErc20.sol";
+import "../Interfaces/Compound/IComptroller.sol";
+import "../Libraries/LibUniversalERC20.sol";
 
 contract HelperFunct {
   function _isETH(address token) internal pure returns (bool) {
@@ -103,7 +70,7 @@ contract ProviderIronBank is IProvider, HelperFunct {
 
     if (_isETH(_asset)) {
       // Transform ETH to WETH
-      IWeth(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).deposit{ value: _amount }();
+      IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).deposit{ value: _amount }();
       _asset = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     }
 
@@ -111,7 +78,7 @@ contract ProviderIronBank is IProvider, HelperFunct {
     IERC20 erc20token = IERC20(_asset);
 
     // Create a reference to the cyToken contract
-    ICyErc20 cyToken = ICyErc20(cyTokenAddr);
+    ICErc20 cyToken = ICErc20(cyTokenAddr);
 
     //Checks, Vault balance of ERC20 to make deposit
     require(erc20token.balanceOf(address(this)) >= _amount, "Not enough Balance");
@@ -133,14 +100,14 @@ contract ProviderIronBank is IProvider, HelperFunct {
     address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     // Create a reference to the corresponding cyToken contract
-    IGenCyToken cyToken = IGenCyToken(cyTokenAddr);
+    IGenCToken cyToken = IGenCToken(cyTokenAddr);
 
     //IronBank Protocol Redeem Process, throw errow if not.
     require(cyToken.redeemUnderlying(_amount) == 0, "Withdraw-failed");
 
     if (_isETH(_asset)) {
       // Transform ETH to WETH
-      IWeth(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).withdraw(_amount);
+      IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).withdraw(_amount);
     }
   }
 
@@ -154,7 +121,7 @@ contract ProviderIronBank is IProvider, HelperFunct {
     address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     // Create a reference to the corresponding cyToken contract
-    IGenCyToken cyToken = IGenCyToken(cyTokenAddr);
+    IGenCToken cyToken = IGenCToken(cyTokenAddr);
 
     //Enter and/or ensure collateral market is enacted
     //_enterCollatMarket(cyTokenAddr);
@@ -174,7 +141,7 @@ contract ProviderIronBank is IProvider, HelperFunct {
 
     if (_isETH(_asset)) {
       // Transform ETH to WETH
-      IWeth(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).deposit{ value: _amount }();
+      IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).deposit{ value: _amount }();
       _asset = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     }
 
@@ -182,7 +149,7 @@ contract ProviderIronBank is IProvider, HelperFunct {
     IERC20 erc20token = IERC20(_asset);
 
     // Create a reference to the corresponding cyToken contract
-    ICyErc20 cyToken = ICyErc20(cyTokenAddr);
+    ICErc20 cyToken = ICErc20(cyTokenAddr);
 
     // Check there is enough balance to pay
     require(erc20token.balanceOf(address(this)) >= _amount, "Not-enough-token");
@@ -198,7 +165,7 @@ contract ProviderIronBank is IProvider, HelperFunct {
     address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     //Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: IronBank uses base 1e18
-    uint256 bRateperBlock = IGenCyToken(cyTokenAddr).borrowRatePerBlock() * 10**9;
+    uint256 bRateperBlock = IGenCToken(cyTokenAddr).borrowRatePerBlock() * 10**9;
 
     // The approximate number of blocks per year that is assumed by the IronBank interest rate model
     uint256 blocksperYear = 2102400;
@@ -212,7 +179,7 @@ contract ProviderIronBank is IProvider, HelperFunct {
   function getBorrowBalance(address _asset) external view override returns (uint256) {
     address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    return IGenCyToken(cyTokenAddr).borrowBalanceStored(msg.sender);
+    return IGenCToken(cyTokenAddr).borrowBalanceStored(msg.sender);
   }
 
   /**
@@ -225,7 +192,7 @@ contract ProviderIronBank is IProvider, HelperFunct {
   function getBorrowBalanceOf(address _asset, address _who) external override returns (uint256) {
     address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    return IGenCyToken(cyTokenAddr).borrowBalanceCurrent(_who);
+    return IGenCToken(cyTokenAddr).borrowBalanceCurrent(_who);
   }
 
   /**
@@ -234,8 +201,8 @@ contract ProviderIronBank is IProvider, HelperFunct {
    */
   function getDepositBalance(address _asset) external view override returns (uint256) {
     address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
-    uint256 cyTokenBal = IGenCyToken(cyTokenAddr).balanceOf(msg.sender);
-    uint256 exRate = IGenCyToken(cyTokenAddr).exchangeRateStored();
+    uint256 cyTokenBal = IGenCToken(cyTokenAddr).balanceOf(msg.sender);
+    uint256 exRate = IGenCToken(cyTokenAddr).exchangeRateStored();
 
     return (exRate * cyTokenBal) / 1e18;
   }

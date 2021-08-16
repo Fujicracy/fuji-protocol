@@ -43,7 +43,7 @@ module.exports = {
     hardhat: {
       forking: {
         url: mainnetUrl,
-        //blockNumber: 12962882, //before London
+        blockNumber: 12962882, //before London
       },
     },
     localhost: {

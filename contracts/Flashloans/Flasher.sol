@@ -2,47 +2,22 @@
 
 pragma solidity ^0.8.0;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
-import { IFujiAdmin } from "../IFujiAdmin.sol";
-import { Errors } from "../Libraries/Errors.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { ILendingPool, IFlashLoanReceiver } from "./AaveFlashLoans.sol";
-import { Actions, Account, DyDxFlashloanBase, ICallee, ISoloMargin } from "./DyDxFlashLoans.sol";
-import { ICTokenFlashloan, ICFlashloanReceiver } from "./CreamFlashLoans.sol";
-import { FlashLoan } from "./LibFlashLoan.sol";
-import { Claimable } from "../Claimable.sol";
-import { IVault } from "../Vaults/IVault.sol";
-
-interface IFliquidator {
-  function executeFlashClose(
-    address _userAddr,
-    address _vault,
-    uint256 _amount,
-    uint256 _flashloanfee
-  ) external payable;
-
-  function executeFlashBatchLiquidation(
-    address[] calldata _userAddrs,
-    uint256[] calldata _usrsBals,
-    address _liquidatorAddr,
-    address _vault,
-    uint256 _amount,
-    uint256 _flashloanFee
-  ) external payable;
-}
-
-interface IFujiMappings {
-  function addressMapping(address) external view returns (address);
-}
-
-interface IWETH {
-  //function approve(address, uint256) external;
-
-  function deposit() external payable;
-
-  function withdraw(uint256) external;
-}
+import "./DyDxFlashLoans.sol";
+import "../Abstracts/Claimable/Claimable.sol";
+import "../Interfaces/IFujiAdmin.sol";
+import "../Interfaces/IVault.sol";
+import "../Interfaces/IFliquidator.sol";
+import "../Interfaces/IFujiMappings.sol";
+import "../Interfaces/IWETH.sol";
+import "../Interfaces/Aave/IFlashLoanReceiver.sol";
+import "../Interfaces/Aave/IAaveLendingPool.sol";
+import "../Interfaces/Cream/ICTokenFlashloan.sol";
+import "../Interfaces/Cream/ICFlashloanReceiver.sol";
+import "../Libraries/LibUniversalERC20.sol";
+import "../Libraries/FlashLoans.sol";
+import "../Libraries/Errors.sol";
 
 contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, ICallee, Claimable {
   using LibUniversalERC20 for IERC20;
@@ -161,7 +136,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
    */
   function _initiateAaveFlashLoan(FlashLoan.Info calldata info) internal {
     //Initialize Instance of Aave Lending Pool
-    ILendingPool aaveLp = ILendingPool(_aaveLendingPool);
+    IAaveLendingPool aaveLp = IAaveLendingPool(_aaveLendingPool);
 
     //Passing arguments to construct Aave flashloan -limited to 1 asset type for now.
     address receiverAddress = address(this);

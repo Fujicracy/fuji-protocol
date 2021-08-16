@@ -2,29 +2,14 @@
 
 pragma solidity ^0.8.0;
 
-import { IFujiERC1155 } from "./IFujiERC1155.sol";
-import { FujiBaseERC1155 } from "./FujiBaseERC1155.sol";
-import { ClaimableUpgradeable } from "../ClaimableUpgradeable.sol";
-import { WadRayMath } from "../Libraries/WadRayMath.sol";
-import { Errors } from "../Libraries/Errors.sol";
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 
-abstract contract F1155Manager is ClaimableUpgradeable {
-  using Address for address;
-
-  // Controls for Mint-Burn Operations
-  mapping(address => bool) public addrPermit;
-
-  modifier onlyPermit() {
-    require(addrPermit[_msgSender()] || msg.sender == owner(), Errors.VL_NOT_AUTHORIZED);
-    _;
-  }
-
-  function setPermit(address _address, bool _permit) public onlyOwner {
-    require((_address).isContract(), Errors.VL_NOT_A_CONTRACT);
-    addrPermit[_address] = _permit;
-  }
-}
+import "./Abstracts/FujiERC1155/FujiBaseERC1155.sol";
+import "./Abstracts/FujiERC1155/F1155Manager.sol";
+import "./Abstracts/Claimable/ClaimableUpgradeable.sol";
+import "./Interfaces/IFujiERC1155.sol";
+import "./Libraries/WadRayMath.sol";
+import "./Libraries/Errors.sol";
 
 contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   using WadRayMath for uint256;

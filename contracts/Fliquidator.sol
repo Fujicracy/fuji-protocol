@@ -2,39 +2,23 @@
 
 pragma solidity ^0.8.0;
 
-import { IVault } from "./Vaults/IVault.sol";
-import { IFujiAdmin } from "./IFujiAdmin.sol";
-import { IFujiOracle } from "./IFujiOracle.sol";
-import { IFujiERC1155 } from "./FujiERC1155/IFujiERC1155.sol";
-import { IERC20Extended } from "./Interfaces/IERC20Extended.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { Flasher } from "./Flashloans/Flasher.sol";
-import { FlashLoan } from "./Flashloans/LibFlashLoan.sol";
-import { Claimable } from "./Claimable.sol";
-import { Errors } from "./Libraries/Errors.sol";
-import { LibUniversalERC20 } from "./Libraries/LibUniversalERC20.sol";
-import { IUniswapV2Router02 } from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-interface IVaultExt is IVault {
-  //Asset Struct
-  struct VaultAssets {
-    address collateralAsset;
-    address borrowAsset;
-    uint64 collateralID;
-    uint64 borrowID;
-  }
-
-  function vAssets() external view returns (VaultAssets memory);
-}
-
-interface IFujiERC1155Ext is IFujiERC1155 {
-  function balanceOfBatch(address[] calldata accounts, uint256[] calldata ids)
-    external
-    view
-    returns (uint256[] memory);
-}
+import "./Abstracts/Claimable/Claimable.sol";
+import "./Interfaces/IVault.sol";
+import "./Interfaces/IVaultControl.sol";
+import "./Interfaces/IFujiAdmin.sol";
+import "./Interfaces/IFujiOracle.sol";
+import "./Interfaces/IFujiERC1155.sol";
+import "./Interfaces/IERC20Extended.sol";
+import "./Flashloans/Flasher.sol";
+import "./Libraries/LibUniversalERC20.sol";
+import "./Libraries/FlashLoans.sol";
+import "./Libraries/Errors.sol";
 
 contract Fliquidator is Claimable, ReentrancyGuard {
   using SafeERC20 for IERC20;
@@ -110,10 +94,10 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     IVault(_vault).updateF1155Balances();
 
     // Create Instance of FujiERC1155
-    IFujiERC1155Ext f1155 = IFujiERC1155Ext(IVault(_vault).fujiERC1155());
+    address f1155 = IVault(_vault).fujiERC1155();
 
     // Struct Instance to get Vault Asset IDs in f1155
-    IVaultExt.VaultAssets memory vAssets = IVaultExt(_vault).vAssets();
+    IVaultControl.VaultAssets memory vAssets = IVaultControl(_vault).vAssets();
 
     address[] memory formattedUserAddrs = new address[](2 * _userAddrs.length);
     uint256[] memory formattedIds = new uint256[](2 * _userAddrs.length);
@@ -127,7 +111,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     }
 
     // Get user Collateral and Debt Balances
-    uint256[] memory usrsBals = f1155.balanceOfBatch(formattedUserAddrs, formattedIds);
+    uint256[] memory usrsBals = IERC1155(f1155).balanceOfBatch(formattedUserAddrs, formattedIds);
 
     uint256 neededCollateral;
     uint256 debtBalanceTotal;
@@ -183,7 +167,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     );
 
     // Burn Collateral f1155 tokens for each liquidated user
-    _burnMultiLoop(formattedUserAddrs, usrsBals, IVault(_vault), f1155, vAssets);
+    _burnMultiLoop(formattedUserAddrs, usrsBals, IVault(_vault), IFujiERC1155(f1155), vAssets);
 
     // Withdraw collateral
     IVault(_vault).withdraw(int256(globalCollateralInPlay));
@@ -203,7 +187,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     // Burn Debt f1155 tokens and Emit Liquidation Event for Each Liquidated User
     for (uint256 i = 0; i < formattedUserAddrs.length; i += 2) {
       if (formattedUserAddrs[i] != address(0)) {
-        f1155.burn(formattedUserAddrs[i], vAssets.borrowID, usrsBals[i + 1]);
+        IFujiERC1155(f1155).burn(formattedUserAddrs[i], vAssets.borrowID, usrsBals[i + 1]);
         emit Liquidate(formattedUserAddrs[i], msg.sender, vAssets.borrowAsset, usrsBals[i + 1]);
       }
     }
@@ -226,10 +210,10 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     IVault(_vault).updateF1155Balances();
 
     // Create Instance of FujiERC1155
-    IFujiERC1155Ext f1155 = IFujiERC1155Ext(IVault(_vault).fujiERC1155());
+    IFujiERC1155 f1155 = IFujiERC1155(IVault(_vault).fujiERC1155());
 
     // Struct Instance to get Vault Asset IDs in f1155
-    IVaultExt.VaultAssets memory vAssets = IVaultExt(_vault).vAssets();
+    IVaultControl.VaultAssets memory vAssets = IVaultControl(_vault).vAssets();
 
     // Get user  Balances
     uint256 userCollateral = f1155.balanceOf(msg.sender, vAssets.collateralID);
@@ -279,7 +263,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     IFujiERC1155 f1155 = IFujiERC1155(IVault(_vault).fujiERC1155());
 
     // Struct Instance to get Vault Asset IDs in f1155
-    IVaultExt.VaultAssets memory vAssets = IVaultExt(_vault).vAssets();
+    IVaultControl.VaultAssets memory vAssets = IVaultControl(_vault).vAssets();
 
     // Get user Collateral and Debt Balances
     uint256 userCollateral = f1155.balanceOf(_userAddr, vAssets.collateralID);
@@ -358,10 +342,10 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     IVault(_vault).updateF1155Balances();
 
     // Create Instance of FujiERC1155
-    IFujiERC1155Ext f1155 = IFujiERC1155Ext(IVault(_vault).fujiERC1155());
+    address f1155 = IVault(_vault).fujiERC1155();
 
     // Struct Instance to get Vault Asset IDs in f1155
-    IVaultExt.VaultAssets memory vAssets = IVaultExt(_vault).vAssets();
+    IVaultControl.VaultAssets memory vAssets = IVaultControl(_vault).vAssets();
 
     address[] memory formattedUserAddrs = new address[](2 * _userAddrs.length);
     uint256[] memory formattedIds = new uint256[](2 * _userAddrs.length);
@@ -375,7 +359,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     }
 
     // Get user Collateral and Debt Balances
-    uint256[] memory usrsBals = f1155.balanceOfBatch(formattedUserAddrs, formattedIds);
+    uint256[] memory usrsBals = IERC1155(f1155).balanceOfBatch(formattedUserAddrs, formattedIds);
 
     uint256 neededCollateral;
     uint256 debtBalanceTotal;
@@ -437,7 +421,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     IFujiERC1155 f1155 = IFujiERC1155(IVault(_vault).fujiERC1155());
 
     // Struct Instance to get Vault Asset IDs in f1155
-    IVaultExt.VaultAssets memory vAssets = IVaultExt(_vault).vAssets();
+    IVaultControl.VaultAssets memory vAssets = IVaultControl(_vault).vAssets();
 
     // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
     // TODO: Transfer corresponding Debt Amount to Fuji Treasury
@@ -633,7 +617,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     uint256[] memory _usrsBals,
     IVault _vault,
     IFujiERC1155 _f1155,
-    IVaultExt.VaultAssets memory _vAssets
+    IVaultControl.VaultAssets memory _vAssets
   ) internal {
     uint256 bonusPerUser;
     uint256 collateralInPlayPerUser;

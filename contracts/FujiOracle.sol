@@ -2,10 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import "./Interfaces/AggregatorV3Interface.sol";
-
-import "./Claimable.sol";
-import "./IFujiOracle.sol";
+import "./Abstracts/Claimable/Claimable.sol";
+import "./Interfaces/Chainlink/AggregatorV3Interface.sol";
+import "./Interfaces/IFujiOracle.sol";
 import "./Libraries/Errors.sol";
 
 contract FujiOracle is IFujiOracle, Claimable {

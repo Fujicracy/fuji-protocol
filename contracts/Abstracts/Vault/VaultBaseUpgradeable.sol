@@ -6,21 +6,14 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../Libraries/LibUniversalERC20.sol";
+import "../../Interfaces/IVaultControl.sol";
+import "../../Libraries/LibUniversalERC20.sol";
 
-contract VaultControlUpgradeable is OwnableUpgradeable, PausableUpgradeable {
+abstract contract VaultControlUpgradeable is OwnableUpgradeable, PausableUpgradeable {
   using LibUniversalERC20 for IERC20;
 
-  //Asset Struct
-  struct VaultAssets {
-    address collateralAsset;
-    address borrowAsset;
-    uint64 collateralID;
-    uint64 borrowID;
-  }
-
   //Vault Struct for Managed Assets
-  VaultAssets public vAssets;
+  IVaultControl.VaultAssets public vAssets;
 
   //Pause Functions
 

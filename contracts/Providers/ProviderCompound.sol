@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IProvider } from "./IProvider.sol";
-import { IGenCToken, ICErc20, ICEth, IComptroller } from "./ICompound.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IFujiMappings {
-  function addressMapping(address) external view returns (address);
-}
+import "../Interfaces/IFujiMappings.sol";
+import "../Interfaces/IProvider.sol";
+import "../Interfaces/Compound/IGenCToken.sol";
+import "../Interfaces/Compound/ICErc20.sol";
+import "../Interfaces/Compound/ICEth.sol";
+import "../Interfaces/Compound/IComptroller.sol";
+import "../Libraries/LibUniversalERC20.sol";
 
 contract HelperFunct {
   function _isETH(address token) internal pure returns (bool) {

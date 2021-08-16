@@ -2,32 +2,14 @@
 
 pragma solidity ^0.8.0;
 
-//import "hardhat/console.sol"; //test line
-
-interface ICmptr {
-  function claimComp(address holder) external;
-}
-
-interface IAaveLiquidityMining {
-  function claimRewards(
-    address[] calldata assets,
-    uint256 amount,
-    address to
-  ) external returns (uint256);
-
-  function getUserUnclaimedRewards(address _user) external view returns (uint256);
-
-  function getRewardsBalance(address[] calldata assets, address user)
-    external
-    view
-    returns (uint256);
-}
+import "../Interfaces/Compound/IComptroller.sol";
+import "../Interfaces/Aave/IAaveLiquidityMining.sol";
 
 contract VaultHarvester {
   address[] private _aaveClaimAddrs;
   IAaveLiquidityMining private _aaVeLM =
     IAaveLiquidityMining(0xd784927Ff2f95ba542BfC824c8a8a98F3495f6b5);
-  ICmptr private _compTLR = ICmptr(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
+  IComptroller private _compTLR = IComptroller(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
 
   constructor() {
     _aaveClaimAddrs.push(address(0x030bA81f1c18d280636F32af80b9AAd02Cf0854e)); //aWETH

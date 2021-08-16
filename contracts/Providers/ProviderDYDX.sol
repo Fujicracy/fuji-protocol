@@ -1,97 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IProvider } from "./IProvider.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IWethERC20 is IERC20 {
-  function deposit() external payable;
-
-  function withdraw(uint256) external;
-}
-
-interface SoloMarginContract {
-  struct Info {
-    address owner;
-    uint256 number;
-  }
-
-  struct Price {
-    uint256 value;
-  }
-
-  struct Value {
-    uint256 value;
-  }
-
-  struct Rate {
-    uint256 value;
-  }
-
-  enum ActionType {
-    Deposit,
-    Withdraw,
-    Transfer,
-    Buy,
-    Sell,
-    Trade,
-    Liquidate,
-    Vaporize,
-    Call
-  }
-
-  enum AssetDenomination {
-    Wei,
-    Par
-  }
-
-  enum AssetReference {
-    Delta,
-    Target
-  }
-
-  struct AssetAmount {
-    bool sign;
-    AssetDenomination denomination;
-    AssetReference ref;
-    uint256 value;
-  }
-
-  struct ActionArgs {
-    ActionType actionType;
-    uint256 accountId;
-    AssetAmount amount;
-    uint256 primaryMarketId;
-    uint256 secondaryMarketId;
-    address otherAddress;
-    uint256 otherAccountId;
-    bytes data;
-  }
-
-  struct Wei {
-    bool sign;
-    uint256 value;
-  }
-
-  function operate(Info[] calldata _accounts, ActionArgs[] calldata _actions) external;
-
-  function getAccountWei(Info calldata _account, uint256 _marketId)
-    external
-    view
-    returns (Wei memory);
-
-  function getNumMarkets() external view returns (uint256);
-
-  function getMarketTokenAddress(uint256 _marketId) external view returns (address);
-
-  function getAccountValues(Info memory _account)
-    external
-    view
-    returns (Value memory, Value memory);
-
-  function getMarketInterestRate(uint256 _marketId) external view returns (Rate memory);
-}
+import "../Interfaces/IProvider.sol";
+import "../Interfaces/IWETH.sol";
+import "../Interfaces/DyDx/ISoloMargin.sol";
+import "../Libraries/LibUniversalERC20.sol";
 
 contract HelperFunct {
   /**
@@ -118,7 +33,7 @@ contract HelperFunct {
   /**
    * @dev Get Dydx Market ID from token Address
    */
-  function _getMarketId(SoloMarginContract _solo, address _token)
+  function _getMarketId(ISoloMargin _solo, address _token)
     internal
     view
     returns (uint256 _marketId)
@@ -139,9 +54,9 @@ contract HelperFunct {
   /**
    * @dev Get Dydx Acccount arg
    */
-  function _getAccountArgs() internal view returns (SoloMarginContract.Info[] memory) {
-    SoloMarginContract.Info[] memory accounts = new SoloMarginContract.Info[](1);
-    accounts[0] = (SoloMarginContract.Info(address(this), 0));
+  function _getAccountArgs() internal view returns (Account.Info[] memory) {
+    Account.Info[] memory accounts = new Account.Info[](1);
+    accounts[0] = (Account.Info(address(this), 0));
     return accounts;
   }
 
@@ -152,19 +67,19 @@ contract HelperFunct {
     uint256 _marketId,
     uint256 _amt,
     bool _sign
-  ) internal view returns (SoloMarginContract.ActionArgs[] memory) {
-    SoloMarginContract.ActionArgs[] memory actions = new SoloMarginContract.ActionArgs[](1);
-    SoloMarginContract.AssetAmount memory amount = SoloMarginContract.AssetAmount(
+  ) internal view returns (Actions.ActionArgs[] memory) {
+    Actions.ActionArgs[] memory actions = new Actions.ActionArgs[](1);
+    Types.AssetAmount memory amount = Types.AssetAmount(
       _sign,
-      SoloMarginContract.AssetDenomination.Wei,
-      SoloMarginContract.AssetReference.Delta,
+      Types.AssetDenomination.Wei,
+      Types.AssetReference.Delta,
       _amt
     );
     bytes memory empty;
-    SoloMarginContract.ActionType action = _sign
-      ? SoloMarginContract.ActionType.Deposit
-      : SoloMarginContract.ActionType.Withdraw;
-    actions[0] = SoloMarginContract.ActionArgs(
+    Actions.ActionType action = _sign
+      ? Actions.ActionType.Deposit
+      : Actions.ActionType.Withdraw;
+    actions[0] = Actions.ActionArgs(
       action,
       0,
       amount,
@@ -191,16 +106,16 @@ contract ProviderDYDX is IProvider, HelperFunct {
    * @param _amount: token amount to deposit.
    */
   function deposit(address _asset, uint256 _amount) external payable override {
-    SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
+    ISoloMargin dydxContract = ISoloMargin(getDydxAddress());
 
     uint256 marketId = _getMarketId(dydxContract, _asset);
 
     if (_asset == _getEthAddr()) {
-      IWethERC20 tweth = IWethERC20(getWETHAddr());
+      IWETH tweth = IWETH(getWETHAddr());
       tweth.deposit{ value: _amount }();
       tweth.approve(getDydxAddress(), _amount);
     } else {
-      IWethERC20 tweth = IWethERC20(_asset);
+      IWETH tweth = IWETH(_asset);
       tweth.approve(getDydxAddress(), _amount);
     }
 
@@ -213,14 +128,14 @@ contract ProviderDYDX is IProvider, HelperFunct {
    * @param _amount: token amount to withdraw.
    */
   function withdraw(address _asset, uint256 _amount) external payable override {
-    SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
+    ISoloMargin dydxContract = ISoloMargin(getDydxAddress());
 
     uint256 marketId = _getMarketId(dydxContract, _asset);
 
     dydxContract.operate(_getAccountArgs(), _getActionsArgs(marketId, _amount, false));
 
     if (_asset == _getEthAddr()) {
-      IWethERC20 tweth = IWethERC20(getWETHAddr());
+      IWETH tweth = IWETH(getWETHAddr());
 
       tweth.approve(address(tweth), _amount);
 
@@ -234,14 +149,14 @@ contract ProviderDYDX is IProvider, HelperFunct {
    * @param _amount: token amount to borrow.
    */
   function borrow(address _asset, uint256 _amount) external payable override {
-    SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
+    ISoloMargin dydxContract = ISoloMargin(getDydxAddress());
 
     uint256 marketId = _getMarketId(dydxContract, _asset);
 
     dydxContract.operate(_getAccountArgs(), _getActionsArgs(marketId, _amount, false));
 
     if (_asset == _getEthAddr()) {
-      IWethERC20 tweth = IWethERC20(getWETHAddr());
+      IWETH tweth = IWETH(getWETHAddr());
 
       tweth.approve(address(_asset), _amount);
 
@@ -255,16 +170,16 @@ contract ProviderDYDX is IProvider, HelperFunct {
    * @param _amount: token amount to payback.
    */
   function payback(address _asset, uint256 _amount) external payable override {
-    SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
+    ISoloMargin dydxContract = ISoloMargin(getDydxAddress());
 
     uint256 marketId = _getMarketId(dydxContract, _asset);
 
     if (_asset == _getEthAddr()) {
-      IWethERC20 tweth = IWethERC20(getWETHAddr());
+      IWETH tweth = IWETH(getWETHAddr());
       tweth.deposit{ value: _amount }();
       tweth.approve(getDydxAddress(), _amount);
     } else {
-      IWethERC20 tweth = IWethERC20(_asset);
+      IWETH tweth = IWETH(_asset);
       tweth.approve(getDydxAddress(), _amount);
     }
 
@@ -276,10 +191,10 @@ contract ProviderDYDX is IProvider, HelperFunct {
    * @param _asset: token address to query the current borrowing rate.
    */
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
-    SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
+    ISoloMargin dydxContract = ISoloMargin(getDydxAddress());
     uint256 marketId = _getMarketId(dydxContract, _asset);
 
-    SoloMarginContract.Rate memory _rate = dydxContract.getMarketInterestRate(marketId);
+    ISoloMargin.Rate memory _rate = dydxContract.getMarketInterestRate(marketId);
 
     return (_rate.value) * 1e9 * 365 days;
   }
@@ -289,13 +204,13 @@ contract ProviderDYDX is IProvider, HelperFunct {
    * @param _asset: token address to query the balance.
    */
   function getBorrowBalance(address _asset) external view override returns (uint256) {
-    SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
+    ISoloMargin dydxContract = ISoloMargin(getDydxAddress());
     uint256 marketId = _getMarketId(dydxContract, _asset);
-    SoloMarginContract.Info memory account = SoloMarginContract.Info({
+    Account.Info memory account = Account.Info({
       owner: msg.sender,
       number: 0
     });
-    SoloMarginContract.Wei memory structbalance = dydxContract.getAccountWei(account, marketId);
+    ISoloMargin.Wei memory structbalance = dydxContract.getAccountWei(account, marketId);
 
     return structbalance.value;
   }
@@ -311,10 +226,10 @@ contract ProviderDYDX is IProvider, HelperFunct {
     override
     returns (uint256)
   {
-    SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
+    ISoloMargin dydxContract = ISoloMargin(getDydxAddress());
     uint256 marketId = _getMarketId(dydxContract, _asset);
-    SoloMarginContract.Info memory account = SoloMarginContract.Info({ owner: _who, number: 0 });
-    SoloMarginContract.Wei memory structbalance = dydxContract.getAccountWei(account, marketId);
+    Account.Info memory account = Account.Info({ owner: _who, number: 0 });
+    ISoloMargin.Wei memory structbalance = dydxContract.getAccountWei(account, marketId);
 
     return structbalance.value;
   }
@@ -324,14 +239,14 @@ contract ProviderDYDX is IProvider, HelperFunct {
    * @param _asset: token address to query the balance.
    */
   function getDepositBalance(address _asset) external view override returns (uint256) {
-    SoloMarginContract dydxContract = SoloMarginContract(getDydxAddress());
+    ISoloMargin dydxContract = ISoloMargin(getDydxAddress());
     uint256 marketId = _getMarketId(dydxContract, _asset);
 
-    SoloMarginContract.Info memory account = SoloMarginContract.Info({
+    Account.Info memory account = Account.Info({
       owner: msg.sender,
       number: 0
     });
-    SoloMarginContract.Wei memory structbalance = dydxContract.getAccountWei(account, marketId);
+    ISoloMargin.Wei memory structbalance = dydxContract.getAccountWei(account, marketId);
 
     return structbalance.value;
   }

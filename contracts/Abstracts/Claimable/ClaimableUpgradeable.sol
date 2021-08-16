@@ -2,16 +2,22 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract Claimable is Context {
+abstract contract ClaimableUpgradeable is Initializable, ContextUpgradeable {
   address private _owner;
   address public pendingOwner;
 
   event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
   event NewPendingOwner(address indexed owner);
 
-  constructor() {
+  function __Climable_init() internal initializer {
+    __Context_init_unchained();
+    __Climable_init_unchained();
+  }
+
+  function __Climable_init_unchained() internal initializer {
     address msgSender = _msgSender();
     _owner = msgSender;
     emit OwnershipTransferred(address(0), msgSender);

@@ -2,25 +2,14 @@
 
 pragma solidity ^0.8.0;
 
-import { IVault } from "./Vaults/IVault.sol";
-import { IProvider } from "./Providers/IProvider.sol";
-import { Flasher } from "./Flashloans/Flasher.sol";
-import { FlashLoan } from "./Flashloans/LibFlashLoan.sol";
-import { IFujiAdmin } from "./IFujiAdmin.sol";
-import { Claimable } from "./Claimable.sol";
-import { Errors } from "./Libraries/Errors.sol";
-
-interface IVaultExt is IVault {
-  //Asset Struct
-  struct VaultAssets {
-    address collateralAsset;
-    address borrowAsset;
-    uint64 collateralID;
-    uint64 borrowID;
-  }
-
-  function vAssets() external view returns (VaultAssets memory);
-}
+import "./Flashloans/Flasher.sol";
+import "./Abstracts/Claimable/Claimable.sol";
+import "./Interfaces/IVault.sol";
+import "./Interfaces/IVaultControl.sol";
+import "./Interfaces/IProvider.sol";
+import "./Interfaces/IFujiAdmin.sol";
+import "./Libraries/FlashLoans.sol";
+import "./Libraries/Errors.sol";
 
 contract Controller is Claimable {
   IFujiAdmin private _fujiAdmin;
@@ -54,7 +43,7 @@ contract Controller is Claimable {
     uint8 _flashNum
   ) external isValidVault(_vaultAddr) onlyOwner {
     IVault vault = IVault(_vaultAddr);
-    IVaultExt.VaultAssets memory vAssets = IVaultExt(_vaultAddr).vAssets();
+    IVaultControl.VaultAssets memory vAssets = IVaultControl(_vaultAddr).vAssets();
     vault.updateF1155Balances();
 
     // Check Vault borrowbalance and apply ratio (consider compound or not)

@@ -248,7 +248,7 @@ describe("Alpha", () => {
       );
     });
 
-    describe.only("Testing ownership transfer", () => {
+    describe("Testing ownership transfer", () => {
       it("Revert: User tricks to have ownership of the contract", async () => {
         await expect(controller.connect(user).transferOwnership(user.address)).to.be.revertedWith(
           "Ownable: caller is not the owner"

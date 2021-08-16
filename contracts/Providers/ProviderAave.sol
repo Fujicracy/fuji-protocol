@@ -2,121 +2,24 @@
 
 pragma solidity ^0.8.0;
 
-import { LibUniversalERC20 } from "../Libraries/LibUniversalERC20.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IProvider } from "./IProvider.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface ITokenInterface {
-  function approve(address, uint256) external;
-
-  function transfer(address, uint256) external;
-
-  function transferFrom(
-    address,
-    address,
-    uint256
-  ) external;
-
-  function deposit() external payable;
-
-  function withdraw(uint256) external;
-
-  function balanceOf(address) external view returns (uint256);
-
-  function decimals() external view returns (uint256);
-}
-
-interface IAaveInterface {
-  function deposit(
-    address _asset,
-    uint256 _amount,
-    address _onBehalfOf,
-    uint16 _referralCode
-  ) external;
-
-  function withdraw(
-    address _asset,
-    uint256 _amount,
-    address _to
-  ) external;
-
-  function borrow(
-    address _asset,
-    uint256 _amount,
-    uint256 _interestRateMode,
-    uint16 _referralCode,
-    address _onBehalfOf
-  ) external;
-
-  function repay(
-    address _asset,
-    uint256 _amount,
-    uint256 _rateMode,
-    address _onBehalfOf
-  ) external;
-
-  function setUserUseReserveAsCollateral(address _asset, bool _useAsCollateral) external;
-}
-
-interface AaveLendingPoolProviderInterface {
-  function getLendingPool() external view returns (address);
-}
-
-interface AaveDataProviderInterface {
-  function getReserveTokensAddresses(address _asset)
-    external
-    view
-    returns (
-      address aTokenAddress,
-      address stableDebtTokenAddress,
-      address variableDebtTokenAddress
-    );
-
-  function getUserReserveData(address _asset, address _user)
-    external
-    view
-    returns (
-      uint256 currentATokenBalance,
-      uint256 currentStableDebt,
-      uint256 currentVariableDebt,
-      uint256 principalStableDebt,
-      uint256 scaledVariableDebt,
-      uint256 stableBorrowRate,
-      uint256 liquidityRate,
-      uint40 stableRateLastUpdated,
-      bool usageAsCollateralEnabled
-    );
-
-  function getReserveData(address _asset)
-    external
-    view
-    returns (
-      uint256 availableLiquidity,
-      uint256 totalStableDebt,
-      uint256 totalVariableDebt,
-      uint256 liquidityRate,
-      uint256 variableBorrowRate,
-      uint256 stableBorrowRate,
-      uint256 averageStableBorrowRate,
-      uint256 liquidityIndex,
-      uint256 variableBorrowIndex,
-      uint40 lastUpdateTimestamp
-    );
-}
-
-interface AaveAddressProviderRegistryInterface {
-  function getAddressesProvidersList() external view returns (address[] memory);
-}
+import "../Interfaces/IProvider.sol";
+import "../Interfaces/ITokenInterface.sol";
+import "../Interfaces/Aave/IAaveDataProvider.sol";
+import "../Interfaces/Aave/IAaveLendingPool.sol";
+import "../Interfaces/Aave/IAaveLendingPoolProvider.sol";
+import "../Libraries/LibUniversalERC20.sol";
 
 contract ProviderAave is IProvider {
   using LibUniversalERC20 for IERC20;
 
-  function _getAaveProvider() internal pure returns (AaveLendingPoolProviderInterface) {
-    return AaveLendingPoolProviderInterface(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5); //mainnet
+  function _getAaveProvider() internal pure returns (IAaveLendingPoolProvider) {
+    return IAaveLendingPoolProvider(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5); //mainnet
   }
 
-  function _getAaveDataProvider() internal pure returns (AaveDataProviderInterface) {
-    return AaveDataProviderInterface(0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d); //mainnet
+  function _getAaveDataProvider() internal pure returns (IAaveDataProvider) {
+    return IAaveDataProvider(0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d); //mainnet
   }
 
   function _getWethAddr() internal pure returns (address) {
@@ -128,7 +31,7 @@ contract ProviderAave is IProvider {
   }
 
   function _getIsColl(
-    AaveDataProviderInterface _aaveData,
+    IAaveDataProvider _aaveData,
     address _token,
     address _user
   ) internal view returns (bool isCol) {
@@ -159,9 +62,9 @@ contract ProviderAave is IProvider {
    * @param _asset to query the borrowing rate.
    */
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
-    AaveDataProviderInterface aaveData = _getAaveDataProvider();
+    IAaveDataProvider aaveData = _getAaveDataProvider();
 
-    (, , , , uint256 variableBorrowRate, , , , , ) = AaveDataProviderInterface(aaveData)
+    (, , , , uint256 variableBorrowRate, , , , , ) = IAaveDataProvider(aaveData)
     .getReserveData(_asset == _getEthAddr() ? _getWethAddr() : _asset);
 
     return variableBorrowRate;
@@ -172,7 +75,7 @@ contract ProviderAave is IProvider {
    * @param _asset token address to query the balance.
    */
   function getBorrowBalance(address _asset) external view override returns (uint256) {
-    AaveDataProviderInterface aaveData = _getAaveDataProvider();
+    IAaveDataProvider aaveData = _getAaveDataProvider();
 
     bool isEth = _asset == _getEthAddr();
     address _token = isEth ? _getWethAddr() : _asset;
@@ -193,7 +96,7 @@ contract ProviderAave is IProvider {
     override
     returns (uint256)
   {
-    AaveDataProviderInterface aaveData = _getAaveDataProvider();
+    IAaveDataProvider aaveData = _getAaveDataProvider();
 
     bool isEth = _asset == _getEthAddr();
     address _token = isEth ? _getWethAddr() : _asset;
@@ -208,7 +111,7 @@ contract ProviderAave is IProvider {
    * @param _asset token address to query the balance.
    */
   function getDepositBalance(address _asset) external view override returns (uint256) {
-    AaveDataProviderInterface aaveData = _getAaveDataProvider();
+    IAaveDataProvider aaveData = _getAaveDataProvider();
 
     bool isEth = _asset == _getEthAddr();
     address _token = isEth ? _getWethAddr() : _asset;
@@ -224,8 +127,8 @@ contract ProviderAave is IProvider {
    * @param _amount token amount to deposit.
    */
   function deposit(address _asset, uint256 _amount) external payable override {
-    IAaveInterface aave = IAaveInterface(_getAaveProvider().getLendingPool());
-    AaveDataProviderInterface aaveData = _getAaveDataProvider();
+    IAaveLendingPool aave = IAaveLendingPool(_getAaveProvider().getLendingPool());
+    IAaveDataProvider aaveData = _getAaveDataProvider();
 
     bool isEth = _asset == _getEthAddr();
     address _token = isEth ? _getWethAddr() : _asset;
@@ -254,7 +157,7 @@ contract ProviderAave is IProvider {
    * @param _amount token amount to borrow.
    */
   function borrow(address _asset, uint256 _amount) external payable override {
-    IAaveInterface aave = IAaveInterface(_getAaveProvider().getLendingPool());
+    IAaveLendingPool aave = IAaveLendingPool(_getAaveProvider().getLendingPool());
 
     bool isEth = _asset == _getEthAddr();
     address _token = isEth ? _getWethAddr() : _asset;
@@ -269,7 +172,7 @@ contract ProviderAave is IProvider {
    * @param _amount token amount to withdraw.
    */
   function withdraw(address _asset, uint256 _amount) external payable override {
-    IAaveInterface aave = IAaveInterface(_getAaveProvider().getLendingPool());
+    IAaveLendingPool aave = IAaveLendingPool(_getAaveProvider().getLendingPool());
 
     bool isEth = _asset == _getEthAddr();
     address _token = isEth ? _getWethAddr() : _asset;
@@ -291,8 +194,8 @@ contract ProviderAave is IProvider {
    */
 
   function payback(address _asset, uint256 _amount) external payable override {
-    IAaveInterface aave = IAaveInterface(_getAaveProvider().getLendingPool());
-    AaveDataProviderInterface aaveData = _getAaveDataProvider();
+    IAaveLendingPool aave = IAaveLendingPool(_getAaveProvider().getLendingPool());
+    IAaveDataProvider aaveData = _getAaveDataProvider();
 
     bool isEth = _asset == _getEthAddr();
     address _token = isEth ? _getWethAddr() : _asset;

@@ -135,6 +135,55 @@ function debug(text) {
 }
 
 /* eslint-disable */
+function writeFiles(chainId, market, deployData) {
+  fs.writeFileSync(
+    `../bots/contracts/${chainId}-${market}.deployment.json`,
+    JSON.stringify(deployData, null, 2)
+  );
+  fs.writeFileSync(
+    `../react-app/src/contracts/${chainId}-${market}.deployment.json`,
+    JSON.stringify(deployData, null, 2)
+  );
+};
+
+task("publish", "Publish deployment data to other packages")
+  .addOptionalParam("market", "Markets: fuse, core", "core")
+  .setAction(async ({ market }, { ethers, config }) => {
+
+    const network = await ethers.provider.getNetwork();
+
+    const deployData = JSON.parse(
+      fs.readFileSync(`${config.paths.artifacts}/${network.chainId}-${market}.deploy`).toString()
+    );
+
+    writeFiles(network.chainId, market, deployData);
+  });
+
+task("sync", "Sync mainnet deployment data to be used in current network")
+  .setAction(async (_, { ethers, config }) => {
+
+    const network = await ethers.provider.getNetwork();
+
+    try {
+      const deployDataCore = JSON.parse(
+        fs.readFileSync(`${config.paths.artifacts}/1-core.deploy`).toString()
+      );
+      writeFiles(network.chainId, "core", deployDataCore);
+      console.log("1-core deploy: synced");
+    } catch (e) {
+      console.log("1-core deploy: not synced");
+    }
+    try {
+      const deployDataFuse = JSON.parse(
+        fs.readFileSync(`${config.paths.artifacts}/1-fuse.deploy`).toString()
+      );
+      writeFiles(network.chainId, "fuse", deployDataFuse);
+      console.log("1-core deploy: synced");
+    } catch (e) {
+      console.log("1-fuse deploy: not synced");
+    }
+  });
+
 task("wallet", "Create a wallet (pk) link", async (_, { ethers }) => {
   const randomWallet = ethers.Wallet.createRandom();
   const privateKey = randomWallet._signingKey().privateKey;

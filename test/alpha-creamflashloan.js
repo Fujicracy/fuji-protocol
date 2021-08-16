@@ -8,19 +8,17 @@ const CHAINLINK_ORACLE_ADDR = "0x773616E4d11A78F511299002da57A0a94577F1f4";
 const UNISWAP_ROUTER_ADDR = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
 const TREASURY_ADDR = "0x9F5A10E45906Ef12497237cE10fB7AB9B850Ff86";
 
-const FujiAdmin = require("../artifacts/contracts/FujiAdmin.sol/FujiAdmin.json");
 const Fliquidator = require("../artifacts/contracts/Fliquidator.sol/Fliquidator.json");
-const VaultHarvester = require("../artifacts/contracts/Vaults/VaultHarvester.sol/VaultHarvester.json");
-const Aave = require("../artifacts/contracts/Providers/ProviderAave.sol/ProviderAave.json");
-const Compound = require("../artifacts/contracts/Providers/ProviderCompound.sol/ProviderCompound.json");
-const Dydx = require("../artifacts/contracts/Providers/ProviderDYDX.sol/ProviderDYDX.json");
-const F1155 = require("../artifacts/contracts/FujiERC1155.sol/FujiERC1155.json");
-const Flasher = require("../artifacts/contracts/Flashloans/Flasher.sol/Flasher.json");
+const VaultHarvester = require("../artifacts/contracts/Harvester.sol/VaultHarvester.json");
+const Aave = require("../artifacts/contracts/providers/ProviderAave.sol/ProviderAave.json");
+const Compound = require("../artifacts/contracts/providers/ProviderCompound.sol/ProviderCompound.json");
+const Dydx = require("../artifacts/contracts/providers/ProviderDYDX.sol/ProviderDYDX.json");
+const Flasher = require("../artifacts/contracts/flashloans/Flasher.sol/Flasher.json");
 const Controller = require("../artifacts/contracts/Controller.sol/Controller.json");
 const FujiOracle = require("../artifacts/contracts/FujiOracle.sol/FujiOracle.json");
 
 const FujiMapping = require("../artifacts/contracts/FujiMapping.sol/FujiMapping.json");
-const { ETH_ADDR, DAI_ADDR, USDC_ADDR, USDT_ADDR, ASSETS } = require("./utils-alpha");
+const { ASSETS } = require("./utils-alpha");
 
 const fixture = async ([wallet]) => {
   // Step 1 of Deploy: Contracts which address is required to be hardcoded in other contracts
@@ -46,16 +44,17 @@ const fixture = async ([wallet]) => {
   );
 
   // Step 2 Of Deploy: Functional Contracts
-  const fujiadmin = await deployContract(wallet, FujiAdmin, []);
+  const FujiAdmin = await ethers.getContractFactory("FujiAdmin");
+  const fujiadmin = await upgrades.deployProxy(FujiAdmin, []);
   const fliquidator = await deployContract(wallet, Fliquidator, []);
   const flasher = await deployContract(wallet, Flasher, []);
   const controller = await deployContract(wallet, Controller, []);
-  const f1155 = await deployContract(wallet, F1155, []);
+  const FujiERC1155 = await ethers.getContractFactory("FujiERC1155");
+  const f1155 = await upgrades.deployProxy(FujiERC1155, []);
   const oracle = await deployContract(wallet, FujiOracle, [
     Object.values(ASSETS).map((asset) => asset.address),
     Object.values(ASSETS).map((asset) => asset.oracle),
   ]);
-
   // Step 3 Of Deploy: Provider Contracts
   const aave = await deployContract(wallet, Aave, []);
   const compound = await deployContract(wallet, Compound, []);
@@ -67,20 +66,20 @@ const fixture = async ([wallet]) => {
   const vaultdai = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
     oracle.address,
-    ETH_ADDR,
-    DAI_ADDR,
+    ASSETS.ETH.address,
+    ASSETS.DAI.address,
   ]);
   const vaultusdc = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
     oracle.address,
-    ETH_ADDR,
-    USDC_ADDR,
+    ASSETS.ETH.address,
+    ASSETS.USDC.address,
   ]);
   const vaultusdt = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
     oracle.address,
-    ETH_ADDR,
-    USDT_ADDR,
+    ASSETS.ETH.address,
+    ASSETS.USDT.address,
   ]);
 
   // Step 5 - General Plug-ins and Set-up Transactions
@@ -100,23 +99,20 @@ const fixture = async ([wallet]) => {
   await f1155.setPermit(vaultusdt.address, true);
 
   // Step 6 - Vault Set-up
-  await vaultdai.setFujiAdmin(fujiadmin.address);
   await vaultdai.setProviders([compound.address, aave.address, dydx.address]);
   await vaultdai.setActiveProvider(compound.address);
   await vaultdai.setFujiERC1155(f1155.address);
-  await vaultdai.setOracle(CHAINLINK_ORACLE_ADDR);
+  await fujiadmin.allowVault(vaultdai.address, true);
 
-  await vaultusdc.setFujiAdmin(fujiadmin.address);
   await vaultusdc.setProviders([compound.address, aave.address, dydx.address]);
   await vaultusdc.setActiveProvider(compound.address);
   await vaultusdc.setFujiERC1155(f1155.address);
-  await vaultusdc.setOracle(CHAINLINK_ORACLE_ADDR);
+  await fujiadmin.allowVault(vaultusdc.address, true);
 
-  await vaultusdt.setFujiAdmin(fujiadmin.address);
   await vaultusdt.setProviders([compound.address, aave.address]);
   await vaultusdt.setActiveProvider(compound.address);
   await vaultusdt.setFujiERC1155(f1155.address);
-  await vaultusdt.setOracle(CHAINLINK_ORACLE_ADDR);
+  await fujiadmin.allowVault(vaultusdt.address, true);
 
   return {
     fujiadmin,

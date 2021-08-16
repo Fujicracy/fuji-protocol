@@ -5,19 +5,19 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./DyDxFlashLoans.sol";
-import "../Abstracts/Claimable/Claimable.sol";
-import "../Interfaces/IFujiAdmin.sol";
-import "../Interfaces/IVault.sol";
-import "../Interfaces/IFliquidator.sol";
-import "../Interfaces/IFujiMappings.sol";
-import "../Interfaces/IWETH.sol";
-import "../Interfaces/Aave/IFlashLoanReceiver.sol";
-import "../Interfaces/Aave/IAaveLendingPool.sol";
-import "../Interfaces/Cream/ICTokenFlashloan.sol";
-import "../Interfaces/Cream/ICFlashloanReceiver.sol";
-import "../Libraries/LibUniversalERC20.sol";
-import "../Libraries/FlashLoans.sol";
-import "../Libraries/Errors.sol";
+import "../abstracts/claimable/Claimable.sol";
+import "../interfaces/IFujiAdmin.sol";
+import "../interfaces/IVault.sol";
+import "../interfaces/IFliquidator.sol";
+import "../interfaces/IFujiMappings.sol";
+import "../interfaces/IWETH.sol";
+import "../interfaces/aave/IFlashLoanReceiver.sol";
+import "../interfaces/aave/IAaveLendingPool.sol";
+import "../interfaces/cream/ICTokenFlashloan.sol";
+import "../interfaces/cream/ICFlashloanReceiver.sol";
+import "../libraries/LibUniversalERC20.sol";
+import "../libraries/FlashLoans.sol";
+import "../libraries/Errors.sol";
 
 contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, ICallee, Claimable {
   using LibUniversalERC20 for IERC20;

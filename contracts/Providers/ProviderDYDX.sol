@@ -3,10 +3,10 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../Interfaces/IProvider.sol";
-import "../Interfaces/IWETH.sol";
-import "../Interfaces/DyDx/ISoloMargin.sol";
-import "../Libraries/LibUniversalERC20.sol";
+import "../interfaces/IProvider.sol";
+import "../interfaces/IWETH.sol";
+import "../interfaces/dydx/ISoloMargin.sol";
+import "../libraries/LibUniversalERC20.sol";
 
 contract HelperFunct {
   /**
@@ -76,19 +76,8 @@ contract HelperFunct {
       _amt
     );
     bytes memory empty;
-    Actions.ActionType action = _sign
-      ? Actions.ActionType.Deposit
-      : Actions.ActionType.Withdraw;
-    actions[0] = Actions.ActionArgs(
-      action,
-      0,
-      amount,
-      _marketId,
-      0,
-      address(this),
-      0,
-      empty
-    );
+    Actions.ActionType action = _sign ? Actions.ActionType.Deposit : Actions.ActionType.Withdraw;
+    actions[0] = Actions.ActionArgs(action, 0, amount, _marketId, 0, address(this), 0, empty);
     return actions;
   }
 }
@@ -206,10 +195,7 @@ contract ProviderDYDX is IProvider, HelperFunct {
   function getBorrowBalance(address _asset) external view override returns (uint256) {
     ISoloMargin dydxContract = ISoloMargin(getDydxAddress());
     uint256 marketId = _getMarketId(dydxContract, _asset);
-    Account.Info memory account = Account.Info({
-      owner: msg.sender,
-      number: 0
-    });
+    Account.Info memory account = Account.Info({ owner: msg.sender, number: 0 });
     ISoloMargin.Wei memory structbalance = dydxContract.getAccountWei(account, marketId);
 
     return structbalance.value;
@@ -242,10 +228,7 @@ contract ProviderDYDX is IProvider, HelperFunct {
     ISoloMargin dydxContract = ISoloMargin(getDydxAddress());
     uint256 marketId = _getMarketId(dydxContract, _asset);
 
-    Account.Info memory account = Account.Info({
-      owner: msg.sender,
-      number: 0
-    });
+    Account.Info memory account = Account.Info({ owner: msg.sender, number: 0 });
     ISoloMargin.Wei memory structbalance = dydxContract.getAccountWei(account, marketId);
 
     return structbalance.value;

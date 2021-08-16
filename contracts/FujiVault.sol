@@ -6,17 +6,17 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "../Abstracts/Vault/VaultBaseUpgradeable.sol";
-import "../Interfaces/IVault.sol";
-import "../Interfaces/IVaultHarvester.sol";
-import "../Interfaces/IERC20Extended.sol";
-import "../Interfaces/Chainlink/AggregatorV3Interface.sol";
-import "../Interfaces/IFujiAdmin.sol";
-import "../Interfaces/IFujiOracle.sol";
-import "../Interfaces/IFujiERC1155.sol";
-import "../Interfaces/IProvider.sol";
-import "../Libraries/Errors.sol";
-import "../Libraries/LibUniversalERC20.sol";
+import "./abstracts/vault/VaultBaseUpgradeable.sol";
+import "./interfaces/IVault.sol";
+import "./interfaces/IHarvester.sol";
+import "./interfaces/IERC20Extended.sol";
+import "./interfaces/chainlink/AggregatorV3Interface.sol";
+import "./interfaces/IFujiAdmin.sol";
+import "./interfaces/IFujiOracle.sol";
+import "./interfaces/IFujiERC1155.sol";
+import "./interfaces/IProvider.sol";
+import "./libraries/Errors.sol";
+import "./libraries/LibUniversalERC20.sol";
 
 contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   using SafeERC20 for IERC20;

@@ -3,13 +3,13 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../Interfaces/IFujiMappings.sol";
-import "../Interfaces/IProvider.sol";
-import "../Interfaces/Compound/IGenCToken.sol";
-import "../Interfaces/Compound/ICErc20.sol";
-import "../Interfaces/Compound/ICEth.sol";
-import "../Interfaces/Compound/IComptroller.sol";
-import "../Libraries/LibUniversalERC20.sol";
+import "../interfaces/IFujiMappings.sol";
+import "../interfaces/IProvider.sol";
+import "../interfaces/compound/IGenCToken.sol";
+import "../interfaces/compound/ICErc20.sol";
+import "../interfaces/compound/ICEth.sol";
+import "../interfaces/compound/IComptroller.sol";
+import "../libraries/LibUniversalERC20.sol";
 
 contract HelperFunct {
   function _isETH(address token) internal pure returns (bool) {

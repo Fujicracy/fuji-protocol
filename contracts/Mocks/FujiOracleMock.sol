@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "../Interfaces/IFujiOracle.sol";
+import "../interfaces/IFujiOracle.sol";
 
 contract FujiOracleMock is IFujiOracle {
   mapping(address => mapping(address => uint256)) public prices;

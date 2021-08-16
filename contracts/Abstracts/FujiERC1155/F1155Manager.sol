@@ -5,10 +5,10 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/utils/Address.sol";
 
 import "./FujiBaseERC1155.sol";
-import "../Claimable/ClaimableUpgradeable.sol";
-import "../../Interfaces/IFujiERC1155.sol";
-import "../../Libraries/WadRayMath.sol";
-import "../../Libraries/Errors.sol";
+import "../claimable/ClaimableUpgradeable.sol";
+import "../../interfaces/IFujiERC1155.sol";
+import "../../libraries/WadRayMath.sol";
+import "../../libraries/Errors.sol";
 
 abstract contract F1155Manager is ClaimableUpgradeable {
   using Address for address;

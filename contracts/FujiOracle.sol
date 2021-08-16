@@ -2,10 +2,10 @@
 
 pragma solidity ^0.8.0;
 
-import "./Abstracts/Claimable/Claimable.sol";
-import "./Interfaces/Chainlink/AggregatorV3Interface.sol";
-import "./Interfaces/IFujiOracle.sol";
-import "./Libraries/Errors.sol";
+import "./abstracts/claimable/Claimable.sol";
+import "./interfaces/chainlink/AggregatorV3Interface.sol";
+import "./interfaces/IFujiOracle.sol";
+import "./libraries/Errors.sol";
 
 contract FujiOracle is IFujiOracle, Claimable {
   // mapping from asset address to its price feed oracle in USD - decimals: 8

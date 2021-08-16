@@ -49,12 +49,12 @@ const ASSETS = {
 
 // const FujiAdmin = require("../artifacts/contracts/FujiAdmin.sol/FujiAdmin.json");
 const Fliquidator = require("../artifacts/contracts/Fliquidator.sol/Fliquidator.json");
-const VaultHarvester = require("../artifacts/contracts/Vaults/VaultHarvester.sol/VaultHarvester.json");
-const Aave = require("../artifacts/contracts/Providers/ProviderAave.sol/ProviderAave.json");
-const Compound = require("../artifacts/contracts/Providers/ProviderCompound.sol/ProviderCompound.json");
-const Dydx = require("../artifacts/contracts/Providers/ProviderDYDX.sol/ProviderDYDX.json");
-const IronBank = require("../artifacts/contracts/Providers/ProviderIronBank.sol/ProviderIronBank.json");
-const Flasher = require("../artifacts/contracts/Flashloans/Flasher.sol/Flasher.json");
+const VaultHarvester = require("../artifacts/contracts/Harvester.sol/VaultHarvester.json");
+const Aave = require("../artifacts/contracts/providers/ProviderAave.sol/ProviderAave.json");
+const Compound = require("../artifacts/contracts/providers/ProviderCompound.sol/ProviderCompound.json");
+const Dydx = require("../artifacts/contracts/providers/ProviderDYDX.sol/ProviderDYDX.json");
+const IronBank = require("../artifacts/contracts/providers/ProviderIronBank.sol/ProviderIronBank.json");
+const Flasher = require("../artifacts/contracts/flashloans/Flasher.sol/Flasher.json");
 const Controller = require("../artifacts/contracts/Controller.sol/Controller.json");
 const FujiOracle = require("../artifacts/contracts/FujiOracle.sol/FujiOracle.json");
 

@@ -4,12 +4,12 @@ pragma solidity ^0.8.0;
 
 import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 
-import "./Abstracts/FujiERC1155/FujiBaseERC1155.sol";
-import "./Abstracts/FujiERC1155/F1155Manager.sol";
-import "./Abstracts/Claimable/ClaimableUpgradeable.sol";
-import "./Interfaces/IFujiERC1155.sol";
-import "./Libraries/WadRayMath.sol";
-import "./Libraries/Errors.sol";
+import "./abstracts/fujiERC1155/FujiBaseERC1155.sol";
+import "./abstracts/fujiERC1155/F1155Manager.sol";
+import "./abstracts/claimable/ClaimableUpgradeable.sol";
+import "./interfaces/IFujiERC1155.sol";
+import "./libraries/WadRayMath.sol";
+import "./libraries/Errors.sol";
 
 contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   using WadRayMath for uint256;

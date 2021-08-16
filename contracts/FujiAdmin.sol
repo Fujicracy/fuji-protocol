@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-import "./Interfaces/IFujiAdmin.sol";
-import "./Libraries/Errors.sol";
+import "./interfaces/IFujiAdmin.sol";
+import "./libraries/Errors.sol";
 
 contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
   address private _flasher;

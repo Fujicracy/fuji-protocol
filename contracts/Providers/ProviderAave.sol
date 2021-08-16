@@ -4,12 +4,12 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../Interfaces/IProvider.sol";
-import "../Interfaces/ITokenInterface.sol";
-import "../Interfaces/Aave/IAaveDataProvider.sol";
-import "../Interfaces/Aave/IAaveLendingPool.sol";
-import "../Interfaces/Aave/IAaveLendingPoolProvider.sol";
-import "../Libraries/LibUniversalERC20.sol";
+import "../interfaces/IProvider.sol";
+import "../interfaces/ITokenInterface.sol";
+import "../interfaces/aave/IAaveDataProvider.sol";
+import "../interfaces/aave/IAaveLendingPool.sol";
+import "../interfaces/aave/IAaveLendingPoolProvider.sol";
+import "../libraries/LibUniversalERC20.sol";
 
 contract ProviderAave is IProvider {
   using LibUniversalERC20 for IERC20;
@@ -64,8 +64,9 @@ contract ProviderAave is IProvider {
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
     IAaveDataProvider aaveData = _getAaveDataProvider();
 
-    (, , , , uint256 variableBorrowRate, , , , , ) = IAaveDataProvider(aaveData)
-    .getReserveData(_asset == _getEthAddr() ? _getWethAddr() : _asset);
+    (, , , , uint256 variableBorrowRate, , , , , ) = IAaveDataProvider(aaveData).getReserveData(
+      _asset == _getEthAddr() ? _getWethAddr() : _asset
+    );
 
     return variableBorrowRate;
   }

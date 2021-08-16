@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "../../Libraries/FlashLoans.sol";
+import "../../libraries/FlashLoans.sol";
 
 /**
  * @title ICallee

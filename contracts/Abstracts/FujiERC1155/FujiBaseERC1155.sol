@@ -10,7 +10,7 @@ import "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeab
 import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
-import "../../Libraries/Errors.sol";
+import "../../libraries/Errors.sol";
 
 /**
  *

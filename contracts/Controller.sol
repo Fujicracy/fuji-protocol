@@ -2,14 +2,14 @@
 
 pragma solidity ^0.8.0;
 
-import "./Flashloans/Flasher.sol";
-import "./Abstracts/Claimable/Claimable.sol";
-import "./Interfaces/IVault.sol";
-import "./Interfaces/IVaultControl.sol";
-import "./Interfaces/IProvider.sol";
-import "./Interfaces/IFujiAdmin.sol";
-import "./Libraries/FlashLoans.sol";
-import "./Libraries/Errors.sol";
+import "./flashloans/Flasher.sol";
+import "./abstracts/claimable/Claimable.sol";
+import "./interfaces/IVault.sol";
+import "./interfaces/IVaultControl.sol";
+import "./interfaces/IProvider.sol";
+import "./interfaces/IFujiAdmin.sol";
+import "./libraries/FlashLoans.sol";
+import "./libraries/Errors.sol";
 
 contract Controller is Claimable {
   IFujiAdmin private _fujiAdmin;

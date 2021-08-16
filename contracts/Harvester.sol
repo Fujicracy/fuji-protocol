@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-import "../Interfaces/Compound/IComptroller.sol";
-import "../Interfaces/Aave/IAaveLiquidityMining.sol";
+import "./interfaces/compound/IComptroller.sol";
+import "./interfaces/aave/IAaveLiquidityMining.sol";
 
 contract VaultHarvester {
   address[] private _aaveClaimAddrs;

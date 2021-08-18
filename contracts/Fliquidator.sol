@@ -153,7 +153,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
     // Repay BaseProtocol debt
-    IVault(_vault).payback(int256(debtBalanceTotal));
+    IVault(_vault).paybackLiq(int256(debtBalanceTotal));
 
     //TODO: Transfer corresponding Debt Amount to Fuji Treasury
 
@@ -170,7 +170,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     _burnMultiLoop(formattedUserAddrs, usrsBals, IVault(_vault), IFujiERC1155(f1155), vAssets);
 
     // Withdraw collateral
-    IVault(_vault).withdraw(int256(globalCollateralInPlay));
+    IVault(_vault).withdrawLiq(int256(globalCollateralInPlay));
 
     // Swap Collateral
     _swap(
@@ -279,7 +279,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
 
     // Repay BaseProtocol debt
     uint256 _value = vAssets.borrowAsset == ETH ? _amount : 0;
-    IVault(_vault).payback{ value: _value }(int256(_amount));
+    IVault(_vault).paybackLiq{ value: _value }(int256(_amount));
 
     //TODO: Transfer corresponding Debt Amount to Fuji Treasury
 
@@ -288,7 +288,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
       f1155.burn(_userAddr, vAssets.collateralID, userCollateral);
 
       // Withdraw Full collateral
-      IVault(_vault).withdraw(int256(userCollateral));
+      IVault(_vault).withdrawLiq(int256(userCollateral));
 
       // Send unUsed Collateral to User
       IERC20(vAssets.collateralAsset).univTransfer(
@@ -299,7 +299,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
       f1155.burn(_userAddr, vAssets.collateralID, userCollateralInPlay);
 
       // Withdraw Collateral in play Only
-      IVault(_vault).withdraw(int256(userCollateralInPlay));
+      IVault(_vault).withdrawLiq(int256(userCollateralInPlay));
     }
 
     // Swap Collateral for underlying to repay Flashloan
@@ -428,7 +428,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
 
     // Repay BaseProtocol debt to release collateral
     uint256 _value = vAssets.borrowAsset == ETH ? _amount : 0;
-    IVault(_vault).payback{ value: _value }(int256(_amount));
+    IVault(_vault).paybackLiq{ value: _value }(int256(_amount));
 
     // Compute the Liquidator Bonus bonusFlashL
     uint256 globalBonus = IVault(_vault).getLiquidationBonusFor(_amount, true);
@@ -444,7 +444,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     _burnMultiLoop(_userAddrs, _usrsBals, IVault(_vault), f1155, vAssets);
 
     // Withdraw collateral
-    IVault(_vault).withdraw(int256(globalCollateralInPlay));
+    IVault(_vault).withdrawLiq(int256(globalCollateralInPlay));
 
     _swap(
       vAssets.collateralAsset,

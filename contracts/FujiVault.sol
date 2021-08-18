@@ -67,6 +67,11 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     _;
   }
 
+  modifier onlyFliquidator() {
+    require(msg.sender == _fujiAdmin.getFliquidator(), Errors.VL_NOT_AUTHORIZED);
+    _;
+  }
+
   function initialize(
     address _fujiadmin,
     address _oracle,
@@ -173,56 +178,63 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
 
   /**
    * @dev Withdraws Vault's type collateral from activeProvider
-   * call Controller checkrates
+   * call Controller checkrates - by normal users
    * @param _withdrawAmount: amount of collateral to withdraw
    * otherwise pass -1 to withdraw maximum amount possible of collateral (including safety factors)
    * Emits a {Withdraw} event.
    */
   function withdraw(int256 _withdrawAmount) public override nonReentrant {
-    // If call from Normal User do typical, otherwise Fliquidator
-    if (msg.sender != _fujiAdmin.getFliquidator()) {
-      updateF1155Balances();
+    // Logic used when called by Normal User
+    updateF1155Balances();
 
-      // Get User Collateral in this Vault
-      uint256 providedCollateral = IFujiERC1155(fujiERC1155).balanceOf(
-        msg.sender,
-        vAssets.collateralID
-      );
+    // Get User Collateral in this Vault
+    uint256 providedCollateral = IFujiERC1155(fujiERC1155).balanceOf(
+      msg.sender,
+      vAssets.collateralID
+    );
 
-      // Check User has collateral
-      require(providedCollateral > 0, Errors.VL_INVALID_COLLATERAL);
+    // Check User has collateral
+    require(providedCollateral > 0, Errors.VL_INVALID_COLLATERAL);
 
-      // Get Required Collateral with Factors to maintain debt position healthy
-      uint256 neededCollateral = getNeededCollateralFor(
-        IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID),
-        true
-      );
+    // Get Required Collateral with Factors to maintain debt position healthy
+    uint256 neededCollateral = getNeededCollateralFor(
+      IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID),
+      true
+    );
 
-      uint256 amountToWithdraw = _withdrawAmount < 0
-        ? providedCollateral - neededCollateral
-        : uint256(_withdrawAmount);
+    uint256 amountToWithdraw = _withdrawAmount < 0
+      ? providedCollateral - neededCollateral
+      : uint256(_withdrawAmount);
 
-      // Check Withdrawal amount, and that it will not fall undercollaterized.
-      require(
-        amountToWithdraw != 0 && providedCollateral - amountToWithdraw >= neededCollateral,
-        Errors.VL_INVALID_WITHDRAW_AMOUNT
-      );
+    // Check Withdrawal amount, and that it will not fall undercollaterized.
+    require(
+      amountToWithdraw != 0 && providedCollateral - amountToWithdraw >= neededCollateral,
+      Errors.VL_INVALID_WITHDRAW_AMOUNT
+    );
 
-      // Collateral Management before Withdraw Operation
-      IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.collateralID, amountToWithdraw);
+    // Collateral Management before Withdraw Operation
+    IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.collateralID, amountToWithdraw);
 
-      // Delegate Call Withdraw to current provider
-      _withdraw(amountToWithdraw, address(activeProvider));
+    // Delegate Call Withdraw to current provider
+    _withdraw(amountToWithdraw, address(activeProvider));
 
-      // Transer Assets to User
-      IERC20(vAssets.collateralAsset).univTransfer(payable(msg.sender), amountToWithdraw);
+    // Transer Assets to User
+    IERC20(vAssets.collateralAsset).univTransfer(payable(msg.sender), amountToWithdraw);
 
-      emit Withdraw(msg.sender, vAssets.collateralAsset, amountToWithdraw);
-    } else {
-      // Logic used when called by Fliquidator
-      _withdraw(uint256(_withdrawAmount), address(activeProvider));
-      IERC20(vAssets.collateralAsset).univTransfer(payable(msg.sender), uint256(_withdrawAmount));
-    }
+    emit Withdraw(msg.sender, vAssets.collateralAsset, amountToWithdraw);
+  }
+
+  /**
+   * @dev Withdraws Vault's type collateral from activeProvider
+   * call Controller checkrates - by Fliquidator
+   * @param _withdrawAmount: amount of collateral to withdraw
+   * otherwise pass -1 to withdraw maximum amount possible of collateral (including safety factors)
+   * Emits a {Withdraw} event.
+   */
+  function withdrawLiq(int256 _withdrawAmount) external override nonReentrant onlyFliquidator {
+    // Logic used when called by Fliquidator
+    _withdraw(uint256(_withdrawAmount), address(activeProvider));
+    IERC20(vAssets.collateralAsset).univTransfer(payable(msg.sender), uint256(_withdrawAmount));
   }
 
   /**
@@ -263,57 +275,59 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   }
 
   /**
-   * @dev Paybacks Vault's type underlying to activeProvider
+   * @dev Paybacks Vault's type underlying to activeProvider - called by normal user
    * @param _repayAmount: token amount of underlying to repay, or pass -1 to repay full ammount
    * Emits a {Repay} event.
    */
   function payback(int256 _repayAmount) public payable override {
-    // If call from Normal User do typical, otherwise Fliquidator
-    if (msg.sender != _fujiAdmin.getFliquidator()) {
-      updateF1155Balances();
+    // Logic used when called by normal user
+    updateF1155Balances();
 
-      uint256 userDebtBalance = IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID);
+    uint256 userDebtBalance = IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID);
 
-      // Check User Debt is greater than Zero and amount is not Zero
-      require(_repayAmount != 0 && userDebtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
+    // Check User Debt is greater than Zero and amount is not Zero
+    require(_repayAmount != 0 && userDebtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
 
-      // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
+    // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
-      // If passed argument amount is negative do MAX
-      uint256 amountToPayback = _repayAmount < 0 ? userDebtBalance : uint256(_repayAmount);
+    // If passed argument amount is negative do MAX
+    uint256 amountToPayback = _repayAmount < 0 ? userDebtBalance : uint256(_repayAmount);
 
-      if (vAssets.borrowAsset == ETH) {
-        require(msg.value >= amountToPayback, Errors.VL_AMOUNT_ERROR);
-        if (msg.value > amountToPayback) {
-          IERC20(vAssets.borrowAsset).univTransfer(
-            payable(msg.sender),
-            msg.value - amountToPayback
-          );
-        }
-      } else {
-        // Check User Allowance
-        require(
-          IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this)) >= amountToPayback,
-          Errors.VL_MISSING_ERC20_ALLOWANCE
-        );
-
-        // Transfer Asset from User to Vault
-        IERC20(vAssets.borrowAsset).safeTransferFrom(msg.sender, address(this), amountToPayback);
+    if (vAssets.borrowAsset == ETH) {
+      require(msg.value >= amountToPayback, Errors.VL_AMOUNT_ERROR);
+      if (msg.value > amountToPayback) {
+        IERC20(vAssets.borrowAsset).univTransfer(payable(msg.sender), msg.value - amountToPayback);
       }
-
-      // Delegate Call Payback to current provider
-      _payback(amountToPayback, address(activeProvider));
-
-      //TODO: Transfer corresponding Debt Amount to Fuji Treasury
-
-      // Debt Management
-      IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.borrowID, amountToPayback);
-
-      emit Payback(msg.sender, vAssets.borrowAsset, userDebtBalance);
     } else {
-      // Logic used when called by Fliquidator
-      _payback(uint256(_repayAmount), address(activeProvider));
+      // Check User Allowance
+      require(
+        IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this)) >= amountToPayback,
+        Errors.VL_MISSING_ERC20_ALLOWANCE
+      );
+
+      // Transfer Asset from User to Vault
+      IERC20(vAssets.borrowAsset).safeTransferFrom(msg.sender, address(this), amountToPayback);
     }
+
+    // Delegate Call Payback to current provider
+    _payback(amountToPayback, address(activeProvider));
+
+    //TODO: Transfer corresponding Debt Amount to Fuji Treasury
+
+    // Debt Management
+    IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.borrowID, amountToPayback);
+
+    emit Payback(msg.sender, vAssets.borrowAsset, userDebtBalance);
+  }
+
+  /**
+   * @dev Paybacks Vault's type underlying to activeProvider
+   * @param _repayAmount: token amount of underlying to repay, or pass -1 to repay full ammount
+   * Emits a {Repay} event.
+   */
+  function paybackLiq(int256 _repayAmount) external payable override onlyFliquidator {
+    // Logic used when called by Fliquidator
+    _payback(uint256(_repayAmount), address(activeProvider));
   }
 
   /**

@@ -30,9 +30,13 @@ interface IVault {
 
   function withdraw(int256 _withdrawAmount) external;
 
+  function withdrawLiq(int256 _withdrawAmount) external;
+
   function borrow(uint256 _borrowAmount) external;
 
   function payback(int256 _repayAmount) external payable;
+
+  function paybackLiq(int256 _repayAmount) external payable;
 
   function executeSwitch(
     address _newProvider,

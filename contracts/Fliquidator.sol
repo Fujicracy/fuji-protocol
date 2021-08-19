@@ -143,17 +143,13 @@ contract Fliquidator is Claimable, ReentrancyGuard {
         Errors.VL_MISSING_ERC20_ALLOWANCE
       );
 
-      // Transfer borrowAsset funds from the Liquidator to Here
-      IERC20(vAssets.borrowAsset).safeTransferFrom(msg.sender, address(this), debtBalanceTotal);
+      // Transfer borrowAsset funds from the Liquidator to Vault
+      IERC20(vAssets.borrowAsset).safeTransferFrom(msg.sender, _vault, debtBalanceTotal);
     }
 
-    // Transfer Amount to Vault
-    IERC20(vAssets.borrowAsset).univTransfer(payable(_vault), debtBalanceTotal);
-
-    // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
-
     // Repay BaseProtocol debt
-    IVault(_vault).paybackLiq(int256(debtBalanceTotal));
+    uint256 _value = vAssets.borrowAsset == ETH ? debtBalanceTotal : 0;
+    IVault(_vault).paybackLiq{ value: _value }(int256(debtBalanceTotal));
 
     //TODO: Transfer corresponding Debt Amount to Fuji Treasury
 

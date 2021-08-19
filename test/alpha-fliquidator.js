@@ -659,6 +659,7 @@ describe("Alpha", () => {
         .connect(liquidatorUser)
         .batchLiquidate([carelessUser.address], theVault.address, {
           value: borrowAmount.add(ethers.utils.parseEther("0.01")),
+          gasPrice: "1000000000",
         });
 
       console.log("- Check liquidator's balance");

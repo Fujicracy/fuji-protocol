@@ -144,12 +144,11 @@ function writeFiles(chainId, market, deployData) {
     `../react-app/src/contracts/${chainId}-${market}.deployment.json`,
     JSON.stringify(deployData, null, 2)
   );
-};
+}
 
 task("publish", "Publish deployment data to other packages")
   .addOptionalParam("market", "Markets: fuse, core", "core")
   .setAction(async ({ market }, { ethers, config }) => {
-
     const network = await ethers.provider.getNetwork();
 
     const deployData = JSON.parse(
@@ -159,9 +158,8 @@ task("publish", "Publish deployment data to other packages")
     writeFiles(network.chainId, market, deployData);
   });
 
-task("sync", "Sync mainnet deployment data to be used in current network")
-  .setAction(async (_, { ethers, config }) => {
-
+task("sync", "Sync mainnet deployment data to be used in current network").setAction(
+  async (_, { ethers, config }) => {
     const network = await ethers.provider.getNetwork();
 
     try {
@@ -182,7 +180,8 @@ task("sync", "Sync mainnet deployment data to be used in current network")
     } catch (e) {
       console.log("1-fuse deploy: not synced");
     }
-  });
+  }
+);
 
 task("wallet", "Create a wallet (pk) link", async (_, { ethers }) => {
   const randomWallet = ethers.Wallet.createRandom();

@@ -312,8 +312,6 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     // Delegate Call Payback to current provider
     _payback(amountToPayback, address(activeProvider));
 
-    //TODO: Transfer corresponding Debt Amount to Fuji Treasury
-
     // Debt Management
     IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.borrowID, amountToPayback);
 

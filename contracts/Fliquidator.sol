@@ -45,14 +45,12 @@ contract Fliquidator is Claimable, ReentrancyGuard {
   // Log Liquidation
   event Liquidate(
     address indexed userAddr,
-    address liquidator,
-    address indexed asset,
-    uint256 amount
+    address indexed vault,
+    uint256 amount,
+    address liquidator
   );
   // Log FlashClose
-  event FlashClose(address indexed userAddr, address indexed asset, uint256 amount);
-  // Log Liquidation
-  event FlashLiquidate(address userAddr, address liquidator, address indexed asset, uint256 amount);
+  event FlashClose(address indexed userAddr, address indexed vault, uint256 amount);
 
   modifier isAuthorized() {
     require(msg.sender == owner(), Errors.VL_NOT_AUTHORIZED);
@@ -83,6 +81,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
    * @dev Liquidate an undercollaterized debt and get bonus (bonusL in Vault)
    * @param _userAddrs: Address array of users whose position is liquidatable
    * @param _vault: Address of the vault in where liquidation will occur
+   * Emits a {Liquidate} event.
    */
   function batchLiquidate(address[] calldata _userAddrs, address _vault)
     external
@@ -93,77 +92,42 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     // Update Balances at FujiERC1155
     IVault(_vault).updateF1155Balances();
 
-    // Create Instance of FujiERC1155
-    address f1155 = IVault(_vault).fujiERC1155();
-
     // Struct Instance to get Vault Asset IDs in f1155
     IVaultControl.VaultAssets memory vAssets = IVaultControl(_vault).vAssets();
 
-    address[] memory formattedUserAddrs = new address[](2 * _userAddrs.length);
-    uint256[] memory formattedIds = new uint256[](2 * _userAddrs.length);
-
-    // Build the required Arrays to query balanceOfBatch from f1155
-    for (uint256 i = 0; i < _userAddrs.length; i++) {
-      formattedUserAddrs[2 * i] = _userAddrs[i];
-      formattedUserAddrs[2 * i + 1] = _userAddrs[i];
-      formattedIds[2 * i] = vAssets.collateralID;
-      formattedIds[2 * i + 1] = vAssets.borrowID;
-    }
-
-    // Get user Collateral and Debt Balances
-    uint256[] memory usrsBals = IERC1155(f1155).balanceOfBatch(formattedUserAddrs, formattedIds);
-
-    uint256 neededCollateral;
-    uint256 debtBalanceTotal;
-
-    for (uint256 i = 0; i < formattedUserAddrs.length; i += 2) {
-      // Compute Amount of Minimum Collateral Required including factors
-      neededCollateral = IVault(_vault).getNeededCollateralFor(usrsBals[i + 1], true);
-
-      // Check if User is liquidatable
-      if (usrsBals[i] < neededCollateral) {
-        // If true, add User debt balance to the total balance to be liquidated
-        debtBalanceTotal = debtBalanceTotal + usrsBals[i + 1];
-      } else {
-        // Replace User that is not liquidatable by Zero Address
-        formattedUserAddrs[i] = address(0);
-        formattedUserAddrs[i + 1] = address(0);
-      }
-    }
+    (address[] memory addrs, uint256[] memory borrowBals, uint256 debtTotal) = _constructParams(
+      _userAddrs,
+      _vault
+    );
 
     // Check there is at least one user liquidatable
-    require(debtBalanceTotal > 0, Errors.VL_USER_NOT_LIQUIDATABLE);
+    require(debtTotal > 0, Errors.VL_USER_NOT_LIQUIDATABLE);
 
     if (vAssets.borrowAsset == ETH) {
-      require(msg.value >= debtBalanceTotal, Errors.VL_AMOUNT_ERROR);
+      require(msg.value >= debtTotal, Errors.VL_AMOUNT_ERROR);
     } else {
       // Check Liquidator Allowance
       require(
-        IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this)) >= debtBalanceTotal,
+        IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this)) >= debtTotal,
         Errors.VL_MISSING_ERC20_ALLOWANCE
       );
 
       // Transfer borrowAsset funds from the Liquidator to Vault
-      IERC20(vAssets.borrowAsset).safeTransferFrom(msg.sender, _vault, debtBalanceTotal);
+      IERC20(vAssets.borrowAsset).safeTransferFrom(msg.sender, _vault, debtTotal);
     }
 
     // Repay BaseProtocol debt
-    uint256 _value = vAssets.borrowAsset == ETH ? debtBalanceTotal : 0;
-    IVault(_vault).paybackLiq{ value: _value }(int256(debtBalanceTotal));
-
-    //TODO: Transfer corresponding Debt Amount to Fuji Treasury
+    uint256 _value = vAssets.borrowAsset == ETH ? debtTotal : 0;
+    IVault(_vault).paybackLiq{ value: _value }(int256(debtTotal));
 
     // Compute the Liquidator Bonus bonusL
-    uint256 globalBonus = IVault(_vault).getLiquidationBonusFor(debtBalanceTotal, false);
+    uint256 globalBonus = IVault(_vault).getLiquidationBonusFor(debtTotal, false);
     // Compute how much collateral needs to be swapt
     uint256 globalCollateralInPlay = _getCollateralInPlay(
       vAssets.collateralAsset,
       vAssets.borrowAsset,
-      debtBalanceTotal + globalBonus
+      debtTotal + globalBonus
     );
-
-    // Burn Collateral f1155 tokens for each liquidated user
-    _burnMultiLoop(formattedUserAddrs, usrsBals, IVault(_vault), IFujiERC1155(f1155), vAssets);
 
     // Withdraw collateral
     IVault(_vault).withdrawLiq(int256(globalCollateralInPlay));
@@ -172,21 +136,117 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     _swap(
       vAssets.collateralAsset,
       vAssets.borrowAsset,
-      debtBalanceTotal + globalBonus,
+      debtTotal + globalBonus,
       globalCollateralInPlay,
       true
     );
 
-    // Transfer to Liquidator the debtBalance + bonus
-    IERC20(vAssets.borrowAsset).univTransfer(payable(msg.sender), debtBalanceTotal + globalBonus);
-
     // Burn Debt f1155 tokens and Emit Liquidation Event for Each Liquidated User
-    for (uint256 i = 0; i < formattedUserAddrs.length; i += 2) {
-      if (formattedUserAddrs[i] != address(0)) {
-        IFujiERC1155(f1155).burn(formattedUserAddrs[i], vAssets.borrowID, usrsBals[i + 1]);
-        emit Liquidate(formattedUserAddrs[i], msg.sender, vAssets.borrowAsset, usrsBals[i + 1]);
-      }
-    }
+    _burnMulti(addrs, borrowBals, _vault, msg.sender);
+
+    // Transfer to Liquidator the debtBalance + bonus
+    IERC20(vAssets.borrowAsset).univTransfer(payable(msg.sender), debtTotal + globalBonus);
+  }
+
+  /**
+   * @dev Initiates a flashloan to liquidate array of undercollaterized debt positions,
+   * gets bonus (bonusFlashL in Vault)
+   * @param _userAddrs: Array of Address whose position is liquidatable
+   * @param _vault: The vault address where the debt position exist.
+   * @param _flashnum: integer identifier of flashloan provider
+   * Emits a {Liquidate} event.
+   */
+  function flashBatchLiquidate(
+    address[] calldata _userAddrs,
+    address _vault,
+    uint8 _flashnum
+  ) external isValidVault(_vault) nonReentrant {
+    // Update Balances at FujiERC1155
+    IVault(_vault).updateF1155Balances();
+
+    // Struct Instance to get Vault Asset IDs in f1155
+    IVaultControl.VaultAssets memory vAssets = IVaultControl(_vault).vAssets();
+
+    (address[] memory addrs, uint256[] memory borrowBals, uint256 debtTotal) = _constructParams(
+      _userAddrs,
+      _vault
+    );
+
+    // Check there is at least one user liquidatable
+    require(debtTotal > 0, Errors.VL_USER_NOT_LIQUIDATABLE);
+
+    FlashLoan.Info memory info = FlashLoan.Info({
+      callType: FlashLoan.CallType.BatchLiquidate,
+      asset: vAssets.borrowAsset,
+      amount: debtTotal,
+      vault: _vault,
+      newProvider: address(0),
+      userAddrs: addrs,
+      userBalances: borrowBals,
+      userliquidator: msg.sender,
+      fliquidator: address(this)
+    });
+
+    Flasher(payable(_fujiAdmin.getFlasher())).initiateFlashloan(info, _flashnum);
+  }
+
+  /**
+   * @dev Liquidate a debt position by using a flashloan
+   * @param _userAddrs: array **See addrs construction in 'function flashBatchLiquidate'
+   * @param _bals: array **See construction in 'function flashBatchLiquidate'
+   * @param _liquidator: liquidator address
+   * @param _vault: Vault address
+   * @param _amount: amount of debt to be repaid
+   * @param _flashloanFee: amount extra charged by flashloan provider
+   * Emits a {Liquidate} event.
+   */
+  function executeFlashBatchLiquidation(
+    address[] calldata _userAddrs,
+    uint256[] calldata _bals,
+    address _liquidator,
+    address _vault,
+    uint256 _amount,
+    uint256 _flashloanFee
+  ) external payable onlyFlash {
+    // Struct Instance to get Vault Asset IDs in f1155
+    IVaultControl.VaultAssets memory vAssets = IVaultControl(_vault).vAssets();
+
+    // Repay BaseProtocol debt to release collateral
+    uint256 _value = vAssets.borrowAsset == ETH ? _amount : 0;
+    IVault(_vault).paybackLiq{ value: _value }(int256(_amount));
+
+    // Compute the Liquidator Bonus bonusFlashL
+    uint256 globalBonus = IVault(_vault).getLiquidationBonusFor(_amount, true);
+
+    // Compute how much collateral needs to be swapt for all liquidated Users
+    uint256 globalCollateralInPlay = _getCollateralInPlay(
+      vAssets.collateralAsset,
+      vAssets.borrowAsset,
+      _amount + _flashloanFee + globalBonus
+    );
+
+    // Withdraw collateral
+    IVault(_vault).withdrawLiq(int256(globalCollateralInPlay));
+
+    _swap(
+      vAssets.collateralAsset,
+      vAssets.borrowAsset,
+      _amount + _flashloanFee + globalBonus,
+      globalCollateralInPlay,
+      true
+    );
+
+    // Burn f1155 and Emit Liquidation Event for Each Liquidated User
+    _burnMulti(_userAddrs, _bals, _vault, _liquidator);
+
+    // Send flasher the underlying to repay Flashloan
+    IERC20(vAssets.borrowAsset).univTransfer(
+      payable(_fujiAdmin.getFlasher()),
+      _amount + _flashloanFee
+    );
+
+    // Transfer Bonus bonusFlashL to liquidator, minus FlashloanFee convenience
+    IERC20(vAssets.borrowAsset).univTransfer(payable(_liquidator), globalBonus - _flashloanFee);
   }
 
   /**
@@ -200,8 +260,6 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     address _vault,
     uint8 _flashnum
   ) external nonReentrant isValidVault(_vault) {
-    Flasher flasher = Flasher(payable(_fujiAdmin.getFlasher()));
-
     // Update Balances at FujiERC1155
     IVault(_vault).updateF1155Balances();
 
@@ -215,7 +273,6 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     uint256 userCollateral = f1155.balanceOf(msg.sender, vAssets.collateralID);
     uint256 userDebtBalance = f1155.balanceOf(msg.sender, vAssets.borrowID);
 
-    // Check Debt is > zero
     require(userDebtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
 
     uint256 amount = _amount < 0 ? userDebtBalance : uint256(_amount);
@@ -238,7 +295,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
       fliquidator: address(this)
     });
 
-    flasher.initiateFlashloan(info, _flashnum);
+    Flasher(payable(_fujiAdmin.getFlasher())).initiateFlashloan(info, _flashnum);
   }
 
   /**
@@ -319,153 +376,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     // Burn Debt f1155 tokens
     f1155.burn(_userAddr, vAssets.borrowID, _amount);
 
-    emit FlashClose(_userAddr, vAssets.borrowAsset, userDebtBalance);
-  }
-
-  /**
-   * @dev Initiates a flashloan to liquidate array of undercollaterized debt positions,
-   * gets bonus (bonusFlashL in Vault)
-   * @param _userAddrs: Array of Address whose position is liquidatable
-   * @param _vault: The vault address where the debt position exist.
-   * @param _flashnum: integer identifier of flashloan provider
-   */
-  function flashBatchLiquidate(
-    address[] calldata _userAddrs,
-    address _vault,
-    uint8 _flashnum
-  ) external isValidVault(_vault) nonReentrant {
-    // Update Balances at FujiERC1155
-    IVault(_vault).updateF1155Balances();
-
-    // Create Instance of FujiERC1155
-    address f1155 = IVault(_vault).fujiERC1155();
-
-    // Struct Instance to get Vault Asset IDs in f1155
-    IVaultControl.VaultAssets memory vAssets = IVaultControl(_vault).vAssets();
-
-    address[] memory formattedUserAddrs = new address[](2 * _userAddrs.length);
-    uint256[] memory formattedIds = new uint256[](2 * _userAddrs.length);
-
-    // Build the required Arrays to query balanceOfBatch from f1155
-    for (uint256 i = 0; i < _userAddrs.length; i++) {
-      formattedUserAddrs[2 * i] = _userAddrs[i];
-      formattedUserAddrs[2 * i + 1] = _userAddrs[i];
-      formattedIds[2 * i] = vAssets.collateralID;
-      formattedIds[2 * i + 1] = vAssets.borrowID;
-    }
-
-    // Get user Collateral and Debt Balances
-    uint256[] memory usrsBals = IERC1155(f1155).balanceOfBatch(formattedUserAddrs, formattedIds);
-
-    uint256 neededCollateral;
-    uint256 debtBalanceTotal;
-
-    for (uint256 i = 0; i < formattedUserAddrs.length; i += 2) {
-      // Compute Amount of Minimum Collateral Required including factors
-      neededCollateral = IVault(_vault).getNeededCollateralFor(usrsBals[i + 1], true);
-
-      // Check if User is liquidatable
-      if (usrsBals[i] < neededCollateral) {
-        // If true, add User debt balance to the total balance to be liquidated
-        debtBalanceTotal = debtBalanceTotal + usrsBals[i + 1];
-      } else {
-        // Replace User that is not liquidatable by Zero Address
-        formattedUserAddrs[i] = address(0);
-        formattedUserAddrs[i + 1] = address(0);
-      }
-    }
-
-    // Check there is at least one user liquidatable
-    require(debtBalanceTotal > 0, Errors.VL_USER_NOT_LIQUIDATABLE);
-
-    Flasher flasher = Flasher(payable(_fujiAdmin.getFlasher()));
-
-    FlashLoan.Info memory info = FlashLoan.Info({
-      callType: FlashLoan.CallType.BatchLiquidate,
-      asset: vAssets.borrowAsset,
-      amount: debtBalanceTotal,
-      vault: _vault,
-      newProvider: address(0),
-      userAddrs: formattedUserAddrs,
-      userBalances: usrsBals,
-      userliquidator: msg.sender,
-      fliquidator: address(this)
-    });
-
-    flasher.initiateFlashloan(info, _flashnum);
-  }
-
-  /**
-   * @dev Liquidate a debt position by using a flashloan
-   * @param _userAddrs: array **See formattedUserAddrs construction in 'function flashBatchLiquidate'
-   * @param _usrsBals: array **See construction in 'function flashBatchLiquidate'
-   * @param _liquidatorAddr: liquidator address
-   * @param _vault: Vault address
-   * @param _amount: amount of debt to be repaid
-   * @param _flashloanFee: amount extra charged by flashloan provider
-   * Emits a {FlashLiquidate} event.
-   */
-  function executeFlashBatchLiquidation(
-    address[] calldata _userAddrs,
-    uint256[] calldata _usrsBals,
-    address _liquidatorAddr,
-    address _vault,
-    uint256 _amount,
-    uint256 _flashloanFee
-  ) external payable onlyFlash {
-    // Create Instance of FujiERC1155
-    IFujiERC1155 f1155 = IFujiERC1155(IVault(_vault).fujiERC1155());
-
-    // Struct Instance to get Vault Asset IDs in f1155
-    IVaultControl.VaultAssets memory vAssets = IVaultControl(_vault).vAssets();
-
-    // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
-    // TODO: Transfer corresponding Debt Amount to Fuji Treasury
-
-    // Repay BaseProtocol debt to release collateral
-    uint256 _value = vAssets.borrowAsset == ETH ? _amount : 0;
-    IVault(_vault).paybackLiq{ value: _value }(int256(_amount));
-
-    // Compute the Liquidator Bonus bonusFlashL
-    uint256 globalBonus = IVault(_vault).getLiquidationBonusFor(_amount, true);
-
-    // Compute how much collateral needs to be swapt for all liquidated Users
-    uint256 globalCollateralInPlay = _getCollateralInPlay(
-      vAssets.collateralAsset,
-      vAssets.borrowAsset,
-      _amount + _flashloanFee + globalBonus
-    );
-
-    // Burn Collateral f1155 tokens for each liquidated user
-    _burnMultiLoop(_userAddrs, _usrsBals, IVault(_vault), f1155, vAssets);
-
-    // Withdraw collateral
-    IVault(_vault).withdrawLiq(int256(globalCollateralInPlay));
-
-    _swap(
-      vAssets.collateralAsset,
-      vAssets.borrowAsset,
-      _amount + _flashloanFee + globalBonus,
-      globalCollateralInPlay,
-      true
-    );
-
-    // Send flasher the underlying to repay Flashloan
-    IERC20(vAssets.borrowAsset).univTransfer(
-      payable(_fujiAdmin.getFlasher()),
-      _amount + _flashloanFee
-    );
-
-    // Transfer Bonus bonusFlashL to liquidator, minus FlashloanFee convenience
-    IERC20(vAssets.borrowAsset).univTransfer(payable(_liquidatorAddr), globalBonus - _flashloanFee);
-
-    // Burn Debt f1155 tokens and Emit Liquidation Event for Each Liquidated User
-    for (uint256 i = 0; i < _userAddrs.length; i += 2) {
-      if (_userAddrs[i] != address(0)) {
-        f1155.burn(_userAddrs[i], vAssets.borrowID, _usrsBals[i + 1]);
-        emit FlashLiquidate(_userAddrs[i], _liquidatorAddr, vAssets.borrowAsset, _usrsBals[i + 1]);
-      }
-    }
+    emit FlashClose(_userAddr, _vault, userDebtBalance);
   }
 
   /**
@@ -603,32 +514,83 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     return amounts[0];
   }
 
+  function _constructParams(address[] memory _userAddrs, address _vault)
+    internal
+    view
+    returns (
+      address[] memory addrs,
+      uint256[] memory borrowBals,
+      uint256 debtTotal
+    )
+  {
+    address f1155 = IVault(_vault).fujiERC1155();
+
+    IVaultControl.VaultAssets memory vAssets = IVaultControl(_vault).vAssets();
+
+    addrs = new address[](_userAddrs.length);
+
+    uint256[] memory borrowIds = new uint256[](_userAddrs.length);
+    uint256[] memory collateralIds = new uint256[](_userAddrs.length);
+
+    // Build the required Arrays to query balanceOfBatch from f1155
+    for (uint256 i = 0; i < _userAddrs.length; i += 1) {
+      collateralIds[i] = vAssets.collateralID;
+      borrowIds[i] = vAssets.borrowID;
+    }
+
+    // Get user collateral and debt balances
+    borrowBals = IERC1155(f1155).balanceOfBatch(_userAddrs, borrowIds);
+    uint256[] memory collateralBals = IERC1155(f1155).balanceOfBatch(_userAddrs, collateralIds);
+
+    uint256 neededCollateral;
+
+    for (uint256 i = 0; i < _userAddrs.length; i += 1) {
+      // Compute amount of min collateral required including factors
+      neededCollateral = IVault(_vault).getNeededCollateralFor(borrowBals[i], true);
+
+      // Check if User is liquidatable
+      if (collateralBals[i] < neededCollateral) {
+        // If true, add User debt balance to the total balance to be liquidated
+        debtTotal += borrowBals[i];
+        addrs[i] = _userAddrs[i];
+      } else {
+        // set user that is not liquidatable to Zero Address
+        addrs[i] = address(0);
+      }
+    }
+  }
+
   /**
    * @dev Abstracted function to perform MultBatch Burn of Collateral in Batch Liquidation
    * checking bonus paid to liquidator by each
    * See "function executeFlashBatchLiquidation"
    */
-  function _burnMultiLoop(
-    address[] memory _userAddrs,
-    uint256[] memory _usrsBals,
-    IVault _vault,
-    IFujiERC1155 _f1155,
-    IVaultControl.VaultAssets memory _vAssets
+  function _burnMulti(
+    address[] memory _addrs,
+    uint256[] memory _borrowBals,
+    address _vault,
+    address _liquidator
   ) internal {
+    address f1155 = IVault(_vault).fujiERC1155();
+
+    IVaultControl.VaultAssets memory vAssets = IVaultControl(_vault).vAssets();
+
     uint256 bonusPerUser;
     uint256 collateralInPlayPerUser;
 
-    for (uint256 i = 0; i < _userAddrs.length; i += 2) {
-      if (_userAddrs[i] != address(0)) {
-        bonusPerUser = _vault.getLiquidationBonusFor(_usrsBals[i + 1], true);
+    for (uint256 i = 0; i < _addrs.length; i += 1) {
+      if (_addrs[i] != address(0)) {
+        bonusPerUser = IVault(_vault).getLiquidationBonusFor(_borrowBals[i], true);
 
         collateralInPlayPerUser = _getCollateralInPlay(
-          _vAssets.collateralAsset,
-          _vAssets.borrowAsset,
-          _usrsBals[i + 1] + bonusPerUser
+          vAssets.collateralAsset,
+          vAssets.borrowAsset,
+          _borrowBals[i] + bonusPerUser
         );
 
-        _f1155.burn(_userAddrs[i], _vAssets.collateralID, collateralInPlayPerUser);
+        IFujiERC1155(f1155).burn(_addrs[i], vAssets.borrowID, _borrowBals[i]);
+        IFujiERC1155(f1155).burn(_addrs[i], vAssets.collateralID, collateralInPlayPerUser);
+        emit Liquidate(_addrs[i], _vault, _borrowBals[i], _liquidator);
       }
     }
   }

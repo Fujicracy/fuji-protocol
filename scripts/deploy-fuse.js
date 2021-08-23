@@ -69,7 +69,7 @@ const deployContracts = async () => {
 };
 
 const main = async () => {
-  await setDeploymentsPath("core");
+  await setDeploymentsPath("fuse");
   await deployContracts();
 };
 

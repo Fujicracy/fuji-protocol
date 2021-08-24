@@ -83,7 +83,7 @@ contract Controller is Claimable {
     IVault(_vaultAddr).setActiveProvider(_newProvider);
   }
 
-  function setExecutors(address[] calldata _executors, bool _isExecutor) external {
+  function setExecutors(address[] calldata _executors, bool _isExecutor) external onlyOwner {
     for (uint256 i = 0; i < _executors.length; i++) {
       isExecutor[_executors[i]] = _isExecutor;
     }

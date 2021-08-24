@@ -13,9 +13,15 @@ import "./libraries/Errors.sol";
 
 contract Controller is Claimable {
   IFujiAdmin private _fujiAdmin;
+  mapping(address => bool) public isExecutor;
 
   modifier isValidVault(address _vaultAddr) {
     require(_fujiAdmin.validVault(_vaultAddr), "Invalid vault!");
+    _;
+  }
+
+  modifier onlyOwnerOrExecutor() {
+    require(msg.sender == owner() || isExecutor[msg.sender], "Not executor!");
     _;
   }
 
@@ -41,7 +47,7 @@ contract Controller is Claimable {
     uint256 _ratioA,
     uint256 _ratioB,
     uint8 _flashNum
-  ) external isValidVault(_vaultAddr) onlyOwner {
+  ) external isValidVault(_vaultAddr) onlyOwnerOrExecutor {
     IVault vault = IVault(_vaultAddr);
     IVaultControl.VaultAssets memory vAssets = IVaultControl(_vaultAddr).vAssets();
     vault.updateF1155Balances();
@@ -75,5 +81,11 @@ contract Controller is Claimable {
     Flasher(payable(_fujiAdmin.getFlasher())).initiateFlashloan(info, _flashNum);
 
     IVault(_vaultAddr).setActiveProvider(_newProvider);
+  }
+
+  function setExecutors(address[] calldata _executors, bool _isExecutor) external {
+    for (uint256 i = 0; i < _executors.length; i++) {
+      isExecutor[_executors[i]] = _isExecutor;
+    }
   }
 }

@@ -120,7 +120,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     IVault(_vault).paybackLiq{ value: _value }(int256(debtTotal));
 
     // Compute liquidator's bonus: bonusL
-    uint256 bonus = IVault(_vault).getLiquidationBonusFor(debtTotal, false);
+    uint256 bonus = IVault(_vault).getLiquidationBonusFor(debtTotal);
     // Compute how much collateral needs to be swapt
     uint256 collateralInPlay = _getCollateralInPlay(
       vAssets.collateralAsset,
@@ -221,7 +221,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     IVault(_vault).paybackLiq{ value: _value }(int256(_amount));
 
     // Compute liquidator's bonus: bonusFlashL
-    uint256 bonus = IVault(_vault).getLiquidationBonusFor(_amount, true);
+    uint256 bonus = IVault(_vault).getLiquidationBonusFor(_amount);
 
     // Compute how much collateral needs to be swapt for all liquidated users
     uint256 collateralInPlay = _getCollateralInPlay(
@@ -593,7 +593,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
 
     for (uint256 i = 0; i < _addrs.length; i += 1) {
       if (_addrs[i] != address(0)) {
-        bonusPerUser = IVault(_vault).getLiquidationBonusFor(_borrowBals[i], true);
+        bonusPerUser = IVault(_vault).getLiquidationBonusFor(_borrowBals[i]);
 
         collateralInPlayPerUser = _getCollateralInPlay(
           vAssets.collateralAsset,

@@ -478,12 +478,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
    * @dev Returns an amount to be paid as bonus for liquidation
    * @param _amount: Vault underlying type intended to be liquidated
    */
-  function getLiquidationBonusFor(uint256 _amount)
-    external
-    view
-    override
-    returns (uint256)
-  {
+  function getLiquidationBonusFor(uint256 _amount) external view override returns (uint256) {
     return (_amount * bonusLiqF.a) / bonusLiqF.b;
   }
 

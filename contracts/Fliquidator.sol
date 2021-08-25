@@ -135,13 +135,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     IVault(_vault).withdrawLiq(int256(collateralInPlay));
 
     // Swap Collateral
-    _swap(
-      vAssets.collateralAsset,
-      vAssets.borrowAsset,
-      debtTotal + bonus,
-      collateralInPlay,
-      true
-    );
+    _swap(vAssets.collateralAsset, vAssets.borrowAsset, debtTotal + bonus, collateralInPlay, true);
 
     // Transfer to Liquidator the debtBalance + bonus
     IERC20(vAssets.borrowAsset).univTransfer(payable(msg.sender), debtTotal + bonus);
@@ -336,7 +330,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     // Struct Instance to get Vault Asset IDs in f1155
     IVaultControl.VaultAssets memory vAssets = IVaultControl(_vault).vAssets();
 
-    uint256 fujiFee = _amount * flashCloseF.a / flashCloseF.b;
+    uint256 fujiFee = (_amount * flashCloseF.a) / flashCloseF.b;
 
     uint256 collateralInPlay = _getCollateralInPlay(
       vAssets.collateralAsset,
@@ -358,10 +352,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
       IVault(_vault).withdrawLiq(int256(userCollateral));
 
       // Send remaining collateral to user
-      IERC20(vAssets.collateralAsset).univTransfer(
-        _userAddr,
-        userCollateral - collateralInPlay
-      );
+      IERC20(vAssets.collateralAsset).univTransfer(_userAddr, userCollateral - collateralInPlay);
     } else {
       f1155.burn(_userAddr, vAssets.collateralID, collateralInPlay);
 

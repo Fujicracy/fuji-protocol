@@ -68,9 +68,9 @@ contract Fliquidator is Claimable, ReentrancyGuard {
   }
 
   constructor() {
-    // 1.013
-    flashCloseF.a = 1013;
-    flashCloseF.b = 1000;
+    // 0.01
+    flashCloseF.a = 1;
+    flashCloseF.b = 100;
   }
 
   receive() external payable {}
@@ -220,7 +220,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     uint256 _value = vAssets.borrowAsset == ETH ? _amount : 0;
     IVault(_vault).paybackLiq{ value: _value }(int256(_amount));
 
-    // Compute liquidator's bonus: bonusFlashL
+    // Compute liquidator's bonus
     uint256 bonus = IVault(_vault).getLiquidationBonusFor(_amount);
 
     // Compute how much collateral needs to be swapt for all liquidated users
@@ -289,11 +289,11 @@ contract Fliquidator is Claimable, ReentrancyGuard {
 
     // Get user  Balances
     uint256 userCollateral = f1155.balanceOf(msg.sender, vAssets.collateralID);
-    uint256 userDebtBalance = f1155.balanceOf(msg.sender, vAssets.borrowID);
+    uint256 userDebt = f1155.balanceOf(msg.sender, vAssets.borrowID);
 
-    require(userDebtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
+    require(userDebt > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
 
-    uint256 amount = _amount < 0 ? userDebtBalance : uint256(_amount);
+    uint256 amount = _amount < 0 ? userDebt : uint256(_amount);
 
     uint256 neededCollateral = IVault(_vault).getNeededCollateralFor(amount, false);
     require(userCollateral >= neededCollateral, Errors.VL_UNDERCOLLATERIZED_ERROR);
@@ -336,52 +336,52 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     // Struct Instance to get Vault Asset IDs in f1155
     IVaultControl.VaultAssets memory vAssets = IVaultControl(_vault).vAssets();
 
-    // Get user Collateral and Debt Balances
-    uint256 userCollateral = f1155.balanceOf(_userAddr, vAssets.collateralID);
-    uint256 userDebtBalance = f1155.balanceOf(_userAddr, vAssets.borrowID);
+    uint256 fujiFee = _amount * flashCloseF.a / flashCloseF.b;
 
-    // Get user Collateral + Flash Close Fee to close posisition, for _amount passed
-    uint256 userCollateralInPlay = (IVault(_vault).getNeededCollateralFor(
-      _amount + _flashloanFee,
-      false
-    ) * flashCloseF.a) / flashCloseF.b;
+    uint256 collateralInPlay = _getCollateralInPlay(
+      vAssets.collateralAsset,
+      vAssets.borrowAsset,
+      _amount + _flashloanFee + fujiFee
+    );
 
     // Repay BaseProtocol debt
     uint256 _value = vAssets.borrowAsset == ETH ? _amount : 0;
     IVault(_vault).paybackLiq{ value: _value }(int256(_amount));
 
     // Full close
-    if (_amount == userDebtBalance) {
+    if (_amount == f1155.balanceOf(_userAddr, vAssets.borrowID)) {
+      uint256 userCollateral = f1155.balanceOf(_userAddr, vAssets.collateralID);
+
       f1155.burn(_userAddr, vAssets.collateralID, userCollateral);
 
-      // Withdraw Full collateral
+      // Withdraw full collateral
       IVault(_vault).withdrawLiq(int256(userCollateral));
 
-      // Send unUsed Collateral to User
+      // Send remaining collateral to user
       IERC20(vAssets.collateralAsset).univTransfer(
         _userAddr,
-        userCollateral - userCollateralInPlay
+        userCollateral - collateralInPlay
       );
     } else {
-      f1155.burn(_userAddr, vAssets.collateralID, userCollateralInPlay);
+      f1155.burn(_userAddr, vAssets.collateralID, collateralInPlay);
 
-      // Withdraw Collateral in play Only
-      IVault(_vault).withdrawLiq(int256(userCollateralInPlay));
+      // Withdraw collateral in play only
+      IVault(_vault).withdrawLiq(int256(collateralInPlay));
     }
 
-    // Swap Collateral for underlying to repay Flashloan
-    uint256 remaining = _swap(
+    // Swap collateral for underlying to repay flashloan
+    _swap(
       vAssets.collateralAsset,
       vAssets.borrowAsset,
-      _amount + _flashloanFee,
-      userCollateralInPlay,
+      _amount + _flashloanFee + fujiFee,
+      collateralInPlay,
       false
     );
 
-    // Send FlashClose Fee to FujiTreasury
-    IERC20(vAssets.collateralAsset).univTransfer(_fujiAdmin.getTreasury(), remaining);
+    // Send flashClose fee to Fuji Treasury
+    IERC20(vAssets.borrowAsset).univTransfer(_fujiAdmin.getTreasury(), fujiFee);
 
-    // Send flasher the underlying to repay Flashloan
+    // Send flasher the underlying to repay flashloan
     IERC20(vAssets.borrowAsset).univTransfer(
       payable(_fujiAdmin.getFlasher()),
       _amount + _flashloanFee
@@ -390,7 +390,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     // Burn Debt f1155 tokens
     f1155.burn(_userAddr, vAssets.borrowID, _amount);
 
-    emit FlashClose(_userAddr, _vault, userDebtBalance);
+    emit FlashClose(_userAddr, _vault, _amount);
   }
 
   /**

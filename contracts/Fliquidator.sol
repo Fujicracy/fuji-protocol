@@ -128,6 +128,9 @@ contract Fliquidator is Claimable, ReentrancyGuard {
       debtTotal + bonus
     );
 
+    // Burn f1155
+    _burnMulti(addrs, borrowBals, _vault);
+
     // Withdraw collateral
     IVault(_vault).withdrawLiq(int256(collateralInPlay));
 
@@ -139,9 +142,6 @@ contract Fliquidator is Claimable, ReentrancyGuard {
       collateralInPlay,
       true
     );
-
-    // Burn f1155
-    _burnMulti(addrs, borrowBals, _vault);
 
     // Transfer to Liquidator the debtBalance + bonus
     IERC20(vAssets.borrowAsset).univTransfer(payable(msg.sender), debtTotal + bonus);
@@ -230,6 +230,9 @@ contract Fliquidator is Claimable, ReentrancyGuard {
       _amount + _flashloanFee + bonus
     );
 
+    // Burn f1155
+    _burnMulti(_userAddrs, _borrowBals, _vault);
+
     // Withdraw collateral
     IVault(_vault).withdrawLiq(int256(collateralInPlay));
 
@@ -240,9 +243,6 @@ contract Fliquidator is Claimable, ReentrancyGuard {
       collateralInPlay,
       true
     );
-
-    // Burn f1155
-    _burnMulti(_userAddrs, _borrowBals, _vault);
 
     // Send flasher the underlying to repay Flashloan
     IERC20(vAssets.borrowAsset).univTransfer(
@@ -575,9 +575,8 @@ contract Fliquidator is Claimable, ReentrancyGuard {
   }
 
   /**
-   * @dev Abstracted function to perform MultBatch Burn of Collateral in Batch Liquidation
+   * @dev Perform multi-batch burn of collateral
    * checking bonus paid to liquidator by each
-   * See "function executeFlashBatchLiquidation"
    */
   function _burnMulti(
     address[] memory _addrs,
@@ -611,9 +610,8 @@ contract Fliquidator is Claimable, ReentrancyGuard {
 
   /**
    * @dev Set Factors "a" and "b" for a Struct Factor flashcloseF
-   * For flashCloseF;  should be > 1, a/b
-   * @param _newFactorA: A number
-   * @param _newFactorB: A number
+   * @param _newFactorA: Nominator
+   * @param _newFactorB: Denominator
    */
   function setFlashCloseFee(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
     flashCloseF.a = _newFactorA;

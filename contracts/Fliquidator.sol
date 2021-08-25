@@ -250,8 +250,14 @@ contract Fliquidator is Claimable, ReentrancyGuard {
       _amount + _flashloanFee
     );
 
-    // Transfer Bonus bonusFlashL to liquidator, minus FlashloanFee convenience
-    IERC20(vAssets.borrowAsset).univTransfer(payable(_liquidator), bonus - _flashloanFee);
+    // Liquidator's bonus gets reduced by 20% as a protocol fee
+    uint256 fujiFee = bonus / 5;
+
+    // Transfer liquidator's bonus, minus fujiFee
+    IERC20(vAssets.borrowAsset).univTransfer(payable(_liquidator), bonus - fujiFee);
+
+    // Transfer fee to Fuji Treasury
+    IERC20(vAssets.borrowAsset).univTransfer(_fujiAdmin.getTreasury(), fujiFee);
 
     // Emit liquidation event for each liquidated user
     for (uint256 i = 0; i < _userAddrs.length; i += 1) {

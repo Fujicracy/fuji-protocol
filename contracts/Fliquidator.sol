@@ -623,6 +623,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
    * @param _newFujiAdmin: FujiAdmin Contract Address
    */
   function setFujiAdmin(address _newFujiAdmin) external isAuthorized {
+    require(_newFujiAdmin != address(0), Errors.VL_ZERO_ADDR);
     _fujiAdmin = IFujiAdmin(_newFujiAdmin);
   }
 
@@ -631,6 +632,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
    * @param _newSwapper: address of new swapper contract
    */
   function setSwapper(address _newSwapper) external isAuthorized {
+    require(_newSwapper != address(0), Errors.VL_ZERO_ADDR);
     swapper = IUniswapV2Router02(_newSwapper);
   }
 
@@ -639,6 +641,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
    * @param _newFujiOracle: address of new oracle contract
    */
   function setFujiOracle(address _newFujiOracle) external isAuthorized {
+    require(_newFujiOracle != address(0), Errors.VL_ZERO_ADDR);
     _oracle = IFujiOracle(_newFujiOracle);
   }
 }

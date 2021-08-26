@@ -31,7 +31,7 @@ const ASSETS = {
   },
 };
 
-const UNISWAP_ROUTER_ADDR = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
+const SUSHI_ROUTER_ADDR = "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F";
 
 let deploymentsPath = "core.deploy"; // by default
 
@@ -166,5 +166,5 @@ module.exports = {
   redeployIf,
   callIf,
   ASSETS,
-  UNISWAP_ROUTER_ADDR,
+  SUSHI_ROUTER_ADDR,
 };

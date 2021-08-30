@@ -403,7 +403,6 @@ task("send", "Send ETH")
       to,
       value: parseUnits(taskArgs.amount ? taskArgs.amount : "0", "ether").toHexString(),
       nonce: await fromSigner.getTransactionCount(),
-      gasPrice: parseUnits(taskArgs.gasPrice ? taskArgs.gasPrice : "1.001", "gwei").toHexString(),
       gasLimit: taskArgs.gasLimit ? taskArgs.gasLimit : 24000,
       chainId: network.config.chainId,
     };

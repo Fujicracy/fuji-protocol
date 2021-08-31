@@ -3,11 +3,7 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IFujiAdmin.sol";
-import "./interfaces/IVaultControl.sol";
 import "./interfaces/IHarvester.sol";
-import "./interfaces/compound/IComptroller.sol";
-import "./interfaces/aave/IAaveLiquidityMining.sol";
-import "./interfaces/aave/IAaveDataProvider.sol";
 
 contract VaultHarvester is IHarvester {
   address public fujiAdmin;

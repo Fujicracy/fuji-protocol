@@ -138,7 +138,7 @@ describe("Alpha", () => {
       await expect(collatNeededwFactor / 1).to.equal(computedcollatNeededwFactor);
     });
 
-    it.only("5.- harvesting COMP", async () => {
+    it("5.- harvesting COMP", async () => {
       const comptoken = await ethers.getContractAt(
         "IERC20",
         "0xc00e94Cb662C3520282E6f5717214004A7f26888"
@@ -171,7 +171,7 @@ describe("Alpha", () => {
       await expect(await comptoken.balanceOf(TREASURY_ADDR)).to.be.gt(0);
     });
 
-    it.only("6.- harvesting stkAave", async () => {
+    it("6.- harvesting stkAave", async () => {
       const stkAavetoken = await ethers.getContractAt(
         "IERC20",
         "0x4da27a545c0c5B758a6BA100e3a049001de870f5"

@@ -39,7 +39,7 @@ const deployContracts = async () => {
   const fuse8 = await deployProvider("ProviderFuse8");
   const fuse18 = await deployProvider("ProviderFuse18");
 
-  const vaultharvester = await deployVaultHarvester();
+  const vaultharvester = await deployVaultHarvester([fujiadmin]);
 
   const vaultethfei = await deployVault("VaultETHFEI", [
     fujiadmin,

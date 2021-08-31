@@ -37,7 +37,7 @@ const deployContracts = async () => {
   const ironBank = await deployProvider("ProviderIronBank");
 
   // Deploy Core Money Handling Contracts
-  const vaultharvester = await deployVaultHarvester();
+  const vaultharvester = await deployVaultHarvester([fujiadmin]);
 
   const vaultdai = await deployVault("VaultETHDAI", [
     fujiadmin,

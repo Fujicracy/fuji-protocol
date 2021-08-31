@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -547,11 +548,18 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   /**
    * @dev Harvests the Rewards from baseLayer Protocols
    * @param _farmProtocolNum: number per VaultHarvester Contract for specific farm
+   * @param _data: the additional data to be used for harvest
    */
-  function harvestRewards(uint256 _farmProtocolNum) external onlyOwner {
-    address tokenReturned = IVaultHarvester(_fujiAdmin.getVaultHarvester()).collectRewards(
-      _farmProtocolNum
+  function harvestRewards(uint256 _farmProtocolNum, bytes memory _data) external onlyOwner {
+    (address tokenReturned, IHarvester.Transaction memory transaction) = IHarvester(_fujiAdmin.getVaultHarvester()).getHarvestTransaction(
+      _farmProtocolNum,
+      _data
     );
+
+    // Claim rewards
+    (bool success, ) = transaction.to.call(transaction.data);
+    require(success, "failed to harvest rewards");
+
     uint256 tokenBal = IERC20(tokenReturned).balanceOf(address(this));
     require(tokenReturned != address(0) && tokenBal > 0, Errors.VL_HARVESTING_FAILED);
     IERC20(tokenReturned).univTransfer(payable(_fujiAdmin.getTreasury()), tokenBal);

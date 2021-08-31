@@ -91,7 +91,7 @@ const fixture = async ([wallet]) => {
   const ironbank = await deployContract(wallet, IronBank, []);
 
   // Step 4 Of Deploy Core Money Handling Contracts
-  const vaultharvester = await deployContract(wallet, VaultHarvester, []);
+  const vaultharvester = await deployContract(wallet, VaultHarvester, [fujiadmin.address]);
 
   const FujiVault = await ethers.getContractFactory("FujiVault");
   const vaultdai = await upgrades.deployProxy(FujiVault, [

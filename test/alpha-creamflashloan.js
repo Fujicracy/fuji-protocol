@@ -10,6 +10,7 @@ const TREASURY_ADDR = "0x9F5A10E45906Ef12497237cE10fB7AB9B850Ff86";
 
 const Fliquidator = require("../artifacts/contracts/Fliquidator.sol/Fliquidator.json");
 const VaultHarvester = require("../artifacts/contracts/Harvester.sol/VaultHarvester.json");
+const Swapper = require("../artifacts/contracts/Swapper.sol/Swapper.json");
 const Aave = require("../artifacts/contracts/providers/ProviderAave.sol/ProviderAave.json");
 const Compound = require("../artifacts/contracts/providers/ProviderCompound.sol/ProviderCompound.json");
 const Dydx = require("../artifacts/contracts/providers/ProviderDYDX.sol/ProviderDYDX.json");
@@ -61,7 +62,8 @@ const fixture = async ([wallet]) => {
   const dydx = await deployContract(wallet, Dydx, []);
 
   // Step 4 Of Deploy Core Money Handling Contracts
-  const vaultharvester = await deployContract(wallet, VaultHarvester, [fujiadmin.address]);
+  const vaultharvester = await deployContract(wallet, VaultHarvester, []);
+  const swapper = await deployContract(wallet, Swapper, []);
   const FujiVault = await ethers.getContractFactory("FujiVault");
   const vaultdai = await upgrades.deployProxy(FujiVault, [
     fujiadmin.address,
@@ -88,6 +90,7 @@ const fixture = async ([wallet]) => {
   await fujiadmin.setTreasury(TREASURY_ADDR);
   await fujiadmin.setController(controller.address);
   await fujiadmin.setVaultHarvester(vaultharvester.address);
+  await fujiadmin.setSwapper(swapper.address);
   await fliquidator.setFujiAdmin(fujiadmin.address);
   await fliquidator.setFujiOracle(oracle.address);
   await fliquidator.setSwapper(UNISWAP_ROUTER_ADDR);
@@ -124,6 +127,7 @@ const fixture = async ([wallet]) => {
     compound,
     dydx,
     vaultharvester,
+    swapper,
     vaultdai,
     vaultusdc,
     vaultusdt,

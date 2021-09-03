@@ -6,10 +6,12 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol";
 
 import "./abstracts/vault/VaultBaseUpgradeable.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IHarvester.sol";
+import "./interfaces/ISwapper.sol";
 import "./interfaces/IERC20Extended.sol";
 import "./interfaces/chainlink/AggregatorV3Interface.sol";
 import "./interfaces/IFujiAdmin.sol";
@@ -551,17 +553,38 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
    * @param _data: the additional data to be used for harvest
    */
   function harvestRewards(uint256 _farmProtocolNum, bytes memory _data) external onlyOwner {
-    (address tokenReturned, IHarvester.Transaction memory transaction) = IHarvester(_fujiAdmin.getVaultHarvester()).getHarvestTransaction(
+    (address tokenReturned, IHarvester.Transaction memory harvestTransaction) = IHarvester(_fujiAdmin.getVaultHarvester()).getHarvestTransaction(
       _farmProtocolNum,
       _data
     );
 
     // Claim rewards
-    (bool success, ) = transaction.to.call(transaction.data);
+    (bool success, ) = harvestTransaction.to.call(harvestTransaction.data);
     require(success, "failed to harvest rewards");
 
-    uint256 tokenBal = IERC20(tokenReturned).balanceOf(address(this));
+    uint256 tokenBal = IERC20(tokenReturned).univBalanceOf(address(this));
     require(tokenReturned != address(0) && tokenBal > 0, Errors.VL_HARVESTING_FAILED);
-    IERC20(tokenReturned).univTransfer(payable(_fujiAdmin.getTreasury()), tokenBal);
+
+    ISwapper.Transaction memory swapTransaction = ISwapper(_fujiAdmin.getSwapper()).getSwapTransaction(
+      tokenReturned,
+      vAssets.collateralAsset,
+      tokenBal
+    );
+
+    // Approve rewards
+    if (tokenReturned != ETH) {
+      IERC20(tokenReturned).univApprove(swapTransaction.to, tokenBal);
+    }
+
+    // Swap rewards -> collateralAsset
+    (success, ) = swapTransaction.to.call{value: swapTransaction.value}(swapTransaction.data);
+    require(success, "failed to swap rewards");
+
+    _deposit(IERC20(vAssets.collateralAsset).univBalanceOf(address(this)), address(activeProvider));
+
+    updateF1155Balances();
+
+    // Todo
+    // IERC20(tokenReturned).univTransfer(payable(_fujiAdmin.getTreasury()), tokenBal);
   }
 }

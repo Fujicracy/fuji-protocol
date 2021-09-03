@@ -14,6 +14,7 @@ describe("Alpha", () => {
   let vaultdai;
   let vaultusdc;
   let vaultusdt;
+  let f1155;
 
   let users;
 
@@ -39,6 +40,7 @@ describe("Alpha", () => {
     vaultdai = theFixture.vaultdai;
     vaultusdc = theFixture.vaultusdc;
     vaultusdt = theFixture.vaultusdt;
+    f1155 = theFixture.f1155;
   });
 
   describe("Alpha Vaults Extended Functionalities", () => {
@@ -165,10 +167,18 @@ describe("Alpha", () => {
         await advanceblocks(50);
       }
 
+      const vAssetStruct = await thevault.vAssets();
+      const collateralBalanceBefore = await f1155.balanceOf(
+        userX.address,
+        vAssetStruct.collateralID
+      );
+
       // Pass 0 for COMP farming
       await thevault.connect(users[0]).harvestRewards(0, "0x");
 
-      await expect(await comptoken.balanceOf(TREASURY_ADDR)).to.be.gt(0);
+      expect(await f1155.balanceOf(userX.address, vAssetStruct.collateralID)).to.gt(
+        collateralBalanceBefore
+      );
     });
 
     it("6.- harvesting stkAave", async () => {
@@ -198,6 +208,12 @@ describe("Alpha", () => {
         await advanceblocks(50);
       }
 
+      const vAssetStruct = await thevault.vAssets();
+      const collateralBalanceBefore = await f1155.balanceOf(
+        userX.address,
+        vAssetStruct.collateralID
+      );
+
       // Pass 1 for stkAave farming
       await thevault.connect(users[0]).harvestRewards(
         1,
@@ -217,7 +233,14 @@ describe("Alpha", () => {
         )
       );
 
-      await expect(await stkAavetoken.balanceOf(TREASURY_ADDR)).to.be.gt(0);
+      console.log(
+        collateralBalanceBefore.toString(),
+        (await f1155.balanceOf(userX.address, vAssetStruct.collateralID)).toString()
+      );
+
+      expect(await f1155.balanceOf(userX.address, vAssetStruct.collateralID)).to.gt(
+        collateralBalanceBefore
+      );
     });
   });
 });

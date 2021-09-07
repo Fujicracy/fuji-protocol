@@ -14,7 +14,7 @@ const { updateFujiAdmin } = require("./tasks/updateFujiAdmin");
 const { updateFujiERC1155 } = require("./tasks/updateFujiERC1155");
 const { updateFujiFliquidator } = require("./tasks/updateFujiFliquidator");
 const { updateVault } = require("./tasks/updateVault");
-const { setDeploymentsPath, ASSETS, UNISWAP_ROUTER_ADDR } = require("./utils");
+const { setDeploymentsPath, ASSETS, SUSHI_ROUTER_ADDR } = require("./utils");
 
 const deployContracts = async () => {
   console.log("\n\n 📡 Deploying...\n");
@@ -69,7 +69,7 @@ const deployContracts = async () => {
     vaultharvester,
     swapper,
   });
-  await updateFujiFliquidator(fliquidator, { fujiadmin, oracle, swapper: UNISWAP_ROUTER_ADDR });
+  await updateFujiFliquidator(fliquidator, { fujiadmin, oracle, swapper: SUSHI_ROUTER_ADDR });
   await updateFlasher(flasher, fujiadmin);
   await updateController(controller, fujiadmin);
   await updateFujiERC1155(f1155, [vaultdai, vaultusdc, vaultusdt, fliquidator]);

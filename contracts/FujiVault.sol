@@ -41,7 +41,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   // Bonus Factor for Flash Liquidation
   Factor public bonusFlashLiqF;
 
-  // Bonus Factor for normal Liquidation
+  // Bonus factor for liquidation
   Factor public bonusLiqF;
 
   //State variables
@@ -118,10 +118,6 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     // 1.269
     collatF.a = 80;
     collatF.b = 63;
-
-    // 0.043
-    bonusFlashLiqF.a = 43;
-    bonusFlashLiqF.b = 1000;
 
     // 0.05
     bonusLiqF.a = 1;
@@ -315,8 +311,6 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     // Delegate Call Payback to current provider
     _payback(amountToPayback, address(activeProvider));
 
-    //TODO: Transfer corresponding Debt Amount to Fuji Treasury
-
     // Debt Management
     IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.borrowID, amountToPayback);
 
@@ -418,7 +412,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
    * For collatF; Sets Collateral Factor of Vault, should be > 1, a/b
    * @param _newFactorA: Nominator
    * @param _newFactorB: Denominator
-   * @param _type: safetyF or collatF or bonusFlashLiqF or bonusLiqF
+   * @param _type: safetyF or collatF or bonusLiqF
    */
   function setFactor(
     uint64 _newFactorA,
@@ -432,11 +426,8 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     } else if (typeHash == keccak256(abi.encode("safetyF"))) {
       safetyF.a = _newFactorA;
       safetyF.b = _newFactorB;
-    } else if (typeHash == keccak256(abi.encode("bonusFlashLiqF"))) {
-      bonusFlashLiqF.a = _newFactorA;
-      bonusFlashLiqF.b = _newFactorB;
     } else if (typeHash == keccak256(abi.encode("bonusLiqF"))) {
-      safetyF.a = _newFactorA;
+      bonusLiqF.a = _newFactorA;
       bonusLiqF.b = _newFactorB;
     }
   }
@@ -489,21 +480,9 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   /**
    * @dev Returns an amount to be paid as bonus for liquidation
    * @param _amount: Vault underlying type intended to be liquidated
-   * @param _flash: Flash or classic type of liquidation, bonus differs
    */
-  function getLiquidationBonusFor(uint256 _amount, bool _flash)
-    external
-    view
-    override
-    returns (uint256)
-  {
-    if (_flash) {
-      // Bonus Factors for Flash Liquidation
-      return (_amount * bonusFlashLiqF.a) / bonusFlashLiqF.b;
-    } else {
-      //Bonus Factors for Normal Liquidation
-      return (_amount * bonusLiqF.a) / bonusLiqF.b;
-    }
+  function getLiquidationBonusFor(uint256 _amount) external view override returns (uint256) {
+    return (_amount * bonusLiqF.a) / bonusLiqF.b;
   }
 
   /**

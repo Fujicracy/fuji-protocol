@@ -2,7 +2,7 @@ const { ethers, waffle, upgrades } = require("hardhat");
 
 const { deployContract } = waffle;
 
-const UNISWAP_ROUTER_ADDR = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
+const SUSHI_ROUTER_ADDR = "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F";
 const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 const TREASURY_ADDR = "0x9F5A10E45906Ef12497237cE10fB7AB9B850Ff86";
 const AWETH_ADDR = "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e";
@@ -148,7 +148,7 @@ const fixture = async ([wallet]) => {
   await fujiadmin.setSwapper(swapper.address);
   await fliquidator.setFujiAdmin(fujiadmin.address);
   await fliquidator.setFujiOracle(oracle.address);
-  await fliquidator.setSwapper(UNISWAP_ROUTER_ADDR);
+  await fliquidator.setSwapper(SUSHI_ROUTER_ADDR);
   await flasher.setFujiAdmin(fujiadmin.address);
   await controller.setFujiAdmin(fujiadmin.address);
   await f1155.setPermit(fliquidator.address, true);
@@ -270,7 +270,7 @@ module.exports = {
   ZERO_ADDR,
   ASSETS,
   TREASURY_ADDR,
-  UNISWAP_ROUTER_ADDR,
+  SUSHI_ROUTER_ADDR,
   evmSnapshot,
   evmRevert,
 };

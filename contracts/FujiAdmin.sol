@@ -13,9 +13,10 @@ contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
   address payable private _ftreasury;
   address private _controller;
   address private _vaultHarvester;
-  address private _swapper;
 
   mapping(address => bool) public override validVault;
+
+  address private _swapper;
 
   function initialize() external initializer {
     __Ownable_init();

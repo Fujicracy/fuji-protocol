@@ -8,5 +8,7 @@ interface IHarvester {
     bytes data;
   }
 
-  function getHarvestTransaction(uint256 _farmProtocolNum, bytes memory _data) external returns (address claimedToken, Transaction memory transaction);
+  function getHarvestTransaction(uint256 _farmProtocolNum, bytes memory _data)
+    external
+    returns (address claimedToken, Transaction memory transaction);
 }

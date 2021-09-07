@@ -11,7 +11,7 @@ import "./interfaces/ISwapper.sol";
 contract Swapper is ISwapper {
   address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
   address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-  address public constant UNISWAP_V2_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
+  address public constant SUSHI_ROUTER_ADDR = 0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F;
 
   /**
    * @dev Called by the Vault to harvest farmed tokens at baselayer Protocols
@@ -26,17 +26,12 @@ contract Swapper is ISwapper {
     if (assetFrom == ETH && assetTo == WETH) {
       transaction.to = WETH;
       transaction.value = amount;
-      transaction.data = abi.encodeWithSelector(
-        IWETH.deposit.selector
-      );
+      transaction.data = abi.encodeWithSelector(IWETH.deposit.selector);
     } else if (assetFrom == WETH && assetTo == ETH) {
       transaction.to = WETH;
-      transaction.data = abi.encodeWithSelector(
-        IWETH.withdraw.selector,
-        amount
-      );
+      transaction.data = abi.encodeWithSelector(IWETH.withdraw.selector, amount);
     } else if (assetFrom == ETH) {
-      transaction.to = UNISWAP_V2_ROUTER;
+      transaction.to = SUSHI_ROUTER_ADDR;
       address[] memory path = new address[](2);
       path[0] = WETH;
       path[1] = assetTo;
@@ -48,8 +43,8 @@ contract Swapper is ISwapper {
         msg.sender,
         type(uint256).max
       );
-    } else if(assetTo == ETH) {
-      transaction.to = UNISWAP_V2_ROUTER;
+    } else if (assetTo == ETH) {
+      transaction.to = SUSHI_ROUTER_ADDR;
       address[] memory path = new address[](2);
       path[0] = assetFrom;
       path[1] = WETH;
@@ -62,7 +57,7 @@ contract Swapper is ISwapper {
         type(uint256).max
       );
     } else if (assetFrom == WETH || assetTo == WETH) {
-      transaction.to = UNISWAP_V2_ROUTER;
+      transaction.to = SUSHI_ROUTER_ADDR;
       address[] memory path = new address[](2);
       path[0] = assetFrom;
       path[1] = assetTo;
@@ -75,7 +70,7 @@ contract Swapper is ISwapper {
         type(uint256).max
       );
     } else {
-      transaction.to = UNISWAP_V2_ROUTER;
+      transaction.to = SUSHI_ROUTER_ADDR;
       address[] memory path = new address[](3);
       path[0] = assetFrom;
       path[1] = WETH;

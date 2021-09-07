@@ -9,5 +9,9 @@ interface ISwapper {
     uint256 value;
   }
 
-  function getSwapTransaction(address assetFrom, address assetTo, uint256 amount) external returns (Transaction memory transaction);
+  function getSwapTransaction(
+    address assetFrom,
+    address assetTo,
+    uint256 amount
+  ) external returns (Transaction memory transaction);
 }

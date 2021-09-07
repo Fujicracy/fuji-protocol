@@ -10,7 +10,12 @@ contract VaultHarvester is IHarvester {
    * @dev Called by the Vault to harvest farmed tokens at baselayer Protocols
    * @param _farmProtocolNum: Number assigned to Protocol for farming
    */
-  function getHarvestTransaction(uint256 _farmProtocolNum, bytes memory _data) override external view returns (address claimedToken, Transaction memory transaction) {
+  function getHarvestTransaction(uint256 _farmProtocolNum, bytes memory _data)
+    external
+    view
+    override
+    returns (address claimedToken, Transaction memory transaction)
+  {
     if (_farmProtocolNum == 0) {
       transaction.to = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
       transaction.data = abi.encodeWithSelector(

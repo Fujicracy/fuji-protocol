@@ -2,7 +2,14 @@ const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { createFixtureLoader } = require("ethereum-waffle");
 
-const { fixture, evmSnapshot, evmRevert, advanceblocks, TREASURY_ADDR } = require("./utils-alpha");
+const {
+  fixture,
+  evmSnapshot,
+  evmRevert,
+  advanceblocks,
+  TREASURY_ADDR,
+  timeTravel,
+} = require("./utils-alpha");
 
 // use(solidity);
 
@@ -182,11 +189,6 @@ describe("Alpha", () => {
     });
 
     it("6.- harvesting stkAave", async () => {
-      const stkAavetoken = await ethers.getContractAt(
-        "IERC20",
-        "0x4da27a545c0c5B758a6BA100e3a049001de870f5"
-      );
-
       // Set up variables
       const thevault = vaultdai;
       const userX = users[12];
@@ -218,8 +220,9 @@ describe("Alpha", () => {
       await thevault.connect(users[0]).harvestRewards(
         1,
         ethers.utils.defaultAbiCoder.encode(
-          ["address[]"],
+          ["uint256", "address[]"],
           [
+            0,
             [
               "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e", //aWETH
               "0xF63B34710400CAd3e044cFfDcAb00a0f32E33eCf", //variableDebtWETH
@@ -232,6 +235,16 @@ describe("Alpha", () => {
           ]
         )
       );
+
+      await thevault
+        .connect(users[0])
+        .harvestRewards(1, ethers.utils.defaultAbiCoder.encode(["uint256"], [1]));
+
+      await timeTravel(864000 + 86400); // pass 11 days
+
+      await thevault
+        .connect(users[0])
+        .harvestRewards(1, ethers.utils.defaultAbiCoder.encode(["uint256"], [2]));
 
       console.log(
         collateralBalanceBefore.toString(),

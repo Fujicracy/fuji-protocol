@@ -540,23 +540,25 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     (bool success, ) = harvestTransaction.to.call(harvestTransaction.data);
     require(success, "failed to harvest rewards");
 
-    uint256 tokenBal = IERC20(tokenReturned).univBalanceOf(address(this));
-    require(tokenReturned != address(0) && tokenBal > 0, Errors.VL_HARVESTING_FAILED);
+    if (tokenReturned != address(0)) {
+      uint256 tokenBal = IERC20(tokenReturned).univBalanceOf(address(this));
+      require(tokenReturned != address(0) && tokenBal > 0, Errors.VL_HARVESTING_FAILED);
 
-    ISwapper.Transaction memory swapTransaction = ISwapper(_fujiAdmin.getSwapper())
-    .getSwapTransaction(tokenReturned, vAssets.collateralAsset, tokenBal);
+      ISwapper.Transaction memory swapTransaction = ISwapper(_fujiAdmin.getSwapper())
+      .getSwapTransaction(tokenReturned, vAssets.collateralAsset, tokenBal);
 
-    // Approve rewards
-    if (tokenReturned != ETH) {
-      IERC20(tokenReturned).univApprove(swapTransaction.to, tokenBal);
+      // Approve rewards
+      if (tokenReturned != ETH) {
+        IERC20(tokenReturned).univApprove(swapTransaction.to, tokenBal);
+      }
+
+      // Swap rewards -> collateralAsset
+      (success, ) = swapTransaction.to.call{ value: swapTransaction.value }(swapTransaction.data);
+      require(success, "failed to swap rewards");
+
+      _deposit(IERC20(vAssets.collateralAsset).univBalanceOf(address(this)), address(activeProvider));
+
+      updateF1155Balances();
     }
-
-    // Swap rewards -> collateralAsset
-    (success, ) = swapTransaction.to.call{ value: swapTransaction.value }(swapTransaction.data);
-    require(success, "failed to swap rewards");
-
-    _deposit(IERC20(vAssets.collateralAsset).univBalanceOf(address(this)), address(activeProvider));
-
-    updateF1155Balances();
   }
 }

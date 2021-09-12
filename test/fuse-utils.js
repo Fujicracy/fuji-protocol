@@ -2,7 +2,7 @@ const { ethers, upgrades } = require("hardhat");
 
 const { getContractAt, getContractFactory } = ethers;
 
-const UNISWAP_ROUTER_ADDR = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
+const SUSHI_ROUTER_ADDR = "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F";
 const TREASURY_ADDR = "0x9F5A10E45906Ef12497237cE10fB7AB9B850Ff86";
 const ASSETS = {
   DAI: {
@@ -73,7 +73,7 @@ const fixture = async ([wallet]) => {
   for (const asset in ASSETS) {
     tokens[`${ASSETS[asset].name}`] = await getContractAt("IERC20", ASSETS[asset].address);
   }
-  const swapper = await getContractAt("IUniswapV2Router02", UNISWAP_ROUTER_ADDR);
+  const swapper = await getContractAt("IUniswapV2Router02", SUSHI_ROUTER_ADDR);
 
   // Step 1: Base Contracts
   const FujiAdmin = await getContractFactory("FujiAdmin");
@@ -133,7 +133,7 @@ const fixture = async ([wallet]) => {
   await fujiadmin.setTreasury(TREASURY_ADDR);
   await fujiadmin.setController(controller.address);
   await fliquidator.setFujiAdmin(fujiadmin.address);
-  await fliquidator.setSwapper(UNISWAP_ROUTER_ADDR);
+  await fliquidator.setSwapper(SUSHI_ROUTER_ADDR);
   await flasher.setFujiAdmin(fujiadmin.address);
   await controller.setFujiAdmin(fujiadmin.address);
   await f1155.setPermit(fliquidator.address, true);

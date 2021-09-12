@@ -32,6 +32,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
   IFujiMappings private immutable _crMappings =
     IFujiMappings(0x03BD587Fe413D59A20F32Fc75f31bDE1dD1CD6c9);
 
+  // need to be payable because of the conversion ETH <> WETH
   receive() external payable {}
 
   modifier isAuthorized() {

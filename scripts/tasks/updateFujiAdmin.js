@@ -3,7 +3,7 @@ const { callIf } = require("../utils");
 
 const updateFujiAdmin = async (fujiadmin, params) => {
   const fujiadminContract = await ethers.getContractAt("FujiAdmin", fujiadmin);
-  const { flasher, fliquidator, treasury, controller, vaultharvester } = params;
+  const { flasher, fliquidator, treasury, controller, vaultharvester, swapper } = params;
 
   if (flasher) {
     await callIf(
@@ -51,6 +51,16 @@ const updateFujiAdmin = async (fujiadmin, params) => {
       async () => (await fujiadminContract.getVaultHarvester()) !== vaultharvester,
       async () => {
         await fujiadminContract.setVaultHarvester(vaultharvester);
+      }
+    );
+  }
+
+  if (swapper) {
+    await callIf(
+      "setVaultHarvester",
+      async () => (await fujiadminContract.getSwapper()) !== swapper,
+      async () => {
+        await fujiadminContract.setSwapper(swapper);
       }
     );
   }

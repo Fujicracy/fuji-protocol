@@ -7,6 +7,7 @@ const { deployFujiAdmin } = require("./tasks/deployFujiAdmin");
 const { deployFujiERC1155 } = require("./tasks/deployFujiERC1155");
 const { deployFujiOracle } = require("./tasks/deployFujiOracle");
 const { deployProvider } = require("./tasks/deployProvider");
+const { deploySwapper } = require("./tasks/deploySwapper");
 const { deployVault } = require("./tasks/deployVault");
 const { deployVaultHarvester } = require("./tasks/deployVaultHarvester");
 const { updateController } = require("./tasks/updateController");
@@ -40,6 +41,7 @@ const deployContracts = async () => {
   const fuse18 = await deployProvider("ProviderFuse18");
 
   const vaultharvester = await deployVaultHarvester();
+  const swapper = await deploySwapper();
 
   const vaultethfei = await deployVault("VaultETHFEI", [
     fujiadmin,
@@ -55,7 +57,14 @@ const deployContracts = async () => {
   ]);
 
   // General Plug-ins and Set-up Transactions
-  await updateFujiAdmin(fujiadmin, { flasher, fliquidator, treasury, controller, vaultharvester });
+  await updateFujiAdmin(fujiadmin, {
+    flasher,
+    fliquidator,
+    treasury,
+    controller,
+    vaultharvester,
+    swapper,
+  });
   await updateFujiFliquidator(fliquidator, { fujiadmin, oracle, swapper: SUSHI_ROUTER_ADDR });
   await updateFlasher(flasher, fujiadmin);
   await updateController(controller, fujiadmin);

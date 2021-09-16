@@ -2,7 +2,14 @@ const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { createFixtureLoader } = require("ethereum-waffle");
 
-const { fixture, evmSnapshot, evmRevert, advanceblocks, TREASURY_ADDR } = require("./utils-alpha");
+const {
+  fixture,
+  evmSnapshot,
+  evmRevert,
+  advanceblocks,
+  TREASURY_ADDR,
+  timeTravel,
+} = require("./utils-alpha");
 
 // use(solidity);
 
@@ -14,6 +21,7 @@ describe("Alpha", () => {
   let vaultdai;
   let vaultusdc;
   let vaultusdt;
+  let f1155;
 
   let users;
 
@@ -39,6 +47,7 @@ describe("Alpha", () => {
     vaultdai = theFixture.vaultdai;
     vaultusdc = theFixture.vaultusdc;
     vaultusdt = theFixture.vaultusdt;
+    f1155 = theFixture.f1155;
   });
 
   describe("Alpha Vaults Extended Functionalities", () => {
@@ -165,18 +174,21 @@ describe("Alpha", () => {
         await advanceblocks(50);
       }
 
-      // Pass 0 for COMP farming
-      await thevault.connect(users[0]).harvestRewards(0);
+      const vAssetStruct = await thevault.vAssets();
+      const collateralBalanceBefore = await f1155.balanceOf(
+        userX.address,
+        vAssetStruct.collateralID
+      );
 
-      await expect(await comptoken.balanceOf(TREASURY_ADDR)).to.be.gt(0);
+      // Pass 0 for COMP farming
+      await thevault.connect(users[0]).harvestRewards(0, "0x");
+
+      expect(await f1155.balanceOf(userX.address, vAssetStruct.collateralID)).to.gt(
+        collateralBalanceBefore
+      );
     });
 
     it("6.- harvesting stkAave", async () => {
-      const stkAavetoken = await ethers.getContractAt(
-        "IERC20",
-        "0x4da27a545c0c5B758a6BA100e3a049001de870f5"
-      );
-
       // Set up variables
       const thevault = vaultdai;
       const userX = users[12];
@@ -198,10 +210,50 @@ describe("Alpha", () => {
         await advanceblocks(50);
       }
 
-      // Pass 1 for stkAave farming
-      await thevault.connect(users[0]).harvestRewards(1);
+      const vAssetStruct = await thevault.vAssets();
+      const collateralBalanceBefore = await f1155.balanceOf(
+        userX.address,
+        vAssetStruct.collateralID
+      );
 
-      await expect(await stkAavetoken.balanceOf(TREASURY_ADDR)).to.be.gt(0);
+      // Pass 1 for stkAave farming
+      await thevault.connect(users[0]).harvestRewards(
+        1,
+        ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "address[]"],
+          [
+            0,
+            [
+              "0x030bA81f1c18d280636F32af80b9AAd02Cf0854e", //aWETH
+              "0xF63B34710400CAd3e044cFfDcAb00a0f32E33eCf", //variableDebtWETH
+              "0x6C3c78838c761c6Ac7bE9F59fe808ea2A6E4379d", //variableDebtDAI
+              "0x619beb58998eD2278e08620f97007e1116D5D25b", //variableDebtUSDC
+              "0x531842cEbbdD378f8ee36D171d6cC9C4fcf475Ec", //variableDebtUSDT
+              "0x9ff58f4fFB29fA2266Ab25e75e2A8b3503311656", //awBTC
+              "0x9c39809Dec7F95F5e0713634a4D0701329B3b4d2", //variableDebtwBTC
+            ],
+          ]
+        )
+      );
+
+      await thevault
+        .connect(users[0])
+        .harvestRewards(1, ethers.utils.defaultAbiCoder.encode(["uint256"], [1]));
+
+      await timeTravel(864000 + 86400); // pass 11 days
+
+      await thevault
+        .connect(users[0])
+        .harvestRewards(1, ethers.utils.defaultAbiCoder.encode(["uint256"], [2]));
+
+      console.log(
+        collateralBalanceBefore.toString(),
+        (await f1155.balanceOf(userX.address, vAssetStruct.collateralID)).toString()
+      );
+
+      expect(await f1155.balanceOf(userX.address, vAssetStruct.collateralID)).to.gt(
+        collateralBalanceBefore
+      );
     });
   });
 });

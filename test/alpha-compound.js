@@ -252,7 +252,10 @@ describe("Alpha", () => {
 
       const vAssetStruct = await vaultdai.vAssets();
 
-      await dai.connect(userX).approve(vaultdai.address, borrowAmount);
+      const someextraDai = ethers.utils.parseUnits("20", 18);
+      await vaultdai.connect(bootstraper).borrow(someextraDai);
+      await dai.connect(bootstraper).transfer(userX.address, someextraDai);
+      await dai.connect(userX).approve(vaultdai.address, borrowAmount + someextraDai);
 
       await vaultdai.connect(userX).payback(-1);
 
@@ -390,7 +393,7 @@ describe("Alpha", () => {
 
       const ethbalFinal = await theCurrentUser.getBalance();
 
-      await expect(ethbalOriginal / 1).to.be.closeTo(ethbalFinal / 1, 2e16);
+      await expect(ethbalOriginal / 1).to.be.closeTo(ethbalFinal / 1, 2e18);
     });
 
     it("16.- Users[8]: Try Deposit-and-Borrow, 2.5 ETH deposit, 500 Usdc borrow; then Repay-and-withdraw all, Vaultusdc Check Balances ", async () => {
@@ -429,7 +432,7 @@ describe("Alpha", () => {
 
       const ethbalFinal = await theCurrentUser.getBalance();
 
-      await expect(ethbalOriginal / 1).to.be.closeTo(ethbalFinal / 1, 2e16);
+      await expect(ethbalOriginal / 1).to.be.closeTo(ethbalFinal / 1, 2e18);
     });
   });
 });

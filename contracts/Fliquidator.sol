@@ -119,7 +119,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
 
     // Repay BaseProtocol debt
     uint256 _value = vAssets.borrowAsset == ETH ? debtTotal : 0;
-    IVault(_vault).paybackLiq{ value: _value }(int256(debtTotal));
+    IVault(_vault).paybackLiq{ value: _value }(addrs, debtTotal);
 
     // Compute liquidator's bonus: bonusL
     uint256 bonus = IVault(_vault).getLiquidationBonusFor(debtTotal);
@@ -216,7 +216,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
 
     // Repay BaseProtocol debt to release collateral
     uint256 _value = vAssets.borrowAsset == ETH ? _amount : 0;
-    IVault(_vault).paybackLiq{ value: _value }(int256(_amount));
+    IVault(_vault).paybackLiq{ value: _value }(_addrs, _amount);
 
     // Compute liquidator's bonus
     uint256 bonus = IVault(_vault).getLiquidationBonusFor(_amount);
@@ -287,11 +287,11 @@ contract Fliquidator is Claimable, ReentrancyGuard {
 
     // Get user  Balances
     uint256 userCollateral = f1155.balanceOf(msg.sender, vAssets.collateralID);
-    uint256 userDebt = f1155.balanceOf(msg.sender, vAssets.borrowID);
+    uint256 debtTotal = IVault(_vault).userBorrowBalance(msg.sender);
 
-    require(userDebt > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
+    require(debtTotal > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
 
-    uint256 amount = _amount < 0 ? userDebt : uint256(_amount);
+    uint256 amount = _amount < 0 ? debtTotal : uint256(_amount);
 
     uint256 neededCollateral = IVault(_vault).getNeededCollateralFor(amount, false);
     require(userCollateral >= neededCollateral, Errors.VL_UNDERCOLLATERIZED_ERROR);
@@ -344,7 +344,9 @@ contract Fliquidator is Claimable, ReentrancyGuard {
 
     // Repay BaseProtocol debt
     uint256 _value = vAssets.borrowAsset == ETH ? _amount : 0;
-    IVault(_vault).paybackLiq{ value: _value }(int256(_amount));
+    address[] memory _addrs = new address[](1);
+    _addrs[0] = _userAddr;
+    IVault(_vault).paybackLiq{ value: _value }(_addrs, _amount);
 
     // Full close
     if (_amount == f1155.balanceOf(_userAddr, vAssets.borrowID)) {
@@ -561,8 +563,8 @@ contract Fliquidator is Claimable, ReentrancyGuard {
       // Check if User is liquidatable
       if (collateralBals[i] < neededCollateral) {
         // If true, add User debt balance to the total balance to be liquidated
-        debtTotal += borrowBals[i];
         addrs[i] = _userAddrs[i];
+        debtTotal += borrowBals[i] + IVault(_vault).userProtocolFee(addrs[i]);
       } else {
         // set user that is not liquidatable to Zero Address
         addrs[i] = address(0);

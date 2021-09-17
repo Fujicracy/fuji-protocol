@@ -28,6 +28,9 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   // AssetId => Liquidity index for asset ID
   mapping(uint256 => uint256) public indexes;
 
+  // Timestamp to be used for fee calculation
+  mapping(uint256 => uint256) private timestamps;
+
   function initialize() external initializer {
     __ERC165_init();
     __Context_init();

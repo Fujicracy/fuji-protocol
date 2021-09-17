@@ -26,7 +26,8 @@ contract VaultHarvester is IHarvester {
     } else if (_farmProtocolNum == 1) {
       uint256 harvestType = abi.decode(_data, (uint256));
 
-      if (harvestType == 0) { // claim
+      if (harvestType == 0) {
+        // claim
         (, address[] memory assets) = abi.decode(_data, (uint256, address[]));
         transaction.to = 0xd784927Ff2f95ba542BfC824c8a8a98F3495f6b5;
         transaction.data = abi.encodeWithSelector(
@@ -35,12 +36,12 @@ contract VaultHarvester is IHarvester {
           type(uint256).max,
           msg.sender
         );
-      } else if (harvestType == 1) { // 
+      } else if (harvestType == 1) {
+        //
         transaction.to = 0x4da27a545c0c5B758a6BA100e3a049001de870f5;
-        transaction.data = abi.encodeWithSelector(
-          bytes4(keccak256("cooldown()"))
-        );
-      } else if (harvestType == 2) { // 
+        transaction.data = abi.encodeWithSelector(bytes4(keccak256("cooldown()")));
+      } else if (harvestType == 2) {
+        //
         transaction.to = 0x4da27a545c0c5B758a6BA100e3a049001de870f5;
         transaction.data = abi.encodeWithSelector(
           bytes4(keccak256("redeem(address,uint256)")),

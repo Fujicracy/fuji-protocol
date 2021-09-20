@@ -290,7 +290,7 @@ describe("Alpha", () => {
       await expect(goodUser1155bal1).to.be.gt(0);
     });
 
-    it("3.- Full Flashclose User, vaultDai with dydx", async () => {
+    it.only("3.- Full Flashclose User, vaultDai with dydx", async () => {
       const theVault = vaultdai;
       const vAssetStruct = await theVault.vAssets();
       const user = users[6];
@@ -305,7 +305,7 @@ describe("Alpha", () => {
         .depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount });
 
       console.log("2. User calls flash close");
-      await fliquidator.connect(user).flashClose(-1, theVault.address, 2);
+      await fliquidator.connect(user).flashClose(-1, theVault.address, 1);
 
       const user1155balCollat = await f1155.balanceOf(user.address, vAssetStruct.collateralID);
       const user1155balDebt = await f1155.balanceOf(user.address, vAssetStruct.borrowID);
@@ -488,7 +488,7 @@ describe("Alpha", () => {
         (activeProvider === aave || activeProvider === compound) &&
         (asset === dai || asset === usdc)
       ) {
-        flashLoanProvider = 2;
+        flashLoanProvider = 1;
       } else {
         flashLoanProvider = 0;
       }
@@ -567,7 +567,7 @@ describe("Alpha", () => {
         (activeProvider === aave || activeProvider === compound) &&
         (asset === dai || asset === usdc)
       ) {
-        flashLoanProvider = 2;
+        flashLoanProvider = 1;
       } else {
         flashLoanProvider = 0;
       }
@@ -679,7 +679,7 @@ describe("Alpha", () => {
       await expect(carelessUser1155bal1).to.be.eq(0);
     });
 
-    it("10.- Full Flashclose User, vaultdaieth with dydx", async () => {
+    it.only("10.- Full Flashclose User, vaultdaieth with dydx", async () => {
       const theVault = vaultdaieth;
       const asset = dai;
       const vAssetStruct = await theVault.vAssets();

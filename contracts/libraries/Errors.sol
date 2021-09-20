@@ -21,7 +21,7 @@ library Errors {
   string public constant VL_INVALID_WITHDRAW_AMOUNT = "104"; //Withdraw amount exceeds provided collateral, or falls undercollaterized
   string public constant VL_INVALID_BORROW_AMOUNT = "105"; //Borrow amount does not meet collaterization
   string public constant VL_NO_DEBT_TO_PAYBACK = "106"; //Msg sender has no debt amount to be payback
-  string public constant VL_MISSING_ERC20_ALLOWANCE = ""; //Msg sender has not approved ERC20 full amount to transfer
+  string public constant VL_MISSING_ERC20_ALLOWANCE = "107"; //Msg sender has not approved ERC20 full amount to transfer
   string public constant VL_USER_NOT_LIQUIDATABLE = "108"; //User debt position is not liquidatable
   string public constant VL_DEBT_LESS_THAN_AMOUNT = "109"; //User debt is less than amount to partial close
   string public constant VL_PROVIDER_ALREADY_ADDED = "110"; // Provider is already added in Provider Array

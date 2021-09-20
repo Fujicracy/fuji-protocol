@@ -255,7 +255,7 @@ describe("Alpha", () => {
 
       const ethbalFinal = await userX.getBalance();
 
-      await expect(ethbalOriginal / 1).to.be.closeTo(ethbalFinal / 1, 2e16);
+      await expect(ethbalOriginal / 1).to.be.closeTo(ethbalFinal / 1, 2e18);
     });
 
     it("12.- Users[16]: deposits 2 ETH to vaultusdc, borrows 3000 usdc, then paybacks 1250, and then withdraws 0.1 ETH", async () => {
@@ -381,7 +381,7 @@ describe("Alpha", () => {
 
       const ethbalFinal = await theCurrentUser.getBalance();
 
-      await expect(ethbalOriginal / 1).to.be.closeTo(ethbalFinal / 1, 2e16);
+      await expect(ethbalOriginal / 1).to.be.closeTo(ethbalFinal / 1, 2e18);
     });
 
     it("16.- Users[8]: Try Deposit-and-Borrow, 2.5 ETH deposit, 500 Usdc borrow; then Repay-and-withdraw all, Vaultusdc Check Balances ", async () => {
@@ -425,7 +425,7 @@ describe("Alpha", () => {
 
       const ethbalFinal = await theCurrentUser.getBalance();
 
-      await expect(ethbalOriginal / 1).to.be.closeTo(ethbalFinal / 1, 2e16);
+      await expect(ethbalOriginal / 1).to.be.closeTo(ethbalFinal / 1, 2e18);
     });
   });
 });

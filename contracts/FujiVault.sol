@@ -252,8 +252,8 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
       vAssets.collateralID
     );
 
-    uint256 totalBorrow = _borrowAmount +
-      IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID);
+    uint256 debtPrincipal = IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID);
+    uint256 totalBorrow = _borrowAmount + debtPrincipal;
     // Get Required Collateral with Factors to maintain debt position healthy
     uint256 neededCollateral = getNeededCollateralFor(totalBorrow, true);
 
@@ -264,9 +264,16 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     );
 
     // Update timestamp for fee calculation
-    uint256 userFee = _userProtocolFee(msg.sender);
+
     (uint256 _protocolFeeNumerator, uint256 _protocolFeeDenominator) = IFujiAdmin(_fujiAdmin)
     .getProtocolFee();
+
+    uint256 userFee = (debtPrincipal *
+      (block.timestamp - _timestamps[msg.sender]) *
+      _protocolFeeNumerator) /
+      _protocolFeeDenominator /
+      ONE_YEAR;
+
     _timestamps[msg.sender] =
       block.timestamp -
       (userFee * ONE_YEAR * _protocolFeeDenominator) /

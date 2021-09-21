@@ -74,4 +74,6 @@ interface IVault {
   function setActiveProvider(address _provider) external;
 
   function updateF1155Balances() external;
+
+  function protocolFee() external view returns (uint64, uint64);
 }

@@ -18,14 +18,8 @@ contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
 
   address private _swapper;
 
-  uint256 private _protocolFeeNumerator;
-  uint256 private _protocolFeeDenominator;
-
   function initialize() external initializer {
     __Ownable_init();
-
-    _protocolFeeNumerator = 1;
-    _protocolFeeDenominator = 1000;
   }
 
   // Setter Functions
@@ -85,16 +79,6 @@ contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
   }
 
   /**
-   * @dev Sets the fees
-   * @param _numerator new fee numerator
-   * @param _denominator new fee denominator
-   */
-  function setProtocolFee(uint256 _numerator, uint256 _denominator) external onlyOwner {
-    _protocolFeeNumerator = _numerator;
-    _protocolFeeDenominator = _denominator;
-  }
-
-  /**
    * @dev Adds a Vault.
    * @param _vaultAddr: Address of vault to be added
    */
@@ -126,9 +110,5 @@ contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
 
   function getSwapper() external view override returns (address) {
     return _swapper;
-  }
-
-  function getProtocolFee() external view override returns (uint256, uint256) {
-    return (_protocolFeeNumerator, _protocolFeeDenominator);
   }
 }

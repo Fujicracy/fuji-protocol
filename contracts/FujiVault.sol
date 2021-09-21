@@ -58,7 +58,10 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   uint8 internal _borrowAssetDecimals;
 
   uint256 public constant ONE_YEAR = 60 * 60 * 24 * 365;
-  mapping(address => uint256) internal _timestamps; // to be used for protocol fee calculation
+
+  Factor public override protocolFee;
+  mapping(address => uint256) internal _userFeeTimestamps; // to be used for protocol fee calculation
+  uint256 public remainingProtocolFee;
 
   modifier isAuthorized() {
     require(
@@ -125,6 +128,9 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     // 0.05
     bonusLiqF.a = 1;
     bonusLiqF.b = 20;
+
+    protocolFee.a = 1;
+    protocolFee.b = 1000;
   }
 
   receive() external payable {}
@@ -265,19 +271,16 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
 
     // Update timestamp for fee calculation
 
-    (uint256 _protocolFeeNumerator, uint256 _protocolFeeDenominator) = IFujiAdmin(_fujiAdmin)
-    .getProtocolFee();
-
     uint256 userFee = (debtPrincipal *
-      (block.timestamp - _timestamps[msg.sender]) *
-      _protocolFeeNumerator) /
-      _protocolFeeDenominator /
+      (block.timestamp - _userFeeTimestamps[msg.sender]) *
+      protocolFee.a) /
+      protocolFee.b /
       ONE_YEAR;
 
-    _timestamps[msg.sender] =
+    _userFeeTimestamps[msg.sender] =
       block.timestamp -
-      (userFee * ONE_YEAR * _protocolFeeDenominator) /
-      _protocolFeeNumerator /
+      (userFee * ONE_YEAR * protocolFee.a) /
+      protocolFee.b /
       totalBorrow;
 
     // Debt Management
@@ -302,7 +305,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     updateF1155Balances();
 
     uint256 userDebtBalance = IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID);
-    uint256 userFee = _userProtocolFee(msg.sender);
+    uint256 userFee = _userProtocolFee(msg.sender, userDebtBalance);
 
     // Check User Debt is greater than Zero and amount is not Zero
     require(uint256(_repayAmount) > userFee && userDebtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
@@ -334,12 +337,9 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     // Debt Management
     IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.borrowID, amountToPayback - userFee);
 
-    // Transfer fee to treasury
-    _timestamps[msg.sender] = block.timestamp;
-    IERC20(vAssets.borrowAsset).univTransfer(
-      payable(IFujiAdmin(_fujiAdmin).getTreasury()),
-      userFee
-    );
+    // Update protocol fees
+    _userFeeTimestamps[msg.sender] = block.timestamp;
+    remainingProtocolFee += userFee;
 
     emit Payback(msg.sender, vAssets.borrowAsset, userDebtBalance);
   }
@@ -359,16 +359,18 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     uint256 _fee = 0;
     for (uint256 i = 0; i < _users.length; i++) {
       if (_users[i] != address(0)) {
-        _timestamps[_users[i]] = block.timestamp;
-        _fee += _userProtocolFee(_users[i]);
+        _userFeeTimestamps[_users[i]] = block.timestamp;
+
+        uint256 debtPrincipal = IFujiERC1155(fujiERC1155).balanceOf(_users[i], vAssets.borrowID);
+        _fee += _userProtocolFee(_users[i], debtPrincipal);
       }
     }
 
     // Logic used when called by Fliquidator
     _payback(_repayAmount - _fee, address(activeProvider));
 
-    // Transfer fee to treasury
-    IERC20(vAssets.borrowAsset).univTransfer(payable(IFujiAdmin(_fujiAdmin).getTreasury()), _fee);
+    // Update protocol fees
+    remainingProtocolFee += _fee;
   }
 
   /**
@@ -473,6 +475,9 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     } else if (typeHash == keccak256(abi.encode("bonusLiqF"))) {
       bonusLiqF.a = _newFactorA;
       bonusLiqF.b = _newFactorB;
+    } else if (typeHash == keccak256(abi.encode("protocolFee"))) {
+      protocolFee.a = _newFactorA;
+      protocolFee.b = _newFactorB;
     }
   }
 
@@ -577,15 +582,11 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
    */
   function userBorrowBalance(address _user) external view override returns (uint256) {
     uint256 debtPrincipal = IFujiERC1155(fujiERC1155).balanceOf(_user, vAssets.borrowID);
-    (uint256 _protocolFeeNumerator, uint256 _protocolFeeDenominator) = IFujiAdmin(_fujiAdmin)
-    .getProtocolFee();
-    uint256 protocolFee = (debtPrincipal *
-      (block.timestamp - _timestamps[_user]) *
-      _protocolFeeNumerator) /
-      _protocolFeeDenominator /
+    uint256 fee = (debtPrincipal * (block.timestamp - _userFeeTimestamps[_user]) * protocolFee.a) /
+      protocolFee.b /
       ONE_YEAR;
 
-    return debtPrincipal + protocolFee;
+    return debtPrincipal + fee;
   }
 
   /**
@@ -594,7 +595,8 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
    * @return the protocol fee of a user
    */
   function userProtocolFee(address _user) external view override returns (uint256) {
-    return _userProtocolFee(_user);
+    uint256 debtPrincipal = IFujiERC1155(fujiERC1155).balanceOf(_user, vAssets.borrowID);
+    return _userProtocolFee(_user, debtPrincipal);
   }
 
   /**
@@ -645,16 +647,21 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     }
   }
 
+  function withdrawProtocolFee() external nonReentrant {
+    IERC20(vAssets.borrowAsset).univTransfer(
+      payable(IFujiAdmin(_fujiAdmin).getTreasury()),
+      remainingProtocolFee
+    );
+
+    remainingProtocolFee = 0;
+  }
+
   // Internal Functions
 
-  function _userProtocolFee(address _user) internal view returns (uint256) {
-    uint256 debtPrincipal = IFujiERC1155(fujiERC1155).balanceOf(_user, vAssets.borrowID);
-    (uint256 _protocolFeeNumerator, uint256 _protocolFeeDenominator) = IFujiAdmin(_fujiAdmin)
-    .getProtocolFee();
-
+  function _userProtocolFee(address _user, uint256 _debtPrincipal) internal view returns (uint256) {
     return
-      (debtPrincipal * (block.timestamp - _timestamps[_user]) * _protocolFeeNumerator) /
-      _protocolFeeDenominator /
+      (_debtPrincipal * (block.timestamp - _userFeeTimestamps[_user]) * protocolFee.a) /
+      protocolFee.b /
       ONE_YEAR;
   }
 }

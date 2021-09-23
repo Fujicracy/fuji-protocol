@@ -38,8 +38,8 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   // Collateralization factor
   Factor public collatF;
 
-  // Bonus Factor for Flash Liquidation
-  Factor public bonusFlashLiqF;
+  // Protocol Fee factor
+  Factor public override protocolFee;
 
   // Bonus factor for liquidation
   Factor public bonusLiqF;
@@ -59,7 +59,6 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
 
   uint256 public constant ONE_YEAR = 60 * 60 * 24 * 365;
 
-  Factor public override protocolFee;
   mapping(address => uint256) internal _userFeeTimestamps; // to be used for protocol fee calculation
   uint256 public remainingProtocolFee;
 

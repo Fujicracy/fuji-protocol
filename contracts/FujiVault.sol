@@ -303,16 +303,16 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     // Logic used when called by normal user
     updateF1155Balances();
 
-    uint256 userDebtBalance = IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID);
-    uint256 userFee = _userProtocolFee(msg.sender, userDebtBalance);
+    uint256 debtBalance = IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID);
+    uint256 userFee = _userProtocolFee(msg.sender, debtBalance);
 
     // Check User Debt is greater than Zero and amount is not Zero
-    require(uint256(_repayAmount) > userFee && userDebtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
+    require(uint256(_repayAmount) > userFee && debtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
 
     // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
     // If passed argument amount is negative do MAX
-    uint256 amountToPayback = _repayAmount < 0 ? userDebtBalance + userFee : uint256(_repayAmount);
+    uint256 amountToPayback = _repayAmount < 0 ? debtBalance + userFee : uint256(_repayAmount);
 
     if (vAssets.borrowAsset == ETH) {
       require(msg.value >= amountToPayback, Errors.VL_AMOUNT_ERROR);
@@ -340,7 +340,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     _userFeeTimestamps[msg.sender] = block.timestamp;
     remainingProtocolFee += userFee;
 
-    emit Payback(msg.sender, vAssets.borrowAsset, userDebtBalance);
+    emit Payback(msg.sender, vAssets.borrowAsset, debtBalance);
   }
 
   /**
@@ -579,7 +579,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
    * @param _user: address of a user
    * @return the total debt of a user including the protocol fee
    */
-  function userBorrowBalance(address _user) external view override returns (uint256) {
+  function userDebtBalance(address _user) external view override returns (uint256) {
     uint256 debtPrincipal = IFujiERC1155(fujiERC1155).balanceOf(_user, vAssets.borrowID);
     uint256 fee = (debtPrincipal * (block.timestamp - _userFeeTimestamps[_user]) * protocolFee.a) /
       protocolFee.b /

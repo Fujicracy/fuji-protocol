@@ -290,12 +290,12 @@ describe("Alpha", () => {
       await expect(goodUser1155bal1).to.be.gt(0);
     });
 
-    it.only("3.- Full Flashclose User, vaultDai with dydx", async () => {
+    it("3.- Full Flashclose User, vaultDai with aave", async () => {
       const theVault = vaultdai;
       const vAssetStruct = await theVault.vAssets();
       const user = users[6];
 
-      await theVault.setActiveProvider(dydx.address);
+      await theVault.setActiveProvider(aave.address);
 
       console.log("1. User Borrows 3000 dai");
       const borrowAmount = ethers.utils.parseUnits("3000", 18);
@@ -679,7 +679,7 @@ describe("Alpha", () => {
       await expect(carelessUser1155bal1).to.be.eq(0);
     });
 
-    it.only("10.- Full Flashclose User, vaultdaieth with dydx", async () => {
+    it("10.- Full Flashclose User, vaultdaieth with dydx", async () => {
       const theVault = vaultdaieth;
       const asset = dai;
       const vAssetStruct = await theVault.vAssets();

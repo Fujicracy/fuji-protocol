@@ -52,7 +52,7 @@ interface IVault {
 
   function depositBalance(address _provider) external view returns (uint256);
 
-  function userBorrowBalance(address _user) external view returns (uint256);
+  function userDebtBalance(address _user) external view returns (uint256);
 
   function userProtocolFee(address _user) external view returns (uint256);
 

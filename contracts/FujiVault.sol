@@ -556,7 +556,10 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
       (success, ) = swapTransaction.to.call{ value: swapTransaction.value }(swapTransaction.data);
       require(success, "failed to swap rewards");
 
-      _deposit(IERC20(vAssets.collateralAsset).univBalanceOf(address(this)), address(activeProvider));
+      _deposit(
+        IERC20(vAssets.collateralAsset).univBalanceOf(address(this)),
+        address(activeProvider)
+      );
 
       updateF1155Balances();
     }

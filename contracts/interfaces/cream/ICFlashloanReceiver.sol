@@ -3,11 +3,11 @@
 pragma solidity ^0.8.0;
 
 interface ICFlashloanReceiver {
-  function executeOperation(
+  function onFlashLoan(
     address sender,
     address underlying,
     uint256 amount,
     uint256 fee,
     bytes calldata params
-  ) external;
+  ) external returns (bytes32);
 }

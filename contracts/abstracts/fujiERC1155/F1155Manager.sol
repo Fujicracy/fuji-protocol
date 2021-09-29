@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 
 import "./FujiBaseERC1155.sol";
 import "../claimable/ClaimableUpgradeable.sol";
@@ -11,7 +11,7 @@ import "../../libraries/WadRayMath.sol";
 import "../../libraries/Errors.sol";
 
 abstract contract F1155Manager is ClaimableUpgradeable {
-  using Address for address;
+  using AddressUpgradeable for address;
 
   // Controls for Mint-Burn Operations
   mapping(address => bool) public addrPermit;

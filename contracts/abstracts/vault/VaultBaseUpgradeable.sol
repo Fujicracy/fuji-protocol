@@ -4,14 +4,10 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../../interfaces/IVaultControl.sol";
-import "../../libraries/LibUniversalERC20.sol";
 
 abstract contract VaultControlUpgradeable is OwnableUpgradeable, PausableUpgradeable {
-  using LibUniversalERC20 for IERC20;
-
   //Vault Struct for Managed Assets
   IVaultControl.VaultAssets public vAssets;
 

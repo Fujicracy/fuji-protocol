@@ -3,9 +3,8 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol";
 
 import "./abstracts/vault/VaultBaseUpgradeable.sol";
@@ -19,11 +18,11 @@ import "./interfaces/IFujiOracle.sol";
 import "./interfaces/IFujiERC1155.sol";
 import "./interfaces/IProvider.sol";
 import "./libraries/Errors.sol";
-import "./libraries/LibUniversalERC20.sol";
+import "./libraries/LibUniversalERC20Upgradeable.sol";
 
 contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
-  using SafeERC20 for IERC20;
-  using LibUniversalERC20 for IERC20;
+  using SafeERC20Upgradeable for IERC20Upgradeable;
+  using LibUniversalERC20Upgradeable for IERC20Upgradeable;
 
   address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -159,7 +158,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
       require(msg.value == _collateralAmount && _collateralAmount != 0, Errors.VL_AMOUNT_ERROR);
     } else {
       require(_collateralAmount != 0, Errors.VL_AMOUNT_ERROR);
-      IERC20(vAssets.collateralAsset).safeTransferFrom(
+      IERC20Upgradeable(vAssets.collateralAsset).safeTransferFrom(
         msg.sender,
         address(this),
         _collateralAmount
@@ -218,7 +217,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     _withdraw(amountToWithdraw, address(activeProvider));
 
     // Transer Assets to User
-    IERC20(vAssets.collateralAsset).univTransfer(payable(msg.sender), amountToWithdraw);
+    IERC20Upgradeable(vAssets.collateralAsset).univTransfer(payable(msg.sender), amountToWithdraw);
 
     emit Withdraw(msg.sender, vAssets.collateralAsset, amountToWithdraw);
   }
@@ -233,7 +232,10 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   function withdrawLiq(int256 _withdrawAmount) external override nonReentrant onlyFliquidator {
     // Logic used when called by Fliquidator
     _withdraw(uint256(_withdrawAmount), address(activeProvider));
-    IERC20(vAssets.collateralAsset).univTransfer(payable(msg.sender), uint256(_withdrawAmount));
+    IERC20Upgradeable(vAssets.collateralAsset).univTransfer(
+      payable(msg.sender),
+      uint256(_withdrawAmount)
+    );
   }
 
   /**
@@ -268,7 +270,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     _borrow(_borrowAmount, address(activeProvider));
 
     // Transer Assets to User
-    IERC20(vAssets.borrowAsset).univTransfer(payable(msg.sender), _borrowAmount);
+    IERC20Upgradeable(vAssets.borrowAsset).univTransfer(payable(msg.sender), _borrowAmount);
 
     emit Borrow(msg.sender, vAssets.borrowAsset, _borrowAmount);
   }
@@ -295,17 +297,25 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     if (vAssets.borrowAsset == ETH) {
       require(msg.value >= amountToPayback, Errors.VL_AMOUNT_ERROR);
       if (msg.value > amountToPayback) {
-        IERC20(vAssets.borrowAsset).univTransfer(payable(msg.sender), msg.value - amountToPayback);
+        IERC20Upgradeable(vAssets.borrowAsset).univTransfer(
+          payable(msg.sender),
+          msg.value - amountToPayback
+        );
       }
     } else {
       // Check User Allowance
       require(
-        IERC20(vAssets.borrowAsset).allowance(msg.sender, address(this)) >= amountToPayback,
+        IERC20Upgradeable(vAssets.borrowAsset).allowance(msg.sender, address(this)) >=
+          amountToPayback,
         Errors.VL_MISSING_ERC20_ALLOWANCE
       );
 
       // Transfer Asset from User to Vault
-      IERC20(vAssets.borrowAsset).safeTransferFrom(msg.sender, address(this), amountToPayback);
+      IERC20Upgradeable(vAssets.borrowAsset).safeTransferFrom(
+        msg.sender,
+        address(this),
+        amountToPayback
+      );
     }
 
     // Delegate Call Payback to current provider
@@ -359,7 +369,10 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     _borrow(_flashLoanAmount + _fee, _newProvider);
 
     // return borrowed amount to Flasher
-    IERC20(vAssets.borrowAsset).univTransfer(payable(msg.sender), _flashLoanAmount + _fee);
+    IERC20Upgradeable(vAssets.borrowAsset).univTransfer(
+      payable(msg.sender),
+      _flashLoanAmount + _fee
+    );
 
     emit Switch(activeProvider, _newProvider, _flashLoanAmount, collateraltoMove);
   }
@@ -541,7 +554,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     require(success, "failed to harvest rewards");
 
     if (tokenReturned != address(0)) {
-      uint256 tokenBal = IERC20(tokenReturned).univBalanceOf(address(this));
+      uint256 tokenBal = IERC20Upgradeable(tokenReturned).univBalanceOf(address(this));
       require(tokenReturned != address(0) && tokenBal > 0, Errors.VL_HARVESTING_FAILED);
 
       ISwapper.Transaction memory swapTransaction = ISwapper(_fujiAdmin.getSwapper())
@@ -549,7 +562,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
 
       // Approve rewards
       if (tokenReturned != ETH) {
-        IERC20(tokenReturned).univApprove(swapTransaction.to, tokenBal);
+        IERC20Upgradeable(tokenReturned).univApprove(swapTransaction.to, tokenBal);
       }
 
       // Swap rewards -> collateralAsset
@@ -557,7 +570,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
       require(success, "failed to swap rewards");
 
       _deposit(
-        IERC20(vAssets.collateralAsset).univBalanceOf(address(this)),
+        IERC20Upgradeable(vAssets.collateralAsset).univBalanceOf(address(this)),
         address(activeProvider)
       );
 

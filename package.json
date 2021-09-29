@@ -61,11 +61,5 @@
     "send": "hardhat send",
     "generate": "hardhat generate",
     "account": "hardhat account"
-  },
-  "workspaces": {
-    "nohoist": [
-      "**/@openzeppelin/contracts",
-      "**/@openzeppelin/contracts/**"
-    ]
   }
 }

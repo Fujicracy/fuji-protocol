@@ -209,20 +209,20 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
     bytes memory params = abi.encode(info);
 
     // Initialize Instance of Cream crLendingContract
-    ICTokenFlashloan(crToken).flashLoan(address(this), info.amount, params);
+    ICTokenFlashloan(crToken).flashLoan(address(this), address(this), info.amount, params);
   }
 
   /**
    * @dev Executes CreamFinance Flashloan, this operation is required
    * and called by CreamFinanceflashloan when sending loaned amount
    */
-  function executeOperation(
+  function onFlashLoan(
     address sender,
     address underlying,
     uint256 amount,
     uint256 fee,
     bytes calldata params
-  ) external override {
+  ) external override returns (bytes32) {
     // Check Msg. Sender is crToken Lending Contract
     // from IronBank because ETH on Cream cannot perform a flashloan
     address crToken = underlying == _WETH
@@ -250,7 +250,9 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
 
     if (info.asset == _ETH) _convertEthToWeth(amount + fee);
     // Transfer flashloan + fee back to crToken Lending Contract
-    IERC20(underlying).univTransfer(payable(crToken), amount + fee);
+    IERC20(underlying).univApprove(payable(crToken), amount + fee);
+
+    return keccak256("ERC3156FlashBorrowerInterface.onFlashLoan");
   }
 
   function _executeAction(

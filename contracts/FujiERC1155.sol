@@ -2,8 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import { Address } from "@openzeppelin/contracts/utils/Address.sol";
-
 import "./abstracts/fujiERC1155/FujiBaseERC1155.sol";
 import "./abstracts/fujiERC1155/F1155Manager.sol";
 import "./abstracts/claimable/ClaimableUpgradeable.sol";

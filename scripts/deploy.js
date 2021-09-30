@@ -60,6 +60,25 @@ const deployContracts = async () => {
     ASSETS.USDT.address,
   ]);
 
+  const vaultDaiEth = await deployVault("VaultDAIETH", [
+    fujiadmin,
+    oracle,
+    ASSETS.DAI.address,
+    ASSETS.ETH.address,
+  ]);
+  const vaultUsdcEth = await deployVault("VaultUSDCETH", [
+    fujiadmin,
+    oracle,
+    ASSETS.USDC.address,
+    ASSETS.ETH.address,
+  ]);
+  const vaultUsdtEth = await deployVault("VaultUSDTETH", [
+    fujiadmin,
+    oracle,
+    ASSETS.USDT.address,
+    ASSETS.ETH.address,
+  ]);
+
   // General Plug-ins and Set-up Transactions
   await updateFujiAdmin(fujiadmin, {
     flasher,
@@ -72,7 +91,15 @@ const deployContracts = async () => {
   await updateFujiFliquidator(fliquidator, { fujiadmin, oracle, swapper: SUSHI_ROUTER_ADDR });
   await updateFlasher(flasher, fujiadmin);
   await updateController(controller, fujiadmin);
-  await updateFujiERC1155(f1155, [vaultdai, vaultusdc, vaultusdt, fliquidator]);
+  await updateFujiERC1155(f1155, [
+    vaultdai,
+    vaultusdc,
+    vaultusdt,
+    vaultDaiEth,
+    vaultUsdcEth,
+    vaultUsdtEth,
+    fliquidator,
+  ]);
 
   // Vault Set-up
   await updateVault("VaultETHDAI", vaultdai, {
@@ -86,6 +113,23 @@ const deployContracts = async () => {
     f1155,
   });
   await updateVault("VaultETHUSDT", vaultusdt, {
+    providers: [compound, aave, ironBank],
+    fujiadmin,
+    f1155,
+  });
+
+  await updateVault("VaultDAIETH", vaultDaiEth, {
+    providers: [compound, aave, dydx, ironBank],
+    fujiadmin,
+    f1155,
+  });
+
+  await updateVault("VaultUSDCETH", vaultUsdcEth, {
+    providers: [compound, aave, dydx, ironBank],
+    fujiadmin,
+    f1155,
+  });
+  await updateVault("VaultUSDTETH", vaultUsdtEth, {
     providers: [compound, aave, ironBank],
     fujiadmin,
     f1155,

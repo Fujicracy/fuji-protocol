@@ -22,11 +22,10 @@ INFURA_ID=<your-key>
 yarn install
 yarn fork
 ```
-> IMPORTANT! After Ethereum's London upgrade you may need to select a block from which to create the fork.
 
 ### 3. Deploy contracts
 ```
-# main markets
+# core markets
 npx hardhat run scripts/deploy.js
 ```
 ```
@@ -38,6 +37,10 @@ npx hardhat run scripts/deploy-fuse.js
 ```
 npx hardhat test --network localhost test/<file-with-tests>.js 
 ```
+
+### 5. Requirements
+- node: 14.17.1
+- yarn: 1.22.10
 
 ## Coding Style and Conventions
 

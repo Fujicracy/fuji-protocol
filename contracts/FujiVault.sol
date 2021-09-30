@@ -660,7 +660,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   }
 
   function withdrawProtocolFee() external nonReentrant {
-    IERC20(vAssets.borrowAsset).univTransfer(
+    IERC20Upgradeable(vAssets.borrowAsset).univTransfer(
       payable(IFujiAdmin(_fujiAdmin).getTreasury()),
       remainingProtocolFee
     );

@@ -513,20 +513,14 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
    * @dev External Function to call updateState in F1155
    */
   function updateF1155Balances() public override {
-    uint256 borrowBals;
-    uint256 depositBals;
-
-    // take into account all balances across providers
-    uint256 length = providers.length;
-    for (uint256 i = 0; i < length; i++) {
-      depositBals =
-        depositBals +
-        IProvider(providers[i]).getDepositBalance(vAssets.collateralAsset);
-      borrowBals = borrowBals + (IProvider(providers[i]).getBorrowBalance(vAssets.borrowAsset));
-    }
-
-    IFujiERC1155(fujiERC1155).updateState(vAssets.borrowID, borrowBals);
-    IFujiERC1155(fujiERC1155).updateState(vAssets.collateralID, depositBals);
+    IFujiERC1155(fujiERC1155).updateState(
+      vAssets.borrowID,
+      IProvider(activeProvider).getBorrowBalance(vAssets.borrowAsset)
+    );
+    IFujiERC1155(fujiERC1155).updateState(
+      vAssets.collateralID,
+      IProvider(activeProvider).getDepositBalance(vAssets.collateralAsset)
+    );
   }
 
   //Getter Functions

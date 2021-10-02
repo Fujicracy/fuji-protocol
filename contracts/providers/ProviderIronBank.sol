@@ -123,11 +123,13 @@ contract ProviderIronBank is IProvider, HelperFunct {
     // Create a reference to the corresponding cyToken contract
     IGenCToken cyToken = IGenCToken(cyTokenAddr);
 
-    //Enter and/or ensure collateral market is enacted
-    //_enterCollatMarket(cyTokenAddr);
-
     //IronBank Protocol Borrow Process, throw errow if not.
     require(cyToken.borrow(_amount) == 0, "borrow-failed");
+
+    if (_isETH(_asset)) {
+      // Transform ETH to WETH
+      IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).withdraw(_amount);
+    }
   }
 
   /**

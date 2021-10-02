@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../interfaces/IProvider.sol";
-import "../interfaces/ITokenInterface.sol";
+import "../interfaces/IWETH.sol";
 import "../interfaces/aave/IAaveDataProvider.sol";
 import "../interfaces/aave/IAaveLendingPool.sol";
 import "../interfaces/aave/IAaveLendingPoolProvider.sol";
@@ -15,46 +15,19 @@ contract ProviderAave is IProvider {
   using LibUniversalERC20 for IERC20;
 
   function _getAaveProvider() internal pure returns (IAaveLendingPoolProvider) {
-    return IAaveLendingPoolProvider(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5); //mainnet
+    return IAaveLendingPoolProvider(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5);
   }
 
   function _getAaveDataProvider() internal pure returns (IAaveDataProvider) {
-    return IAaveDataProvider(0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d); //mainnet
+    return IAaveDataProvider(0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d);
   }
 
   function _getWethAddr() internal pure returns (address) {
-    return 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // Mainnet WETH Address
+    return 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
   }
 
   function _getEthAddr() internal pure returns (address) {
-    return 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE; // ETH Address
-  }
-
-  function _getIsColl(
-    IAaveDataProvider _aaveData,
-    address _token,
-    address _user
-  ) internal view returns (bool isCol) {
-    (, , , , , , , , isCol) = _aaveData.getUserReserveData(_token, _user);
-  }
-
-  function _convertEthToWeth(
-    bool _isEth,
-    ITokenInterface _token,
-    uint256 _amount
-  ) internal {
-    if (_isEth) _token.deposit{ value: _amount }();
-  }
-
-  function _convertWethToEth(
-    bool _isEth,
-    ITokenInterface _token,
-    uint256 _amount
-  ) internal {
-    if (_isEth) {
-      _token.approve(address(_token), _amount);
-      _token.withdraw(_amount);
-    }
+    return 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
   }
 
   /**
@@ -79,9 +52,9 @@ contract ProviderAave is IProvider {
     IAaveDataProvider aaveData = _getAaveDataProvider();
 
     bool isEth = _asset == _getEthAddr();
-    address _token = isEth ? _getWethAddr() : _asset;
+    address _tokenAddr = isEth ? _getWethAddr() : _asset;
 
-    (, , uint256 variableDebt, , , , , , ) = aaveData.getUserReserveData(_token, msg.sender);
+    (, , uint256 variableDebt, , , , , , ) = aaveData.getUserReserveData(_tokenAddr, msg.sender);
 
     return variableDebt;
   }
@@ -100,9 +73,9 @@ contract ProviderAave is IProvider {
     IAaveDataProvider aaveData = _getAaveDataProvider();
 
     bool isEth = _asset == _getEthAddr();
-    address _token = isEth ? _getWethAddr() : _asset;
+    address _tokenAddr = isEth ? _getWethAddr() : _asset;
 
-    (, , uint256 variableDebt, , , , , , ) = aaveData.getUserReserveData(_token, _who);
+    (, , uint256 variableDebt, , , , , , ) = aaveData.getUserReserveData(_tokenAddr, _who);
 
     return variableDebt;
   }
@@ -115,9 +88,9 @@ contract ProviderAave is IProvider {
     IAaveDataProvider aaveData = _getAaveDataProvider();
 
     bool isEth = _asset == _getEthAddr();
-    address _token = isEth ? _getWethAddr() : _asset;
+    address _tokenAddr = isEth ? _getWethAddr() : _asset;
 
-    (uint256 atokenBal, , , , , , , , ) = aaveData.getUserReserveData(_token, msg.sender);
+    (uint256 atokenBal, , , , , , , , ) = aaveData.getUserReserveData(_tokenAddr, msg.sender);
 
     return atokenBal;
   }
@@ -129,27 +102,18 @@ contract ProviderAave is IProvider {
    */
   function deposit(address _asset, uint256 _amount) external payable override {
     IAaveLendingPool aave = IAaveLendingPool(_getAaveProvider().getLendingPool());
-    IAaveDataProvider aaveData = _getAaveDataProvider();
 
     bool isEth = _asset == _getEthAddr();
-    address _token = isEth ? _getWethAddr() : _asset;
+    address _tokenAddr = isEth ? _getWethAddr() : _asset;
 
-    ITokenInterface tokenContract = ITokenInterface(_token);
+    // convert ETH to WETH
+    if (isEth) IWETH(_tokenAddr).deposit{ value: _amount }();
 
-    if (isEth) {
-      _amount = _amount == type(uint256).max ? address(this).balance : _amount;
-      _convertEthToWeth(isEth, tokenContract, _amount);
-    } else {
-      _amount = _amount == type(uint256).max ? tokenContract.balanceOf(address(this)) : _amount;
-    }
+    IERC20(_tokenAddr).univApprove(address(aave), _amount);
 
-    tokenContract.approve(address(aave), _amount);
+    aave.deposit(_tokenAddr, _amount, address(this), 0);
 
-    aave.deposit(_token, _amount, address(this), 0);
-
-    if (!_getIsColl(aaveData, _token, address(this))) {
-      aave.setUserUseReserveAsCollateral(_token, true);
-    }
+    aave.setUserUseReserveAsCollateral(_tokenAddr, true);
   }
 
   /**
@@ -161,10 +125,12 @@ contract ProviderAave is IProvider {
     IAaveLendingPool aave = IAaveLendingPool(_getAaveProvider().getLendingPool());
 
     bool isEth = _asset == _getEthAddr();
-    address _token = isEth ? _getWethAddr() : _asset;
+    address _tokenAddr = isEth ? _getWethAddr() : _asset;
 
-    aave.borrow(_token, _amount, 2, 0, address(this));
-    _convertWethToEth(isEth, ITokenInterface(_token), _amount);
+    aave.borrow(_tokenAddr, _amount, 2, 0, address(this));
+
+    // convert WETH to ETH
+    if (isEth) IWETH(_tokenAddr).withdraw(_amount);
   }
 
   /**
@@ -176,16 +142,12 @@ contract ProviderAave is IProvider {
     IAaveLendingPool aave = IAaveLendingPool(_getAaveProvider().getLendingPool());
 
     bool isEth = _asset == _getEthAddr();
-    address _token = isEth ? _getWethAddr() : _asset;
+    address _tokenAddr = isEth ? _getWethAddr() : _asset;
 
-    ITokenInterface tokenContract = ITokenInterface(_token);
-    uint256 initialBal = tokenContract.balanceOf(address(this));
+    aave.withdraw(_tokenAddr, _amount, address(this));
 
-    aave.withdraw(_token, _amount, address(this));
-    uint256 finalBal = tokenContract.balanceOf(address(this));
-    _amount = finalBal - initialBal;
-
-    _convertWethToEth(isEth, tokenContract, _amount);
+    // convert WETH to ETH
+    if (isEth) IWETH(_tokenAddr).withdraw(_amount);
   }
 
   /**
@@ -196,20 +158,15 @@ contract ProviderAave is IProvider {
 
   function payback(address _asset, uint256 _amount) external payable override {
     IAaveLendingPool aave = IAaveLendingPool(_getAaveProvider().getLendingPool());
-    IAaveDataProvider aaveData = _getAaveDataProvider();
 
     bool isEth = _asset == _getEthAddr();
-    address _token = isEth ? _getWethAddr() : _asset;
+    address _tokenAddr = isEth ? _getWethAddr() : _asset;
 
-    ITokenInterface tokenContract = ITokenInterface(_token);
+    // convert ETH to WETH
+    if (isEth) IWETH(_tokenAddr).deposit{ value: _amount }();
 
-    (, , uint256 variableDebt, , , , , , ) = aaveData.getUserReserveData(_token, address(this));
-    _amount = _amount == type(uint256).max ? variableDebt : _amount;
+    IERC20(_tokenAddr).univApprove(address(aave), _amount);
 
-    if (isEth) _convertEthToWeth(isEth, tokenContract, _amount);
-
-    tokenContract.approve(address(aave), _amount);
-
-    aave.repay(_token, _amount, 2, address(this));
+    aave.repay(_tokenAddr, _amount, 2, address(this));
   }
 }

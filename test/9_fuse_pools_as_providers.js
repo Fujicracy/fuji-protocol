@@ -11,7 +11,7 @@ const {
   evmSnapshot,
   evmRevert,
   ZERO_ADDR,
-} = require("./utils-alpha");
+} = require("./helpers");
 const { fixture, ASSETS, VAULTS } = require("./fuse-utils.js");
 
 const fuseAddrs = {

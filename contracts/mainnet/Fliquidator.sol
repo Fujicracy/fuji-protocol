@@ -15,7 +15,7 @@ import "../interfaces/IFujiAdmin.sol";
 import "../interfaces/IFujiOracle.sol";
 import "../interfaces/IFujiERC1155.sol";
 import "../interfaces/IERC20Extended.sol";
-import "./flashloans/Flasher.sol";
+import "../interfaces/IFlasher.sol";
 import "./libraries/LibUniversalERC20.sol";
 import "../libraries/FlashLoans.sol";
 import "../libraries/Errors.sol";
@@ -190,7 +190,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
       fliquidator: address(this)
     });
 
-    Flasher(payable(_fujiAdmin.getFlasher())).initiateFlashloan(info, _flashnum);
+    IFlasher(payable(_fujiAdmin.getFlasher())).initiateFlashloan(info, _flashnum);
   }
 
   /**
@@ -311,7 +311,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
       fliquidator: address(this)
     });
 
-    Flasher(payable(_fujiAdmin.getFlasher())).initiateFlashloan(info, _flashnum);
+    IFlasher(payable(_fujiAdmin.getFlasher())).initiateFlashloan(info, _flashnum);
   }
 
   /**

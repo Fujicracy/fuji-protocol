@@ -3,11 +3,11 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../interfaces/IProvider.sol";
-import "../interfaces/compound/IGenCToken.sol";
-import "../interfaces/compound/ICErc20.sol";
-import "../interfaces/compound/ICEth.sol";
-import "../interfaces/compound/IFuseComptroller.sol";
+import "../../interfaces/IProvider.sol";
+import "../../interfaces/compound/IGenCToken.sol";
+import "../../interfaces/compound/ICErc20.sol";
+import "../../interfaces/compound/ICEth.sol";
+import "../../interfaces/compound/IFuseComptroller.sol";
 import "../libraries/LibUniversalERC20.sol";
 
 contract HelperFunct {
@@ -16,7 +16,7 @@ contract HelperFunct {
   }
 
   function _getComptrollerAddress() internal pure returns (address) {
-    return 0x621579DD26774022F33147D3852ef4E00024b763;
+    return 0x6E7fb6c5865e8533D5ED31b6d43fD95f4C411834;
   }
 
   function _getCTokenAddr(address _asset) internal view returns (address cTokenAddr) {
@@ -57,7 +57,7 @@ contract HelperFunct {
   }
 }
 
-contract ProviderFuse18 is IProvider, HelperFunct {
+contract ProviderFuse3 is IProvider, HelperFunct {
   using LibUniversalERC20 for IERC20;
 
   //Provider Core Functions

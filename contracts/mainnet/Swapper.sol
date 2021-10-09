@@ -5,8 +5,8 @@ pragma solidity ^0.8.0;
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IWETH.sol";
 
-import "./interfaces/IFujiAdmin.sol";
-import "./interfaces/ISwapper.sol";
+import "../interfaces/IFujiAdmin.sol";
+import "../interfaces/ISwapper.sol";
 
 contract Swapper is ISwapper {
   address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;

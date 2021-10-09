@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-import "./interfaces/IFujiAdmin.sol";
-import "./interfaces/IHarvester.sol";
+import "../interfaces/IFujiAdmin.sol";
+import "../interfaces/IHarvester.sol";
 
 contract VaultHarvester is IHarvester {
   /**

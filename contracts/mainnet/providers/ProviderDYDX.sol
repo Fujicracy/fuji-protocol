@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../interfaces/IProvider.sol";
-import "../interfaces/IWETH.sol";
-import "../interfaces/dydx/ISoloMargin.sol";
+import "../../interfaces/IProvider.sol";
+import "../../interfaces/IWETH.sol";
+import "../../interfaces/dydx/ISoloMargin.sol";
 import "../libraries/LibUniversalERC20.sol";
 
 contract HelperFunct {

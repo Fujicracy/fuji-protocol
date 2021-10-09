@@ -8,17 +8,17 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "./abstracts/claimable/Claimable.sol";
-import "./interfaces/IVault.sol";
-import "./interfaces/IVaultControl.sol";
-import "./interfaces/IFujiAdmin.sol";
-import "./interfaces/IFujiOracle.sol";
-import "./interfaces/IFujiERC1155.sol";
-import "./interfaces/IERC20Extended.sol";
+import "../abstracts/claimable/Claimable.sol";
+import "../interfaces/IVault.sol";
+import "../interfaces/IVaultControl.sol";
+import "../interfaces/IFujiAdmin.sol";
+import "../interfaces/IFujiOracle.sol";
+import "../interfaces/IFujiERC1155.sol";
+import "../interfaces/IERC20Extended.sol";
 import "./flashloans/Flasher.sol";
 import "./libraries/LibUniversalERC20.sol";
-import "./libraries/FlashLoans.sol";
-import "./libraries/Errors.sol";
+import "../libraries/FlashLoans.sol";
+import "../libraries/Errors.sol";
 
 contract Fliquidator is Claimable, ReentrancyGuard {
   using SafeERC20 for IERC20;

@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-import "./flashloans/Flasher.sol";
 import "./abstracts/claimable/Claimable.sol";
+import "./interfaces/IFlasher.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IVaultControl.sol";
 import "./interfaces/IProvider.sol";
@@ -78,7 +78,7 @@ contract Controller is Claimable {
       fliquidator: address(0)
     });
 
-    Flasher(payable(_fujiAdmin.getFlasher())).initiateFlashloan(info, _flashNum);
+    IFlasher(payable(_fujiAdmin.getFlasher())).initiateFlashloan(info, _flashNum);
 
     IVault(_vaultAddr).setActiveProvider(_newProvider);
   }

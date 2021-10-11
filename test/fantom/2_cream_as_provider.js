@@ -5,12 +5,7 @@ const { createFixtureLoader } = require("ethereum-waffle");
 const { getContractAt, provider } = ethers;
 
 const { fixture, ASSETS, VAULTS } = require("./utils");
-const {
-  parseUnits,
-  evmSnapshot,
-  evmRevert,
-  FLASHLOAN,
-} = require("../helpers");
+const { parseUnits, evmSnapshot, evmRevert, FLASHLOAN } = require("../helpers");
 
 const {
   testDeposit1,
@@ -23,11 +18,7 @@ const {
   testPaybackAndWithdraw3,
 } = require("../FujiVault");
 
-const {
-  testRefinance1,
-  testRefinance2,
-  testRefinance3,
-} = require("../Controller");
+const { testRefinance1, testRefinance2, testRefinance3 } = require("../Controller");
 
 const CREAM_FUJI_MAPPING = "0x1eEdE44b91750933C96d2125b6757C4F89e63E20";
 
@@ -66,7 +57,7 @@ const {
   vaultwbtcweth,
 } = vaults;
 
-const [DEPOSIT_STABLE, DEPOSIT_FTM, DEPOSIT_WETH, DEPOSIT_WBTC] = [500, 400, 0.1, 0.0075];
+const [DEPOSIT_STABLE, DEPOSIT_FTM, DEPOSIT_WETH, DEPOSIT_WBTC] = [800, 400, 0.22, 0.014];
 
 const [BORROW_STABLE, BORROW_FTM, BORROW_WETH, BORROW_WBTC] = [
   DEPOSIT_STABLE / 2,

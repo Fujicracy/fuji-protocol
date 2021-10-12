@@ -4,12 +4,7 @@ const { createFixtureLoader } = require("ethereum-waffle");
 
 const { getContractAt, provider } = ethers;
 
-const {
-  parseUnits,
-  evmSnapshot,
-  evmRevert,
-  ZERO_ADDR,
-} = require("./helpers");
+const { parseUnits, evmSnapshot, evmRevert, ZERO_ADDR } = require("./helpers");
 
 const { fixture } = require("./core-utils");
 
@@ -38,7 +33,6 @@ describe("Core Fuji Instance", function () {
   });
 
   describe("Admin functions of Controller", function () {
-
     describe("Testing executor roles", function () {
       it("Set correctly role of executor", async function () {
         expect(await this.f.controller.isExecutor(this.executor.address)).to.equal(false);
@@ -49,9 +43,9 @@ describe("Core Fuji Instance", function () {
 
     describe("Testing ownership transfer", function () {
       it("Revert: User tricks to have ownership of the contract", async function () {
-        await expect(this.f.controller.connect(this.user).transferOwnership(this.user.address)).to.be.revertedWith(
-          "Ownable: caller is not the owner"
-        );
+        await expect(
+          this.f.controller.connect(this.user).transferOwnership(this.user.address)
+        ).to.be.revertedWith("Ownable: caller is not the owner");
       });
 
       it("Success: Owner tries to transfer ownership to new Owner", async function () {
@@ -61,7 +55,8 @@ describe("Core Fuji Instance", function () {
 
         expect(await this.f.controller.pendingOwner()).to.be.equal(this.newOwner.address);
 
-        await expect(this.f.controller.connect(this.owner).transferOwnership(this.newOwner.address)).to.be.reverted;
+        await expect(this.f.controller.connect(this.owner).transferOwnership(this.newOwner.address))
+          .to.be.reverted;
       });
 
       it("Revert: User tries to claim ownership", async function () {
@@ -81,13 +76,14 @@ describe("Core Fuji Instance", function () {
       });
 
       it("Revert: user tries to call cancelTransferOwnership", async function () {
-        await expect(this.f.controller.connect(this.user).cancelTransferOwnership()).to.be.revertedWith(
-          "Ownable: caller is not the owner"
-        );
+        await expect(
+          this.f.controller.connect(this.user).cancelTransferOwnership()
+        ).to.be.revertedWith("Ownable: caller is not the owner");
       });
 
       it("Revert: New owner tries to call cancelTransferOwnership before calling transferOwnership", async function () {
-        await expect(this.f.controller.connect(this.owner).cancelTransferOwnership()).to.be.reverted;
+        await expect(this.f.controller.connect(this.owner).cancelTransferOwnership()).to.be
+          .reverted;
       });
 
       it("Success: New owner tries to call cancelTransferOwnership after calling transferOwnership", async function () {

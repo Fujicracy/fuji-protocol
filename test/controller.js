@@ -46,7 +46,9 @@ function testRefinance2(vaults, from, to, amountToDeposit, amountToBorrow, flash
       const depositAmount = parseUnits(amountToDeposit, collateral.decimals);
       const borrowAmount = parseUnits(amountToBorrow, debt.decimals);
 
-      await this.f[collateral.name].connect(this.users[1]).approve(this.f[name].address, depositAmount);
+      await this.f[collateral.name]
+        .connect(this.users[1])
+        .approve(this.f[name].address, depositAmount);
       await this.f[name].connect(this.users[1]).depositAndBorrow(depositAmount, borrowAmount);
 
       let preVaultDebt = await this.f[name].borrowBalance(this.f[from].address);
@@ -81,7 +83,9 @@ function testRefinance3(vaults, from, to, amountToDeposit, amountToBorrow, flash
       const depositAmount = parseUnits(amountToDeposit, collateral.decimals);
       const borrowAmount = parseUnits(amountToBorrow);
 
-      await this.f[collateral.name].connect(this.users[1]).approve(this.f[name].address, depositAmount);
+      await this.f[collateral.name]
+        .connect(this.users[1])
+        .approve(this.f[name].address, depositAmount);
       await this.f[name].connect(this.users[1]).depositAndBorrow(depositAmount, borrowAmount);
 
       let preVaultDebt = await this.f[name].borrowBalance(this.f[from].address);

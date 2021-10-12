@@ -18,7 +18,7 @@ const {
   testPaybackAndWithdraw3,
 } = require("../FujiVault");
 
-const { testRefinance1, testRefinance2, testRefinance3 } = require("../Controller");
+const { testRefinance1, testRefinance2, testRefinance3 } = require("../controller");
 
 const CREAM_FUJI_MAPPING = "0x1eEdE44b91750933C96d2125b6757C4F89e63E20";
 
@@ -195,8 +195,15 @@ describe("Fantom Fuji Instance", function () {
       testPaybackAndWithdraw3([vaultdaiftm, vaultusdcftm], DEPOSIT_STABLE, BORROW_FTM * 0.5);
     });
 
-    // testRefinance1([vaultethusdc, vaultethdai], "fuse3", "fuse18", 1);
-    // testRefinance2([vaultusdcdai], "fuse3", "fuse18", 1);
-    // testRefinance3([vaultdaieth], "fuse3", "fuse18", 1);
+    testRefinance1([vaultftmusdc, vaultftmdai], "cream", "scream", DEPOSIT_FTM, BORROW_STABLE, 0);
+    testRefinance2(
+      [vaultwethdai, vaultwethusdc],
+      "cream",
+      "scream",
+      DEPOSIT_WETH,
+      BORROW_STABLE,
+      0
+    );
+    testRefinance3([vaultusdcftm, vaultdaiftm], "cream", "scream", DEPOSIT_STABLE, BORROW_FTM, 0);
   });
 });

@@ -196,8 +196,15 @@ describe("Fantom Fuji Instance", function () {
       testPaybackAndWithdraw3([vaultdaiftm, vaultusdcftm], DEPOSIT_STABLE, BORROW_FTM * 0.5);
     });
 
-    // testRefinance1([vaultethusdc, vaultethdai], "fuse3", "fuse18", 1);
-    // testRefinance2([vaultusdcdai], "fuse3", "fuse18", 1);
-    // testRefinance3([vaultdaieth], "fuse3", "fuse18", 1);
+    testRefinance1([vaultftmusdc, vaultftmdai], "scream", "cream", DEPOSIT_FTM, BORROW_STABLE, 0);
+    testRefinance2(
+      [vaultwethdai, vaultwethusdc],
+      "scream",
+      "cream",
+      DEPOSIT_WETH,
+      BORROW_STABLE,
+      0
+    );
+    testRefinance3([vaultusdcftm, vaultdaiftm], "scream", "cream", DEPOSIT_STABLE, BORROW_FTM, 0);
   });
 });

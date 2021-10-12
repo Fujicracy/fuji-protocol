@@ -4,7 +4,7 @@ const { formatUnitsToNum, parseUnits, timeTravel } = require("./helpers");
 function testRefinance1(vaults, from, to, amountToDeposit, amountToBorrow, flashloanProvider = 1) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
-    it(`refinance ERC20 -> ${debt.nameUp} debt with ETH as collateral`, async function () {
+    it(`refinance ${collateral.nameUp} -> ${debt.nameUp} Native token as collateral, ERC20 as borrow asset`, async function () {
       const depositAmount = parseUnits(amountToDeposit);
       const borrowAmount = parseUnits(amountToBorrow, debt.decimals);
 
@@ -42,7 +42,7 @@ function testRefinance1(vaults, from, to, amountToDeposit, amountToBorrow, flash
 function testRefinance2(vaults, from, to, amountToDeposit, amountToBorrow, flashloanProvider = 1) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
-    it(`refinance ERC20 -> ${debt.nameUp} debt with ERC20 -> ${collateral.nameUp} as collateral`, async function () {
+    it(`refinance ${collateral.nameUp} -> ${debt.nameUp} ERC20 as collateral, ERC20 as borrow asset`, async function () {
       const depositAmount = parseUnits(amountToDeposit, collateral.decimals);
       const borrowAmount = parseUnits(amountToBorrow, debt.decimals);
 
@@ -79,7 +79,7 @@ function testRefinance2(vaults, from, to, amountToDeposit, amountToBorrow, flash
 function testRefinance3(vaults, from, to, amountToDeposit, amountToBorrow, flashloanProvider = 1) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
-    it(`refinance ETH debt with ERC20 -> ${collateral.nameUp} as collateral`, async function () {
+    it(`refinance ${collateral.nameUp} -> ${debt.nameUp} ERC20 as collateral, Native token as borrow asset`, async function () {
       const depositAmount = parseUnits(amountToDeposit, collateral.decimals);
       const borrowAmount = parseUnits(amountToBorrow);
 

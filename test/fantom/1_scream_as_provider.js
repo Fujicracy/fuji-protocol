@@ -197,6 +197,8 @@ describe("Fantom Fuji Instance", function () {
     });
 
     testRefinance1([vaultftmusdc, vaultftmdai], "scream", "cream", DEPOSIT_FTM, BORROW_STABLE, 0);
+    testRefinance1([vaultftmweth], "scream", "cream", DEPOSIT_FTM, BORROW_WETH, 0);
+    testRefinance1([vaultftmwbtc], "scream", "cream", DEPOSIT_FTM, BORROW_WBTC, 0);
     testRefinance2(
       [vaultwethdai, vaultwethusdc],
       "scream",
@@ -205,6 +207,17 @@ describe("Fantom Fuji Instance", function () {
       BORROW_STABLE,
       0
     );
+    testRefinance2([vaultwethwbtc], "scream", "cream", DEPOSIT_WETH, BORROW_WBTC, 0);
+    testRefinance2(
+      [vaultdaiweth, vaultusdcweth],
+      "scream",
+      "cream",
+      DEPOSIT_STABLE,
+      BORROW_WETH,
+      0
+    );
     testRefinance3([vaultusdcftm, vaultdaiftm], "scream", "cream", DEPOSIT_STABLE, BORROW_FTM, 0);
+    testRefinance3([vaultwbtcftm], "scream", "cream", DEPOSIT_WBTC, BORROW_FTM, 0);
+    testRefinance3([vaultwethftm], "scream", "cream", DEPOSIT_WETH, BORROW_FTM, 0);
   });
 });

@@ -128,6 +128,11 @@ contract ProviderScream is IProvider, HelperFunct {
 
     //IronBank Protocol Borrow Process, throw errow if not.
     require(cyToken.borrow(_amount) == 0, "borrow-failed");
+
+    if (_isFTM(_asset)) {
+      // Transform FTM to WFTM
+      IWETH(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).withdraw(_amount);
+    }
   }
 
   /**

@@ -107,8 +107,8 @@ function testRefinance3(vaults, from, to, amountToDeposit, amountToBorrow, flash
       let postVaultCollat = await this.f[name].depositBalance(this.f[to].address);
       postVaultCollat = formatUnitsToNum(postVaultCollat, collateral.decimals);
 
-      await expect(preVaultDebt).to.be.closeTo(postVaultDebt, 0.001);
-      await expect(preVaultCollat).to.be.closeTo(postVaultCollat, 1);
+      await expect(preVaultDebt).to.be.closeTo(postVaultDebt, postVaultDebt / 100); // 1% close
+      await expect(preVaultCollat).to.be.closeTo(postVaultCollat, postVaultCollat / 100); // 1% close
     });
   }
 }

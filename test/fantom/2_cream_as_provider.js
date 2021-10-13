@@ -157,6 +157,10 @@ describe("Fantom Fuji Instance", function () {
       testPaybackAndWithdraw1([vaultftmdai, vaultftmusdc], DEPOSIT_FTM, BORROW_STABLE);
       testPaybackAndWithdraw1([vaultftmweth], DEPOSIT_FTM, BORROW_WETH);
       testPaybackAndWithdraw1([vaultftmwbtc], DEPOSIT_FTM, BORROW_WBTC);
+
+      testRefinance1([vaultftmusdc, vaultftmdai], "cream", "scream", DEPOSIT_FTM, BORROW_STABLE, 0);
+      testRefinance1([vaultftmweth], "cream", "scream", DEPOSIT_FTM, BORROW_WETH, 0);
+      testRefinance1([vaultftmwbtc], "cream", "scream", DEPOSIT_FTM, BORROW_WBTC, 0);
     });
 
     describe("ERC20 token as collateral, ERC20 as borrow asset.", function () {
@@ -185,6 +189,24 @@ describe("Fantom Fuji Instance", function () {
 
       testPaybackAndWithdraw2([vaultdaiweth, vaultusdcweth], DEPOSIT_STABLE, BORROW_WETH);
       testPaybackAndWithdraw2([vaultdaiwbtc, vaultusdcwbtc], DEPOSIT_STABLE, BORROW_WBTC);
+
+      testRefinance2(
+        [vaultwethdai, vaultwethusdc],
+        "cream",
+        "scream",
+        DEPOSIT_WETH,
+        BORROW_STABLE,
+        0
+      );
+      testRefinance2([vaultwethwbtc], "cream", "scream", DEPOSIT_WETH, BORROW_WBTC, 0);
+      testRefinance2(
+        [vaultdaiweth, vaultusdcweth],
+        "cream",
+        "scream",
+        DEPOSIT_STABLE,
+        BORROW_WETH,
+        0
+      );
     });
 
     describe("ERC20 token as collateral, native token as borrow asset.", function () {
@@ -193,30 +215,10 @@ describe("Fantom Fuji Instance", function () {
       testPaybackAndWithdraw3([vaultwbtcftm], DEPOSIT_WBTC, BORROW_FTM * 0.5);
       testPaybackAndWithdraw3([vaultwethftm], DEPOSIT_WETH, BORROW_FTM * 0.5);
       testPaybackAndWithdraw3([vaultdaiftm, vaultusdcftm], DEPOSIT_STABLE, BORROW_FTM * 0.5);
-    });
 
-    testRefinance1([vaultftmusdc, vaultftmdai], "cream", "scream", DEPOSIT_FTM, BORROW_STABLE, 0);
-    testRefinance1([vaultftmweth], "cream", "scream", DEPOSIT_FTM, BORROW_WETH, 0);
-    testRefinance1([vaultftmwbtc], "cream", "scream", DEPOSIT_FTM, BORROW_WBTC, 0);
-    testRefinance2(
-      [vaultwethdai, vaultwethusdc],
-      "cream",
-      "scream",
-      DEPOSIT_WETH,
-      BORROW_STABLE,
-      0
-    );
-    testRefinance2([vaultwethwbtc], "cream", "scream", DEPOSIT_WETH, BORROW_WBTC, 0);
-    testRefinance2(
-      [vaultdaiweth, vaultusdcweth],
-      "cream",
-      "scream",
-      DEPOSIT_STABLE,
-      BORROW_WETH,
-      0
-    );
-    testRefinance3([vaultusdcftm, vaultdaiftm], "cream", "scream", DEPOSIT_STABLE, BORROW_FTM, 0);
-    testRefinance3([vaultwbtcftm], "cream", "scream", DEPOSIT_WBTC, BORROW_FTM, 0);
-    testRefinance3([vaultwethftm], "cream", "scream", DEPOSIT_WETH, BORROW_FTM, 0);
+      testRefinance3([vaultusdcftm, vaultdaiftm], "cream", "scream", DEPOSIT_STABLE, BORROW_FTM, 0);
+      testRefinance3([vaultwbtcftm], "cream", "scream", DEPOSIT_WBTC, BORROW_FTM, 0);
+      testRefinance3([vaultwethftm], "cream", "scream", DEPOSIT_WETH, BORROW_FTM, 0);
+    });
   });
 });

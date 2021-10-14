@@ -1,8 +1,9 @@
-const { deploy, redeployIf } = require("../utils");
+const { deploy, redeployIf, network } = require("../utils");
 
 const deploySwapper = async () => {
-  const name = "Swapper";
-  const contractName = "Swapper";
+  const name = network === "fantom" ? "SwapperFTM" : "Swapper";
+  const contractName = network === "fantom" ? "SwapperFTM" : "Swapper";
+
   const deployed = await redeployIf(name, contractName, () => false, deploy);
   return deployed;
 };

@@ -16,13 +16,13 @@ const { updateFujiERC1155 } = require("../tasks/updateFujiERC1155");
 const { updateFujiFliquidator } = require("../tasks/updateFujiFliquidator");
 const { updateVault } = require("../tasks/updateVault");
 const { setDeploymentsPath, network } = require("../utils");
-const { ASSETS, SUSHI_ROUTER_ADDR } = require("./consts");
+const { ASSETS, SPOOKY_ROUTER_ADDR } = require("./consts");
 
 const deployContracts = async () => {
   console.log("\n\n 📡 Deploying...\n");
 
-  // Functional Contracts
   const treasury = "0x9F5A10E45906Ef12497237cE10fB7AB9B850Ff86";
+  // Functional Contracts
   const fujiadmin = await deployFujiAdmin();
   const fliquidator = await deployFliquidator();
   const flasher = await deployFlasher();
@@ -34,32 +34,25 @@ const deployContracts = async () => {
   ]);
 
   // Provider Contracts
-  const aave = await deployProvider("ProviderAave");
-  const compound = await deployProvider("ProviderCompound");
-  const dydx = await deployProvider("ProviderDYDX");
-  const ironBank = await deployProvider("ProviderIronBank");
+  const cream = await deployProvider("ProviderCream");
+  const scream = await deployProvider("ProviderScream");
+  // const geist = await deployProvider("ProviderGeist");
 
   // Deploy Core Money Handling Contracts
-  const vaultharvester = await deployVaultHarvester();
+  // const vaultharvester = await deployVaultHarvester();
   const swapper = await deploySwapper();
 
-  const vaultdai = await deployVault("VaultETHDAI", [
+  const vaultdai = await deployVault("VaultFTMDAI", [
     fujiadmin,
     oracle,
-    ASSETS.ETH.address,
+    ASSETS.FTM.address,
     ASSETS.DAI.address,
   ]);
-  const vaultusdc = await deployVault("VaultETHUSDC", [
+  const vaultusdc = await deployVault("VaultFTMUSDC", [
     fujiadmin,
     oracle,
-    ASSETS.ETH.address,
+    ASSETS.FTM.address,
     ASSETS.USDC.address,
-  ]);
-  const vaultusdt = await deployVault("VaultETHUSDT", [
-    fujiadmin,
-    oracle,
-    ASSETS.ETH.address,
-    ASSETS.USDT.address,
   ]);
 
   // General Plug-ins and Set-up Transactions
@@ -68,27 +61,22 @@ const deployContracts = async () => {
     fliquidator,
     treasury,
     controller,
-    vaultharvester,
+    // vaultharvester,
     swapper,
   });
-  await updateFujiFliquidator(fliquidator, { fujiadmin, oracle, swapper: SUSHI_ROUTER_ADDR });
+  await updateFujiFliquidator(fliquidator, { fujiadmin, oracle, swapper: SPOOKY_ROUTER_ADDR });
   await updateFlasher(flasher, fujiadmin);
   await updateController(controller, fujiadmin);
-  await updateFujiERC1155(f1155, [vaultdai, vaultusdc, vaultusdt, fliquidator]);
+  await updateFujiERC1155(f1155, [vaultdai, vaultusdc, fliquidator]);
 
   // Vault Set-up
-  await updateVault("VaultETHDAI", vaultdai, {
-    providers: [compound, aave, dydx, ironBank],
+  await updateVault("VaultFTMDAI", vaultdai, {
+    providers: [cream, scream],
     fujiadmin,
     f1155,
   });
-  await updateVault("VaultETHUSDC", vaultusdc, {
-    providers: [compound, aave, dydx, ironBank],
-    fujiadmin,
-    f1155,
-  });
-  await updateVault("VaultETHUSDT", vaultusdt, {
-    providers: [compound, aave, ironBank],
+  await updateVault("VaultFTMUSDC", vaultusdc, {
+    providers: [cream, scream],
     fujiadmin,
     f1155,
   });
@@ -97,8 +85,8 @@ const deployContracts = async () => {
 };
 
 const main = async () => {
-  if (network !== "mainnet") {
-    throw new Error("Please set 'NETWORK=mainnet' in ./packages/hardhat/.env");
+  if (network !== "fantom") {
+    throw new Error("Please set 'NETWORK=fantom' in ./packages/hardhat/.env");
   }
 
   await setDeploymentsPath("core");

@@ -1,3 +1,4 @@
+const chalk = require("chalk");
 const { deployController } = require("../tasks/deployController");
 const { deployFlasher } = require("../tasks/deployFlasher");
 const { deployFliquidator } = require("../tasks/deployFliquidator");
@@ -14,7 +15,7 @@ const { updateFujiAdmin } = require("../tasks/updateFujiAdmin");
 const { updateFujiERC1155 } = require("../tasks/updateFujiERC1155");
 const { updateFujiFliquidator } = require("../tasks/updateFujiFliquidator");
 const { updateVault } = require("../tasks/updateVault");
-const { setDeploymentsPath } = require("../utils");
+const { setDeploymentsPath, network } = require("../utils");
 const { ASSETS, SUSHI_ROUTER_ADDR } = require("./consts");
 
 const deployContracts = async () => {
@@ -77,6 +78,10 @@ const deployContracts = async () => {
 };
 
 const main = async () => {
+  if (network !== "mainnet") {
+    throw new Error("Please set 'NETWORK=mainnet' in ./packages/hardhat/.env");
+  }
+
   await setDeploymentsPath("fuse");
   await deployContracts();
 };
@@ -84,6 +89,6 @@ const main = async () => {
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error(error);
+    console.error(chalk.red(`\n${error.msg}\n`));
     process.exit(1);
   });

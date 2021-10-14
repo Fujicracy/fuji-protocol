@@ -6,11 +6,13 @@ const R = require("ramda");
 const { ethers, upgrades, artifacts } = hre;
 const { utils, provider } = ethers;
 
+const network = process.env.NETWORK;
+
 let deploymentsPath = "core.deploy"; // by default
 
 const setDeploymentsPath = async (market) => {
-  const network = await provider.getNetwork();
-  deploymentsPath = `${hre.config.paths.artifacts}/${network.chainId}-${market}.deploy`;
+  const netw = await provider.getNetwork();
+  deploymentsPath = `${hre.config.paths.artifacts}/${netw.chainId}-${market}.deploy`;
 };
 
 const getDeployments = async (name) => {
@@ -138,4 +140,5 @@ module.exports = {
   updateDeployments,
   redeployIf,
   callIf,
+  network,
 };

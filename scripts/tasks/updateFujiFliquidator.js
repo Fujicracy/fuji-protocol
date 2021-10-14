@@ -1,8 +1,9 @@
 const { ethers } = require("hardhat");
-const { callIf } = require("../utils");
+const { callIf, network } = require("../utils");
 
 const updateFujiFliquidator = async (fliquidator, params) => {
-  const fliquidatorContract = await ethers.getContractAt("Fliquidator", fliquidator);
+  const contractName = network === "fantom" ? "FliquidatorFTM" : "Fliquidator";
+  const fliquidatorContract = await ethers.getContractAt(contractName, fliquidator);
   const { fujiadmin, oracle, swapper } = params;
 
   if (fujiadmin) {

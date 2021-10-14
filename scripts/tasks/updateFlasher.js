@@ -1,8 +1,9 @@
 const { ethers } = require("hardhat");
-const { callIf } = require("../utils");
+const { callIf, network } = require("../utils");
 
 const updateFlasher = async (flasher, fujiadmin) => {
-  const flasherContract = await ethers.getContractAt("Flasher", flasher);
+  const contractName = network === "fantom" ? "FlasherFTM" : "Flasher";
+  const flasherContract = await ethers.getContractAt(contractName, flasher);
 
   if (fujiadmin) {
     await callIf(

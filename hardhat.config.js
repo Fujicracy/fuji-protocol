@@ -19,6 +19,13 @@ const mainnetUrl = process.env.ALCHEMY_ID
   ? `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_ID}`
   : `https://mainnet.infura.io/v3/${process.env.INFURA_ID}`;
 
+const network = process.env.NETWORK;
+const forkUrl = network === "fantom"
+  ? 'https://rpc.ftm.tools/'
+  : network === "bsc"
+  ? 'https://bsc-dataseed.binance.org/'
+  : mainnetUrl;
+
 //
 // Select the network you want to deploy to here:
 //
@@ -42,7 +49,7 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        url: mainnetUrl,
+        url: forkUrl,
         //blockNumber: 12962882, //before London
       },
     },
@@ -68,6 +75,10 @@ module.exports = {
     },
     mainnet: {
       url: mainnetUrl,
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : { mnemonic: mnemonic() },
+    },
+    fantom: {
+      url: `https://rpc.ftm.tools/`,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : { mnemonic: mnemonic() },
     },
     ropsten: {

@@ -4,12 +4,7 @@ const { createFixtureLoader } = require("ethereum-waffle");
 
 const { getContractAt, provider } = ethers;
 
-const {
-  parseUnits,
-  evmSnapshot,
-  evmRevert,
-  FLASHLOAN,
-} = require("./helpers");
+const { parseUnits, evmSnapshot, evmRevert, FLASHLOAN } = require("./helpers");
 
 const { fixture, ASSETS, VAULTS } = require("./core-utils");
 
@@ -23,11 +18,7 @@ const {
   testPaybackAndWithdraw2,
   testPaybackAndWithdraw3,
 } = require("./FujiVault");
-const {
-  testRefinance1,
-  testRefinance2,
-  testRefinance3,
-} = require("./Controller");
+const { testRefinance1, testRefinance2, testRefinance3 } = require("./Controller");
 
 const IRONBANK_FUJI_MAPPING = "0x17525aFdb24D24ABfF18108E7319b93012f3AD24";
 
@@ -145,20 +136,80 @@ describe("Core Fuji Instance", function () {
       testBorrow1([vaultethdai, vaultethusdc, vaultethusdt], DEPOSIT_ETH, BORROW_STABLE);
       testBorrow1([vaultethwbtc], DEPOSIT_ETH, BORROW_WBTC);
 
-      testPaybackAndWithdraw1([vaultethdai, vaultethusdc, vaultethusdt], DEPOSIT_ETH, BORROW_STABLE);
+      testPaybackAndWithdraw1(
+        [vaultethdai, vaultethusdc, vaultethusdt],
+        DEPOSIT_ETH,
+        BORROW_STABLE
+      );
       testPaybackAndWithdraw1([vaultethwbtc], DEPOSIT_ETH, BORROW_WBTC);
 
-      testRefinance1([vaultethdai, vaultethusdc, vaultethusdt], "ironBank", "compound", DEPOSIT_ETH, BORROW_STABLE, FLASHLOAN.AAVE);
-      testRefinance1([vaultethdai, vaultethusdc], "ironBank", "compound", DEPOSIT_ETH, BORROW_STABLE, FLASHLOAN.DYDX);
-      testRefinance1([vaultethdai, vaultethusdc, vaultethusdt], "ironBank", "compound", DEPOSIT_ETH, BORROW_STABLE, FLASHLOAN.CREAM);
+      testRefinance1(
+        [vaultethdai, vaultethusdc, vaultethusdt],
+        "ironBank",
+        "compound",
+        DEPOSIT_ETH,
+        BORROW_STABLE,
+        FLASHLOAN.AAVE
+      );
+      testRefinance1(
+        [vaultethdai, vaultethusdc],
+        "ironBank",
+        "compound",
+        DEPOSIT_ETH,
+        BORROW_STABLE,
+        FLASHLOAN.DYDX
+      );
+      testRefinance1(
+        [vaultethdai, vaultethusdc, vaultethusdt],
+        "ironBank",
+        "compound",
+        DEPOSIT_ETH,
+        BORROW_STABLE,
+        FLASHLOAN.CREAM
+      );
 
-      testRefinance1([vaultethdai, vaultethusdc], "ironBank", "dydx", DEPOSIT_ETH, BORROW_STABLE, FLASHLOAN.AAVE);
+      testRefinance1(
+        [vaultethdai, vaultethusdc],
+        "ironBank",
+        "dydx",
+        DEPOSIT_ETH,
+        BORROW_STABLE,
+        FLASHLOAN.AAVE
+      );
       //testRefinance1([vaultethdai, vaultethusdc], "ironBank", "dydx", DEPOSIT_ETH, BORROW_STABLE, FLASHLOAN.DYDX);
-      testRefinance1([vaultethdai, vaultethusdc], "ironBank", "dydx", DEPOSIT_ETH, BORROW_STABLE, FLASHLOAN.CREAM);
+      testRefinance1(
+        [vaultethdai, vaultethusdc],
+        "ironBank",
+        "dydx",
+        DEPOSIT_ETH,
+        BORROW_STABLE,
+        FLASHLOAN.CREAM
+      );
 
-      testRefinance1([vaultethdai, vaultethusdc, vaultethusdt], "ironBank", "aave", DEPOSIT_ETH, BORROW_WBTC, FLASHLOAN.AAVE);
-      testRefinance1([vaultethdai, vaultethusdc], "ironBank", "aave", DEPOSIT_ETH, BORROW_WBTC, FLASHLOAN.DYDX);
-      testRefinance1([vaultethdai, vaultethusdc, vaultethusdt], "ironBank", "aave", DEPOSIT_ETH, BORROW_WBTC, FLASHLOAN.CREAM);
+      testRefinance1(
+        [vaultethdai, vaultethusdc, vaultethusdt],
+        "ironBank",
+        "aave",
+        DEPOSIT_ETH,
+        BORROW_WBTC,
+        FLASHLOAN.AAVE
+      );
+      testRefinance1(
+        [vaultethdai, vaultethusdc],
+        "ironBank",
+        "aave",
+        DEPOSIT_ETH,
+        BORROW_WBTC,
+        FLASHLOAN.DYDX
+      );
+      testRefinance1(
+        [vaultethdai, vaultethusdc, vaultethusdt],
+        "ironBank",
+        "aave",
+        DEPOSIT_ETH,
+        BORROW_WBTC,
+        FLASHLOAN.CREAM
+      );
     });
 
     describe("ERC20 token as collateral, ERC20 as borrow asset.", function () {
@@ -171,8 +222,12 @@ describe("Core Fuji Instance", function () {
       testBorrow2([vaultwbtcdai, vaultwbtcusdc], DEPOSIT_WBTC, BORROW_STABLE);
       testBorrow2([vaultdaiwbtc, vaultusdcwbtc, vaultusdtwbtc], DEPOSIT_STABLE, BORROW_WBTC);
 
-      testPaybackAndWithdraw2([vaultdaiwbtc, vaultusdcwbtc, vaultusdtwbtc], DEPOSIT_STABLE, BORROW_WBTC);
-      
+      testPaybackAndWithdraw2(
+        [vaultdaiwbtc, vaultusdcwbtc, vaultusdtwbtc],
+        DEPOSIT_STABLE,
+        BORROW_WBTC
+      );
+
       // mint is paused
       //testRefinance2([vaultwbtcdai, vaultwbtcusdc], "ironBank", "compound", DEPOSIT_WBTC, BORROW_STABLE, FLASHLOAN.AAVE);
       //testRefinance2([vaultwbtcdai, vaultwbtcusdc], "ironBank", "compound", DEPOSIT_WBTC, BORROW_STABLE, FLASHLOAN.DYDX);
@@ -182,27 +237,64 @@ describe("Core Fuji Instance", function () {
       //testRefinance2([], "ironBank", "dydx", DEPOSIT_ETH, BORROW_STABLE, FLASHLOAN.DYDX);
       testRefinance2([], "ironBank", "dydx", DEPOSIT_ETH, BORROW_STABLE, FLASHLOAN.CREAM);
 
-      testRefinance2([vaultwbtcdai, vaultwbtcusdc], "ironBank", "aave", DEPOSIT_WBTC, BORROW_STABLE, FLASHLOAN.AAVE);
-      testRefinance2([vaultwbtcdai, vaultwbtcusdc], "ironBank", "aave", DEPOSIT_WBTC, BORROW_STABLE, FLASHLOAN.DYDX);
-      testRefinance2([vaultwbtcdai, vaultwbtcusdc], "ironBank", "aave", DEPOSIT_WBTC, BORROW_STABLE, FLASHLOAN.CREAM);
+      testRefinance2(
+        [vaultwbtcdai, vaultwbtcusdc],
+        "ironBank",
+        "aave",
+        DEPOSIT_WBTC,
+        BORROW_STABLE,
+        FLASHLOAN.AAVE
+      );
+      testRefinance2(
+        [vaultwbtcdai, vaultwbtcusdc],
+        "ironBank",
+        "aave",
+        DEPOSIT_WBTC,
+        BORROW_STABLE,
+        FLASHLOAN.DYDX
+      );
+      testRefinance2(
+        [vaultwbtcdai, vaultwbtcusdc],
+        "ironBank",
+        "aave",
+        DEPOSIT_WBTC,
+        BORROW_STABLE,
+        FLASHLOAN.CREAM
+      );
     });
 
     describe("ERC20 token as collateral, native token as borrow asset.", function () {
       testBorrow3([vaultdaieth, vaultusdceth, vaultusdteth], DEPOSIT_STABLE, BORROW_ETH);
 
       testPaybackAndWithdraw3([vaultwbtceth], DEPOSIT_WBTC, BORROW_ETH);
-      testPaybackAndWithdraw3([vaultdaieth, vaultusdceth, vaultusdteth], DEPOSIT_STABLE, BORROW_ETH);
+      testPaybackAndWithdraw3(
+        [vaultdaieth, vaultusdceth, vaultusdteth],
+        DEPOSIT_STABLE,
+        BORROW_ETH
+      );
 
       //testRefinance3([vaultwbtceth], "ironBank", "compound", DEPOSIT_WBTC, BORROW_ETH, FLASHLOAN.AAVE);
       //testRefinance3([vaultwbtceth], "ironBank", "compound", DEPOSIT_WBTC, BORROW_ETH, FLASHLOAN.DYDX);
       //testRefinance3([vaultwbtceth], "ironBank", "compound", DEPOSIT_WBTC, BORROW_ETH, FLASHLOAN.CREAM);
 
-      testRefinance3([vaultdaieth, vaultusdceth], "ironBank", "aave", DEPOSIT_STABLE, BORROW_ETH, FLASHLOAN.AAVE);
-      testRefinance3([vaultdaieth, vaultusdceth], "ironBank", "aave", DEPOSIT_STABLE, BORROW_ETH, FLASHLOAN.DYDX);
+      testRefinance3(
+        [vaultdaieth, vaultusdceth],
+        "ironBank",
+        "aave",
+        DEPOSIT_STABLE,
+        BORROW_ETH,
+        FLASHLOAN.AAVE
+      );
+      testRefinance3(
+        [vaultdaieth, vaultusdceth],
+        "ironBank",
+        "aave",
+        DEPOSIT_STABLE,
+        BORROW_ETH,
+        FLASHLOAN.DYDX
+      );
       // re-entered
       //testRefinance3([vaultdaieth, vaultusdceth], "ironBank", "aave", DEPOSIT_STABLE, BORROW_ETH, FLASHLOAN.CREAM);
     });
-
   });
-
 });

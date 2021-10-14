@@ -4,7 +4,7 @@ const { formatUnitsToNum, parseUnits, timeTravel } = require("./helpers");
 function testRefinance1(vaults, from, to, amountToDeposit, amountToBorrow, flashloanProvider = 1) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
-    it(`refinance ERC20 -> ${debt.nameUp} debt with ETH as collateral`, async function () {
+    it(`refinance ${collateral.nameUp} -> ${debt.nameUp} Native token as collateral, ERC20 as borrow asset`, async function () {
       const depositAmount = parseUnits(amountToDeposit);
       const borrowAmount = parseUnits(amountToBorrow, debt.decimals);
 
@@ -42,11 +42,13 @@ function testRefinance1(vaults, from, to, amountToDeposit, amountToBorrow, flash
 function testRefinance2(vaults, from, to, amountToDeposit, amountToBorrow, flashloanProvider = 1) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
-    it(`refinance ERC20 -> ${debt.nameUp} debt with ERC20 -> ${collateral.nameUp} as collateral`, async function () {
+    it(`refinance ${collateral.nameUp} -> ${debt.nameUp} ERC20 as collateral, ERC20 as borrow asset`, async function () {
       const depositAmount = parseUnits(amountToDeposit, collateral.decimals);
       const borrowAmount = parseUnits(amountToBorrow, debt.decimals);
 
-      await this.f[collateral.name].connect(this.users[1]).approve(this.f[name].address, depositAmount);
+      await this.f[collateral.name]
+        .connect(this.users[1])
+        .approve(this.f[name].address, depositAmount);
       await this.f[name].connect(this.users[1]).depositAndBorrow(depositAmount, borrowAmount);
 
       let preVaultDebt = await this.f[name].borrowBalance(this.f[from].address);
@@ -77,11 +79,13 @@ function testRefinance2(vaults, from, to, amountToDeposit, amountToBorrow, flash
 function testRefinance3(vaults, from, to, amountToDeposit, amountToBorrow, flashloanProvider = 1) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
-    it(`refinance ETH debt with ERC20 -> ${collateral.nameUp} as collateral`, async function () {
+    it(`refinance ${collateral.nameUp} -> ${debt.nameUp} ERC20 as collateral, Native token as borrow asset`, async function () {
       const depositAmount = parseUnits(amountToDeposit, collateral.decimals);
       const borrowAmount = parseUnits(amountToBorrow);
 
-      await this.f[collateral.name].connect(this.users[1]).approve(this.f[name].address, depositAmount);
+      await this.f[collateral.name]
+        .connect(this.users[1])
+        .approve(this.f[name].address, depositAmount);
       await this.f[name].connect(this.users[1]).depositAndBorrow(depositAmount, borrowAmount);
 
       let preVaultDebt = await this.f[name].borrowBalance(this.f[from].address);
@@ -103,8 +107,8 @@ function testRefinance3(vaults, from, to, amountToDeposit, amountToBorrow, flash
       let postVaultCollat = await this.f[name].depositBalance(this.f[to].address);
       postVaultCollat = formatUnitsToNum(postVaultCollat, collateral.decimals);
 
-      await expect(preVaultDebt).to.be.closeTo(postVaultDebt, 0.001);
-      await expect(preVaultCollat).to.be.closeTo(postVaultCollat, 1);
+      await expect(preVaultDebt).to.be.closeTo(postVaultDebt, postVaultDebt / 100); // 1% close
+      await expect(preVaultCollat).to.be.closeTo(postVaultCollat, postVaultCollat / 100); // 1% close
     });
   }
 }

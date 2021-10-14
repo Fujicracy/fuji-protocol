@@ -26,7 +26,9 @@ function testFlashClose1(vaults, amountToDeposit, amountToBorrow, flashLoanProvi
 
       const userBalBefore = await provider.getBalance(this.user1.address);
 
-      await this.f.fliquidator.connect(this.user1).flashClose(-1, this.f[name].address, flashLoanProvider);
+      await this.f.fliquidator
+        .connect(this.user1)
+        .flashClose(-1, this.f[name].address, flashLoanProvider);
 
       const userBalAfter = await provider.getBalance(this.user1.address);
 
@@ -65,7 +67,9 @@ function testFlashClose2(vaults, amountToDeposit, amountToBorrow, flashLoanProvi
 
       const userBalBefore = await this.f[collateral.name].balanceOf(this.user1.address);
 
-      await this.f.fliquidator.connect(this.user1).flashClose(-1, this.f[name].address, flashLoanProvider);
+      await this.f.fliquidator
+        .connect(this.user1)
+        .flashClose(-1, this.f[name].address, flashLoanProvider);
 
       const userBalAfter = await this.f[collateral.name].balanceOf(this.user1.address);
 
@@ -104,7 +108,9 @@ function testFlashClose3(vaults, amountToDeposit, amountToBorrow, flashLoanProvi
 
       const userBalBefore = await this.f[collateral.name].balanceOf(this.user1.address);
 
-      await this.f.fliquidator.connect(this.user1).flashClose(-1, this.f[name].address, flashLoanProvider);
+      await this.f.fliquidator
+        .connect(this.user1)
+        .flashClose(-1, this.f[name].address, flashLoanProvider);
 
       const userBalAfter = await this.f[collateral.name].balanceOf(this.user1.address);
 

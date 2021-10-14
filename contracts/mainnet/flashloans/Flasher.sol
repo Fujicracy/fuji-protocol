@@ -5,21 +5,22 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./DyDxFlashLoans.sol";
-import "../abstracts/claimable/Claimable.sol";
-import "../interfaces/IFujiAdmin.sol";
-import "../interfaces/IVault.sol";
-import "../interfaces/IFliquidator.sol";
-import "../interfaces/IFujiMappings.sol";
-import "../interfaces/IWETH.sol";
-import "../interfaces/aave/IFlashLoanReceiver.sol";
-import "../interfaces/aave/IAaveLendingPool.sol";
-import "../interfaces/cream/ICTokenFlashloan.sol";
-import "../interfaces/cream/ICFlashloanReceiver.sol";
+import "../../abstracts/claimable/Claimable.sol";
+import "../../interfaces/IFujiAdmin.sol";
+import "../../interfaces/IVault.sol";
+import "../../interfaces/IFlasher.sol";
+import "../../interfaces/IFliquidator.sol";
+import "../../interfaces/IFujiMappings.sol";
+import "../../interfaces/IWETH.sol";
+import "../../interfaces/aave/IFlashLoanReceiver.sol";
+import "../../interfaces/aave/IAaveLendingPool.sol";
+import "../../interfaces/cream/ICTokenFlashloan.sol";
+import "../../interfaces/cream/ICFlashloanReceiver.sol";
 import "../libraries/LibUniversalERC20.sol";
-import "../libraries/FlashLoans.sol";
-import "../libraries/Errors.sol";
+import "../../libraries/FlashLoans.sol";
+import "../../libraries/Errors.sol";
 
-contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, ICallee, Claimable {
+contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, ICallee, Claimable {
   using LibUniversalERC20 for IERC20;
 
   IFujiAdmin private _fujiAdmin;
@@ -58,7 +59,7 @@ contract Flasher is DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, 
    * @param info: struct information for flashLoan
    * @param _flashnum: integer identifier of flashloan provider
    */
-  function initiateFlashloan(FlashLoan.Info calldata info, uint8 _flashnum) external isAuthorized {
+  function initiateFlashloan(FlashLoan.Info calldata info, uint8 _flashnum) external isAuthorized override {
     if (_flashnum == 0) {
       _initiateAaveFlashLoan(info);
     } else if (_flashnum == 1) {

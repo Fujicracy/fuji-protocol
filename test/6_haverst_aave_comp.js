@@ -4,21 +4,11 @@ const { createFixtureLoader } = require("ethereum-waffle");
 
 const { getContractAt, provider } = ethers;
 
-const {
-  parseUnits,
-  evmSnapshot,
-  evmRevert,
-  advanceBlocks,
-  timeTravel,
-} = require("./helpers");
+const { parseUnits, evmSnapshot, evmRevert, advanceBlocks, timeTravel } = require("./helpers");
 
 const { fixture } = require("./core-utils");
 
-const {
-  testExecutorRole,
-  testOwnership,
-} = require("./Controller");
-
+const { testExecutorRole, testOwnership } = require("./Controller");
 
 describe("Core Fuji Instance", function () {
   before(async function () {
@@ -43,45 +33,44 @@ describe("Core Fuji Instance", function () {
   });
 
   describe("Harvesting", function () {
-
     //it("Should harvest COMP", async function () {
-      //const comptoken = await getContractAt(
-        //"IERC20",
-        //"0xc00e94Cb662C3520282E6f5717214004A7f26888"
-      //);
+    //const comptoken = await getContractAt(
+    //"IERC20",
+    //"0xc00e94Cb662C3520282E6f5717214004A7f26888"
+    //);
 
-      //// Set up variables
-      //const vault = this.f.vaultethdai;
-      //const depositAmount = parseUnits("995");
-      //const borrowAmount = parseUnits("100000");
-      //const smallDeposits = parseUnits("0.1");
+    //// Set up variables
+    //const vault = this.f.vaultethdai;
+    //const depositAmount = parseUnits("995");
+    //const borrowAmount = parseUnits("100000");
+    //const smallDeposits = parseUnits("0.1");
 
-      //// For COMP set up compound as provider
-      //await vault.setActiveProvider(this.f.compound.address);
+    //// For COMP set up compound as provider
+    //await vault.setActiveProvider(this.f.compound.address);
 
-      //// Do a deposit
-      //await vault
-        //.connect(this.user)
-        //.depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount });
+    //// Do a deposit
+    //await vault
+    //.connect(this.user)
+    //.depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount });
 
-      //// Do small deposits to updateState in Compound contracts in long time periods
-      //for (let i = 1; i < 11; i++) {
-        //await vault.connect(this.users[i]).deposit(smallDeposits, { value: smallDeposits });
-        //await advanceBlocks(50);
-      //}
+    //// Do small deposits to updateState in Compound contracts in long time periods
+    //for (let i = 1; i < 11; i++) {
+    //await vault.connect(this.users[i]).deposit(smallDeposits, { value: smallDeposits });
+    //await advanceBlocks(50);
+    //}
 
-      //const vAssetStruct = await vault.vAssets();
-      //const collateralBalanceBefore = await this.f.f1155.balanceOf(
-        //this.user.address,
-        //vAssetStruct.collateralID
-      //);
+    //const vAssetStruct = await vault.vAssets();
+    //const collateralBalanceBefore = await this.f.f1155.balanceOf(
+    //this.user.address,
+    //vAssetStruct.collateralID
+    //);
 
-      //// Pass 0 for COMP farming
-      //await vault.connect(this.deployer).harvestRewards(0, "0x");
+    //// Pass 0 for COMP farming
+    //await vault.connect(this.deployer).harvestRewards(0, "0x");
 
-      //expect(await this.f.f1155.balanceOf(this.user.address, vAssetStruct.collateralID)).to.gt(
-        //collateralBalanceBefore
-      //);
+    //expect(await this.f.f1155.balanceOf(this.user.address, vAssetStruct.collateralID)).to.gt(
+    //collateralBalanceBefore
+    //);
     //});
 
     it("Should harvest stkAave", async function () {
@@ -150,6 +139,5 @@ describe("Core Fuji Instance", function () {
         collateralBalanceBefore
       );
     });
-
   });
 });

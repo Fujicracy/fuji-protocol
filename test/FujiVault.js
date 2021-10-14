@@ -74,7 +74,6 @@ function testDeposit1b(vaults, amount) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
     it(`deposit ${amount} ETH as collateral, check ${vault.name} balance`, async function () {
-
       const depositAmount = parseUnits(amount);
       const negdepositAmount = parseUnits(-amount);
 
@@ -270,7 +269,7 @@ function testPaybackAndWithdraw1(vaults, amountToDeposit, amountToBorrow) {
         await this.f[name].connect(this.users[x]).withdraw(-1);
         await timeTravel(60);
         await expect(await this.f.f1155.balanceOf(this.users[x].address, collateralID)).to.be.lt(
-          1e13
+          1e15
         );
       }
     });

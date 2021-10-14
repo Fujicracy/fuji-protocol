@@ -3,31 +3,31 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../interfaces/IProvider.sol";
-import "../interfaces/IWETH.sol";
-import "../interfaces/IFujiMappings.sol";
-import "../interfaces/compound/IGenCToken.sol";
-import "../interfaces/compound/ICErc20.sol";
-import "../interfaces/compound/IComptroller.sol";
-import "../libraries/LibUniversalERC20.sol";
+import "../../interfaces/IProvider.sol";
+import "../../interfaces/IWETH.sol";
+import "../../interfaces/IFujiMappings.sol";
+import "../../interfaces/compound/IGenCToken.sol";
+import "../../interfaces/compound/ICErc20.sol";
+import "../../interfaces/compound/IComptroller.sol";
+import "../libraries/LibUniversalERC20FTM.sol";
 
 contract HelperFunct {
-  function _isETH(address token) internal pure returns (bool) {
-    return (token == address(0) || token == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE));
+  function _isFTM(address token) internal pure returns (bool) {
+    return (token == address(0) || token == address(0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF));
   }
 
   function _getMappingAddr() internal pure returns (address) {
-    return 0x17525aFdb24D24ABfF18108E7319b93012f3AD24;
+    return 0x1eEdE44b91750933C96d2125b6757C4F89e63E20; // Cream fantom mapper
   }
 
   function _getComptrollerAddress() internal pure returns (address) {
-    return 0xAB1c342C7bf5Ec5F02ADEA1c2270670bCa144CbB;
+    return 0x4250A6D3BD57455d7C6821eECb6206F507576cD2; // Cream fantom
   }
 
-  //IronBank functions
+  //fantomCream functions
 
   /**
-   * @dev Approves vault's assets as collateral for IronBank Protocol.
+   * @dev Approves vault's assets as collateral for fantomCream Protocol.
    * @param _cyTokenAddress: asset type to be approved as collateral.
    */
   function _enterCollatMarket(address _cyTokenAddress) internal {
@@ -40,7 +40,7 @@ contract HelperFunct {
   }
 
   /**
-   * @dev Removes vault's assets as collateral for IronBank Protocol.
+   * @dev Removes vault's assets as collateral for fantomCream Protocol.
    * @param _cyTokenAddress: asset type to be removed as collateral.
    */
   function _exitCollatMarket(address _cyTokenAddress) internal {
@@ -51,14 +51,14 @@ contract HelperFunct {
   }
 }
 
-contract ProviderIronBank is IProvider, HelperFunct {
-  using LibUniversalERC20 for IERC20;
+contract ProviderCream is IProvider, HelperFunct {
+  using LibUniversalERC20FTM for IERC20;
 
   //Provider Core Functions
 
   /**
    * @dev Deposit ETH/ERC20_Token.
-   * @param _asset: token address to deposit. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+   * @param _asset: token address to deposit. (For FTM: 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF)
    * @param _amount: token amount to deposit.
    */
   function deposit(address _asset, uint256 _amount) external payable override {
@@ -68,10 +68,10 @@ contract ProviderIronBank is IProvider, HelperFunct {
     //Enter and/or ensure collateral market is enacted
     _enterCollatMarket(cyTokenAddr);
 
-    if (_isETH(_asset)) {
+    if (_isFTM(_asset)) {
       // Transform ETH to WETH
-      IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).deposit{ value: _amount }();
-      _asset = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+      IWETH(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).deposit{ value: _amount }();
+      _asset = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83);
     }
 
     // Create reference to the ERC20 contract
@@ -86,13 +86,13 @@ contract ProviderIronBank is IProvider, HelperFunct {
     //Approve to move ERC20tokens
     erc20token.univApprove(address(cyTokenAddr), _amount);
 
-    // IronBank Protocol mints cyTokens, trhow error if not
+    // fantomCream Protocol mints cyTokens, trhow error if not
     require(cyToken.mint(_amount) == 0, "Deposit-failed");
   }
 
   /**
    * @dev Withdraw ETH/ERC20_Token.
-   * @param _asset: token address to withdraw. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+   * @param _asset: token address to withdraw. (For FTM: 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF)
    * @param _amount: token amount to withdraw.
    */
   function withdraw(address _asset, uint256 _amount) external payable override {
@@ -102,18 +102,18 @@ contract ProviderIronBank is IProvider, HelperFunct {
     // Create a reference to the corresponding cyToken contract
     IGenCToken cyToken = IGenCToken(cyTokenAddr);
 
-    //IronBank Protocol Redeem Process, throw errow if not.
+    //fantomCream Protocol Redeem Process, throw errow if not.
     require(cyToken.redeemUnderlying(_amount) == 0, "Withdraw-failed");
 
-    if (_isETH(_asset)) {
-      // Transform ETH to WETH
-      IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).withdraw(_amount);
+    if (_isFTM(_asset)) {
+      // Transform FTM to WFTM
+      IWETH(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).withdraw(_amount);
     }
   }
 
   /**
    * @dev Borrow ETH/ERC20_Token.
-   * @param _asset token address to borrow.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
+   * @param _asset token address to borrow.(For FTM: 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF)
    * @param _amount: token amount to borrow.
    */
   function borrow(address _asset, uint256 _amount) external payable override {
@@ -123,12 +123,15 @@ contract ProviderIronBank is IProvider, HelperFunct {
     // Create a reference to the corresponding cyToken contract
     IGenCToken cyToken = IGenCToken(cyTokenAddr);
 
-    //IronBank Protocol Borrow Process, throw errow if not.
+    // Enter and/or ensure collateral market is enacted
+    // _enterCollatMarket(cyTokenAddr);
+
+    // fantomCream Protocol Borrow Process, throw errow if not.
     require(cyToken.borrow(_amount) == 0, "borrow-failed");
 
-    if (_isETH(_asset)) {
-      // Transform ETH to WETH
-      IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).withdraw(_amount);
+    if (_isFTM(_asset)) {
+      // Transform WFTM to FTM
+      IWETH(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).withdraw(_amount);
     }
   }
 
@@ -141,10 +144,10 @@ contract ProviderIronBank is IProvider, HelperFunct {
     //Get cyToken address from mapping
     address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    if (_isETH(_asset)) {
-      // Transform ETH to WETH
-      IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).deposit{ value: _amount }();
-      _asset = address(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+    if (_isFTM(_asset)) {
+      // Transform FTM to WFTM
+      IWETH(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).deposit{ value: _amount }();
+      _asset = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83);
     }
 
     // Create reference to the ERC20 contract
@@ -166,10 +169,10 @@ contract ProviderIronBank is IProvider, HelperFunct {
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
     address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    //Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: IronBank uses base 1e18
+    //Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: fantomCream uses base 1e18
     uint256 bRateperBlock = IGenCToken(cyTokenAddr).borrowRatePerBlock() * 10**9;
 
-    // The approximate number of blocks per year that is assumed by the IronBank interest rate model
+    // The approximate number of blocks per year that is assumed by the fantomCream interest rate model
     uint256 blocksperYear = 2102400;
     return bRateperBlock * blocksperYear;
   }
@@ -186,7 +189,7 @@ contract ProviderIronBank is IProvider, HelperFunct {
 
   /**
    * @dev Return borrow balance of ETH/ERC20_Token.
-   * This function is the accurate way to get IronBank borrow balance.
+   * This function is the accurate way to get fantomCream borrow balance.
    * It costs ~84K gas and is not a view function.
    * @param _asset token address to query the balance.
    * @param _who address of the account.

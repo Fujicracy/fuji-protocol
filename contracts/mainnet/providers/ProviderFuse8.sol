@@ -3,18 +3,17 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../interfaces/IProvider.sol";
-import "../interfaces/compound/IGenCToken.sol";
-import "../interfaces/compound/ICErc20.sol";
-import "../interfaces/compound/ICEth.sol";
-import "../interfaces/compound/IFuseComptroller.sol";
+import "../../interfaces/IProvider.sol";
+import "../../interfaces/compound/IGenCToken.sol";
+import "../../interfaces/compound/ICErc20.sol";
+import "../../interfaces/compound/ICEth.sol";
+import "../../interfaces/compound/IFuseComptroller.sol";
 import "../libraries/LibUniversalERC20.sol";
 
 contract HelperFunct {
   function _isETH(address token) internal pure returns (bool) {
     return (token == address(0) || token == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE));
   }
-
   function _getComptrollerAddress() internal pure returns (address) {
     return 0xc54172e34046c1653d1920d40333Dd358c7a1aF4;
   }

@@ -1,20 +1,22 @@
-const { deployController } = require("./tasks/deployController");
-const { deployFlasher } = require("./tasks/deployFlasher");
-const { deployFliquidator } = require("./tasks/deployFliquidator");
-const { deployFujiAdmin } = require("./tasks/deployFujiAdmin");
-const { deployFujiERC1155 } = require("./tasks/deployFujiERC1155");
-const { deployFujiOracle } = require("./tasks/deployFujiOracle");
-const { deployProvider } = require("./tasks/deployProvider");
-const { deploySwapper } = require("./tasks/deploySwapper");
-const { deployVault } = require("./tasks/deployVault");
-const { deployVaultHarvester } = require("./tasks/deployVaultHarvester");
-const { updateController } = require("./tasks/updateController");
-const { updateFlasher } = require("./tasks/updateFlasher");
-const { updateFujiAdmin } = require("./tasks/updateFujiAdmin");
-const { updateFujiERC1155 } = require("./tasks/updateFujiERC1155");
-const { updateFujiFliquidator } = require("./tasks/updateFujiFliquidator");
-const { updateVault } = require("./tasks/updateVault");
-const { setDeploymentsPath, ASSETS, SUSHI_ROUTER_ADDR } = require("./utils");
+const chalk = require("chalk");
+const { deployController } = require("../tasks/deployController");
+const { deployFlasher } = require("../tasks/deployFlasher");
+const { deployFliquidator } = require("../tasks/deployFliquidator");
+const { deployFujiAdmin } = require("../tasks/deployFujiAdmin");
+const { deployFujiERC1155 } = require("../tasks/deployFujiERC1155");
+const { deployFujiOracle } = require("../tasks/deployFujiOracle");
+const { deployProvider } = require("../tasks/deployProvider");
+const { deploySwapper } = require("../tasks/deploySwapper");
+const { deployVault } = require("../tasks/deployVault");
+const { deployVaultHarvester } = require("../tasks/deployVaultHarvester");
+const { updateController } = require("../tasks/updateController");
+const { updateFlasher } = require("../tasks/updateFlasher");
+const { updateFujiAdmin } = require("../tasks/updateFujiAdmin");
+const { updateFujiERC1155 } = require("../tasks/updateFujiERC1155");
+const { updateFujiFliquidator } = require("../tasks/updateFujiFliquidator");
+const { updateVault } = require("../tasks/updateVault");
+const { setDeploymentsPath, network } = require("../utils");
+const { ASSETS, SUSHI_ROUTER_ADDR } = require("./consts");
 
 const deployContracts = async () => {
   console.log("\n\n 📡 Deploying...\n");
@@ -95,6 +97,10 @@ const deployContracts = async () => {
 };
 
 const main = async () => {
+  if (network !== "mainnet") {
+    throw new Error("Please set 'NETWORK=mainnet' in ./packages/hardhat/.env");
+  }
+
   await setDeploymentsPath("core");
   await deployContracts();
 };
@@ -102,6 +108,6 @@ const main = async () => {
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error(error);
+    console.error(chalk.red(`\n${error}\n`));
     process.exit(1);
   });

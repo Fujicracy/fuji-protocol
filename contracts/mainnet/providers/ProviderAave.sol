@@ -4,11 +4,11 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../interfaces/IProvider.sol";
-import "../interfaces/IWETH.sol";
-import "../interfaces/aave/IAaveDataProvider.sol";
-import "../interfaces/aave/IAaveLendingPool.sol";
-import "../interfaces/aave/IAaveLendingPoolProvider.sol";
+import "../../interfaces/IProvider.sol";
+import "../../interfaces/IWETH.sol";
+import "../../interfaces/aave/IAaveDataProvider.sol";
+import "../../interfaces/aave/IAaveLendingPool.sol";
+import "../../interfaces/aave/IAaveLendingPoolProvider.sol";
 import "../libraries/LibUniversalERC20.sol";
 
 contract ProviderAave is IProvider {

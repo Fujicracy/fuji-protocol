@@ -4,17 +4,8 @@ const { createFixtureLoader } = require("ethereum-waffle");
 
 const { getContractAt, provider } = ethers;
 
-const {
-  parseUnits,
-  evmSnapshot,
-  evmRevert,
-  FLASHLOAN,
-} = require("./helpers");
-const {
-  testFlashClose1,
-  testFlashClose2,
-  testFlashClose3,
-} = require("./Fliquidator");
+const { parseUnits, evmSnapshot, evmRevert, FLASHLOAN } = require("./helpers");
+const { testFlashClose1, testFlashClose2, testFlashClose3 } = require("./Fliquidator");
 
 const { fixture, VAULTS, ASSETS } = require("./core-utils");
 
@@ -118,9 +109,19 @@ describe("Core Fuji Instance", function () {
     });
 
     describe("Native token as collateral, ERC20 as borrow asset.", function () {
-      testFlashClose1([vaultethdai, vaultethusdc, vaultethusdt], DEPOSIT_ETH, BORROW_STABLE, FLASHLOAN.AAVE);
+      testFlashClose1(
+        [vaultethdai, vaultethusdc, vaultethusdt],
+        DEPOSIT_ETH,
+        BORROW_STABLE,
+        FLASHLOAN.AAVE
+      );
       testFlashClose1([vaultethdai, vaultethusdc], DEPOSIT_ETH, BORROW_STABLE, FLASHLOAN.DYDX);
-      testFlashClose1([vaultethdai, vaultethusdc, vaultethusdt], DEPOSIT_ETH, BORROW_STABLE, FLASHLOAN.CREAM);
+      testFlashClose1(
+        [vaultethdai, vaultethusdc, vaultethusdt],
+        DEPOSIT_ETH,
+        BORROW_STABLE,
+        FLASHLOAN.CREAM
+      );
 
       testFlashClose1([vaultethwbtc], DEPOSIT_ETH, BORROW_WBTC, FLASHLOAN.AAVE);
       //testFlashClose1([vaultethwbtc], DEPOSIT_ETH, BORROW_WBTC, FLASHLOAN.DYDX);

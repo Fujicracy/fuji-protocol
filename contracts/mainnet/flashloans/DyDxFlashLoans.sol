@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import "../interfaces/dydx/ICallee.sol";
-import "../interfaces/dydx/ISoloMargin.sol";
-import "../libraries/FlashLoans.sol";
+import "../../interfaces/dydx/ICallee.sol";
+import "../../interfaces/dydx/ISoloMargin.sol";
+import "../../libraries/FlashLoans.sol";
 
 contract DyDxFlashloanBase {
   // -- Internal Helper functions -- //

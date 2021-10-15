@@ -14,6 +14,7 @@ const ASSETS = {
     nameUp: "FTM",
     address: "0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF", // fantom
     oracle: "0xf4766552D15AE4d256Ad41B6cf2933482B0680dc",
+    gToken: "0x39B3bd37208CBaDE74D0fcBDBb12D606295b430a",
     decimals: 18,
   },
   DAI: {
@@ -112,6 +113,8 @@ const fixture = async ([wallet]) => {
   const cream = await ProviderCream.deploy([]);
   const ProviderScream = await getContractFactory("ProviderScream");
   const scream = await ProviderScream.deploy([]);
+  const ProviderGeist = await getContractFactory("ProviderGeist");
+  const geist = await ProviderGeist.deploy([]);
 
   // Log if debug is set true
   if (DEBUG) {
@@ -123,6 +126,7 @@ const fixture = async ([wallet]) => {
     console.log("oracle", oracle.address);
     console.log("cream", cream.address);
     console.log("scream", scream.address);
+    console.log("geist", geist.address);
   }
 
   // Setp 3: Vaults
@@ -164,6 +168,7 @@ const fixture = async ([wallet]) => {
     ...vaults,
     cream,
     scream,
+    geist,
     oracle,
     fujiadmin,
     fliquidator,

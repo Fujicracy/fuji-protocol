@@ -21,7 +21,7 @@ const { ASSETS, SPOOKY_ROUTER_ADDR } = require("./consts");
 const deployContracts = async () => {
   console.log("\n\n 📡 Deploying...\n");
 
-  const treasury = "0x9F5A10E45906Ef12497237cE10fB7AB9B850Ff86";
+  const treasury = "0x40578F7902304e0e34d7069Fb487ee57F841342e";
   // Functional Contracts
   const fujiadmin = await deployFujiAdmin();
   const fliquidator = await deployFliquidator();
@@ -64,7 +64,11 @@ const deployContracts = async () => {
     // vaultharvester,
     swapper,
   });
-  await updateFujiFliquidator(fliquidator, { fujiadmin, oracle, swapper: SPOOKY_ROUTER_ADDR });
+  await updateFujiFliquidator(fliquidator, {
+    fujiadmin,
+    oracle,
+    swapper: SPOOKY_ROUTER_ADDR
+  });
   await updateFlasher(flasher, fujiadmin);
   await updateController(controller, fujiadmin);
   await updateFujiERC1155(f1155, [vaultdai, vaultusdc, fliquidator]);

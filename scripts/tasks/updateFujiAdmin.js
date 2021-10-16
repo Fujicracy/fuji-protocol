@@ -57,7 +57,7 @@ const updateFujiAdmin = async (fujiadmin, params) => {
 
   if (swapper) {
     await callIf(
-      "setVaultHarvester",
+      "setSwapper",
       async () => (await fujiadminContract.getSwapper()) !== swapper,
       async () => {
         await fujiadminContract.setSwapper(swapper);

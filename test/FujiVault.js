@@ -133,11 +133,11 @@ function testDeposit2(mapperAddr, vaults, amount) {
 
 // testing deposits in ERC20
 // in Aave
-function testDeposit2a(vaults, amount) {
+function testDeposit2a(vaults, amount, assets = ASSETS) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
     it(`deposit ${amount} ERC20 -> ${vault.collateral.nameUp} as collateral, check ${vault.name} balance`, async function () {
-      const aToken = await getContractAt("IERC20", ASSETS[vault.collateral.nameUp].aToken);
+      const aToken = await getContractAt("IERC20", assets[vault.collateral.nameUp].aToken);
 
       const depositAmount = parseUnits(amount, vault.collateral.decimals);
       const negdepositAmount = parseUnits(-amount, vault.collateral.decimals);

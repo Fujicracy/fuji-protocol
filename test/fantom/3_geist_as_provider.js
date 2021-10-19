@@ -143,7 +143,7 @@ describe("Fantom Fuji Instance", function () {
     });
 
     describe("Native token as collateral, ERC20 as borrow asset.", function () {
-      testDeposit1a([vaultftmdai, vaultftmusdc, vaultftmweth], DEPOSIT_FTM, ASSETS.FTM.gToken);
+      testDeposit1a([vaultftmdai, vaultftmusdc, vaultftmweth], DEPOSIT_FTM, ASSETS.FTM.aToken);
 
       testBorrow1([vaultftmdai, vaultftmusdc], DEPOSIT_FTM, BORROW_STABLE);
       testBorrow1([vaultftmweth], DEPOSIT_FTM, BORROW_WETH);
@@ -159,10 +159,22 @@ describe("Fantom Fuji Instance", function () {
     });
 
     describe("ERC20 token as collateral, ERC20 as borrow asset.", function () {
-      testDeposit2a([vaultwftmdai, vaultwftmusdc, vaultwftmweth, vaultwftmwbtc], DEPOSIT_FTM);
-      testDeposit2a([vaultdaiwftm, vaultusdcwftm], DEPOSIT_STABLE);
-      testDeposit2a([vaultwethwftm, vaultwethdai, vaultwethusdc, vaultwethwbtc], DEPOSIT_WETH);
-      testDeposit2a([vaultwbtcwftm, vaultwbtcdai, vaultwbtcusdc, vaultwbtcweth], DEPOSIT_WBTC);
+      testDeposit2a(
+        [vaultwftmdai, vaultwftmusdc, vaultwftmweth, vaultwftmwbtc],
+        DEPOSIT_FTM,
+        ASSETS
+      );
+      testDeposit2a([vaultdaiwftm, vaultusdcwftm], DEPOSIT_STABLE, ASSETS);
+      testDeposit2a(
+        [vaultwethwftm, vaultwethdai, vaultwethusdc, vaultwethwbtc],
+        DEPOSIT_WETH,
+        ASSETS
+      );
+      testDeposit2a(
+        [vaultwbtcwftm, vaultwbtcdai, vaultwbtcusdc, vaultwbtcweth],
+        DEPOSIT_WBTC,
+        ASSETS
+      );
 
       testBorrow2([vaultwethdai, vaultwethusdc], DEPOSIT_WETH, BORROW_STABLE);
       testBorrow2([vaultwbtcdai, vaultwbtcusdc], DEPOSIT_WBTC, BORROW_STABLE);

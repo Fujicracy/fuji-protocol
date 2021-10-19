@@ -44,7 +44,7 @@
     "deploy": "yarn deploy:mainnet && yarn publish:core",
     "deploy:mainnet": "hardhat run scripts/mainnet/deploy.js",
     "deploy:mainnet:fuse": "hardhat run scripts/mainnet/deploy-fuse.js",
-    "deploy:fantom": "hardhat run scripts/fantom/deploy.js",
+    "deploy:fantom": "hardhat run scripts/fantom/00_initial_deploy.js",
     "publish:core": "hardhat publish",
     "publish:fuse": "hardhat publish --market fuse",
     "sync": "hardhat sync",

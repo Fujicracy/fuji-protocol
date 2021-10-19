@@ -8,7 +8,10 @@ const {
   formatUnitsOfCurrency,
   parseUnits,
   toBN,
+  checkEthChange,
+  checkTokenChange,
 } = require("./helpers");
+
 const { getContractAt } = ethers;
 
 // testing deposits in ETH
@@ -25,11 +28,11 @@ function testDeposit1(mapperAddr, vaults, amount) {
       const depositAmount = parseUnits(amount);
       const negdepositAmount = parseUnits(-amount);
 
-      await expect(
-        await this.f[vault.name]
-          .connect(this.user1)
-          .deposit(depositAmount, { value: depositAmount })
-      ).to.changeEtherBalance(this.user1, negdepositAmount);
+      await checkEthChange(
+        this.f[vault.name].connect(this.user1).deposit(depositAmount, { value: depositAmount }),
+        this.user1.address,
+        negdepositAmount
+      );
 
       let vaultBal = await cETH.balanceOf(this.f[vault.name].address);
       vaultBal = await formatUnitsOfCurrency(cETH.address, vaultBal);
@@ -46,20 +49,20 @@ function testDeposit1(mapperAddr, vaults, amount) {
 
 // testing deposits in ETH
 // in Aave
-function testDeposit1a(vaults, amount) {
+function testDeposit1a(vaults, amount, aeth) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
     it(`deposit ${amount} ETH as collateral, check ${vault.name} balance`, async function () {
-      const aWETH = await getContractAt("IERC20", ASSETS.WETH.aToken);
+      const aWETH = await getContractAt("IERC20", aeth);
 
       const depositAmount = parseUnits(amount);
       const negdepositAmount = parseUnits(-amount);
 
-      await expect(
-        await this.f[vault.name]
-          .connect(this.user1)
-          .deposit(depositAmount, { value: depositAmount })
-      ).to.changeEtherBalance(this.user1, negdepositAmount);
+      await checkEthChange(
+        this.f[vault.name].connect(this.user1).deposit(depositAmount, { value: depositAmount }),
+        this.user1.address,
+        negdepositAmount
+      );
 
       const vaultBal = await aWETH.balanceOf(this.f[vault.name].address);
 
@@ -77,11 +80,11 @@ function testDeposit1b(vaults, amount) {
       const depositAmount = parseUnits(amount);
       const negdepositAmount = parseUnits(-amount);
 
-      await expect(
-        await this.f[vault.name]
-          .connect(this.user1)
-          .deposit(depositAmount, { value: depositAmount })
-      ).to.changeEtherBalance(this.user1, negdepositAmount);
+      await checkEthChange(
+        this.f[vault.name].connect(this.user1).deposit(depositAmount, { value: depositAmount }),
+        this.user1.address,
+        negdepositAmount
+      );
 
       const vaultBal = await this.f[vault.name].depositBalance(this.f.dydx.address);
 
@@ -107,9 +110,13 @@ function testDeposit2(mapperAddr, vaults, amount) {
       await this.f[vault.collateral.name]
         .connect(this.user1)
         .approve(this.f[vault.name].address, depositAmount);
-      await expect(() =>
-        this.f[vault.name].connect(this.user1).deposit(depositAmount)
-      ).to.changeTokenBalance(this.f[vault.collateral.name], this.user1, negdepositAmount);
+
+      await checkTokenChange(
+        this.f[vault.name].connect(this.user1).deposit(depositAmount),
+        this.f[vault.collateral.name],
+        this.user1.address,
+        negdepositAmount
+      );
 
       let vaultBal = await cToken.balanceOf(this.f[vault.name].address);
       vaultBal = await formatUnitsOfCurrency(cToken.address, vaultBal);
@@ -126,11 +133,11 @@ function testDeposit2(mapperAddr, vaults, amount) {
 
 // testing deposits in ERC20
 // in Aave
-function testDeposit2a(vaults, amount) {
+function testDeposit2a(vaults, amount, assets = ASSETS) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
     it(`deposit ${amount} ERC20 -> ${vault.collateral.nameUp} as collateral, check ${vault.name} balance`, async function () {
-      const aToken = await getContractAt("IERC20", ASSETS[vault.collateral.nameUp].aToken);
+      const aToken = await getContractAt("IERC20", assets[vault.collateral.nameUp].aToken);
 
       const depositAmount = parseUnits(amount, vault.collateral.decimals);
       const negdepositAmount = parseUnits(-amount, vault.collateral.decimals);
@@ -138,11 +145,15 @@ function testDeposit2a(vaults, amount) {
       await this.f[vault.collateral.name]
         .connect(this.user1)
         .approve(this.f[vault.name].address, depositAmount);
-      await expect(() =>
-        this.f[vault.name].connect(this.user1).deposit(depositAmount)
-      ).to.changeTokenBalance(this.f[vault.collateral.name], this.user1, negdepositAmount);
 
-      let vaultBal = await aToken.balanceOf(this.f[vault.name].address);
+      await checkTokenChange(
+        this.f[vault.name].connect(this.user1).deposit(depositAmount),
+        this.f[vault.collateral.name],
+        this.user1.address,
+        negdepositAmount
+      );
+
+      const vaultBal = await aToken.balanceOf(this.f[vault.name].address);
 
       expect(vaultBal).to.be.equal(depositAmount);
     });
@@ -160,16 +171,22 @@ function testBorrow1(vaults, amountToDeposit, amountToBorrow) {
       // boostrap vault
       await this.f[name].connect(this.users[0]).deposit(depositAmount, { value: depositAmount });
 
-      await expect(
-        await this.f[name].connect(this.user1).deposit(depositAmount, { value: depositAmount })
-      ).to.changeEtherBalance(this.user1, negdepositAmount);
+      await checkEthChange(
+        this.f[name].connect(this.user1).deposit(depositAmount, { value: depositAmount }),
+        this.user1.address,
+        negdepositAmount
+      );
+
       await expect(await this.f.f1155.balanceOf(this.user1.address, collateralID)).to.be.equal(
         depositAmount
       );
 
-      await expect(() =>
-        this.f[name].connect(this.user1).borrow(borrowAmount)
-      ).to.changeTokenBalance(this.f[debt.name], this.user1, borrowAmount);
+      await checkTokenChange(
+        this.f[name].connect(this.user1).borrow(borrowAmount),
+        this.f[debt.name],
+        this.user1.address,
+        borrowAmount
+      );
       await expect(await this.f.f1155.balanceOf(this.user1.address, borrowID)).to.be.equal(
         borrowAmount
       );
@@ -189,16 +206,22 @@ function testBorrow2(vaults, amountToDeposit, amountToBorrow) {
       await this.f[collateral.name]
         .connect(this.user1)
         .approve(this.f[name].address, depositAmount);
-      await expect(() =>
-        this.f[name].connect(this.user1).deposit(depositAmount)
-      ).to.changeTokenBalance(this.f[collateral.name], this.user1, negdepositAmount);
+      await checkTokenChange(
+        this.f[name].connect(this.user1).deposit(depositAmount),
+        this.f[collateral.name],
+        this.user1.address,
+        negdepositAmount
+      );
       await expect(await this.f.f1155.balanceOf(this.user1.address, collateralID)).to.be.equal(
         depositAmount
       );
 
-      await expect(() =>
-        this.f[name].connect(this.user1).borrow(borrowAmount)
-      ).to.changeTokenBalance(this.f[debt.name], this.user1, borrowAmount);
+      await checkTokenChange(
+        this.f[name].connect(this.user1).borrow(borrowAmount),
+        this.f[debt.name],
+        this.user1.address,
+        borrowAmount
+      );
       await expect(await this.f.f1155.balanceOf(this.user1.address, borrowID)).to.be.equal(
         borrowAmount
       );
@@ -218,17 +241,22 @@ function testBorrow3(vaults, amountToDeposit, amountToBorrow) {
       await this.f[collateral.name]
         .connect(this.user1)
         .approve(this.f[name].address, depositAmount);
-      await expect(() =>
-        this.f[name].connect(this.user1).deposit(depositAmount)
-      ).to.changeTokenBalance(this.f[collateral.name], this.user1, negdepositAmount);
+      await checkTokenChange(
+        this.f[name].connect(this.user1).deposit(depositAmount),
+        this.f[collateral.name],
+        this.user1.address,
+        negdepositAmount
+      );
 
       await expect(await this.f.f1155.balanceOf(this.user1.address, collateralID)).to.be.equal(
         depositAmount
       );
 
-      await expect(
-        await this.f[name].connect(this.user1).borrow(borrowAmount)
-      ).to.changeEtherBalance(this.user1, borrowAmount);
+      await checkEthChange(
+        this.f[name].connect(this.user1).borrow(borrowAmount),
+        this.user1.address,
+        borrowAmount
+      );
 
       await expect(await this.f.f1155.balanceOf(this.user1.address, borrowID)).to.be.equal(
         borrowAmount
@@ -259,9 +287,12 @@ function testPaybackAndWithdraw1(vaults, amountToDeposit, amountToBorrow) {
       for (let x = 1; x < 4; x += 1) {
         await this.f[debt.name].connect(this.users[x]).approve(this.f[name].address, borrowAmount);
         await timeTravel(60);
-        await expect(() =>
-          this.f[name].connect(this.users[x]).payback(borrowAmount)
-        ).to.changeTokenBalance(this.f[debt.name], this.users[x], negborrowAmount);
+        await checkTokenChange(
+          this.f[name].connect(this.users[x]).payback(borrowAmount),
+          this.f[debt.name],
+          this.users[x].address,
+          negborrowAmount
+        );
         await expect(await this.f.f1155.balanceOf(this.users[x].address, borrowID)).to.be.lt(one);
       }
 
@@ -301,9 +332,12 @@ function testPaybackAndWithdraw2(vaults, amountToDeposit, amountToBorrow) {
       for (let x = 1; x < 4; x += 1) {
         await this.f[debt.name].connect(this.users[x]).approve(this.f[name].address, borrowAmount);
         await timeTravel(60);
-        await expect(() =>
-          this.f[name].connect(this.users[x]).payback(borrowAmount)
-        ).to.changeTokenBalance(this.f[debt.name], this.users[x], negborrowAmount);
+        await checkTokenChange(
+          this.f[name].connect(this.users[x]).payback(borrowAmount),
+          this.f[debt.name],
+          this.users[x].address,
+          negborrowAmount
+        );
         await expect(await this.f.f1155.balanceOf(this.users[x].address, borrowID)).to.be.lt(
           oneDebt
         );
@@ -345,9 +379,11 @@ function testPaybackAndWithdraw3(vaults, amountToDeposit, amountToBorrow) {
 
       const fractionDebt = parseUnits(1, 16);
       for (let x = 1; x < 4; x += 1) {
-        await expect(
-          await this.f[name].connect(this.users[x]).payback(borrowAmount, { value: borrowAmount })
-        ).to.changeEtherBalance(this.users[x], negborrowAmount);
+        await checkEthChange(
+          this.f[name].connect(this.users[x]).payback(borrowAmount, { value: borrowAmount }),
+          this.users[x].address,
+          negborrowAmount
+        );
         await timeTravel(60);
         await expect(await this.f.f1155.balanceOf(this.users[x].address, borrowID)).to.be.lt(
           fractionDebt

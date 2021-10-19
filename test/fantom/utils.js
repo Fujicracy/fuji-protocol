@@ -14,6 +14,7 @@ const ASSETS = {
     nameUp: "FTM",
     address: "0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF", // fantom
     oracle: "0xf4766552D15AE4d256Ad41B6cf2933482B0680dc",
+    aToken: "0x39B3bd37208CBaDE74D0fcBDBb12D606295b430a",
     decimals: 18,
   },
   DAI: {
@@ -21,6 +22,7 @@ const ASSETS = {
     nameUp: "DAI",
     address: "0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E", // fantom
     oracle: "0x91d5DEFAFfE2854C7D02F50c80FA1fdc8A721e52",
+    aToken: "0x07E6332dD090D287d3489245038daF987955DCFB",
     decimals: 18,
   },
   USDC: {
@@ -28,6 +30,7 @@ const ASSETS = {
     nameUp: "USDC",
     address: "0x04068DA6C83AFCFA0e13ba15A6696662335D5B75", // fantom
     oracle: "0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c",
+    aToken: "0xe578C856933D8e1082740bf7661e379Aa2A30b26",
     decimals: 6,
   },
   WFTM: {
@@ -35,6 +38,7 @@ const ASSETS = {
     nameUp: "WFTM",
     address: "0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83", // fantom
     oracle: "0xf4766552D15AE4d256Ad41B6cf2933482B0680dc",
+    aToken: "0x39B3bd37208CBaDE74D0fcBDBb12D606295b430a",
     decimals: 18,
   },
   WETH: {
@@ -42,6 +46,7 @@ const ASSETS = {
     nameUp: "WETH",
     address: "0x74b23882a30290451A17c44f4F05243b6b58C76d", // fantom
     oracle: "0x11DdD3d147E5b83D01cee7070027092397d63658",
+    aToken: "0x25c130B2624CF12A4Ea30143eF50c5D68cEFA22f",
     decimals: 18,
   },
   WBTC: {
@@ -49,6 +54,7 @@ const ASSETS = {
     nameUp: "WBTC",
     address: "0x321162Cd933E2Be498Cd2267a90534A804051b11", // fantom
     oracle: "0x8e94C22142F4A64b99022ccDd994f4e9EC86E4B4",
+    aToken: "0x38aCa5484B8603373Acc6961Ecd57a6a594510A3",
     decimals: 8,
   },
 };
@@ -112,6 +118,8 @@ const fixture = async ([wallet]) => {
   const cream = await ProviderCream.deploy([]);
   const ProviderScream = await getContractFactory("ProviderScream");
   const scream = await ProviderScream.deploy([]);
+  const ProviderGeist = await getContractFactory("ProviderGeist");
+  const geist = await ProviderGeist.deploy([]);
 
   // Log if debug is set true
   if (DEBUG) {
@@ -123,6 +131,7 @@ const fixture = async ([wallet]) => {
     console.log("oracle", oracle.address);
     console.log("cream", cream.address);
     console.log("scream", scream.address);
+    console.log("geist", geist.address);
   }
 
   // Setp 3: Vaults
@@ -164,6 +173,7 @@ const fixture = async ([wallet]) => {
     ...vaults,
     cream,
     scream,
+    geist,
     oracle,
     fujiadmin,
     fliquidator,

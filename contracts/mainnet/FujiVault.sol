@@ -633,7 +633,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
       require(tokenReturned != address(0) && tokenBal > 0, Errors.VL_HARVESTING_FAILED);
 
       ISwapper.Transaction memory swapTransaction = ISwapper(_fujiAdmin.getSwapper())
-      .getSwapTransaction(tokenReturned, vAssets.collateralAsset, tokenBal);
+        .getSwapTransaction(tokenReturned, vAssets.collateralAsset, tokenBal);
 
       // Approve rewards
       if (tokenReturned != ETH) {

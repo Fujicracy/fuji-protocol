@@ -1,4 +1,5 @@
 const { ethers } = require("hardhat");
+const { expect } = require("chai");
 
 const timeTravel = async (seconds) => {
   await ethers.provider.send("evm_increaseTime", [seconds]);
@@ -41,6 +42,29 @@ const FLASHLOAN = {
 
 const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 
+const checkEthChange = async (transaction, user, change, noFee = false) => {
+  const balanceBefore = await ethers.provider.getBalance(user);
+  const txReq = await transaction;
+  const txRes = await txReq.wait();
+
+  if (noFee) {
+    expect(await ethers.provider.getBalance(user)).to.equal(
+      ethers.BigNumber.from(balanceBefore).add(change)
+    );
+  } else {
+    expect(await ethers.provider.getBalance(user)).to.equal(
+      ethers.BigNumber.from(balanceBefore).add(change).sub(txRes.gasUsed.mul(txReq.gasPrice))
+    );
+  }
+};
+
+const checkTokenChange = async (transaction, token, user, change) => {
+  const balanceBefore = await token.balanceOf(user);
+  await transaction;
+
+  expect(await token.balanceOf(user)).to.equal(ethers.BigNumber.from(balanceBefore).add(change));
+};
+
 module.exports = {
   timeTravel,
   advanceBlocks,
@@ -51,6 +75,8 @@ module.exports = {
   toBN,
   evmSnapshot,
   evmRevert,
+  checkEthChange,
+  checkTokenChange,
   FLASHLOAN,
   ZERO_ADDR,
 };

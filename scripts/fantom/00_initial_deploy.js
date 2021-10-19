@@ -36,7 +36,7 @@ const deployContracts = async () => {
   // Provider Contracts
   const cream = await deployProvider("ProviderCream");
   const scream = await deployProvider("ProviderScream");
-  // const geist = await deployProvider("ProviderGeist");
+  const geist = await deployProvider("ProviderGeist");
 
   // Deploy Core Money Handling Contracts
   // const vaultharvester = await deployVaultHarvester();
@@ -75,12 +75,12 @@ const deployContracts = async () => {
 
   // Vault Set-up
   await updateVault("VaultFTMDAI", vaultdai, {
-    providers: [cream, scream],
+    providers: [cream, scream, geist],
     fujiadmin,
     f1155,
   });
   await updateVault("VaultFTMUSDC", vaultusdc, {
-    providers: [cream, scream],
+    providers: [cream, scream, geist],
     fujiadmin,
     f1155,
   });

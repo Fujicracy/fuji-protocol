@@ -118,7 +118,11 @@ describe("Core Fuji Instance", function () {
     });
 
     describe("Native token as collateral, ERC20 as borrow asset.", function () {
-      testDeposit1a([vaultethdai, vaultethusdc, vaultethusdt, vaultethwbtc], DEPOSIT_ETH);
+      testDeposit1a(
+        [vaultethdai, vaultethusdc, vaultethusdt, vaultethwbtc],
+        DEPOSIT_ETH,
+        ASSETS.WETH.aToken
+      );
 
       testBorrow1([vaultethdai, vaultethusdc, vaultethusdt], DEPOSIT_ETH, BORROW_STABLE);
       testBorrow1([vaultethwbtc], DEPOSIT_ETH, BORROW_WBTC);

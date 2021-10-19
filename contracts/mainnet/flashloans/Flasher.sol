@@ -14,8 +14,9 @@ import "../../interfaces/IFujiMappings.sol";
 import "../../interfaces/IWETH.sol";
 import "../../interfaces/aave/IFlashLoanReceiver.sol";
 import "../../interfaces/aave/IAaveLendingPool.sol";
-import "../../interfaces/cream/ICTokenFlashloan.sol";
+import "../../interfaces/cream/IERC3156FlashLender.sol";
 import "../../interfaces/cream/ICFlashloanReceiver.sol";
+import "../../interfaces/cream/ICrComptroller.sol";
 import "../libraries/LibUniversalERC20.sol";
 import "../../libraries/FlashLoans.sol";
 import "../../libraries/Errors.sol";
@@ -30,8 +31,8 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
 
   address private immutable _aaveLendingPool = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
   address private immutable _dydxSoloMargin = 0x1E0447b19BB6EcFdAe1e4AE1694b0C3659614e4e;
-  IFujiMappings private immutable _crMappings =
-    IFujiMappings(0x03BD587Fe413D59A20F32Fc75f31bDE1dD1CD6c9);
+  address private immutable _crFlashloanLender = 0xa8682Cfd2B6c714d2190fA38863d545c7a0b73D5;
+  address private immutable _crComptroller = 0x3d5BC3c8d13dcB8bF317092d84783c2697AE9258;
 
   // need to be payable because of the conversion ETH <> WETH
   receive() external payable {}
@@ -200,17 +201,13 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
    * @param info: data to be passed between functions executing flashloan logic
    */
   function _initiateCreamFlashLoan(FlashLoan.Info calldata info) internal {
-    // Get crToken Address for Flashloan Call
-    // from IronBank because ETH on Cream cannot perform a flashloan
-    address crToken = info.asset == _ETH
-      ? 0x41c84c0e2EE0b740Cf0d31F63f3B6F627DC6b393
-      : _crMappings.addressMapping(info.asset);
+    address token = info.asset == _ETH ? _WETH : info.asset;
 
     // Prepara data for flashloan execution
     bytes memory params = abi.encode(info);
 
     // Initialize Instance of Cream crLendingContract
-    ICTokenFlashloan(crToken).flashLoan(address(this), address(this), info.amount, params);
+    IERC3156FlashLender(_crFlashloanLender).flashLoan(ICFlashloanReceiver(address(this)), token, info.amount, params);
   }
 
   /**
@@ -218,20 +215,17 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
    * and called by CreamFinanceflashloan when sending loaned amount
    */
   function onFlashLoan(
-    address sender,
-    address underlying,
+    address initiator,
+    address token,
     uint256 amount,
     uint256 fee,
     bytes calldata params
   ) external override returns (bytes32) {
-    // Check Msg. Sender is crToken Lending Contract
-    // from IronBank because ETH on Cream cannot perform a flashloan
-    address crToken = underlying == _WETH
-      ? 0x41c84c0e2EE0b740Cf0d31F63f3B6F627DC6b393
-      : _crMappings.addressMapping(underlying);
-
-    require(msg.sender == crToken && address(this) == sender, Errors.VL_NOT_AUTHORIZED);
-    require(IERC20(underlying).balanceOf(address(this)) >= amount, Errors.VL_FLASHLOAN_FAILED);
+    require(
+      address(this) == initiator && ICrComptroller(_crComptroller).isMarketListed(msg.sender),
+      Errors.VL_NOT_AUTHORIZED
+    );
+    require(IERC20(token).balanceOf(address(this)) >= amount, Errors.VL_FLASHLOAN_FAILED);
 
     FlashLoan.Info memory info = abi.decode(params, (FlashLoan.Info));
 
@@ -243,7 +237,7 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
     } else {
       // Transfer to Vault the flashloan Amount
       // _value is 0
-      IERC20(underlying).univTransfer(payable(info.vault), amount);
+      IERC20(token).univTransfer(payable(info.vault), amount);
     }
 
     // Do task according to CallType
@@ -251,7 +245,7 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
 
     if (info.asset == _ETH) _convertEthToWeth(amount + fee);
     // Transfer flashloan + fee back to crToken Lending Contract
-    IERC20(underlying).univApprove(payable(crToken), amount + fee);
+    IERC20(token).univApprove(msg.sender, amount + fee);
 
     return keccak256("ERC3156FlashBorrowerInterface.onFlashLoan");
   }

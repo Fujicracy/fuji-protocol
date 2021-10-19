@@ -15,7 +15,7 @@ const setDeploymentsPath = async (market) => {
   deploymentsPath = `${hre.config.paths.artifacts}/${netw.chainId}-${market}.deploy`;
 };
 
-const getDeployments = async (name) => {
+const getDeployments = (name) => {
   let deployData;
   if (fs.existsSync(deploymentsPath)) {
     deployData = JSON.parse(fs.readFileSync(deploymentsPath).toString());
@@ -47,10 +47,14 @@ const updateDeployments = async (name, contractName, address) => {
   fs.writeFileSync(deploymentsPath, JSON.stringify(deployData, null, 2));
 };
 
+const getContractAddress = (name) => {
+  return getDeployments(name).address;
+}
+
 const redeployIf = async (name, contractName, shouldRedeploy, deployContract, args = []) => {
   const deployer = (await ethers.getSigners())[0];
 
-  const currentDeployment = await getDeployments(name);
+  const currentDeployment = getDeployments(name);
   const contractArtifacts = await artifacts.readArtifact(contractName);
 
   if (
@@ -132,11 +136,24 @@ const deploy = async (name, contractName, args = [], overrides = {}) => {
   return deployed;
 };
 
+const upgradeProxy = async (name, contractName) => {
+  const addr = getContractAddress(name);
+  const factory = await ethers.getContractFactory(contractName);
+  const upgraded = await upgrades.upgradeProxy(addr, factory);
+  const tx = await upgraded.deployTransaction.wait();
+
+  console.log(`${name}: upgraded`);
+  console.log(`Tx: ${tx.transactionHash}`);
+  return addr;
+};
+
 module.exports = {
   deploy,
   deployProxy,
+  upgradeProxy,
   setDeploymentsPath,
   getDeployments,
+  getContractAddress,
   updateDeployments,
   redeployIf,
   callIf,

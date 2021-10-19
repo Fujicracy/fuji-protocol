@@ -633,7 +633,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
       require(tokenReturned != address(0) && tokenBal > 0, Errors.VL_HARVESTING_FAILED);
 
       ISwapper.Transaction memory swapTransaction = ISwapper(_fujiAdmin.getSwapper())
-      .getSwapTransaction(tokenReturned, vAssets.collateralAsset, tokenBal);
+        .getSwapTransaction(tokenReturned, vAssets.collateralAsset, tokenBal);
 
       // Approve rewards
       if (tokenReturned != FTM) {

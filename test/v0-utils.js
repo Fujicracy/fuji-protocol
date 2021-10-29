@@ -94,6 +94,7 @@ const fixture = async ([wallet]) => {
   // Step 4 Of Deploy Core Money Handling Contracts
   const vaultharvester = await deployContract(wallet, VaultHarvester, []);
   const swapper = await deployContract(wallet, Swapper, []);
+  const swapper = await deployContract(wallet, Swapper, []);
 
   const FujiVault = await ethers.getContractFactory("FujiVault");
   const vaultdai = await upgrades.deployProxy(FujiVault, [

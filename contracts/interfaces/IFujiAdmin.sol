@@ -16,4 +16,6 @@ interface IFujiAdmin {
   function getVaultHarvester() external view returns (address);
 
   function getSwapper() external view returns (address);
+
+  function getUnwrapper() external view returns (address);
 }

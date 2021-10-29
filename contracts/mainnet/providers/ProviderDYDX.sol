@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../../interfaces/IProvider.sol";
+import "../../interfaces/IUnwrapper.sol";
+import "../../interfaces/IVault.sol";
 import "../../interfaces/IWETH.sol";
 import "../../interfaces/dydx/ISoloMargin.sol";
 import "../libraries/LibUniversalERC20.sol";
@@ -21,6 +23,10 @@ contract HelperFunct {
    */
   function getWETHAddr() public pure returns (address weth) {
     weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+  }
+
+  function _getUnwrapper() internal view returns(address) {
+    return IVault(address(this)).getUnwrapper();
   }
 
   /**
@@ -124,11 +130,9 @@ contract ProviderDYDX is IProvider, HelperFunct {
     dydxContract.operate(_getAccountArgs(), _getActionsArgs(marketId, _amount, false));
 
     if (_asset == _getEthAddr()) {
-      IWETH tweth = IWETH(getWETHAddr());
-
-      tweth.approve(address(tweth), _amount);
-
-      tweth.withdraw(_amount);
+      address unwrapper = _getUnwrapper();
+      IERC20(getWETHAddr()).univTransfer(payable(unwrapper), _amount);
+      IUnwrapper(unwrapper).withdraw(_amount);
     }
   }
 
@@ -145,11 +149,9 @@ contract ProviderDYDX is IProvider, HelperFunct {
     dydxContract.operate(_getAccountArgs(), _getActionsArgs(marketId, _amount, false));
 
     if (_asset == _getEthAddr()) {
-      IWETH tweth = IWETH(getWETHAddr());
-
-      tweth.approve(address(_asset), _amount);
-
-      tweth.withdraw(_amount);
+      address unwrapper = _getUnwrapper();
+      IERC20(getWETHAddr()).univTransfer(payable(unwrapper), _amount);
+      IUnwrapper(unwrapper).withdraw(_amount);
     }
   }
 

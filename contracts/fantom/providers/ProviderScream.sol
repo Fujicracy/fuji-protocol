@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../../interfaces/IProvider.sol";
+import "../../interfaces/IUnwrapper.sol";
+import "../../interfaces/IVault.sol";
 import "../../interfaces/IWETH.sol";
 import "../../interfaces/IFujiMappings.sol";
 import "../../interfaces/compound/IGenCToken.sol";
@@ -22,6 +24,10 @@ contract HelperFunct {
 
   function _getComptrollerAddress() internal pure returns (address) {
     return 0x260E596DAbE3AFc463e75B6CC05d8c46aCAcFB09; // Scream comptroller fantom
+  }
+
+  function _getUnwrapper() internal view returns(address) {
+    return IVault(address(this)).getUnwrapper();
   }
 
   //IronBank functions
@@ -106,8 +112,10 @@ contract ProviderScream is IProvider, HelperFunct {
     require(cyToken.redeemUnderlying(_amount) == 0, "Withdraw-failed");
 
     if (_isFTM(_asset)) {
-      // Transform FTM to WFTM
-      IWETH(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).withdraw(_amount);
+      // Transform WFTM to FTM
+      address unwrapper = _getUnwrapper();
+      IERC20(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).univTransfer(payable(unwrapper), _amount);
+      IUnwrapper(unwrapper).withdraw(_amount);
     }
   }
 
@@ -131,7 +139,9 @@ contract ProviderScream is IProvider, HelperFunct {
 
     if (_isFTM(_asset)) {
       // Transform WFTM to FTM
-      IWETH(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).withdraw(_amount);
+      address unwrapper = _getUnwrapper();
+      IERC20(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).univTransfer(payable(unwrapper), _amount);
+      IUnwrapper(unwrapper).withdraw(_amount);
     }
   }
 

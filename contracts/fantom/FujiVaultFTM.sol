@@ -526,6 +526,13 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   //Getter Functions
 
   /**
+   * @dev Returns the FTM unwrapper address
+   */
+  function getUnwrapper() external view override returns (address) {
+    return IFujiAdmin(_fujiAdmin).getUnwrapper();
+  }
+
+  /**
    * @dev Returns an array of the Vault's providers
    */
   function getProviders() external view override returns (address[] memory) {

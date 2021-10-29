@@ -5,6 +5,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../../interfaces/IProvider.sol";
+import "../../interfaces/IUnwrapper.sol";
+import "../../interfaces/IVault.sol";
 import "../../interfaces/IWETH.sol";
 import "../../interfaces/aave/IAaveDataProvider.sol";
 import "../../interfaces/aave/IAaveLendingPool.sol";
@@ -28,6 +30,10 @@ contract ProviderAave is IProvider {
 
   function _getEthAddr() internal pure returns (address) {
     return 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+  }
+
+  function _getUnwrapper() internal view returns(address) {
+    return IVault(address(this)).getUnwrapper();
   }
 
   /**
@@ -130,7 +136,11 @@ contract ProviderAave is IProvider {
     aave.borrow(_tokenAddr, _amount, 2, 0, address(this));
 
     // convert WETH to ETH
-    if (isEth) IWETH(_tokenAddr).withdraw(_amount);
+    if (isEth)  {
+      address unwrapper = _getUnwrapper();
+      IERC20(_tokenAddr).univTransfer(payable(unwrapper), _amount);
+      IUnwrapper(unwrapper).withdraw(_amount);
+    }
   }
 
   /**
@@ -147,7 +157,11 @@ contract ProviderAave is IProvider {
     aave.withdraw(_tokenAddr, _amount, address(this));
 
     // convert WETH to ETH
-    if (isEth) IWETH(_tokenAddr).withdraw(_amount);
+    if (isEth)  {
+      address unwrapper = _getUnwrapper();
+      IERC20(_tokenAddr).univTransfer(payable(unwrapper), _amount);
+      IUnwrapper(unwrapper).withdraw(_amount);
+    }
   }
 
   /**

@@ -11,13 +11,15 @@ import "../../interfaces/IFlasher.sol";
 import "../../interfaces/IFliquidator.sol";
 import "../../interfaces/IFujiMappings.sol";
 import "../../interfaces/IWETH.sol";
-import "../libraries/LibUniversalERC20FTM.sol";
 import "../../libraries/FlashLoans.sol";
 import "../../libraries/Errors.sol";
 import "../../interfaces/aave/IFlashLoanReceiver.sol";
 import "../../interfaces/aave/IAaveLendingPool.sol";
+import "../../interfaces/cream/ICTokenFlashloan.sol";
+import "../../interfaces/cream/ICFlashloanReceiver.sol";
+import "../libraries/LibUniversalERC20FTM.sol";
 
-contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver {
+contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver, ICFlashloanReceiver {
   using LibUniversalERC20FTM for IERC20;
 
   IFujiAdmin private _fujiAdmin;
@@ -26,6 +28,8 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver {
   address private constant _WFTM = 0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83;
 
   address private immutable _geistLendingPool = 0x9FAD24f572045c7869117160A571B2e50b10d068;
+  IFujiMappings private immutable _crMappings =
+    IFujiMappings(0x1eEdE44b91750933C96d2125b6757C4F89e63E20);
 
   // need to be payable because of the conversion ETH <> WETH
   receive() external payable {}
@@ -56,6 +60,8 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver {
   function initiateFlashloan(FlashLoan.Info calldata info, uint8 _flashnum) external isAuthorized override {
     if (_flashnum == 0) {
       _initiateGeistFlashLoan(info);
+    } else if (_flashnum == 2) {
+      _initiateCreamFlashLoan(info);
     }
   }
 
@@ -118,6 +124,62 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver {
     _approveBeforeRepay(info.asset == _FTM, assets[0], amounts[0] + premiums[0], _geistLendingPool);
 
     return true;
+  }
+
+  // ===================== CreamFinance FlashLoan ===================================
+
+  /**
+   * @dev Initiates an CreamFinance flashloan.
+   * @param info: data to be passed between functions executing flashloan logic
+   */
+  function _initiateCreamFlashLoan(FlashLoan.Info calldata info) internal {
+    address crToken = info.asset == _FTM
+      ? 0xd528697008aC67A21818751A5e3c58C8daE54696
+      : _crMappings.addressMapping(info.asset);
+
+    // Prepara data for flashloan execution
+    bytes memory params = abi.encode(info);
+
+    // Initialize Instance of Cream crLendingContract
+    ICTokenFlashloan(crToken).flashLoan(address(this), address(this), info.amount, params);
+  }
+  /**
+   * @dev Executes CreamFinance Flashloan, this operation is required
+   * and called by CreamFinanceflashloan when sending loaned amount
+   */
+  function onFlashLoan(
+    address sender,
+    address underlying,
+    uint256 amount,
+    uint256 fee,
+    bytes calldata params
+  ) external override returns (bytes32) {
+    // Check Msg. Sender is crToken Lending Contract
+    // from IronBank because ETH on Cream cannot perform a flashloan
+    address crToken = underlying == _WFTM
+      ? 0xd528697008aC67A21818751A5e3c58C8daE54696
+      : _crMappings.addressMapping(underlying);
+    require(msg.sender == crToken && address(this) == sender, Errors.VL_NOT_AUTHORIZED);
+    require(IERC20(underlying).balanceOf(address(this)) >= amount, Errors.VL_FLASHLOAN_FAILED);
+    FlashLoan.Info memory info = abi.decode(params, (FlashLoan.Info));
+    uint256 _value;
+    if (info.asset == _FTM) {
+      // Convert WFTM to FTM and assign amount to be set as msg.value
+      _convertWethToEth(amount);
+      _value = amount;
+    } else {
+      // Transfer to Vault the flashloan Amount
+      // _value is 0
+      IERC20(underlying).univTransfer(payable(info.vault), amount);
+    }
+    // Do task according to CallType
+    _executeAction(info, amount, fee, _value);
+
+    if (info.asset == _FTM) _convertEthToWeth(amount + fee);
+    // Transfer flashloan + fee back to crToken Lending Contract
+    IERC20(underlying).univApprove(payable(crToken), amount + fee);
+
+    return keccak256("ERC3156FlashBorrowerInterface.onFlashLoan");
   }
 
   // ========================================================

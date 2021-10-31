@@ -26,8 +26,8 @@ contract HelperFunct {
     return 0x4250A6D3BD57455d7C6821eECb6206F507576cD2; // Cream fantom
   }
 
-  function _getUnwrapper() internal view returns(address) {
-    return IVault(address(this)).getUnwrapper();
+  function _getUnwrapper() internal pure returns(address) {
+    return 0xee94A39D185329d8c46dEA726E01F91641E57346;
   }
 
   //fantomCream functions

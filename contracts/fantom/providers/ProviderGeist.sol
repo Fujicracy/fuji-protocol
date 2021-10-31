@@ -32,8 +32,8 @@ contract ProviderGeist is IProvider {
     return 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
   }
 
-  function _getUnwrapper() internal view returns(address) {
-    return IVault(address(this)).getUnwrapper();
+  function _getUnwrapper() internal pure returns(address) {
+    return 0xee94A39D185329d8c46dEA726E01F91641E57346;
   }
 
   /**

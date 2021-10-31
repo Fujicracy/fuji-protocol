@@ -32,8 +32,8 @@ contract ProviderAave is IProvider {
     return 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
   }
 
-  function _getUnwrapper() internal view returns(address) {
-    return IVault(address(this)).getUnwrapper();
+  function _getUnwrapper() internal pure returns(address) {
+    return 0x0000000000000000000000000000000000000000;
   }
 
   /**

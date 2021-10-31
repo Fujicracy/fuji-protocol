@@ -25,8 +25,8 @@ contract HelperFunct {
     weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
   }
 
-  function _getUnwrapper() internal view returns(address) {
-    return IVault(address(this)).getUnwrapper();
+  function _getUnwrapper() internal pure returns(address) {
+    return 0x0000000000000000000000000000000000000000;
   }
 
   /**

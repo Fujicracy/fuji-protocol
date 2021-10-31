@@ -1,269 +1,158 @@
-const { ethers } = require("hardhat");
 const { expect } = require("chai");
-const { createFixtureLoader } = require("ethereum-waffle");
+const { ethers, upgrades } = require("hardhat");
+const { getImplementationAddress } = require("@openzeppelin/upgrades-core");
 
-const { getContractAt, provider } = ethers;
+const decimals = 18;
 
-const { parseUnits, evmSnapshot, evmRevert, FLASHLOAN } = require("./helpers");
+describe("Simple Staking Test", () => {
+  let stakeToken, rewardToken, simpleStaking;
+  let owner, test1, test2, ownerAdd;
 
-const { fixture, ASSETS, VAULTS } = require("./core-utils");
+  before(async () => {
+    upgrades.silenceWarnings();
 
-const {
-  testDeposit1a,
-  testDeposit2a,
-  testBorrow1,
-  testBorrow2,
-  testBorrow3,
-  testPaybackAndWithdraw1,
-  testPaybackAndWithdraw2,
-  testPaybackAndWithdraw3,
-} = require("./FujiVault");
-const { testRefinance1, testRefinance2, testRefinance3 } = require("./Controller");
+    [owner, test1, test2] = await ethers.getSigners();
 
-const vaults = {};
-for (const v of VAULTS) {
-  vaults[v.name] = v;
-}
-const {
-  vaultethdai,
-  vaultethusdc,
-  vaultethusdt,
-  vaultethwbtc,
-  vaultwbtceth,
-  vaultwbtcdai,
-  vaultwbtcusdc,
-  vaultwbtcusdt,
-  vaultdaieth,
-  vaultdaiwbtc,
-  vaultusdceth,
-  vaultusdcwbtc,
-  vaultusdteth,
-  vaultusdtwbtc,
-} = vaults;
+    const StakeToken = await ethers.getContractFactory("StakeToken");
+    stakeToken = await upgrades.deployProxy(StakeToken, []);
+    await stakeToken.deployed();
+    console.log("Stake token address: " + stakeToken.address);
 
-const [DEPOSIT_STABLE, DEPOSIT_ETH, DEPOSIT_WBTC] = [400, 0.1, 0.0075];
+    const RewardToken = await ethers.getContractFactory("RewardToken");
+    rewardToken = await upgrades.deployProxy(RewardToken, []);
+    await rewardToken.deployed();
+    console.log("Reward token address: " + rewardToken.address);
 
-const [BORROW_STABLE, BORROW_ETH, BORROW_WBTC] = [
-  DEPOSIT_STABLE / 2,
-  DEPOSIT_ETH / 2,
-  DEPOSIT_WBTC / 2,
-];
+    const SimpleStaking = await ethers.getContractFactory("SimpleStaking");
+    simpleStaking = await upgrades.deployProxy(SimpleStaking, [rewardToken.address]);
 
-describe("Core Fuji Instance", function () {
-  before(async function () {
-    this.users = await ethers.getSigners();
-    this.user1 = this.users[1];
+    await simpleStaking.deployed();
+    console.log("simple staking address: " + simpleStaking.address);
 
-    const loadFixture = createFixtureLoader(this.users, provider);
-    this.f = await loadFixture(fixture);
-    this.evmSnapshot0 = await evmSnapshot();
+    await simpleStaking.transferOwnership(owner.address);
+    // console.log(deployedAdmin, 'ccccccccccccc');
+    // await upgrades['admin'].changeProxyAdmin(deployedAdmin, owner.address);
 
-    for (let x = 0; x < 4; x += 1) {
-      const block = await provider.getBlock();
-      await this.f.swapper
-        .connect(this.users[x])
-        .swapETHForExactTokens(
-          parseUnits(DEPOSIT_STABLE),
-          [ASSETS.WETH.address, ASSETS.DAI.address],
-          this.users[x].address,
-          block.timestamp + 60,
-          { value: parseUnits(500) }
-        );
-      await this.f.swapper
-        .connect(this.users[x])
-        .swapETHForExactTokens(
-          parseUnits(DEPOSIT_STABLE, 6),
-          [ASSETS.WETH.address, ASSETS.USDC.address],
-          this.users[x].address,
-          block.timestamp + 60,
-          { value: parseUnits(500) }
-        );
-      await this.f.swapper
-        .connect(this.users[x])
-        .swapETHForExactTokens(
-          parseUnits(DEPOSIT_STABLE, 6),
-          [ASSETS.WETH.address, ASSETS.USDT.address],
-          this.users[x].address,
-          block.timestamp + 60,
-          { value: parseUnits(500) }
-        );
-      await this.f.swapper
-        .connect(this.users[x])
-        .swapETHForExactTokens(
-          parseUnits(DEPOSIT_WBTC, 8),
-          [ASSETS.WETH.address, ASSETS.WBTC.address],
-          this.users[x].address,
-          block.timestamp + 60,
-          { value: parseUnits(500) }
-        );
-    }
+    // send reward token to test account
+    await stakeToken.transfer(test1.address, ethers.utils.parseUnits("10000.0", decimals));
+    await stakeToken.transfer(test2.address, ethers.utils.parseUnits("10000.0", decimals));
+
+    // send reward token to staking contract
+    await rewardToken.transfer(simpleStaking.address, ethers.utils.parseUnits("90000.0", decimals));
   });
 
-  beforeEach(async function () {
-    if (this.evmSnapshot1) await evmRevert(this.evmSnapshot1);
+  it("stake function", async () => {
+    await stakeToken
+      .connect(test1)
+      .approve(simpleStaking.address, ethers.utils.parseUnits("1000.0", decimals));
 
-    this.evmSnapshot1 = await evmSnapshot();
+    // zero staking will occur error
+    await expect(
+      simpleStaking
+        .connect(test1)
+        .stake(stakeToken.address, ethers.utils.parseUnits("0.0", decimals))
+    ).to.be.revertedWith("Cannot stake nothing");
+
+    await simpleStaking
+      .connect(test1)
+      .stake(stakeToken.address, ethers.utils.parseUnits("1000.0", decimals));
+    const balanceData = await stakeToken.balanceOf(test1.address);
+    expect(ethers.utils.formatUnits(balanceData._hex, decimals).toString()).to.equal("9000.0");
+
+    await stakeToken
+      .connect(test1)
+      .approve(simpleStaking.address, ethers.utils.parseUnits("1000.0", decimals));
+    await expect(
+      simpleStaking
+        .connect(test1)
+        .stake(stakeToken.address, ethers.utils.parseUnits("1000.0", decimals))
+    ).to.be.revertedWith("Reward rate not exist");
   });
 
-  after(async function () {
-    evmRevert(this.evmSnapshot0);
+  it("setRewardRate function", async () => {
+    await expect(
+      simpleStaking
+        .connect(owner)
+        .setRewardRate(stakeToken.address, ethers.utils.parseUnits("0.0", 0))
+    ).to.be.revertedWith("Reward rate should be bigger than zero");
+
+    await simpleStaking
+      .connect(owner)
+      .setRewardRate(stakeToken.address, ethers.utils.parseUnits("20.0", 0));
   });
 
-  describe("Aave as Provider", function () {
-    before(async function () {
-      for (let i = 0; i < VAULTS.length; i += 1) {
-        const vault = VAULTS[i];
-        await this.f[vault.name].setActiveProvider(this.f.aave.address);
-      }
-    });
+  it("unstake function", async () => {
+    await expect(
+      simpleStaking
+        .connect(test1)
+        .unstake(stakeToken.address, ethers.utils.parseUnits("0.0", decimals))
+    ).to.be.revertedWith("Cannot unstake nothing");
 
-    describe("Native token as collateral, ERC20 as borrow asset.", function () {
-      testDeposit1a(
-        [vaultethdai, vaultethusdc, vaultethusdt, vaultethwbtc],
-        DEPOSIT_ETH,
-        ASSETS.WETH.aToken
-      );
+    await expect(
+      simpleStaking
+        .connect(test1)
+        .unstake(test2.address, ethers.utils.parseUnits("1000.0", decimals))
+    ).to.be.revertedWith("You didnt stake this token");
 
-      testBorrow1([vaultethdai, vaultethusdc, vaultethusdt], DEPOSIT_ETH, BORROW_STABLE);
-      testBorrow1([vaultethwbtc], DEPOSIT_ETH, BORROW_WBTC);
+    await expect(
+      simpleStaking
+        .connect(test1)
+        .unstake(stakeToken.address, ethers.utils.parseUnits("1000.0", decimals))
+    ).to.be.revertedWith("Can not unstake over staked amount");
 
-      testPaybackAndWithdraw1(
-        [vaultethdai, vaultethusdc, vaultethusdt],
-        DEPOSIT_ETH,
-        BORROW_STABLE
-      );
-      testPaybackAndWithdraw1([vaultethwbtc], DEPOSIT_ETH, BORROW_WBTC);
+    // await expect(
+    await simpleStaking
+      .connect(test1)
+      .unstake(stakeToken.address, ethers.utils.parseUnits("500.0", decimals));
+    // ).to.emit(simpleStaking, "Unstake")
+    // .withArgs(test1.address, stakeToken.address, stakeToken.address, 0, );
+  });
 
-      testRefinance1(
-        [vaultethdai, vaultethusdc, vaultethusdt],
-        "aave",
-        "compound",
-        DEPOSIT_ETH,
-        BORROW_STABLE,
-        FLASHLOAN.AAVE
-      );
-      testRefinance1(
-        [vaultethdai, vaultethusdc],
-        "aave",
-        "compound",
-        DEPOSIT_ETH,
-        BORROW_STABLE,
-        FLASHLOAN.DYDX
-      );
-      testRefinance1(
-        [vaultethdai, vaultethusdc, vaultethusdt],
-        "aave",
-        "compound",
-        DEPOSIT_ETH,
-        BORROW_STABLE,
-        FLASHLOAN.CREAM
-      );
+  it("withdrawUnstaked function", async () => {
+    await expect(
+      simpleStaking
+        .connect(test1)
+        .withdrawUnstaked(stakeToken.address, ethers.utils.parseUnits("0.0", decimals))
+    ).to.be.revertedWith("Can not withdraw nothing");
 
-      //testRefinance1([vaultethwbtc], "aave", "dydx", DEPOSIT_ETH, BORROW_WBTC, FLASHLOAN.AAVE);
-      //testRefinance1([vaultethwbtc], "aave", "dydx", DEPOSIT_ETH, BORROW_WBTC, FLASHLOAN.DYDX);
-      //testRefinance1([vaultethwbtc], "aave", "dydx", DEPOSIT_ETH, BORROW_WBTC, FLASHLOAN.CREAM);
+    await expect(
+      simpleStaking
+        .connect(test1)
+        .withdrawUnstaked(test2.address, ethers.utils.parseUnits("1000.0", decimals))
+    ).to.be.revertedWith("You dont have any unstaked to withdraw");
 
-      testRefinance1([vaultethwbtc], "aave", "ironBank", DEPOSIT_ETH, BORROW_WBTC, FLASHLOAN.AAVE);
-      //testRefinance1([vaultethwbtc], "aave", "ironBank", DEPOSIT_ETH, BORROW_WBTC, FLASHLOAN.DYDX);
-      testRefinance1([vaultethwbtc], "aave", "ironBank", DEPOSIT_ETH, BORROW_WBTC, FLASHLOAN.CREAM);
-    });
+    await expect(
+      simpleStaking
+        .connect(test1)
+        .withdrawUnstaked(stakeToken.address, ethers.utils.parseUnits("1000.0", decimals))
+    ).to.be.revertedWith("Can not withdraw over unstaked amount");
 
-    describe("ERC20 token as collateral, ERC20 as borrow asset.", function () {
-      testDeposit2a([vaultwbtcdai], DEPOSIT_WBTC);
+    await simpleStaking
+      .connect(test1)
+      .withdrawUnstaked(stakeToken.address, ethers.utils.parseUnits("500.0", decimals));
+  });
 
-      testBorrow2([vaultwbtcdai, vaultwbtcusdc], DEPOSIT_WBTC, BORROW_STABLE);
-      testBorrow2([vaultdaiwbtc, vaultusdcwbtc], DEPOSIT_STABLE, BORROW_WBTC);
+  it("withdrawReward function", async () => {
+    await expect(
+      simpleStaking
+        .connect(test1)
+        .withdrawReward(rewardToken.address, ethers.utils.parseUnits("0.0", decimals))
+    ).to.be.revertedWith("Can not withdraw nothing");
 
-      testPaybackAndWithdraw2([vaultdaiwbtc, vaultusdcwbtc], DEPOSIT_STABLE, BORROW_WBTC);
+    await expect(
+      simpleStaking
+        .connect(test1)
+        .withdrawReward(test2.address, ethers.utils.parseUnits("1000.0", decimals))
+    ).to.be.revertedWith("You dont have any reward to withdraw");
 
-      //// mint-paused for WBTC in Compound
-      //testRefinance2([vaultwbtcdai, vaultwbtcusdc], "aave", "compound", DEPOSIT_WBTC, BORROW_STABLE, FLASHLOAN.AAVE);
-      //testRefinance2([vaultwbtcdai, vaultwbtcusdc], "aave", "compound", DEPOSIT_WBTC, BORROW_STABLE, FLASHLOAN.DYDX);
-      //testRefinance2([vaultwbtcdai, vaultwbtcusdc, vaultwbtcusdt], "aave", "compound", DEPOSIT_WBTC, BORROW_STABLE, FLASHLOAN.CREAM);
+    await expect(
+      simpleStaking
+        .connect(test1)
+        .withdrawReward(rewardToken.address, ethers.utils.parseUnits("1000.0", decimals))
+    ).to.be.revertedWith("Can not withdraw over reward amount");
 
-      //// DYDX Market doesnt exist!
-      //testRefinance2([vaultwbtcdai, vaultwbtcusdc], "aave", "dydx", DEPOSIT_WBTC, BORROW_STABLE, FLASHLOAN.AAVE);
-      //testRefinance2([vaultwbtcdai, vaultwbtcusdc], "aave", "dydx", DEPOSIT_WBTC, BORROW_STABLE, FLASHLOAN.DYDX);
-      //testRefinance2([vaultwbtcdai, vaultwbtcusdc], "aave", "dydx", DEPOSIT_WBTC, BORROW_STABLE, FLASHLOAN.CREAM);
-
-      //// borrow-paused for WBTC in Compound
-      //testRefinance2([vaultdaiwbtc, vaultusdcwbtc], "aave", "compound", DEPOSIT_STABLE, BORROW_WBTC, FLASHLOAN.AAVE);
-      //testRefinance2([vaultdaiwbtc, vaultusdcwbtc], "aave", "compound", DEPOSIT_STABLE, BORROW_WBTC, FLASHLOAN.DYDX);
-      //testRefinance2([vaultdaiwbtc, vaultusdcwbtc], "aave", "compound", DEPOSIT_STABLE, BORROW_WBTC, FLASHLOAN.CREAM);
-
-      //// DYDX Market doesnt exist!
-      //testRefinance2([vaultdaiwbtc, vaultusdcwbtc], "aave", "dydx", DEPOSIT_STABLE, BORROW_WBTC, FLASHLOAN.AAVE);
-      //testRefinance2([vaultdaiwbtc, vaultusdcwbtc], "aave", "dydx", DEPOSIT_STABLE, BORROW_WBTC, FLASHLOAN.DYDX);
-      //testRefinance2([vaultdaiwbtc, vaultusdcwbtc], "aave", "dydx", DEPOSIT_STABLE, BORROW_WBTC, FLASHLOAN.CREAM);
-    });
-
-    describe("ERC20 token as collateral, native token as borrow asset.", function () {
-      testBorrow3([vaultdaieth, vaultusdceth], DEPOSIT_STABLE, BORROW_ETH);
-
-      testPaybackAndWithdraw3([vaultwbtceth], DEPOSIT_WBTC, BORROW_ETH);
-      testPaybackAndWithdraw3([vaultdaieth, vaultusdceth], DEPOSIT_STABLE, BORROW_ETH);
-
-      testRefinance3(
-        [vaultdaieth, vaultusdceth],
-        "aave",
-        "compound",
-        DEPOSIT_STABLE,
-        BORROW_ETH,
-        FLASHLOAN.AAVE
-      );
-      testRefinance3(
-        [vaultdaieth, vaultusdceth],
-        "aave",
-        "compound",
-        DEPOSIT_STABLE,
-        BORROW_ETH,
-        FLASHLOAN.DYDX
-      );
-      testRefinance3(
-        [vaultdaieth, vaultusdceth],
-        "aave",
-        "compound",
-        DEPOSIT_STABLE,
-        BORROW_ETH,
-        FLASHLOAN.CREAM
-      );
-
-      testRefinance3(
-        [vaultdaieth, vaultusdceth],
-        "aave",
-        "dydx",
-        DEPOSIT_STABLE,
-        BORROW_ETH,
-        FLASHLOAN.AAVE
-      );
-      //testRefinance3([vaultdaieth, vaultusdceth], "aave", "dydx", DEPOSIT_STABLE, BORROW_ETH, FLASHLOAN.DYDX);
-      testRefinance3(
-        [vaultdaieth, vaultusdceth],
-        "aave",
-        "dydx",
-        DEPOSIT_STABLE,
-        BORROW_ETH,
-        FLASHLOAN.CREAM
-      );
-
-      testRefinance3(
-        [vaultdaieth, vaultusdceth],
-        "aave",
-        "ironBank",
-        DEPOSIT_STABLE,
-        BORROW_ETH,
-        FLASHLOAN.AAVE
-      );
-      testRefinance3(
-        [vaultdaieth, vaultusdceth],
-        "aave",
-        "ironBank",
-        DEPOSIT_STABLE,
-        BORROW_ETH,
-        FLASHLOAN.DYDX
-      );
-      // re-entered
-      //testRefinance3([vaultdaieth, vaultusdceth], "aave", "ironBank", DEPOSIT_STABLE, BORROW_ETH, FLASHLOAN.CREAM);
-    });
+    await simpleStaking
+      .connect(test1)
+      .withdrawReward(rewardToken.address, ethers.utils.parseUnits("1.0", decimals));
   });
 });

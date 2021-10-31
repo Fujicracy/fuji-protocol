@@ -17,7 +17,6 @@ contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
   mapping(address => bool) public override validVault;
 
   address private _swapper;
-  address private _unwrapper;
 
   function initialize() external initializer {
     __Ownable_init();
@@ -80,15 +79,6 @@ contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
   }
 
   /**
-   * @dev Sets the Unwrapper address
-   * @param _newUnwrapper: controller address
-   */
-  function setUnwrapper(address _newUnwrapper) external onlyOwner {
-    require(_newUnwrapper != address(0), Errors.VL_ZERO_ADDR);
-    _unwrapper = _newUnwrapper;
-  }
-
-  /**
    * @dev Adds a Vault.
    * @param _vaultAddr: Address of vault to be added
    */
@@ -120,9 +110,5 @@ contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
 
   function getSwapper() external view override returns (address) {
     return _swapper;
-  }
-
-  function getUnwrapper() external view override returns (address) {
-    return _unwrapper;
   }
 }

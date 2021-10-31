@@ -58,8 +58,6 @@ interface IVault {
 
   function userDepositBalance(address _user) external view returns (uint256);
 
-  function getUnwrapper() external view returns (address);
-
   function getNeededCollateralFor(uint256 _amount, bool _withFactors)
     external
     view

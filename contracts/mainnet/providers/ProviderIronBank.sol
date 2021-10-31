@@ -26,8 +26,8 @@ contract HelperFunct {
     return 0xAB1c342C7bf5Ec5F02ADEA1c2270670bCa144CbB;
   }
 
-  function _getUnwrapper() internal view returns(address) {
-    return IVault(address(this)).getUnwrapper();
+  function _getUnwrapper() internal pure returns(address) {
+    return 0x0000000000000000000000000000000000000000;
   }
 
   //IronBank functions

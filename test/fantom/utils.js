@@ -107,9 +107,6 @@ const fixture = async ([wallet]) => {
   const F1155 = await getContractFactory("FujiERC1155");
   const f1155 = await upgrades.deployProxy(F1155, []);
 
-  const WFTMUnwrapper = await getContractFactory("WFTMUnwrapper");
-  const unwrapper = await WFTMUnwrapper.deploy([]);
-
   const FujiOracle = await getContractFactory("FujiOracle");
   const oracle = await FujiOracle.deploy(
     Object.values(ASSETS).map((asset) => asset.address),
@@ -165,7 +162,6 @@ const fixture = async ([wallet]) => {
   await fujiadmin.setFliquidator(fliquidator.address);
   await fujiadmin.setTreasury(TREASURY_ADDR);
   await fujiadmin.setController(controller.address);
-  await fujiadmin.setUnwrapper(unwrapper.address);
   await fliquidator.setFujiAdmin(fujiadmin.address);
   await fliquidator.setSwapper(SPOOKY_ROUTER_ADDR);
   await flasher.setFujiAdmin(fujiadmin.address);

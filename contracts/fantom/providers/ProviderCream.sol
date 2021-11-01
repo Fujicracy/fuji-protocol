@@ -179,12 +179,13 @@ contract ProviderCream is IProvider, HelperFunct {
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
     address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    //Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: fantomCream uses base 1e18
+    // Block Rate transformed for common mantissa for Fuji in ray (1e27)
+    // Note: Cream uses base 1e18
     uint256 bRateperBlock = IGenCToken(cyTokenAddr).borrowRatePerBlock() * 10**9;
 
-    // The approximate number of blocks per year that is assumed by the fantomCream interest rate model
-    uint256 blocksperYear = 2102400;
-    return bRateperBlock * blocksperYear;
+    // The approximate number of blocks per year that is assumed by the Cream interest rate model
+    // ~60 blocks per min in fantom
+    return bRateperBlock * 60 * 60 * 24 * 365;
   }
 
   /**

@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../../interfaces/IProvider.sol";
+import "../../interfaces/IUnwrapper.sol";
+import "../../interfaces/IVault.sol";
 import "../../interfaces/IWETH.sol";
 import "../../interfaces/IFujiMappings.sol";
 import "../../interfaces/compound/IGenCToken.sol";
@@ -24,10 +26,14 @@ contract HelperFunct {
     return 0x260E596DAbE3AFc463e75B6CC05d8c46aCAcFB09; // Scream comptroller fantom
   }
 
-  //IronBank functions
+  function _getUnwrapper() internal pure returns(address) {
+    return 0xee94A39D185329d8c46dEA726E01F91641E57346;
+  }
+
+  //Scream functions
 
   /**
-   * @dev Approves vault's assets as collateral for IronBank Protocol.
+   * @dev Approves vault's assets as collateral for Scream Protocol.
    * @param _cyTokenAddress: asset type to be approved as collateral.
    */
   function _enterCollatMarket(address _cyTokenAddress) internal {
@@ -40,7 +46,7 @@ contract HelperFunct {
   }
 
   /**
-   * @dev Removes vault's assets as collateral for IronBank Protocol.
+   * @dev Removes vault's assets as collateral for Scream Protocol.
    * @param _cyTokenAddress: asset type to be removed as collateral.
    */
   function _exitCollatMarket(address _cyTokenAddress) internal {
@@ -86,7 +92,7 @@ contract ProviderScream is IProvider, HelperFunct {
     //Approve to move ERC20tokens
     erc20token.univApprove(address(cyTokenAddr), _amount);
 
-    // IronBank Protocol mints cyTokens, trhow error if not
+    // Scream Protocol mints cyTokens, trhow error if not
     require(cyToken.mint(_amount) == 0, "Deposit-failed");
   }
 
@@ -102,12 +108,14 @@ contract ProviderScream is IProvider, HelperFunct {
     // Create a reference to the corresponding cyToken contract
     IGenCToken cyToken = IGenCToken(cyTokenAddr);
 
-    //IronBank Protocol Redeem Process, throw errow if not.
+    //Scream Protocol Redeem Process, throw errow if not.
     require(cyToken.redeemUnderlying(_amount) == 0, "Withdraw-failed");
 
     if (_isFTM(_asset)) {
-      // Transform FTM to WFTM
-      IWETH(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).withdraw(_amount);
+      // Transform WFTM to FTM
+      address unwrapper = _getUnwrapper();
+      IERC20(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).univTransfer(payable(unwrapper), _amount);
+      IUnwrapper(unwrapper).withdraw(_amount);
     }
   }
 
@@ -126,12 +134,14 @@ contract ProviderScream is IProvider, HelperFunct {
     //Enter and/or ensure collateral market is enacted
     //_enterCollatMarket(cyTokenAddr);
 
-    //IronBank Protocol Borrow Process, throw errow if not.
+    //Scream Protocol Borrow Process, throw errow if not.
     require(cyToken.borrow(_amount) == 0, "borrow-failed");
 
     if (_isFTM(_asset)) {
       // Transform WFTM to FTM
-      IWETH(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).withdraw(_amount);
+      address unwrapper = _getUnwrapper();
+      IERC20(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).univTransfer(payable(unwrapper), _amount);
+      IUnwrapper(unwrapper).withdraw(_amount);
     }
   }
 
@@ -169,12 +179,13 @@ contract ProviderScream is IProvider, HelperFunct {
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
     address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    //Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: IronBank uses base 1e18
+    // Block Rate transformed for common mantissa for Fuji in ray (1e27)
+    // Note: Scream uses base 1e18
     uint256 bRateperBlock = IGenCToken(cyTokenAddr).borrowRatePerBlock() * 10**9;
 
-    // The approximate number of blocks per year that is assumed by the IronBank interest rate model
-    uint256 blocksperYear = 2102400;
-    return bRateperBlock * blocksperYear;
+    // The approximate number of blocks per year that is assumed by Scream interest rate model
+    // ~60 blocks per min in fantom
+    return bRateperBlock * 60 * 60 * 24 * 365;
   }
 
   /**
@@ -189,7 +200,7 @@ contract ProviderScream is IProvider, HelperFunct {
 
   /**
    * @dev Return borrow balance of ETH/ERC20_Token.
-   * This function is the accurate way to get IronBank borrow balance.
+   * This function is the accurate way to get Scream borrow balance.
    * It costs ~84K gas and is not a view function.
    * @param _asset token address to query the balance.
    * @param _who address of the account.

@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../../interfaces/IProvider.sol";
+import "../../interfaces/IUnwrapper.sol";
+import "../../interfaces/IVault.sol";
 import "../../interfaces/IWETH.sol";
 import "../../interfaces/IFujiMappings.sol";
 import "../../interfaces/compound/IGenCToken.sol";
@@ -22,6 +24,10 @@ contract HelperFunct {
 
   function _getComptrollerAddress() internal pure returns (address) {
     return 0x4250A6D3BD57455d7C6821eECb6206F507576cD2; // Cream fantom
+  }
+
+  function _getUnwrapper() internal pure returns(address) {
+    return 0xee94A39D185329d8c46dEA726E01F91641E57346;
   }
 
   //fantomCream functions
@@ -106,8 +112,10 @@ contract ProviderCream is IProvider, HelperFunct {
     require(cyToken.redeemUnderlying(_amount) == 0, "Withdraw-failed");
 
     if (_isFTM(_asset)) {
-      // Transform FTM to WFTM
-      IWETH(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).withdraw(_amount);
+      // Transform WFTM to FTM
+      address unwrapper = _getUnwrapper();
+      IERC20(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).univTransfer(payable(unwrapper), _amount);
+      IUnwrapper(unwrapper).withdraw(_amount);
     }
   }
 
@@ -131,7 +139,9 @@ contract ProviderCream is IProvider, HelperFunct {
 
     if (_isFTM(_asset)) {
       // Transform WFTM to FTM
-      IWETH(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).withdraw(_amount);
+      address unwrapper = _getUnwrapper();
+      IERC20(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).univTransfer(payable(unwrapper), _amount);
+      IUnwrapper(unwrapper).withdraw(_amount);
     }
   }
 
@@ -169,12 +179,13 @@ contract ProviderCream is IProvider, HelperFunct {
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
     address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    //Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: fantomCream uses base 1e18
+    // Block Rate transformed for common mantissa for Fuji in ray (1e27)
+    // Note: Cream uses base 1e18
     uint256 bRateperBlock = IGenCToken(cyTokenAddr).borrowRatePerBlock() * 10**9;
 
-    // The approximate number of blocks per year that is assumed by the fantomCream interest rate model
-    uint256 blocksperYear = 2102400;
-    return bRateperBlock * blocksperYear;
+    // The approximate number of blocks per year that is assumed by the Cream interest rate model
+    // ~60 blocks per min in fantom
+    return bRateperBlock * 60 * 60 * 24 * 365;
   }
 
   /**

@@ -5,6 +5,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../../interfaces/IProvider.sol";
+import "../../interfaces/IUnwrapper.sol";
+import "../../interfaces/IVault.sol";
 import "../../interfaces/IWETH.sol";
 import "../../interfaces/aave/IAaveDataProvider.sol";
 import "../../interfaces/aave/IAaveLendingPool.sol";
@@ -28,6 +30,10 @@ contract ProviderGeist is IProvider {
 
   function _getFtmAddr() internal pure returns (address) {
     return 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+  }
+
+  function _getUnwrapper() internal pure returns(address) {
+    return 0xee94A39D185329d8c46dEA726E01F91641E57346;
   }
 
   /**
@@ -130,7 +136,11 @@ contract ProviderGeist is IProvider {
     aave.borrow(_tokenAddr, _amount, 2, 0, address(this));
 
     // convert WFTM to FTM
-    if (isFtm) IWETH(_tokenAddr).withdraw(_amount);
+    if (isFtm)  {
+      address unwrapper = _getUnwrapper();
+      IERC20(_tokenAddr).univTransfer(payable(unwrapper), _amount);
+      IUnwrapper(unwrapper).withdraw(_amount);
+    }
   }
 
   /**
@@ -147,7 +157,11 @@ contract ProviderGeist is IProvider {
     aave.withdraw(_tokenAddr, _amount, address(this));
 
     // convert WFTM to FTM
-    if (isFtm) IWETH(_tokenAddr).withdraw(_amount);
+    if (isFtm)  {
+      address unwrapper = _getUnwrapper();
+      IERC20(_tokenAddr).univTransfer(payable(unwrapper), _amount);
+      IUnwrapper(unwrapper).withdraw(_amount);
+    }
   }
 
   /**

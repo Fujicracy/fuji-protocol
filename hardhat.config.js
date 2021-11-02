@@ -169,30 +169,23 @@ task("publish", "Publish deployment data to other packages")
     writeFiles(network.chainId, market, deployData);
   });
 
-task("sync", "Sync mainnet deployment data to be used in current network").setAction(
-  async (_, { ethers, config }) => {
+task("sync", "Sync mainnet deployment data to be used in current network")
+  .addOptionalParam("cid", "ChainId: 1, 250", "1")
+  .addOptionalParam("market", "Markets: fuse, core", "core")
+  .setAction(async ({ cid, market }, { ethers, config }) => {
     const network = await ethers.provider.getNetwork();
 
     try {
       const deployDataCore = JSON.parse(
-        fs.readFileSync(`${config.paths.artifacts}/1-core.deploy`).toString()
+        fs.readFileSync(`${config.paths.artifacts}/${cid}-${market}.deploy`).toString()
       );
-      writeFiles(network.chainId, "core", deployDataCore);
-      console.log("1-core deploy: synced");
+      writeFiles(network.chainId, market, deployDataCore);
+      console.log(`${cid}-${market}.deploy: synced`);
     } catch (e) {
-      console.log("1-core deploy: not synced");
-    }
-    try {
-      const deployDataFuse = JSON.parse(
-        fs.readFileSync(`${config.paths.artifacts}/1-fuse.deploy`).toString()
-      );
-      writeFiles(network.chainId, "fuse", deployDataFuse);
-      console.log("1-core deploy: synced");
-    } catch (e) {
-      console.log("1-fuse deploy: not synced");
+      console.log(`${cid}-${market}.deploy: not synced`);
     }
   }
-);
+  );
 
 task("wallet", "Create a wallet (pk) link", async (_, { ethers }) => {
   const randomWallet = ethers.Wallet.createRandom();

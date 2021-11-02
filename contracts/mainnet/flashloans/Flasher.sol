@@ -31,8 +31,10 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
 
   address private immutable _aaveLendingPool = 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9;
   address private immutable _dydxSoloMargin = 0x1E0447b19BB6EcFdAe1e4AE1694b0C3659614e4e;
-  address private immutable _crFlashloanLender = 0xa8682Cfd2B6c714d2190fA38863d545c7a0b73D5;
-  address private immutable _crComptroller = 0x3d5BC3c8d13dcB8bF317092d84783c2697AE9258;
+
+  // IronBank
+  address private immutable _cyFlashloanLender = 0x1a21Ab52d1Ca1312232a72f4cf4389361A479829;
+  address private immutable _cyComptroller = 0xAB1c342C7bf5Ec5F02ADEA1c2270670bCa144CbB;
 
   // need to be payable because of the conversion ETH <> WETH
   receive() external payable {}
@@ -194,10 +196,10 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
     return true;
   }
 
-  // ===================== CreamFinance FlashLoan ===================================
+  // ===================== IronBank FlashLoan ===================================
 
   /**
-   * @dev Initiates an CreamFinance flashloan.
+   * @dev Initiates an IronBank flashloan.
    * @param info: data to be passed between functions executing flashloan logic
    */
   function _initiateCreamFlashLoan(FlashLoan.Info calldata info) internal {
@@ -206,13 +208,13 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
     // Prepara data for flashloan execution
     bytes memory params = abi.encode(info);
 
-    // Initialize Instance of Cream crLendingContract
-    IERC3156FlashLender(_crFlashloanLender).flashLoan(ICFlashloanReceiver(address(this)), token, info.amount, params);
+    // Initialize Instance of IronBank LendingContract
+    IERC3156FlashLender(_cyFlashloanLender).flashLoan(ICFlashloanReceiver(address(this)), token, info.amount, params);
   }
 
   /**
-   * @dev Executes CreamFinance Flashloan, this operation is required
-   * and called by CreamFinanceflashloan when sending loaned amount
+   * @dev Executes IronBank Flashloan, this operation is required
+   * and called by IronBankflashloan when sending loaned amount
    */
   function onFlashLoan(
     address initiator,
@@ -222,7 +224,7 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
     bytes calldata params
   ) external override returns (bytes32) {
     require(
-      address(this) == initiator && ICrComptroller(_crComptroller).isMarketListed(msg.sender),
+      address(this) == initiator && ICrComptroller(_cyComptroller).isMarketListed(msg.sender),
       Errors.VL_NOT_AUTHORIZED
     );
     require(IERC20(token).balanceOf(address(this)) >= amount, Errors.VL_FLASHLOAN_FAILED);

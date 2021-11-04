@@ -45,6 +45,7 @@ library Errors {
   string public constant VL_ERC1155_NOT_TRANSFERABLE = "128"; // ERC1155: Not Transferable
   string public constant VL_SWAP_SLIPPAGE_LIMIT_EXCEED = "129"; // ERC1155: Not Transferable
   string public constant VL_ZERO_ADDR = "130"; // Zero Address
+  string public constant VL_INVALID_FLASHNUM = "131"; // invalid flashloan number parameter
 
   string public constant MATH_DIVISION_BY_ZERO = "201";
   string public constant MATH_ADDITION_OVERFLOW = "202";

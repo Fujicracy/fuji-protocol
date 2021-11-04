@@ -116,8 +116,20 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   ) external override onlyPermit {
     require(_account != address(0), Errors.VL_ZERO_ADDR_1155);
 
+    _mint(_account, _id, _amount);
+
     address operator = _msgSender();
 
+    emit TransferSingle(operator, address(0), _account, _id, _amount);
+
+    _doSafeTransferAcceptanceCheck(operator, address(0), _account, _id, _amount, _data);
+  }
+
+  function _mint(
+    address _account,
+    uint256 _id,
+    uint256 _amount
+  ) internal {
     uint256 accountBalance = _balances[_id][_account];
     uint256 assetTotalBalance = _totalSupply[_id];
     uint256 amountScaled = _amount.rayDiv(indexes[_id]);
@@ -126,10 +138,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
 
     _balances[_id][_account] = accountBalance + amountScaled;
     _totalSupply[_id] = assetTotalBalance + amountScaled;
-
-    emit TransferSingle(operator, address(0), _account, _id, _amount);
-
-    _doSafeTransferAcceptanceCheck(operator, address(0), _account, _id, _amount, _data);
   }
 
   /**
@@ -148,23 +156,11 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
     require(_to != address(0), Errors.VL_ZERO_ADDR_1155);
     require(_ids.length == _amounts.length, Errors.VL_INPUT_ERROR);
 
-    address operator = _msgSender();
-
-    uint256 accountBalance;
-    uint256 assetTotalBalance;
-    uint256 amountScaled;
-
     for (uint256 i = 0; i < _ids.length; i++) {
-      accountBalance = _balances[_ids[i]][_to];
-      assetTotalBalance = _totalSupply[_ids[i]];
-
-      amountScaled = _amounts[i].rayDiv(indexes[_ids[i]]);
-
-      require(amountScaled != 0, Errors.VL_INVALID_MINT_AMOUNT);
-
-      _balances[_ids[i]][_to] = accountBalance + amountScaled;
-      _totalSupply[_ids[i]] = assetTotalBalance + amountScaled;
+      _mint(_to, _ids[i], _amounts[i]);
     }
+
+    address operator = _msgSender();
 
     emit TransferBatch(operator, address(0), _to, _ids, _amounts);
 
@@ -185,8 +181,16 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   ) external override onlyPermit {
     require(_account != address(0), Errors.VL_ZERO_ADDR_1155);
 
-    address operator = _msgSender();
+    _burn(_account, _id, _amount);
 
+    emit TransferSingle(_msgSender(), _account, address(0), _id, _amount);
+  }
+
+  function _burn(
+    address _account,
+    uint256 _id,
+    uint256 _amount
+  ) internal {
     uint256 accountBalance = _balances[_id][_account];
     uint256 assetTotalBalance = _totalSupply[_id];
 
@@ -196,8 +200,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
 
     _balances[_id][_account] = accountBalance - amountScaled;
     _totalSupply[_id] = assetTotalBalance - amountScaled;
-
-    emit TransferSingle(operator, _account, address(0), _id, _amount);
   }
 
   /**
@@ -213,27 +215,11 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
     require(_account != address(0), Errors.VL_ZERO_ADDR_1155);
     require(_ids.length == _amounts.length, Errors.VL_INPUT_ERROR);
 
-    address operator = _msgSender();
-
-    uint256 accountBalance;
-    uint256 assetTotalBalance;
-    uint256 amountScaled;
-
     for (uint256 i = 0; i < _ids.length; i++) {
-      uint256 amount = _amounts[i];
-
-      accountBalance = _balances[_ids[i]][_account];
-      assetTotalBalance = _totalSupply[_ids[i]];
-
-      amountScaled = _amounts[i].rayDiv(indexes[_ids[i]]);
-
-      require(amountScaled != 0 && accountBalance >= amountScaled, Errors.VL_INVALID_BURN_AMOUNT);
-
-      _balances[_ids[i]][_account] = accountBalance - amount;
-      _totalSupply[_ids[i]] = assetTotalBalance - amount;
+      _burn(_account, _ids[i], _amounts[i]);
     }
 
-    emit TransferBatch(operator, _account, address(0), _ids, _amounts);
+    emit TransferBatch(_msgSender(), _account, address(0), _ids, _amounts);
   }
 
   //Getter Functions

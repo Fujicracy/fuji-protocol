@@ -12,6 +12,19 @@ import "./libraries/FlashLoans.sol";
 import "./libraries/Errors.sol";
 
 contract Controller is Claimable {
+
+  // Controller Events
+
+  /**
+  * @dev Log a change in fuji admin address
+  */
+  event FujiAdminChanged(address newFujiAdmin);
+  /**
+  * @dev Log a change in executor permission
+  */
+  event ExecutorPermitChanged(address executorAddress, bool newPermit);
+
+
   IFujiAdmin private _fujiAdmin;
   mapping(address => bool) public isExecutor;
 
@@ -31,6 +44,7 @@ contract Controller is Claimable {
    */
   function setFujiAdmin(address _newFujiAdmin) external onlyOwner {
     _fujiAdmin = IFujiAdmin(_newFujiAdmin);
+    emit FujiAdminChanged(_newFujiAdmin);
   }
 
   /**
@@ -86,6 +100,7 @@ contract Controller is Claimable {
   function setExecutors(address[] calldata _executors, bool _isExecutor) external onlyOwner {
     for (uint256 i = 0; i < _executors.length; i++) {
       isExecutor[_executors[i]] = _isExecutor;
+      emit ExecutorPermitChanged(_executors[i],_isExecutor);
     }
   }
 }

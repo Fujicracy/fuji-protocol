@@ -430,6 +430,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
    */
   function setFujiAdmin(address _newFujiAdmin) external onlyOwner {
     _fujiAdmin = IFujiAdmin(_newFujiAdmin);
+    emit FujiAdminChanged(_newFujiAdmin);
   }
 
   /**
@@ -440,7 +441,6 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   function setActiveProvider(address _provider) external override isAuthorized {
     require(_provider != address(0), Errors.VL_ZERO_ADDR);
     activeProvider = _provider;
-
     emit SetActiveProvider(_provider);
   }
 
@@ -462,6 +462,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
       IFujiERC1155.AssetType.debtToken,
       address(this)
     );
+    emit F1155AddressChanged(_fujiERC1155);
   }
 
   /**
@@ -481,15 +482,19 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
     if (typeHash == keccak256(abi.encode("collatF"))) {
       collatF.a = _newFactorA;
       collatF.b = _newFactorB;
+      emit FactorChanged(typeHash, _newFactorA, _newFactorB);
     } else if (typeHash == keccak256(abi.encode("safetyF"))) {
       safetyF.a = _newFactorA;
       safetyF.b = _newFactorB;
+      emit FactorChanged(typeHash, _newFactorA, _newFactorB);
     } else if (typeHash == keccak256(abi.encode("bonusLiqF"))) {
       bonusLiqF.a = _newFactorA;
       bonusLiqF.b = _newFactorB;
+      emit FactorChanged(typeHash, _newFactorA, _newFactorB);
     } else if (typeHash == keccak256(abi.encode("protocolFee"))) {
       protocolFee.a = _newFactorA;
       protocolFee.b = _newFactorB;
+      emit FactorChanged(typeHash, _newFactorA, _newFactorB);
     }
   }
 
@@ -499,6 +504,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
    */
   function setOracle(address _oracle) external isAuthorized {
     oracle = IFujiOracle(_oracle);
+    emit OracleChanged(_oracle);
   }
 
   /**
@@ -507,6 +513,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
    */
   function setProviders(address[] calldata _providers) external isAuthorized {
     providers = _providers;
+    emit ProvidersChanged(_providers);
   }
 
   /**

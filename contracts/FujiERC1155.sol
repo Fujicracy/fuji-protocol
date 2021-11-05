@@ -265,6 +265,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    */
   function setURI(string memory _newUri) public onlyOwner {
     _uri = _newUri;
+    emit UriChanged(_newUri);
   }
 
   /**

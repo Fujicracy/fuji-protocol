@@ -39,20 +39,10 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    **/
   function updateState(uint256 _assetID, uint256 newBalance) external override onlyPermit {
     uint256 total = totalSupply(_assetID);
-
     if (newBalance > 0 && total > 0 && newBalance > total) {
-      uint256 diff = newBalance - total;
-
-      uint256 amountToIndexRatio = (diff.wadToRay()).rayDiv(total.wadToRay());
-
-      uint256 result = amountToIndexRatio + WadRayMath.ray();
-
-      result = result.rayMul(indexes[_assetID]);
-      require(result <= type(uint128).max, Errors.VL_INDEX_OVERFLOW);
-
-      indexes[_assetID] = uint128(result);
-
-      // TODO: calculate interest rate for a fujiOptimizer Fee.
+      uint256 newIndex = (indexes[_assetID]*newBalance)/total;
+      require(newIndex <= type(uint128).max, Errors.VL_INDEX_OVERFLOW);
+      indexes[_assetID] = uint128(newIndex);
     }
   }
 

@@ -70,7 +70,7 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
     } else if (_flashnum == 2) {
       _initiateCreamFlashLoan(info);
     } else {
-      require(false, Errors.VL_INVALID_FLASHNUM);
+      require(false, Errors.VL_INVALID_PARAMETERS);
     }
   }
 

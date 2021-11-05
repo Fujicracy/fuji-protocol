@@ -63,7 +63,7 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver, ICFlashloanRecei
     } else if (_flashnum == 2) {
       _initiateCreamFlashLoan(info);
     } else {
-      require(false, Errors.VL_INVALID_FLASHNUM);
+      require(false, Errors.VL_INVALID_PARAMETERS);
     }
   }
 

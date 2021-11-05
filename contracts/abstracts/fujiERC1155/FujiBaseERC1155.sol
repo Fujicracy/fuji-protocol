@@ -26,9 +26,9 @@ abstract contract FujiBaseERC1155 is IERC1155Upgradeable, ERC165Upgradeable, Con
   // FujiBaseERC1155 Events
 
   /**
-  * @dev Log a change in URI
+  * @dev Log a change in URI for all tokens
   */
-  event UriChanged(string newUri);
+  event URIGlobalChanged(string newUri);
 
   // Mapping from token ID to account balances
   mapping(uint256 => mapping(address => uint256)) internal _balances;

@@ -535,7 +535,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   }
 
   function _internalDeposit(uint256 _collateralAmount) internal {
-    if (vAssets.collateralAsset == ETH) {
+    if (vAssets.collateralAsset == FTM) {
       require(msg.value == _collateralAmount && _collateralAmount != 0, Errors.VL_AMOUNT_ERROR);
     } else {
       require(_collateralAmount != 0, Errors.VL_AMOUNT_ERROR);
@@ -648,7 +648,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
     // If passed argument amount is negative do MAX
     uint256 amountToPayback = _repayAmount < 0 ? debtBalance + userFee : uint256(_repayAmount);
 
-    if (vAssets.borrowAsset == ETH) {
+    if (vAssets.borrowAsset == FTM) {
       require(msg.value >= amountToPayback, Errors.VL_AMOUNT_ERROR);
       if (msg.value > amountToPayback) {
         IERC20Upgradeable(vAssets.borrowAsset).univTransfer(

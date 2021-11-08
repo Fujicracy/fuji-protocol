@@ -43,6 +43,7 @@ contract Controller is Claimable {
    * @param _newFujiAdmin: FujiAdmin Contract Address
    */
   function setFujiAdmin(address _newFujiAdmin) external onlyOwner {
+    require(_newFujiAdmin != address(0), Errors.VL_ZERO_ADDR);
     _fujiAdmin = IFujiAdmin(_newFujiAdmin);
     emit FujiAdminChanged(_newFujiAdmin);
   }
@@ -100,7 +101,7 @@ contract Controller is Claimable {
   function setExecutors(address[] calldata _executors, bool _isExecutor) external onlyOwner {
     for (uint256 i = 0; i < _executors.length; i++) {
       isExecutor[_executors[i]] = _isExecutor;
-      emit ExecutorPermitChanged(_executors[i],_isExecutor);
+      emit ExecutorPermitChanged(_executors[i], _isExecutor);
     }
   }
 }

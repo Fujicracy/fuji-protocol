@@ -42,15 +42,31 @@ contract Fliquidator is Claimable, ReentrancyGuard {
   IFujiOracle private _oracle;
   IUniswapV2Router02 public swapper;
 
-  // Log Liquidation
+  /**
+  * @dev Log when a user is liquidated
+  */
   event Liquidate(
     address indexed userAddr,
     address indexed vault,
     uint256 amount,
     address liquidator
   );
-  // Log FlashClose
+  /**
+  * @dev Log when a user FlashClose its position
+  */
   event FlashClose(address indexed userAddr, address indexed vault, uint256 amount);
+  /**
+  * @dev Log a change in fuji admin address
+  */
+  event FujiAdminChanged(address newFujiAdmin);
+  /**
+  * @dev Log a change in the factor values
+  */
+  event FactorChanged(
+    bytes32 typehash,
+    uint64 newFactorA,
+    uint64 newFactorB
+  );
 
   modifier isAuthorized() {
     require(msg.sender == owner(), Errors.VL_NOT_AUTHORIZED);
@@ -610,19 +626,27 @@ contract Fliquidator is Claimable, ReentrancyGuard {
    * @dev Set Factors "a" and "b" for a Struct Factor flashcloseF
    * @param _newFactorA: Nominator
    * @param _newFactorB: Denominator
+   * Emits a {FactorChanged} event.
    */
   function setFlashCloseFee(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
     flashCloseF.a = _newFactorA;
     flashCloseF.b = _newFactorB;
+    emit FactorChanged(
+      keccak256(abi.encode("flashCloseF")),
+      _newFactorA,
+      _newFactorB
+    );
   }
 
   /**
    * @dev Sets the fujiAdmin Address
    * @param _newFujiAdmin: FujiAdmin Contract Address
+   * Emits a {FujiAdminChanged} event.
    */
   function setFujiAdmin(address _newFujiAdmin) external isAuthorized {
     require(_newFujiAdmin != address(0), Errors.VL_ZERO_ADDR);
     _fujiAdmin = IFujiAdmin(_newFujiAdmin);
+    emit FujiAdminChanged(_newFujiAdmin);
   }
 
   /**

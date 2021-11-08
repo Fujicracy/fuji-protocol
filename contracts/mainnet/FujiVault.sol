@@ -427,8 +427,10 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   /**
    * @dev Sets the fujiAdmin Address
    * @param _newFujiAdmin: FujiAdmin Contract Address
+   * Emits a {FujiAdminChanged} event.
    */
   function setFujiAdmin(address _newFujiAdmin) external onlyOwner {
+    require(_newFujiAdmin != address(0), Errors.VL_ZERO_ADDR);
     _fujiAdmin = IFujiAdmin(_newFujiAdmin);
     emit FujiAdminChanged(_newFujiAdmin);
   }
@@ -449,6 +451,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   /**
    * @dev Sets a fujiERC1155 Collateral and Debt Asset manager for this vault and initializes it.
    * @param _fujiERC1155: fuji ERC1155 address
+   * Emits a {F1155Changed} event.
    */
   function setFujiERC1155(address _fujiERC1155) external isAuthorized {
     require(_fujiERC1155 != address(0), Errors.VL_ZERO_ADDR);
@@ -462,7 +465,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
       IFujiERC1155.AssetType.debtToken,
       address(this)
     );
-    emit F1155AddressChanged(_fujiERC1155);
+    emit F1155Changed(_fujiERC1155);
   }
 
   /**
@@ -472,37 +475,39 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
    * @param _newFactorA: Nominator
    * @param _newFactorB: Denominator
    * @param _type: safetyF or collatF or bonusLiqF
+   * Emits a {FactorChanged} event.
    */
   function setFactor(
     uint64 _newFactorA,
     uint64 _newFactorB,
     string calldata _type
   ) external isAuthorized {
+
     bytes32 typeHash = keccak256(abi.encode(_type));
+
     if (typeHash == keccak256(abi.encode("collatF"))) {
       collatF.a = _newFactorA;
       collatF.b = _newFactorB;
-      emit FactorChanged(typeHash, _newFactorA, _newFactorB);
     } else if (typeHash == keccak256(abi.encode("safetyF"))) {
       safetyF.a = _newFactorA;
       safetyF.b = _newFactorB;
-      emit FactorChanged(typeHash, _newFactorA, _newFactorB);
     } else if (typeHash == keccak256(abi.encode("bonusLiqF"))) {
       bonusLiqF.a = _newFactorA;
       bonusLiqF.b = _newFactorB;
-      emit FactorChanged(typeHash, _newFactorA, _newFactorB);
     } else if (typeHash == keccak256(abi.encode("protocolFee"))) {
       protocolFee.a = _newFactorA;
       protocolFee.b = _newFactorB;
-      emit FactorChanged(typeHash, _newFactorA, _newFactorB);
     }
+    emit FactorChanged(typeHash, _newFactorA, _newFactorB);
   }
 
   /**
    * @dev Sets the Oracle address (Must Comply with AggregatorV3Interface)
    * @param _oracle: new Oracle address
+   * Emits a {OracleChanged} event.
    */
   function setOracle(address _oracle) external isAuthorized {
+    require(_oracle != address(0), Errors.VL_ZERO_ADDR);
     oracle = IFujiOracle(_oracle);
     emit OracleChanged(_oracle);
   }
@@ -510,8 +515,12 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   /**
    * @dev Set providers to the Vault
    * @param _providers: new providers' addresses
+   * Emits a {ProvidersChanged} event.
    */
   function setProviders(address[] calldata _providers) external isAuthorized {
+    for(uint i = 0; i < _providers.length; i++) {
+      require(_providers[i] != address(0), Errors.VL_ZERO_ADDR);
+    }
     providers = _providers;
     emit ProvidersChanged(_providers);
   }

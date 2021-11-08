@@ -42,16 +42,16 @@ interface IVault {
   /**
   * @dev Log a change in F1155 address
   */
-  event F1155AddressChanged(address newF1155Address);
+  event F1155Changed(address newF1155Address);
   /**
   * @dev Log a change in fuji admin address
   */
   event FujiAdminChanged(address newFujiAdmin);
   /**
-  * @dev Log a change in the factor values in vault
+  * @dev Log a change in the factor values
   */
   event FactorChanged(
-    bytes32 _typehash,
+    bytes32 typehash,
     uint64 newFactorA,
     uint64 newFactorB
   );

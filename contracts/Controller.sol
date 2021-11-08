@@ -11,6 +11,12 @@ import "./interfaces/IFujiAdmin.sol";
 import "./libraries/FlashLoans.sol";
 import "./libraries/Errors.sol";
 
+/**
+ * @dev Contract that controls rebalances and refinancing of the positions
+ * held by the FujiVaults.
+ *
+ */
+
 contract Controller is Claimable {
 
   // Controller Events
@@ -26,13 +32,20 @@ contract Controller is Claimable {
 
 
   IFujiAdmin private _fujiAdmin;
+
   mapping(address => bool) public isExecutor;
 
+  /**
+  * @dev Throws if address passed is not a recognized vault.
+  */
   modifier isValidVault(address _vaultAddr) {
     require(_fujiAdmin.validVault(_vaultAddr), "Invalid vault!");
     _;
   }
 
+  /**
+  * @dev Throws if caller passed is not owner or approved executor.
+  */
   modifier onlyOwnerOrExecutor() {
     require(msg.sender == owner() || isExecutor[msg.sender], "Not executor!");
     _;
@@ -63,7 +76,24 @@ contract Controller is Claimable {
     uint256 _ratioB,
     uint8 _flashNum
   ) external isValidVault(_vaultAddr) onlyOwnerOrExecutor {
+
     IVault vault = IVault(_vaultAddr);
+
+    // Validate ratio inputs
+    require(
+      _ratioA > 0 &&
+      _ratioB > 0 &&
+      _ratioB >= _ratioA,
+      RF_INVALID_RATIO_VALUES
+    );
+
+    // Validate _newProvider is not equal to vault's activeProvider
+    require(
+      vault.activeProvider() != _newProvider,
+      RF_INVALID_NEW_ACTIVEPROVIDER
+    );
+
+
     IVaultControl.VaultAssets memory vAssets = IVaultControl(_vaultAddr).vAssets();
     vault.updateF1155Balances();
 
@@ -74,9 +104,10 @@ contract Controller is Claimable {
     );
     uint256 applyRatiodebtPosition = (debtPosition * _ratioA) / _ratioB;
 
-    // Check Ratio Input and Vault Balance at ActiveProvider
+    // Check vault Balance at 'activeProvider' and appleid ratio computation
     require(
-      debtPosition >= applyRatiodebtPosition && applyRatiodebtPosition > 0,
+      debtPosition >= applyRatiodebtPosition &&
+      applyRatiodebtPosition > 0,
       Errors.RF_INVALID_RATIO_VALUES
     );
 
@@ -98,6 +129,10 @@ contract Controller is Claimable {
     IVault(_vaultAddr).setActiveProvider(_newProvider);
   }
 
+  /**
+   * @dev Sets approved executors for 'doRefinancing' function
+   * Can only be called by the contract owner.
+   */
   function setExecutors(address[] calldata _executors, bool _isExecutor) external onlyOwner {
     for (uint256 i = 0; i < _executors.length; i++) {
       isExecutor[_executors[i]] = _isExecutor;

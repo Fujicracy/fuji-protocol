@@ -8,10 +8,10 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "../../interfaces/IVaultControl.sol";
 
 abstract contract VaultControlUpgradeable is OwnableUpgradeable, PausableUpgradeable {
-  //Vault Struct for Managed Assets
+  // Vault Struct for Managed Assets
   IVaultControl.VaultAssets public vAssets;
 
-  //Pause Functions
+  // Pause Functions
 
   /**
    * @dev Emergency Call to stop all basic money flow functions.

@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/IFujiAdmin.sol";
 import "../interfaces/IHarvester.sol";
+import "../libraries/Errors.sol";
 
 contract VaultHarvester is IHarvester {
   /**
@@ -37,11 +38,11 @@ contract VaultHarvester is IHarvester {
           msg.sender
         );
       } else if (harvestType == 1) {
-        //
+        // cooldown
         transaction.to = 0x4da27a545c0c5B758a6BA100e3a049001de870f5;
         transaction.data = abi.encodeWithSelector(bytes4(keccak256("cooldown()")));
       } else if (harvestType == 2) {
-        //
+        // redeem
         transaction.to = 0x4da27a545c0c5B758a6BA100e3a049001de870f5;
         transaction.data = abi.encodeWithSelector(
           bytes4(keccak256("redeem(address,uint256)")),
@@ -49,7 +50,12 @@ contract VaultHarvester is IHarvester {
           type(uint256).max
         );
         claimedToken = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9;
+      } else {
+        revert(Errors.VL_INVALID_HARVEST_TYPE);
       }
+    }
+    else {
+      revert(Errors.VL_INVALID_HARVEST_PROTOCOL_NUMBER);
     }
   }
 }

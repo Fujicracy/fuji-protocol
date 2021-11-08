@@ -46,6 +46,8 @@ library Errors {
   string public constant VL_SWAP_SLIPPAGE_LIMIT_EXCEED = "129"; // ERC1155: Not Transferable
   string public constant VL_ZERO_ADDR = "130"; // Zero Address
   string public constant VL_INVALID_FLASH_NUMBER = "131"; // invalid flashloan number
+  string public constant VL_INVALID_HARVEST_PROTOCOL_NUMBER = "132"; // invalid flashloan number
+  string public constant VL_INVALID_HARVEST_TYPE = "133"; // invalid flashloan number
 
   string public constant MATH_DIVISION_BY_ZERO = "201";
   string public constant MATH_ADDITION_OVERFLOW = "202";

@@ -1,6 +1,5 @@
-const { ethers, waffle, upgrades } = require("hardhat");
-
-const { deployContract } = waffle;
+const { ethers, upgrades } = require("hardhat");
+const { getContractFactory } = ethers;
 
 const SUSHI_ROUTER_ADDR = "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F";
 const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
@@ -47,18 +46,6 @@ const ASSETS = {
   },
 };
 
-// const FujiAdmin = require("../artifacts/contracts/FujiAdmin.sol/FujiAdmin.json");
-const Fliquidator = require("../artifacts/contracts/Fliquidator.sol/Fliquidator.json");
-const VaultHarvester = require("../artifacts/contracts/Harvester.sol/VaultHarvester.json");
-const Swapper = require("../artifacts/contracts/Swapper.sol/Swapper.json");
-const Aave = require("../artifacts/contracts/providers/ProviderAave.sol/ProviderAave.json");
-const Compound = require("../artifacts/contracts/providers/ProviderCompound.sol/ProviderCompound.json");
-const Dydx = require("../artifacts/contracts/providers/ProviderDYDX.sol/ProviderDYDX.json");
-const IronBank = require("../artifacts/contracts/providers/ProviderIronBank.sol/ProviderIronBank.json");
-const Flasher = require("../artifacts/contracts/flashloans/Flasher.sol/Flasher.json");
-const Controller = require("../artifacts/contracts/Controller.sol/Controller.json");
-const FujiOracle = require("../artifacts/contracts/FujiOracle.sol/FujiOracle.json");
-
 const fixture = async ([wallet]) => {
   const dai = await ethers.getContractAt("IERC20", ASSETS.DAI.address);
   const usdc = await ethers.getContractAt("IERC20", ASSETS.USDC.address);
@@ -73,27 +60,42 @@ const fixture = async ([wallet]) => {
   // const treasury = await deployContract(wallet, Treasury, []);
 
   // Step 2 Of Deploy: Functional Contracts
-  const FujiAdmin = await ethers.getContractFactory("FujiAdmin");
+  const FujiAdmin = await getContractFactory("FujiAdmin");
   const fujiadmin = await upgrades.deployProxy(FujiAdmin, []);
-  const fliquidator = await deployContract(wallet, Fliquidator, []);
-  const flasher = await deployContract(wallet, Flasher, []);
-  const controller = await deployContract(wallet, Controller, []);
-  const FujiERC1155 = await ethers.getContractFactory("FujiERC1155");
-  const f1155 = await upgrades.deployProxy(FujiERC1155, []);
-  const oracle = await deployContract(wallet, FujiOracle, [
+
+  const Fliquidator = await getContractFactory("Fliquidator");
+  const fliquidator = await Fliquidator.deploy([]);
+
+  const Flasher = await getContractFactory("Flasher");
+  const flasher = await Flasher.deploy([]);
+
+  const Controller = await getContractFactory("Controller");
+  const controller = await Controller.deploy([]);
+
+  const F1155 = await getContractFactory("FujiERC1155");
+  const f1155 = await upgrades.deployProxy(F1155, []);
+
+  const FujiOracle = await getContractFactory("FujiOracle");
+  const oracle = await FujiOracle.deploy(
     Object.values(ASSETS).map((asset) => asset.address),
-    Object.values(ASSETS).map((asset) => asset.oracle),
-  ]);
+    Object.values(ASSETS).map((asset) => asset.oracle)
+  );
 
   // Step 3 Of Deploy: Provider Contracts
-  const aave = await deployContract(wallet, Aave, []);
-  const compound = await deployContract(wallet, Compound, []);
-  const dydx = await deployContract(wallet, Dydx, []);
-  const ironbank = await deployContract(wallet, IronBank, []);
+  const Aave = await getContractFactory("ProviderAave");
+  const aave = await Aave.deploy([]);
+  const Compound = await getContractFactory("ProviderCompound");
+  const compound = await Compound.deploy([]);
+  const DyDx = await getContractFactory("ProviderDYDX");
+  const dydx = await DyDx.deploy([]);
+  const IronBank = await getContractFactory("ProviderIronBank");
+  const ironbank = await IronBank.deploy([]);
 
   // Step 4 Of Deploy Core Money Handling Contracts
-  const vaultharvester = await deployContract(wallet, VaultHarvester, []);
-  const swapper = await deployContract(wallet, Swapper, []);
+  const Harvester = await getContractFactory("VaultHarvester");
+  const vaultharvester = await Harvester.deploy([]);
+  const FujiSwapper = await getContractFactory("Swapper");
+  const swapper = await FujiSwapper.deploy([]);
 
   const FujiVault = await ethers.getContractFactory("FujiVault");
   const vaultdai = await upgrades.deployProxy(FujiVault, [

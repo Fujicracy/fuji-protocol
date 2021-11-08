@@ -88,7 +88,7 @@ describe("Alpha", () => {
       await asset.connect(bootstraper).transfer(liquidatorUser.address, extraChange);
 
       console.log("3. Make users position as liquidatable by changing factors");
-      await theVault.connect(users[0]).setFactor(3, 2, "collatF");
+      await theVault.connect(users[0]).setFactor(3, 2, 1);
 
       console.log("4. Liquidator executes batchLiquidate");
 
@@ -161,7 +161,7 @@ describe("Alpha", () => {
       await asset.connect(bootstraper).transfer(liquidatorUser.address, extraChange);
 
       console.log("3. Make users position as liquidatable by changing factors");
-      await theVault.connect(users[0]).setFactor(3, 2, "collatF");
+      await theVault.connect(users[0]).setFactor(3, 2, 1);
 
       console.log("4. Liquidator executes batchLiquidate");
 
@@ -246,7 +246,7 @@ describe("Alpha", () => {
       await asset.connect(bootstraper).transfer(liquidatorUser.address, extraChange);
 
       console.log("3. Make users position as liquidatable by changing factors");
-      await theVault.connect(users[0]).setFactor(3, 2, "collatF");
+      await theVault.connect(users[0]).setFactor(3, 2, 1);
 
       console.log("4. Liquidator executes batchLiquidate");
 
@@ -416,7 +416,7 @@ describe("Alpha", () => {
         .depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount });
 
       console.log("2. Make users position as liquidatable by changing factors");
-      await theVault.connect(users[0]).setFactor(3, 2, "collatF");
+      await theVault.connect(users[0]).setFactor(3, 2, 1);
 
       console.log("3. Liquidator executes flashBatchLiquidate");
 
@@ -477,7 +477,7 @@ describe("Alpha", () => {
       }
 
       console.log("2. Make users position as liquidatable by changing factors");
-      await theVault.connect(users[0]).setFactor(3, 2, "collatF");
+      await theVault.connect(users[0]).setFactor(3, 2, 1);
 
       console.log("3. Liquidator executes flashBatchLiquidate");
 
@@ -556,7 +556,7 @@ describe("Alpha", () => {
         .depositAndBorrow(goodDepositAmount, borrowAmount, { value: goodDepositAmount });
 
       console.log("2. Make users position as liquidatable by changing factors");
-      await theVault.connect(users[0]).setFactor(3, 2, "collatF");
+      await theVault.connect(users[0]).setFactor(3, 2, 1);
 
       console.log("3. Liquidator executes flashBatchLiquidate");
 
@@ -649,7 +649,7 @@ describe("Alpha", () => {
       await theVault.connect(carelessUser).depositAndBorrow(depositAmount, borrowAmount);
 
       console.log("4. Make users position as liquidatable by changing factors");
-      await theVault.connect(users[0]).setFactor(3, 2, "collatF");
+      await theVault.connect(users[0]).setFactor(3, 2, 1);
 
       console.log("5. Liquidator executes batchLiquidate");
 
@@ -757,7 +757,7 @@ describe("Alpha", () => {
       await theVault.connect(carelessUser).depositAndBorrow(depositAmount, borrowAmount);
 
       console.log("4. Make users position as liquidatable by changing factors");
-      await theVault.connect(users[0]).setFactor(3, 2, "collatF");
+      await theVault.connect(users[0]).setFactor(3, 2, 1);
 
       console.log("5. Liquidator executes flashBatchLiquidate");
 

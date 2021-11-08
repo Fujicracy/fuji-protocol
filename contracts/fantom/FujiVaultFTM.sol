@@ -31,6 +31,13 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
     uint64 b;
   }
 
+  enum FactorType {
+    Safety,
+    Collateralization,
+    ProtocolFee,
+    BonusLiquidation
+  }
+
   // Safety factor
   Factor public safetyF;
 
@@ -475,21 +482,22 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   function setFactor(
     uint64 _newFactorA,
     uint64 _newFactorB,
-    string calldata _type
+    FactorType _type
   ) external isAuthorized {
-    bytes32 typeHash = keccak256(abi.encode(_type));
-    if (typeHash == keccak256(abi.encode("collatF"))) {
-      collatF.a = _newFactorA;
-      collatF.b = _newFactorB;
-    } else if (typeHash == keccak256(abi.encode("safetyF"))) {
+    if (_type == FactorType.Safety) {
       safetyF.a = _newFactorA;
       safetyF.b = _newFactorB;
-    } else if (typeHash == keccak256(abi.encode("bonusLiqF"))) {
-      bonusLiqF.a = _newFactorA;
-      bonusLiqF.b = _newFactorB;
-    } else if (typeHash == keccak256(abi.encode("protocolFee"))) {
+    } else if (_type == FactorType.Collateralization) {
+      collatF.a = _newFactorA;
+      collatF.b = _newFactorB;
+    } else if (_type == FactorType.ProtocolFee) {
       protocolFee.a = _newFactorA;
       protocolFee.b = _newFactorB;
+    } else if (_type == FactorType.BonusLiquidation) {
+      bonusLiqF.a = _newFactorA;
+      bonusLiqF.b = _newFactorB;
+    } else {
+      revert(Errors.VL_INVALID_FACTOR);
     }
   }
 

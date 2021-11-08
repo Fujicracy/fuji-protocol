@@ -53,8 +53,7 @@ contract VaultHarvester is IHarvester {
       } else {
         revert(Errors.VL_INVALID_HARVEST_TYPE);
       }
-    }
-    else {
+    } else {
       revert(Errors.VL_INVALID_HARVEST_PROTOCOL_NUMBER);
     }
   }

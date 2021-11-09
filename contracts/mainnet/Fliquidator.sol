@@ -68,6 +68,15 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     uint64 newFactorB
   );
 
+  /**
+  * @dev Log a change in the oracle address
+  */
+  event OracleChanged(address newOracle);
+  /**
+  * @dev Log change of swapper address
+  */
+  event SwapperChanged(address newSwapper);
+
   modifier isAuthorized() {
     require(msg.sender == owner(), Errors.VL_NOT_AUTHORIZED);
     _;
@@ -652,18 +661,22 @@ contract Fliquidator is Claimable, ReentrancyGuard {
   /**
    * @dev Changes the Swapper contract address
    * @param _newSwapper: address of new swapper contract
+   * Emits {SwapperChanged} event.
    */
   function setSwapper(address _newSwapper) external isAuthorized {
     require(_newSwapper != address(0), Errors.VL_ZERO_ADDR);
     swapper = IUniswapV2Router02(_newSwapper);
+    emit SwapperChanged(_newSwapper);
   }
 
   /**
    * @dev Changes the Oracle contract address
    * @param _newFujiOracle: address of new oracle contract
+   * Emits {OracleChanged} event.
    */
   function setFujiOracle(address _newFujiOracle) external isAuthorized {
     require(_newFujiOracle != address(0), Errors.VL_ZERO_ADDR);
     _oracle = IFujiOracle(_newFujiOracle);
+    emit OracleChanged(_newFujiOracle);
   }
 }

@@ -92,7 +92,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
     if (scaledBalance == 0) {
       return 0;
     }
-    
+
     return scaledBalance.rayMul(indexes[_assetID]);
   }
 
@@ -208,6 +208,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    * @dev Getter Function for the Asset ID locally managed
    * @param _type: enum AssetType, 0 = Collateral asset, 1 = debt asset
    * @param _addr: Reference Address of the Asset
+   * Returns token 'id' of asset '_addr'
    */
   function getAssetID(AssetType _type, address _addr) external view override returns (uint256 id) {
     id = assetIDs[_type][_addr];

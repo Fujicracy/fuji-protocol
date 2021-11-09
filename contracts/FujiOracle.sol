@@ -24,6 +24,11 @@ contract FujiOracle is IFujiOracle, Claimable {
     }
   }
 
+  /**
+   * @dev Sets '_priceFeed' address for a '_asset'.
+   * Can only be called by the contract owner.
+   * Emits a {AssetPriceFeedChanged} event.
+   */
   function setPriceFeed(address _asset, address _priceFeed) public onlyOwner {
     require(_priceFeed != address(0), Errors.VL_ZERO_ADDR);
     usdPriceFeeds[_asset] = _priceFeed;

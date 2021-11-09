@@ -132,6 +132,7 @@ contract Controller is Claimable {
   /**
    * @dev Sets approved executors for 'doRefinancing' function
    * Can only be called by the contract owner.
+   * Emits a {ExecutorPermitChanged} event.
    */
   function setExecutors(address[] calldata _executors, bool _isExecutor) external onlyOwner {
     for (uint256 i = 0; i < _executors.length; i++) {

@@ -39,6 +39,7 @@ abstract contract F1155Manager is ClaimableUpgradeable {
   /**
    * @dev Sets permit to '_address' for mint and burn operations.
    * Can only be called by the contract owner.
+   * Emits a {PermitChanged} event.
    */
   function setPermit(address _address, bool _permit) public onlyOwner {
     require((_address).isContract(), Errors.VL_NOT_A_CONTRACT);

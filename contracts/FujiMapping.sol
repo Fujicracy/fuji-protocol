@@ -29,6 +29,7 @@ contract FujiMapping is Claimable {
 
   /**
    * @dev Sets a new URI
+   * Emits a {UriChanged} event.
    */
   function setURI(string memory newUri) public onlyOwner {
     uri = newUri;

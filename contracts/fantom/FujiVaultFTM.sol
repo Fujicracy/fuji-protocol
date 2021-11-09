@@ -141,8 +141,9 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
    * @param _borrowAmount: amount to be borrowed
    */
   function depositAndBorrow(uint256 _collateralAmount, uint256 _borrowAmount) external payable {
-    deposit(_collateralAmount);
-    borrow(_borrowAmount);
+    updateF1155Balances();
+    _internalDeposit(_collateralAmount);
+    _internalBorrow(_borrowAmount);
   }
 
   /**
@@ -151,8 +152,9 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
    * @param _collateralAmount: amount of collateral to be withdrawn, pass -1 to withdraw maximum amount
    */
   function paybackAndWithdraw(int256 _paybackAmount, int256 _collateralAmount) external payable {
-    payback(_paybackAmount);
-    withdraw(_collateralAmount);
+    updateF1155Balances();
+    _internalPayback(_paybackAmount);
+    _internalWithdraw(_collateralAmount);
   }
 
   /**
@@ -162,24 +164,8 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
    * Emits a {Deposit} event.
    */
   function deposit(uint256 _collateralAmount) public payable override {
-    if (vAssets.collateralAsset == FTM) {
-      require(msg.value == _collateralAmount && _collateralAmount != 0, Errors.VL_AMOUNT_ERROR);
-    } else {
-      require(_collateralAmount != 0, Errors.VL_AMOUNT_ERROR);
-      IERC20Upgradeable(vAssets.collateralAsset).safeTransferFrom(
-        msg.sender,
-        address(this),
-        _collateralAmount
-      );
-    }
-
-    // Delegate Call Deposit to current provider
-    _deposit(_collateralAmount, address(activeProvider));
-
-    // Collateral Management
-    IFujiERC1155(fujiERC1155).mint(msg.sender, vAssets.collateralID, _collateralAmount, "");
-
-    emit Deposit(msg.sender, vAssets.collateralAsset, _collateralAmount);
+    updateF1155Balances();
+    _internalDeposit(_collateralAmount);
   }
 
   /**
@@ -190,44 +176,8 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
    * Emits a {Withdraw} event.
    */
   function withdraw(int256 _withdrawAmount) public override nonReentrant {
-    // Logic used when called by Normal User
     updateF1155Balances();
-
-    // Get User Collateral in this Vault
-    uint256 providedCollateral = IFujiERC1155(fujiERC1155).balanceOf(
-      msg.sender,
-      vAssets.collateralID
-    );
-
-    // Check User has collateral
-    require(providedCollateral > 0, Errors.VL_INVALID_COLLATERAL);
-
-    // Get Required Collateral with Factors to maintain debt position healthy
-    uint256 neededCollateral = getNeededCollateralFor(
-      IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID),
-      true
-    );
-
-    uint256 amountToWithdraw = _withdrawAmount < 0
-      ? providedCollateral - neededCollateral
-      : uint256(_withdrawAmount);
-
-    // Check Withdrawal amount, and that it will not fall undercollaterized.
-    require(
-      amountToWithdraw != 0 && providedCollateral - amountToWithdraw >= neededCollateral,
-      Errors.VL_INVALID_WITHDRAW_AMOUNT
-    );
-
-    // Collateral Management before Withdraw Operation
-    IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.collateralID, amountToWithdraw);
-
-    // Delegate Call Withdraw to current provider
-    _withdraw(amountToWithdraw, address(activeProvider));
-
-    // Transer Assets to User
-    IERC20Upgradeable(vAssets.collateralAsset).univTransfer(payable(msg.sender), amountToWithdraw);
-
-    emit Withdraw(msg.sender, vAssets.collateralAsset, amountToWithdraw);
+    _internalWithdraw(_withdrawAmount);
   }
 
   /**
@@ -253,47 +203,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
    */
   function borrow(uint256 _borrowAmount) public override nonReentrant {
     updateF1155Balances();
-
-    uint256 providedCollateral = IFujiERC1155(fujiERC1155).balanceOf(
-      msg.sender,
-      vAssets.collateralID
-    );
-
-    uint256 debtPrincipal = IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID);
-    uint256 totalBorrow = _borrowAmount + debtPrincipal;
-    // Get Required Collateral with Factors to maintain debt position healthy
-    uint256 neededCollateral = getNeededCollateralFor(totalBorrow, true);
-
-    // Check Provided Collateral is not Zero, and greater than needed to maintain healthy position
-    require(
-      _borrowAmount != 0 && providedCollateral > neededCollateral,
-      Errors.VL_INVALID_BORROW_AMOUNT
-    );
-
-    // Update timestamp for fee calculation
-
-    uint256 userFee = (debtPrincipal *
-      (block.timestamp - _userFeeTimestamps[msg.sender]) *
-      protocolFee.a) /
-      protocolFee.b /
-      ONE_YEAR;
-
-    _userFeeTimestamps[msg.sender] =
-      block.timestamp -
-      (userFee * ONE_YEAR * protocolFee.a) /
-      protocolFee.b /
-      totalBorrow;
-
-    // Debt Management
-    IFujiERC1155(fujiERC1155).mint(msg.sender, vAssets.borrowID, _borrowAmount, "");
-
-    // Delegate Call Borrow to current provider
-    _borrow(_borrowAmount, address(activeProvider));
-
-    // Transer Assets to User
-    IERC20Upgradeable(vAssets.borrowAsset).univTransfer(payable(msg.sender), _borrowAmount);
-
-    emit Borrow(msg.sender, vAssets.borrowAsset, _borrowAmount);
+    _internalBorrow(_borrowAmount);
   }
 
   /**
@@ -302,55 +212,8 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
    * Emits a {Repay} event.
    */
   function payback(int256 _repayAmount) public payable override {
-    // Logic used when called by normal user
     updateF1155Balances();
-
-    uint256 debtBalance = IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID);
-    uint256 userFee = _userProtocolFee(msg.sender, debtBalance);
-
-    // Check User Debt is greater than Zero and amount is not Zero
-    require(uint256(_repayAmount) > userFee && debtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
-
-    // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
-
-    // If passed argument amount is negative do MAX
-    uint256 amountToPayback = _repayAmount < 0 ? debtBalance + userFee : uint256(_repayAmount);
-
-    if (vAssets.borrowAsset == FTM) {
-      require(msg.value >= amountToPayback, Errors.VL_AMOUNT_ERROR);
-      if (msg.value > amountToPayback) {
-        IERC20Upgradeable(vAssets.borrowAsset).univTransfer(
-          payable(msg.sender),
-          msg.value - amountToPayback
-        );
-      }
-    } else {
-      // Check User Allowance
-      require(
-        IERC20Upgradeable(vAssets.borrowAsset).allowance(msg.sender, address(this)) >=
-          amountToPayback,
-        Errors.VL_MISSING_ERC20_ALLOWANCE
-      );
-
-      // Transfer Asset from User to Vault
-      IERC20Upgradeable(vAssets.borrowAsset).safeTransferFrom(
-        msg.sender,
-        address(this),
-        amountToPayback
-      );
-    }
-
-    // Delegate Call Payback to current provider
-    _payback(amountToPayback - userFee, address(activeProvider));
-
-    // Debt Management
-    IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.borrowID, amountToPayback - userFee);
-
-    // Update protocol fees
-    _userFeeTimestamps[msg.sender] = block.timestamp;
-    remainingProtocolFee += userFee;
-
-    emit Payback(msg.sender, vAssets.borrowAsset, debtBalance);
+    _internalPayback(_repayAmount);
   }
 
   /**
@@ -685,5 +548,156 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
       (_debtPrincipal * (block.timestamp - _userFeeTimestamps[_user]) * protocolFee.a) /
       protocolFee.b /
       ONE_YEAR;
+  }
+
+  function _internalDeposit(uint256 _collateralAmount) internal {
+    if (vAssets.collateralAsset == FTM) {
+      require(msg.value == _collateralAmount && _collateralAmount != 0, Errors.VL_AMOUNT_ERROR);
+    } else {
+      require(_collateralAmount != 0, Errors.VL_AMOUNT_ERROR);
+      IERC20Upgradeable(vAssets.collateralAsset).safeTransferFrom(
+        msg.sender,
+        address(this),
+        _collateralAmount
+      );
+    }
+
+    // Delegate Call Deposit to current provider
+    _deposit(_collateralAmount, address(activeProvider));
+
+    // Collateral Management
+    IFujiERC1155(fujiERC1155).mint(msg.sender, vAssets.collateralID, _collateralAmount, "");
+
+    emit Deposit(msg.sender, vAssets.collateralAsset, _collateralAmount);
+  }
+
+  function _internalWithdraw(int256 _withdrawAmount) internal {
+    // Get User Collateral in this Vault
+    uint256 providedCollateral = IFujiERC1155(fujiERC1155).balanceOf(
+      msg.sender,
+      vAssets.collateralID
+    );
+
+    // Check User has collateral
+    require(providedCollateral > 0, Errors.VL_INVALID_COLLATERAL);
+
+    // Get Required Collateral with Factors to maintain debt position healthy
+    uint256 neededCollateral = getNeededCollateralFor(
+      IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID),
+      true
+    );
+
+    uint256 amountToWithdraw = _withdrawAmount < 0
+      ? providedCollateral - neededCollateral
+      : uint256(_withdrawAmount);
+
+    // Check Withdrawal amount, and that it will not fall undercollaterized.
+    require(
+      amountToWithdraw != 0 && providedCollateral - amountToWithdraw >= neededCollateral,
+      Errors.VL_INVALID_WITHDRAW_AMOUNT
+    );
+
+    // Collateral Management before Withdraw Operation
+    IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.collateralID, amountToWithdraw);
+
+    // Delegate Call Withdraw to current provider
+    _withdraw(amountToWithdraw, address(activeProvider));
+
+    // Transer Assets to User
+    IERC20Upgradeable(vAssets.collateralAsset).univTransfer(payable(msg.sender), amountToWithdraw);
+
+    emit Withdraw(msg.sender, vAssets.collateralAsset, amountToWithdraw);
+  }
+
+  function _internalBorrow(uint256 _borrowAmount) internal {
+    uint256 providedCollateral = IFujiERC1155(fujiERC1155).balanceOf(
+      msg.sender,
+      vAssets.collateralID
+    );
+
+    uint256 debtPrincipal = IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID);
+    uint256 totalBorrow = _borrowAmount + debtPrincipal;
+    // Get Required Collateral with Factors to maintain debt position healthy
+    uint256 neededCollateral = getNeededCollateralFor(totalBorrow, true);
+
+    // Check Provided Collateral is not Zero, and greater than needed to maintain healthy position
+    require(
+      _borrowAmount != 0 && providedCollateral > neededCollateral,
+      Errors.VL_INVALID_BORROW_AMOUNT
+    );
+
+    // Update timestamp for fee calculation
+
+    uint256 userFee = (debtPrincipal *
+      (block.timestamp - _userFeeTimestamps[msg.sender]) *
+      protocolFee.a) /
+      protocolFee.b /
+      ONE_YEAR;
+
+    _userFeeTimestamps[msg.sender] =
+      block.timestamp -
+      (userFee * ONE_YEAR * protocolFee.a) /
+      protocolFee.b /
+      totalBorrow;
+
+    // Debt Management
+    IFujiERC1155(fujiERC1155).mint(msg.sender, vAssets.borrowID, _borrowAmount, "");
+
+    // Delegate Call Borrow to current provider
+    _borrow(_borrowAmount, address(activeProvider));
+
+    // Transer Assets to User
+    IERC20Upgradeable(vAssets.borrowAsset).univTransfer(payable(msg.sender), _borrowAmount);
+
+    emit Borrow(msg.sender, vAssets.borrowAsset, _borrowAmount);
+  }
+
+  function _internalPayback(int256 _repayAmount) internal {
+    uint256 debtBalance = IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID);
+    uint256 userFee = _userProtocolFee(msg.sender, debtBalance);
+
+    // Check User Debt is greater than Zero and amount is not Zero
+    require(uint256(_repayAmount) > userFee && debtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
+
+    // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
+
+    // If passed argument amount is negative do MAX
+    uint256 amountToPayback = _repayAmount < 0 ? debtBalance + userFee : uint256(_repayAmount);
+
+    if (vAssets.borrowAsset == FTM) {
+      require(msg.value >= amountToPayback, Errors.VL_AMOUNT_ERROR);
+      if (msg.value > amountToPayback) {
+        IERC20Upgradeable(vAssets.borrowAsset).univTransfer(
+          payable(msg.sender),
+          msg.value - amountToPayback
+        );
+      }
+    } else {
+      // Check User Allowance
+      require(
+        IERC20Upgradeable(vAssets.borrowAsset).allowance(msg.sender, address(this)) >=
+          amountToPayback,
+        Errors.VL_MISSING_ERC20_ALLOWANCE
+      );
+
+      // Transfer Asset from User to Vault
+      IERC20Upgradeable(vAssets.borrowAsset).safeTransferFrom(
+        msg.sender,
+        address(this),
+        amountToPayback
+      );
+    }
+
+    // Delegate Call Payback to current provider
+    _payback(amountToPayback - userFee, address(activeProvider));
+
+    // Debt Management
+    IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.borrowID, amountToPayback - userFee);
+
+    // Update protocol fees
+    _userFeeTimestamps[msg.sender] = block.timestamp;
+    remainingProtocolFee += userFee;
+
+    emit Payback(msg.sender, vAssets.borrowAsset, debtBalance);
   }
 }

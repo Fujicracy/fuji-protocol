@@ -9,6 +9,13 @@ import "./interfaces/IFujiERC1155.sol";
 import "./libraries/WadRayMath.sol";
 import "./libraries/Errors.sol";
 
+/**
+ *
+ * @dev Contract implementing the extension functions for interest rate bearing tokens.
+ * See {FujiBaseERC1155}.
+ *
+ */
+
 contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   using WadRayMath for uint256;
 
@@ -26,6 +33,9 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   // AssetId => Liquidity index for asset ID
   mapping(uint256 => uint256) public indexes;
 
+  /**
+   * @dev Sets the deployer as the initial owner in {Claimable}
+   */
   function initialize() external initializer {
     __ERC165_init();
     __Context_init();
@@ -36,12 +46,16 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    * @dev Updates Index of AssetID
    * @param _assetID: ERC1155 ID of the asset which state will be updated.
    * @param newBalance: Amount
+   * Requirements:
+   * - Not less than previous index
+   * - Not overflow
    **/
   function updateState(uint256 _assetID, uint256 newBalance) external override onlyPermit {
     uint256 total = totalSupply(_assetID);
     if (newBalance > 0 && total > 0 && newBalance > total) {
       uint256 newIndex = (indexes[_assetID] * newBalance) / total;
       require(newIndex <= type(uint128).max, Errors.VL_INDEX_OVERFLOW);
+      require(newIndex >= indexes[_assetID], Errors.VL_NEW_INDEX_LESS_THAN_OLD);
       indexes[_assetID] = uint128(newIndex);
     }
   }
@@ -51,8 +65,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    * @param _assetID: ERC1155 ID of the asset which state will be updated.
    **/
   function totalSupply(uint256 _assetID) public view virtual override returns (uint256) {
-    // TODO: include interest accrued by Fuji OptimizerFee
-
     return super.totalSupply(_assetID).rayMul(indexes[_assetID]);
   }
 
@@ -80,8 +92,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
     if (scaledBalance == 0) {
       return 0;
     }
-
-    // TODO: include interest accrued by Fuji OptimizerFee
+    
     return scaledBalance.rayMul(indexes[_assetID]);
   }
 

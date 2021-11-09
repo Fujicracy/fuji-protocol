@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: MIT
 //FujiMapping for two addresses
-
 pragma solidity ^0.8.0;
 
 import "./abstracts/claimable/Claimable.sol";
 import "./interfaces/IFujiMappings.sol";
 
-contract FujiMapping is IFujiMappings, Claimable {
+/**
+ * @dev Contract that stores and returns addresses mappings
+ * Required for getting contract addresses for some Providers and Flashloan Providers
+ */
+
+contract FujiMapping is Claimable {
   // Address 1 =>  Address 2 (e.g. erc20 => cToken, contract a L1 => contract b L2, etc)
   mapping(address => address) public override addressMapping;
 

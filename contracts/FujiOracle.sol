@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.0;
 
 import "./abstracts/claimable/Claimable.sol";
@@ -7,10 +6,17 @@ import "./interfaces/chainlink/AggregatorV3Interface.sol";
 import "./interfaces/IFujiOracle.sol";
 import "./libraries/Errors.sol";
 
+/**
+ * @dev Contract that returns and computes prices for the fuji protocol
+ */
+
 contract FujiOracle is IFujiOracle, Claimable {
   // mapping from asset address to its price feed oracle in USD - decimals: 8
   mapping(address => address) public usdPriceFeeds;
 
+  /**
+  * @dev Initializes the contract setting '_priceFeeds' addresses for '_assets'
+  */
   constructor(address[] memory _assets, address[] memory _priceFeeds) Claimable() {
     require(_assets.length == _priceFeeds.length, Errors.ORACLE_INVALID_LENGTH);
     for (uint256 i = 0; i < _assets.length; i++) {
@@ -24,11 +30,14 @@ contract FujiOracle is IFujiOracle, Claimable {
     emit AssetPriceFeedChanged(_asset, _priceFeed);
   }
 
-  /// @dev Calculates the exchange rate n given decimals (_borrowAsset / _collateralAsset Exchange Rate)
-  /// @param _collateralAsset the collateral asset, zero-address for USD
-  /// @param _borrowAsset the borrow asset, zero-address for USD
-  /// @param _decimals the decimals of the price output
-  /// @return price The exchange rate of the given assets pair
+  /**
+   * @dev Calculates the exchange rate n given decimals.
+   *      Format is: (_borrowAsset / _collateralAsset Exchange Rate).
+   * @param _collateralAsset: the collateral asset, zero-address for USD.
+   * @param _borrowAsset: the borrow asset, zero-address for USD.
+   * @param _decimals: the decimals of the price output.
+   * @return price: The exchange rate of the given assets pair.
+   */
   function getPriceOf(
     address _collateralAsset,
     address _borrowAsset,
@@ -49,9 +58,11 @@ contract FujiOracle is IFujiOracle, Claimable {
     }
   }
 
-  /// @dev Calculates the USD price of asset
-  /// @param _asset the asset address
-  /// @return price USD price of the give asset
+  /**
+   * @dev Calculates the USD price of asset.
+   * @param _asset: the asset address.
+   * @return price: USD price of the give asset
+   */
   function _getUSDPrice(address _asset) internal view returns (uint256 price) {
     require(usdPriceFeeds[_asset] != address(0), Errors.ORACLE_NONE_PRICE_FEED);
 

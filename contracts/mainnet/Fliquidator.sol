@@ -81,6 +81,9 @@ contract Fliquidator is Claimable, ReentrancyGuard {
   */
   event SwapperChanged(address newSwapper);
 
+  /**
+  * @dev Throws if caller is not 'owner'.
+  */
   modifier isAuthorized() {
     require(msg.sender == owner(), Errors.VL_NOT_AUTHORIZED);
     _;

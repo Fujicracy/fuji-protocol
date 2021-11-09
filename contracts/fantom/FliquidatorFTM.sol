@@ -20,6 +20,10 @@ import "./libraries/LibUniversalERC20FTM.sol";
 import "../libraries/FlashLoans.sol";
 import "../libraries/Errors.sol";
 
+/**
+ * @dev Contract to execute liquidations and flash close.
+ */
+
 contract FliquidatorFTM is Claimable, ReentrancyGuard {
   using SafeERC20 for IERC20;
   using LibUniversalERC20FTM for IERC20;
@@ -77,21 +81,33 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
   */
   event SwapperChanged(address newSwapper);
 
+  /**
+  * @dev Throws if caller is not 'owner'.
+  */
   modifier isAuthorized() {
     require(msg.sender == owner(), Errors.VL_NOT_AUTHORIZED);
     _;
   }
 
+  /**
+  * @dev Throws if caller is not '_flasher' address in {FujiAdmin}.
+  */
   modifier onlyFlash() {
     require(msg.sender == _fujiAdmin.getFlasher(), Errors.VL_NOT_AUTHORIZED);
     _;
   }
 
+  /**
+  * @dev Throws if address passed is not a recognized vault.
+  */
   modifier isValidVault(address _vaultAddr) {
     require(_fujiAdmin.validVault(_vaultAddr), "Invalid vault!");
     _;
   }
 
+  /**
+  * @dev Initializes the contract setting the flash close fee factor.
+  */
   constructor() {
     // 0.01
     flashCloseF.a = 1;
@@ -106,7 +122,7 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
    * @dev Liquidate an undercollaterized debt and get bonus (bonusL in Vault)
    * @param _addrs: Address array of users whose position is liquidatable
    * @param _vault: Address of the vault in where liquidation will occur
-   * Emits a {Liquidate} event.
+   * Emits a {Liquidate} event for each liquidated user.
    */
   function batchLiquidate(address[] calldata _addrs, address _vault)
     external
@@ -181,7 +197,6 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
    * @param _addrs: Array of Address whose position is liquidatable
    * @param _vault: The vault address where the debt position exist.
    * @param _flashnum: integer identifier of flashloan provider
-   * Emits a {Liquidate} event.
    */
   function flashBatchLiquidate(
     address[] calldata _addrs,
@@ -226,7 +241,7 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
    * @param _vault: Vault address
    * @param _amount: amount of debt to be repaid
    * @param _flashloanFee: amount extra charged by flashloan provider
-   * Emits a {Liquidate} event.
+   * Emits a {Liquidate} event for each liquidated user.
    */
   function executeFlashBatchLiquidation(
     address[] calldata _addrs,
@@ -346,6 +361,8 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
    * @param _amount: amount received by Flashloan
    * @param _flashloanFee: amount extra charged by flashloan provider
    * Emits a {FlashClose} event.
+   * Requirements:
+   * - Should only be called by '_flasher' contract address in {FujiAdmin}
    */
   function executeFlashClose(
     address payable _userAddr,
@@ -635,6 +652,7 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
    * @dev Set Factors "a" and "b" for a Struct Factor flashcloseF
    * @param _newFactorA: Nominator
    * @param _newFactorB: Denominator
+   * Emits a {FactorChanged} event.
    */
   function setFlashCloseFee(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
     flashCloseF.a = _newFactorA;

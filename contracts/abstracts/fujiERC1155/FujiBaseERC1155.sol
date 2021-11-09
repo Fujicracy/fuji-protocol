@@ -23,6 +23,13 @@ import "../../libraries/Errors.sol";
 abstract contract FujiBaseERC1155 is IERC1155Upgradeable, ERC165Upgradeable, ContextUpgradeable {
   using AddressUpgradeable for address;
 
+  // FujiBaseERC1155 Events
+
+  /**
+  * @dev Log a change in URI for all tokens
+  */
+  event URIGlobalChanged(string newUri);
+
   // Mapping from token ID to account balances
   mapping(uint256 => mapping(address => uint256)) internal _balances;
 

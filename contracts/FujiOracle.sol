@@ -19,7 +19,9 @@ contract FujiOracle is IFujiOracle, Claimable {
   }
 
   function setPriceFeed(address _asset, address _priceFeed) public onlyOwner {
+    require(_priceFeed != address(0), Errors.VL_ZERO_ADDR);
     usdPriceFeeds[_asset] = _priceFeed;
+    emit AssetPriceFeedChanged(_asset, _priceFeed);
   }
 
   /// @dev Calculates the exchange rate n given decimals (_borrowAsset / _collateralAsset Exchange Rate)

@@ -3,26 +3,62 @@
 pragma solidity ^0.8.0;
 
 interface IVault {
-  // Events
 
-  // Log Users Deposit
+  // Vault Events
+
+  /**
+  * @dev Log a deposit transaction done by a user
+  */
   event Deposit(address indexed userAddrs, address indexed asset, uint256 amount);
-  // Log Users withdraw
+  /**
+  * @dev Log a withdraw transaction done by a user
+  */
   event Withdraw(address indexed userAddrs, address indexed asset, uint256 amount);
-  // Log Users borrow
+  /**
+  * @dev Log a borrow transaction done by a user
+  */
   event Borrow(address indexed userAddrs, address indexed asset, uint256 amount);
-  // Log Users debt repay
+  /**
+  * @dev Log a payback transaction done by a user
+  */
   event Payback(address indexed userAddrs, address indexed asset, uint256 amount);
-
-  // Log New active provider
-  event SetActiveProvider(address providerAddr);
-  // Log Switch providers
+  /**
+  * @dev Log a switch from provider to new provider in vault
+  */
   event Switch(
     address fromProviderAddrs,
     address toProviderAddr,
     uint256 debtamount,
     uint256 collattamount
   );
+  /**
+  * @dev Log a change in active provider
+  */
+  event SetActiveProvider(address newActiveProviderAddress);
+  /**
+  * @dev Log a change in the array of provider addresses
+  */
+  event ProvidersChanged(address[] newProviderArray);
+  /**
+  * @dev Log a change in F1155 address
+  */
+  event F1155Changed(address newF1155Address);
+  /**
+  * @dev Log a change in fuji admin address
+  */
+  event FujiAdminChanged(address newFujiAdmin);
+  /**
+  * @dev Log a change in the factor values
+  */
+  event FactorChanged(
+    bytes32 typehash,
+    uint64 newFactorA,
+    uint64 newFactorB
+  );
+  /**
+  * @dev Log a change in the oracle address
+  */
+  event OracleChanged(address newOracle);
 
   // Core Vault Functions
 

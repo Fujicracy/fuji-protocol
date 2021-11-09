@@ -13,6 +13,13 @@ import "../../libraries/Errors.sol";
 abstract contract F1155Manager is ClaimableUpgradeable {
   using AddressUpgradeable for address;
 
+  // F1155 Events
+
+  /**
+  * @dev Log a change in address mint-burn permission
+  */
+  event PermitChanged(address vaultAddress, bool newPermit);
+
   // Controls for Mint-Burn Operations
   mapping(address => bool) public addrPermit;
 
@@ -24,5 +31,6 @@ abstract contract F1155Manager is ClaimableUpgradeable {
   function setPermit(address _address, bool _permit) public onlyOwner {
     require((_address).isContract(), Errors.VL_NOT_A_CONTRACT);
     addrPermit[_address] = _permit;
+    emit PermitChanged(_address, _permit);
   }
 }

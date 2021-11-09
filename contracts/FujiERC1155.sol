@@ -207,9 +207,14 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
 
   /**
    * @dev Sets a new URI for all token types, by relying on the token type ID
+   * substitution mechanism.
+   * Because these URIs cannot be meaningfully represented by the EIP1155 {URI} event,
+   * due to {indexed id} input, this function does emit the specified EIP1155 {URI} event.
+   * Instead a custom event {URIGlobalChanged} is emitted.
    */
   function setURI(string memory _newUri) public onlyOwner {
     _uri = _newUri;
+    emit URIGlobalChanged(_newUri);
   }
 
   /**

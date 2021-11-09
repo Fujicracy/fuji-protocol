@@ -42,15 +42,40 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
   IFujiOracle private _oracle;
   IUniswapV2Router02 public swapper;
 
-  // Log Liquidation
+  /**
+  * @dev Log when a user is liquidated
+  */
   event Liquidate(
     address indexed userAddr,
     address indexed vault,
     uint256 amount,
     address liquidator
   );
-  // Log FlashClose
+  /**
+  * @dev Log when a user FlashClose its position
+  */
   event FlashClose(address indexed userAddr, address indexed vault, uint256 amount);
+  /**
+  * @dev Log a change in fuji admin address
+  */
+  event FujiAdminChanged(address newFujiAdmin);
+  /**
+  * @dev Log a change in the factor values
+  */
+  event FactorChanged(
+    bytes32 typehash,
+    uint64 newFactorA,
+    uint64 newFactorB
+  );
+
+  /**
+  * @dev Log a change in the oracle address
+  */
+  event OracleChanged(address newOracle);
+  /**
+  * @dev Log change of swapper address
+  */
+  event SwapperChanged(address newSwapper);
 
   modifier isAuthorized() {
     require(msg.sender == owner(), Errors.VL_NOT_AUTHORIZED);
@@ -614,32 +639,43 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
   function setFlashCloseFee(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
     flashCloseF.a = _newFactorA;
     flashCloseF.b = _newFactorB;
+    emit FactorChanged(
+      keccak256(abi.encode("flashCloseF")),
+      _newFactorA,
+      _newFactorB
+    );
   }
 
   /**
    * @dev Sets the fujiAdmin Address
    * @param _newFujiAdmin: FujiAdmin Contract Address
+   * Emits a {FujiAdminChanged} event.
    */
   function setFujiAdmin(address _newFujiAdmin) external isAuthorized {
     require(_newFujiAdmin != address(0), Errors.VL_ZERO_ADDR);
     _fujiAdmin = IFujiAdmin(_newFujiAdmin);
+    emit FujiAdminChanged(_newFujiAdmin);
   }
 
   /**
    * @dev Changes the Swapper contract address
    * @param _newSwapper: address of new swapper contract
+   * Emits {SwapperChanged} event.
    */
   function setSwapper(address _newSwapper) external isAuthorized {
     require(_newSwapper != address(0), Errors.VL_ZERO_ADDR);
     swapper = IUniswapV2Router02(_newSwapper);
+    emit SwapperChanged(_newSwapper);
   }
 
   /**
    * @dev Changes the Oracle contract address
    * @param _newFujiOracle: address of new oracle contract
+   * Emits {OracleChanged} event.
    */
   function setFujiOracle(address _newFujiOracle) external isAuthorized {
     require(_newFujiOracle != address(0), Errors.VL_ZERO_ADDR);
     _oracle = IFujiOracle(_newFujiOracle);
+    emit OracleChanged(_newFujiOracle);
   }
 }

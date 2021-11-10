@@ -8,13 +8,23 @@ import "@uniswap/v2-periphery/contracts/interfaces/IWETH.sol";
 import "../interfaces/IFujiAdmin.sol";
 import "../interfaces/ISwapper.sol";
 
+/**
+ * @dev Contract to support Harvesting function in {FujiVault}
+ */
+
 contract Swapper is ISwapper {
   address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
   address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
   address public constant SUSHI_ROUTER_ADDR = 0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F;
 
   /**
-   * @dev Called by the Vault to harvest farmed tokens at baselayer Protocols
+   * @dev Returns data structure to perform a swap transaction.
+   * Function is called by the Vault to harvest farmed tokens at baselayer Protocols
+   * @param assetFrom: asset type to be swapped.
+   * @param assetTo: desired asset after swap transaction.
+   * @param amount: amount of assetFrom to be swapped.
+   * Requirements:
+   * - Should return transaction data to swap all farmed token to vault's collateral type.
    */
   function getSwapTransaction(
     address assetFrom,

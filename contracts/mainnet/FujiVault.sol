@@ -20,6 +20,12 @@ import "../interfaces/IProvider.sol";
 import "../libraries/Errors.sol";
 import "./libraries/LibUniversalERC20Upgradeable.sol";
 
+/**
+ * @dev Contract for the interaction of Fuji Users with the Fuji protocol.
+ *  - Performs deposit, withdraw, borrow, and payback functions.
+ *  - Contains the fallback logic to perform a switch of providers.
+ */
+
 contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   using SafeERC20Upgradeable for IERC20Upgradeable;
   using LibUniversalERC20Upgradeable for IERC20Upgradeable;
@@ -61,6 +67,10 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   mapping(address => uint256) internal _userFeeTimestamps; // to be used for protocol fee calculation
   uint256 public remainingProtocolFee;
 
+
+  /**
+  * @dev Throws if caller is not the 'owner' or the '_controller' address in {FujiAdmin}
+  */
   modifier isAuthorized() {
     require(
       msg.sender == owner() || msg.sender == _fujiAdmin.getController(),
@@ -69,16 +79,27 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     _;
   }
 
+  /**
+  * @dev Throws if caller is not the '_flasher' address in {FujiAdmin}
+  */
   modifier onlyFlash() {
     require(msg.sender == _fujiAdmin.getFlasher(), Errors.VL_NOT_AUTHORIZED);
     _;
   }
 
+  /**
+  * @dev Throws if caller is not the '_fliquidator' address in {FujiAdmin}
+  */
   modifier onlyFliquidator() {
     require(msg.sender == _fujiAdmin.getFliquidator(), Errors.VL_NOT_AUTHORIZED);
     _;
   }
 
+  /**
+  * @dev Initializes the contract by setting:
+  * - Type of collateral and borrow asset of this vault.
+  * - Addresses for fujiAdmin, _oracle.
+  */
   function initialize(
     address _fujiadmin,
     address _oracle,
@@ -532,6 +553,14 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     }
   }
 
+  /**
+  * @dev Withdraws all the collected Fuji fees in this vault.
+  * NOTE: Fuji fee is the fee charged to all fuji-users -
+  * as a service for the loan cost optimization.
+  * It is a percentage (defined in 'protocolFee') on top of the users 'debtPrincipal'.
+  * Requirements:
+  * - Must send all fees amount collected to the fuji treasury.
+  */
   function withdrawProtocolFee() external nonReentrant {
     IERC20Upgradeable(vAssets.borrowAsset).univTransfer(
       payable(IFujiAdmin(_fujiAdmin).getTreasury()),
@@ -543,6 +572,11 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
 
   // Internal Functions
 
+  /**
+  * @dev Returns de amount of accrued of fuji fee by user.
+  * @param _user: user to whom fuji fee will be computed.
+  * @param _debtPrincipal: current user's debt .
+  */
   function _userProtocolFee(address _user, uint256 _debtPrincipal) internal view returns (uint256) {
     return
       (_debtPrincipal * (block.timestamp - _userFeeTimestamps[_user]) * protocolFee.a) /
@@ -550,6 +584,10 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
       ONE_YEAR;
   }
 
+  /**
+  * @dev Internal function handling logic for {deposit} without 'updateState' call
+  * See {deposit}
+  */
   function _internalDeposit(uint256 _collateralAmount) internal {
     if (vAssets.collateralAsset == ETH) {
       require(msg.value == _collateralAmount && _collateralAmount != 0, Errors.VL_AMOUNT_ERROR);
@@ -571,6 +609,10 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     emit Deposit(msg.sender, vAssets.collateralAsset, _collateralAmount);
   }
 
+  /**
+  * @dev Internal function handling logic for {withdraw} without 'updateState' call
+  * See {withdraw}
+  */
   function _internalWithdraw(int256 _withdrawAmount) internal {
     // Get User Collateral in this Vault
     uint256 providedCollateral = IFujiERC1155(fujiERC1155).balanceOf(
@@ -609,6 +651,10 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     emit Withdraw(msg.sender, vAssets.collateralAsset, amountToWithdraw);
   }
 
+  /**
+  * @dev Internal function handling logic for {borrow} without 'updateState' call
+  * See {borrow}
+  */
   function _internalBorrow(uint256 _borrowAmount) internal {
     uint256 providedCollateral = IFujiERC1155(fujiERC1155).balanceOf(
       msg.sender,
@@ -652,14 +698,16 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     emit Borrow(msg.sender, vAssets.borrowAsset, _borrowAmount);
   }
 
+  /**
+  * @dev Internal function handling logic for {payback} without 'updateState' call
+  * See {payback}
+  */
   function _internalPayback(int256 _repayAmount) internal {
     uint256 debtBalance = IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID);
     uint256 userFee = _userProtocolFee(msg.sender, debtBalance);
 
     // Check User Debt is greater than Zero and amount is not Zero
     require(uint256(_repayAmount) > userFee && debtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
-
-    // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
     // If passed argument amount is negative do MAX
     uint256 amountToPayback = _repayAmount < 0 ? debtBalance + userFee : uint256(_repayAmount);

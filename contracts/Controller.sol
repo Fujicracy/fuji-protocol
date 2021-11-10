@@ -87,13 +87,13 @@ contract Controller is Claimable {
       _ratioA > 0 &&
       _ratioB > 0 &&
       _ratioB >= _ratioA,
-      RF_INVALID_RATIO_VALUES
+      Errors.RF_INVALID_RATIO_VALUES
     );
 
     // Validate _newProvider is not equal to vault's activeProvider
     require(
       vault.activeProvider() != _newProvider,
-      RF_INVALID_NEW_ACTIVEPROVIDER
+      Errors.RF_INVALID_NEW_ACTIVEPROVIDER
     );
 
 

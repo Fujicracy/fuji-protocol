@@ -626,7 +626,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
     _deposit(_collateralAmount, address(activeProvider));
 
     // Collateral Management
-    IFujiERC1155(fujiERC1155).mint(msg.sender, vAssets.collateralID, _collateralAmount, "");
+    IFujiERC1155(fujiERC1155).mint(msg.sender, vAssets.collateralID, _collateralAmount);
 
     emit Deposit(msg.sender, vAssets.collateralAsset, _collateralAmount);
   }
@@ -709,7 +709,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
       totalBorrow;
 
     // Debt Management
-    IFujiERC1155(fujiERC1155).mint(msg.sender, vAssets.borrowID, _borrowAmount, "");
+    IFujiERC1155(fujiERC1155).mint(msg.sender, vAssets.borrowID, _borrowAmount);
 
     // Delegate Call Borrow to current provider
     _borrow(_borrowAmount, address(activeProvider));

@@ -41,7 +41,7 @@ contract FujiOracle is IFujiOracle, Claimable {
    * @param _collateralAsset: the collateral asset, zero-address for USD.
    * @param _borrowAsset: the borrow asset, zero-address for USD.
    * @param _decimals: the decimals of the price output.
-   * @return price: The exchange rate of the given assets pair.
+   * Returns the exchange rate of the given assets pair.
    */
   function getPriceOf(
     address _collateralAsset,
@@ -66,7 +66,7 @@ contract FujiOracle is IFujiOracle, Claimable {
   /**
    * @dev Calculates the USD price of asset.
    * @param _asset: the asset address.
-   * @return price: USD price of the give asset
+   * Returns the USD price of the give asset
    */
   function _getUSDPrice(address _asset) internal view returns (uint256 price) {
     require(usdPriceFeeds[_asset] != address(0), Errors.ORACLE_NONE_PRICE_FEED);

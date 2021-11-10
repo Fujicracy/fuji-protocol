@@ -122,8 +122,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   function mint(
     address _account,
     uint256 _id,
-    uint256 _amount,
-    bytes memory _data
+    uint256 _amount
   ) external override onlyPermit {
     require(_account != address(0), Errors.VL_ZERO_ADDR_1155);
 
@@ -132,8 +131,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
     address operator = _msgSender();
 
     emit TransferSingle(operator, address(0), _account, _id, _amount);
-
-    _doSafeTransferAcceptanceCheck(operator, address(0), _account, _id, _amount, _data);
   }
 
   /**
@@ -146,8 +143,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   function mintBatch(
     address _to,
     uint256[] memory _ids,
-    uint256[] memory _amounts,
-    bytes memory _data
+    uint256[] memory _amounts
   ) external onlyPermit {
     require(_to != address(0), Errors.VL_ZERO_ADDR_1155);
     require(_ids.length == _amounts.length, Errors.VL_INPUT_ERROR);
@@ -159,8 +155,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
     address operator = _msgSender();
 
     emit TransferBatch(operator, address(0), _to, _ids, _amounts);
-
-    _doSafeBatchTransferAcceptanceCheck(operator, address(0), _to, _ids, _amounts, _data);
   }
 
   /**

@@ -65,37 +65,24 @@ contract Controller is Claimable {
    * @dev Performs a forced refinancing routine
    * @param _vaultAddr: fuji Vault address
    * @param _newProvider: new provider address
-   * @param _ratioA: ratio to determine how much of debt position to move
-   * @param _ratioB:
    * @param _flashNum: integer identifier of flashloan provider
    * Requirements:
-   * - '_ratioA' and '_ratioB' should be non-zero values.
-   * - '_ratioA' should be <= than '_ratioB', such that: (_ratioA / _ratioB) <= 1
+   * - '_vaultAddr' should be a valid vault.
+   * - '_newProvider' should not be the same as activeProvider in vault.
    */
   function doRefinancing(
     address _vaultAddr,
     address _newProvider,
-    uint256 _ratioA,
-    uint256 _ratioB,
     uint8 _flashNum
   ) external isValidVault(_vaultAddr) onlyOwnerOrExecutor {
 
     IVault vault = IVault(_vaultAddr);
-
-    // Validate ratio inputs
-    require(
-      _ratioA > 0 &&
-      _ratioB > 0 &&
-      _ratioB >= _ratioA,
-      Errors.RF_INVALID_RATIO_VALUES
-    );
 
     // Validate _newProvider is not equal to vault's activeProvider
     require(
       vault.activeProvider() != _newProvider,
       Errors.RF_INVALID_NEW_ACTIVEPROVIDER
     );
-
 
     IVaultControl.VaultAssets memory vAssets = IVaultControl(_vaultAddr).vAssets();
     vault.updateF1155Balances();
@@ -105,20 +92,12 @@ contract Controller is Claimable {
       vAssets.borrowAsset,
       _vaultAddr
     );
-    uint256 applyRatiodebtPosition = (debtPosition * _ratioA) / _ratioB;
-
-    // Check vault Balance at 'activeProvider' and applied ratio computation
-    require(
-      debtPosition >= applyRatiodebtPosition &&
-      applyRatiodebtPosition > 0,
-      Errors.RF_INVALID_RATIO_VALUES
-    );
 
     //Initiate Flash Loan Struct
     FlashLoan.Info memory info = FlashLoan.Info({
       callType: FlashLoan.CallType.Switch,
       asset: vAssets.borrowAsset,
-      amount: applyRatiodebtPosition,
+      amount: debtPosition,
       vault: _vaultAddr,
       newProvider: _newProvider,
       userAddrs: new address[](0),

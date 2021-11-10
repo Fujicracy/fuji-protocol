@@ -2,10 +2,12 @@
 
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 
 import "../../interfaces/IVaultControl.sol";
+import "../../libraries/Errors.sol";
 
 abstract contract VaultControlUpgradeable is OwnableUpgradeable, PausableUpgradeable {
   //Vault Struct for Managed Assets
@@ -29,6 +31,8 @@ abstract contract VaultControlUpgradeable is OwnableUpgradeable, PausableUpgrade
 }
 
 contract VaultBaseUpgradeable is VaultControlUpgradeable {
+  using AddressUpgradeable for address;
+
   // Internal functions
 
   /**
@@ -95,22 +99,11 @@ contract VaultBaseUpgradeable is VaultControlUpgradeable {
     whenNotPaused
     returns (bytes memory response)
   {
-    /* solhint-disable */
-    assembly {
-      let succeeded := delegatecall(sub(gas(), 5000), _target, add(_data, 0x20), mload(_data), 0, 0)
-      let size := returndatasize()
+    require(_target.isContract(), Errors.VL_NOT_A_CONTRACT);
 
-      response := mload(0x40)
-      mstore(0x40, add(response, and(add(add(size, 0x20), 0x1f), not(0x1f))))
-      mstore(response, size)
-      returndatacopy(add(response, 0x20), 0, size)
+    /// @custom:oz-upgrades-unsafe-allow delegatecall
+    (bool success, bytes memory returndata) = _target.delegatecall(_data);
 
-      switch iszero(succeeded)
-      case 1 {
-        // throw if delegatecall failed
-        revert(add(response, 0x20), size)
-      }
-    }
-    /* solhint-disable */
+    return AddressUpgradeable.verifyCallResult(success, returndata, "Address: low-level delegate call failed");
   }
 }

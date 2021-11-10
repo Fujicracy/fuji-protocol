@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 
@@ -31,7 +32,7 @@ abstract contract VaultControlUpgradeable is OwnableUpgradeable, PausableUpgrade
 }
 
 contract VaultBaseUpgradeable is VaultControlUpgradeable {
-  using AddressUpgradeable for address;
+  using Address for address;
 
   // Internal functions
 
@@ -99,6 +100,9 @@ contract VaultBaseUpgradeable is VaultControlUpgradeable {
     whenNotPaused
     returns (bytes memory response)
   {
+    // This is the same logic of functionDelegateCall provided by openzeppelin.
+    // We copy the code here because of oz-upgrades-unsafe-allow for delegatecall.
+
     require(_target.isContract(), Errors.VL_NOT_A_CONTRACT);
 
     /// @custom:oz-upgrades-unsafe-allow delegatecall

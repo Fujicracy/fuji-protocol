@@ -105,6 +105,14 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
     address _collateralAsset,
     address _borrowAsset
   ) external initializer {
+
+    require(
+      _fujiadmin != address(0) &&
+      _oracle != address(0) &&
+      _collateralAsset != address(0) &&
+      _borrowAsset != address(0),
+      Errors.VL_ZERO_ADDR);
+
     __Ownable_init();
     __Pausable_init();
     __ReentrancyGuard_init();
@@ -192,7 +200,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
    * @dev Withdraws Vault's type collateral from activeProvider
    * call Controller checkrates - by normal users
    * @param _withdrawAmount: amount of collateral to withdraw
-   * otherwise pass -1 to withdraw maximum amount possible of collateral (including safety factors)
+   * otherwise pass any 'negative number' to withdraw maximum amount possible of collateral (including safety factors)
    * Emits a {Withdraw} event.
    */
   function withdraw(int256 _withdrawAmount) public override nonReentrant {
@@ -228,7 +236,8 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
 
   /**
    * @dev Paybacks Vault's type underlying to activeProvider - called by normal user
-   * @param _repayAmount: token amount of underlying to repay, or pass -1 to repay full ammount
+   * @param _repayAmount: token amount of underlying to repay, or
+   * pass any 'negative number'to repay full ammount
    * Emits a {Repay} event.
    */
   function payback(int256 _repayAmount) public payable override {
@@ -352,13 +361,17 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   }
 
   /**
-   * @dev Set Factors "a" and "b" for a Struct Factor
-   * For safetyF;  Sets Safety Factor of Vault, should be > 1, a/b
-   * For collatF; Sets Collateral Factor of Vault, should be > 1, a/b
+   * @dev Set Factors "a" and "b" for a Struct Factor.
    * @param _newFactorA: Nominator
    * @param _newFactorB: Denominator
-   * @param _type: safetyF or collatF or bonusLiqF
+   * @param _type: "safetyF" or "collatF" or "bonusLiqF" or "protocolFee"
    * Emits a {FactorChanged} event.
+   * Requirements:
+   * - '_newFactorA' and '_newFactorB' should be non-zero values.
+   * - For safetyF;  a/b, should be > 1.
+   * - For collatF; a/b, should be > 1.
+   * - For bonusLiqF; a/b should be < 1.
+   * - For protocolFee; a/b should be < 1.
    */
   function setFactor(
     uint64 _newFactorA,
@@ -366,18 +379,28 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
     string calldata _type
   ) external isAuthorized {
 
+    require(
+      _newFactorA > 0 &&
+      _newFactorA > 0,
+      Errors.RF_INVALID_RATIO_VALUES
+    );
+
     bytes32 typeHash = keccak256(abi.encode(_type));
 
     if (typeHash == keccak256(abi.encode("collatF"))) {
+      require( _newFactorA > _newFactorB, Errors.RF_INVALID_RATIO_VALUES);
       collatF.a = _newFactorA;
       collatF.b = _newFactorB;
     } else if (typeHash == keccak256(abi.encode("safetyF"))) {
+      require( _newFactorA > _newFactorB, Errors.RF_INVALID_RATIO_VALUES);
       safetyF.a = _newFactorA;
       safetyF.b = _newFactorB;
     } else if (typeHash == keccak256(abi.encode("bonusLiqF"))) {
+      require( _newFactorA < _newFactorB, Errors.RF_INVALID_RATIO_VALUES);
       bonusLiqF.a = _newFactorA;
       bonusLiqF.b = _newFactorB;
     } else if (typeHash == keccak256(abi.encode("protocolFee"))) {
+      require( _newFactorA < _newFactorB, Errors.RF_INVALID_RATIO_VALUES);
       protocolFee.a = _newFactorA;
       protocolFee.b = _newFactorB;
     }

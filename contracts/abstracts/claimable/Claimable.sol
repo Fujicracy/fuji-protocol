@@ -79,7 +79,11 @@ abstract contract Claimable is Context {
    * {onlyOwner} modified functions.
    */
   function transferOwnership(address newOwner) public virtual onlyOwner {
-    require(pendingOwner == address(0));
+    require(
+      newOwner != address(0),
+      Errors.VL_ZERO_ADDR
+    );
+    require(pendingOwner == address(0), "There is a pending owner!");
     pendingOwner = newOwner;
     emit NewPendingOwner(newOwner);
   }

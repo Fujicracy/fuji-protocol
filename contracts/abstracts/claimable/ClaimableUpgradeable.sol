@@ -83,11 +83,15 @@ abstract contract ClaimableUpgradeable is Initializable, ContextUpgradeable {
    * NOTE:`newOwner` requires to claim ownership in order to be able to call
    * {onlyOwner} modified functions.
    */
-  function transferOwnership(address newOwner) public virtual onlyOwner {
-    require(pendingOwner == address(0));
-    pendingOwner = newOwner;
-    emit NewPendingOwner(newOwner);
-  }
+   function transferOwnership(address newOwner) public virtual onlyOwner {
+     require(
+       newOwner != address(0),
+       Errors.VL_ZERO_ADDR
+     );
+     require(pendingOwner == address(0), "There is a pending owner!");
+     pendingOwner = newOwner;
+     emit NewPendingOwner(newOwner);
+   }
 
   /**
    * @dev Cancels the transfer of ownership of the contract.

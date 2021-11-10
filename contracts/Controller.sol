@@ -65,9 +65,12 @@ contract Controller is Claimable {
    * @dev Performs a forced refinancing routine
    * @param _vaultAddr: fuji Vault address
    * @param _newProvider: new provider address
-   * @param _ratioA: ratio to determine how much of debtposition to move
-   * @param _ratioB: _ratioA/_ratioB <= 1, and > 0
+   * @param _ratioA: ratio to determine how much of debt position to move
+   * @param _ratioB:
    * @param _flashNum: integer identifier of flashloan provider
+   * Requirements:
+   * - '_ratioA' and '_ratioB' should be non-zero values.
+   * - '_ratioA' should be <= than '_ratioB', such that: (_ratioA / _ratioB) <= 1
    */
   function doRefinancing(
     address _vaultAddr,
@@ -104,7 +107,7 @@ contract Controller is Claimable {
     );
     uint256 applyRatiodebtPosition = (debtPosition * _ratioA) / _ratioB;
 
-    // Check vault Balance at 'activeProvider' and appleid ratio computation
+    // Check vault Balance at 'activeProvider' and applied ratio computation
     require(
       debtPosition >= applyRatiodebtPosition &&
       applyRatiodebtPosition > 0,
@@ -136,6 +139,7 @@ contract Controller is Claimable {
    */
   function setExecutors(address[] calldata _executors, bool _isExecutor) external onlyOwner {
     for (uint256 i = 0; i < _executors.length; i++) {
+      require(_executors[i] != address(0), Errors.VL_ZERO_ADDR);
       isExecutor[_executors[i]] = _isExecutor;
       emit ExecutorPermitChanged(_executors[i], _isExecutor);
     }

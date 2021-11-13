@@ -9,7 +9,7 @@ import "../../interfaces/IVaultControl.sol";
 
 /**
  * @dev Contract that is inherited by FujiVaults
- * contains  delegate call functions to providers and {Pausable} guards
+ * contains delegate call functions to providers and {Pausable} guards
  *
  */
 

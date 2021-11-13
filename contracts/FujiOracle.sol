@@ -7,7 +7,7 @@ import "./interfaces/IFujiOracle.sol";
 import "./libraries/Errors.sol";
 
 /**
- * @dev Contract that returns and computes prices for the fuji protocol
+ * @dev Contract that returns and computes prices for the Fuji protocol
  */
 
 contract FujiOracle is IFujiOracle, Claimable {
@@ -36,7 +36,7 @@ contract FujiOracle is IFujiOracle, Claimable {
   }
 
   /**
-   * @dev Calculates the exchange rate n given decimals.
+   * @dev Calculates the exchange rate between two assets, with price oracle given in specified decimals.
    *      Format is: (_borrowAsset / _collateralAsset Exchange Rate).
    * @param _collateralAsset: the collateral asset, zero-address for USD.
    * @param _borrowAsset: the borrow asset, zero-address for USD.
@@ -66,7 +66,7 @@ contract FujiOracle is IFujiOracle, Claimable {
   /**
    * @dev Calculates the USD price of asset.
    * @param _asset: the asset address.
-   * Returns the USD price of the give asset
+   * Returns the USD price of the given asset
    */
   function _getUSDPrice(address _asset) internal view returns (uint256 price) {
     require(usdPriceFeeds[_asset] != address(0), Errors.ORACLE_NONE_PRICE_FEED);

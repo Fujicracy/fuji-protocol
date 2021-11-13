@@ -54,8 +54,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
     uint256 total = totalSupply(_assetID);
     if (newBalance > 0 && total > 0 && newBalance > total) {
       uint256 newIndex = (indexes[_assetID] * newBalance) / total;
-      require(newIndex <= type(uint128).max, Errors.VL_INDEX_OVERFLOW);
-      require(newIndex >= indexes[_assetID], Errors.VL_NEW_INDEX_LESS_THAN_OLD);
       indexes[_assetID] = uint128(newIndex);
     }
   }

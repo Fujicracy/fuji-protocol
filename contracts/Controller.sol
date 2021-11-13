@@ -13,7 +13,7 @@ import "./libraries/Errors.sol";
 
 /**
  * @dev Contract that controls rebalances and refinancing of the positions
- * held by the FujiVaults.
+ * held by the Fuji Vaults.
  *
  */
 
@@ -107,7 +107,7 @@ contract Controller is Claimable {
     );
     uint256 applyRatiodebtPosition = (debtPosition * _ratioA) / _ratioB;
 
-    // Check vault Balance at 'activeProvider' and applied ratio computation
+    // Check vault balance at 'activeProvider' and applied ratio computation
     require(
       debtPosition >= applyRatiodebtPosition &&
       applyRatiodebtPosition > 0,

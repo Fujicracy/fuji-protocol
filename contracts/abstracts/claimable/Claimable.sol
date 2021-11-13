@@ -5,8 +5,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/utils/Context.sol";
 
 /**
- * @dev Contract module that extends on Openzeppelin Ownable.sol contract.
- * Creates a two step process for the transfer of ownership.
+ * @dev Abstract contract that implements a modified version of  Openzeppelin {Ownable.sol} contract.
+ * It creates a two step process for the transfer of ownership.
  */
 
 abstract contract Claimable is Context {
@@ -18,11 +18,11 @@ abstract contract Claimable is Context {
   // Claimable Events
 
   /**
-   * @dev Emit when two step process of ownership transfer is completed.
+   * @dev Emits when step two in ownership transfer is completed.
    */
   event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
   /**
-   * @dev Emit when two process of ownership transfer is initiated.
+   * @dev Emits when step one in ownership transfer is initiated.
    */
   event NewPendingOwner(address indexed owner);
 

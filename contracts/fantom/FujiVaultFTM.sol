@@ -21,7 +21,7 @@ import "../libraries/Errors.sol";
 import "./libraries/LibUniversalERC20UpgradeableFTM.sol";
 
 /**
- * @dev Contract for the interaction of Fuji Users with the Fuji protocol.
+ * @dev Contract for the interaction of Fuji users with the Fuji protocol.
  *  - Performs deposit, withdraw, borrow, and payback functions.
  *  - Contains the fallback logic to perform a switch of providers.
  */
@@ -68,7 +68,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   uint256 public remainingProtocolFee;
 
   /**
-  * @dev Throws if caller is not the 'owner' or the '_controller' address in {FujiAdmin}
+  * @dev Throws if caller is not the 'owner' or the '_controller' address stored in {FujiAdmin}
   */
   modifier isAuthorized() {
     require(
@@ -79,7 +79,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   }
 
   /**
-  * @dev Throws if caller is not the '_flasher' address in {FujiAdmin}
+  * @dev Throws if caller is not the '_flasher' address stored in {FujiAdmin}
   */
   modifier onlyFlash() {
     require(msg.sender == _fujiAdmin.getFlasher(), Errors.VL_NOT_AUTHORIZED);
@@ -87,7 +87,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   }
 
   /**
-  * @dev Throws if caller is not the '_fliquidator' address in {FujiAdmin}
+  * @dev Throws if caller is not the '_fliquidator' address stored in {FujiAdmin}
   */
   modifier onlyFliquidator() {
     require(msg.sender == _fujiAdmin.getFliquidator(), Errors.VL_NOT_AUTHORIZED);
@@ -235,9 +235,9 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   }
 
   /**
-   * @dev Paybacks Vault's type underlying to activeProvider - called by normal user
+   * @dev Paybacks Vault's type underlying to activeProvider - called by users
    * @param _repayAmount: token amount of underlying to repay, or
-   * pass any 'negative number'to repay full ammount
+   * pass any 'negative number' to repay full ammount
    * Emits a {Repay} event.
    */
   function payback(int256 _repayAmount) public payable override {
@@ -577,7 +577,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
 
   /**
   * @dev Withdraws all the collected Fuji fees in this vault.
-  * NOTE: Fuji fee is the fee charged to all fuji-users -
+  * NOTE: Fuji fee is charged to all users
   * as a service for the loan cost optimization.
   * It is a percentage (defined in 'protocolFee') on top of the users 'debtPrincipal'.
   * Requirements:
@@ -595,8 +595,8 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   // Internal Functions
 
   /**
-  * @dev Returns de amount of accrued of fuji fee by user.
-  * @param _user: user to whom fuji fee will be computed.
+  * @dev Returns de amount of accrued of Fuji fee by user.
+  * @param _user: user to whom Fuji fee will be computed.
   * @param _debtPrincipal: current user's debt .
   */
   function _userProtocolFee(address _user, uint256 _debtPrincipal) internal view returns (uint256) {

@@ -7,7 +7,7 @@ import "./interfaces/IFujiAdmin.sol";
 import "./libraries/Errors.sol";
 
 /**
- * @dev Contract that controls the addresses of the  fuji protocol modules
+ * @dev Contract that controls the addresses of the Fuji Protocol contracts
  */
 
 contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {

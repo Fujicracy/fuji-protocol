@@ -7,7 +7,7 @@ import "./interfaces/IFujiMappings.sol";
 
 /**
  * @dev Contract that stores and returns addresses mappings
- * Required for getting contract addresses for some Providers and Flashloan Providers
+ * Required for getting contract addresses for some providers and flashloan providers
  */
 
 contract FujiMapping is IFujiMappings, Claimable {

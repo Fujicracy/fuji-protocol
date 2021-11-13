@@ -106,7 +106,7 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
   }
 
   /**
-  * @dev Initializes the contract setting the flash close fee factor.
+  * @dev Sets the flash close fee factor.
   */
   constructor() {
     // 0.01
@@ -119,7 +119,7 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
   // FLiquidator Core Functions
 
   /**
-   * @dev Liquidate an undercollaterized debt and get bonus (bonusL in Vault)
+   * @dev Liquidates undercollaterized debt positions and get bonus (bonusL in Vault)
    * @param _addrs: Address array of users whose position is liquidatable
    * @param _vault: Address of the vault in where liquidation will occur
    * Emits a {Liquidate} event for each liquidated user.
@@ -362,7 +362,7 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
    * @param _flashloanFee: amount extra charged by flashloan provider
    * Emits a {FlashClose} event.
    * Requirements:
-   * - Should only be called by '_flasher' contract address in {FujiAdmin}
+   * - Should only be called by '_flasher' contract address stored in {FujiAdmin}
    */
   function executeFlashClose(
     address payable _userAddr,

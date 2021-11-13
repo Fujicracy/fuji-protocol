@@ -11,7 +11,7 @@ import "../../libraries/WadRayMath.sol";
 import "../../libraries/Errors.sol";
 
 /**
- * @dev Contract module that controls permissions to Mint and burn in {FujiERC1155}
+ * @dev Contract that controls permissions to mint and burn in {FujiERC1155}
  *
  */
 

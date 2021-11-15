@@ -91,7 +91,7 @@ contract VaultBaseUpgradeable is VaultControlUpgradeable {
    * @dev Returns byte response of delegatcalls
    */
   function _execute(address _target, bytes memory _data)
-    internal
+    private
     whenNotPaused
     returns (bytes memory response)
   {

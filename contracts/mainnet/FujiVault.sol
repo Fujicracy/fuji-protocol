@@ -46,6 +46,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   //State variables
   address[] public providers;
   address public override activeProvider;
+  mapping(address => bool) validProvider;
 
   IFujiAdmin private _fujiAdmin;
   address public override fujiERC1155;
@@ -256,6 +257,9 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     uint256 _flashLoanAmount,
     uint256 _fee
   ) external payable override onlyFlash whenNotPaused {
+    // Check _newProvider is 'validProvider'
+    require(validProvider[_newProvider], 'invalid provider!');
+
     // Compute Ratio of transfer before payback
     uint256 ratio = (_flashLoanAmount * 1e18) /
       (IProvider(activeProvider).getBorrowBalance(vAssets.borrowAsset));
@@ -383,6 +387,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   function setProviders(address[] calldata _providers) external isAuthorized {
     for(uint i = 0; i < _providers.length; i++) {
       require(_providers[i] != address(0), Errors.VL_ZERO_ADDR);
+      validProvider[_providers[i]] = true;
     }
     providers = _providers;
     emit ProvidersChanged(_providers);

@@ -46,6 +46,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   //State variables
   address[] public providers;
   address public override activeProvider;
+  mapping(address => bool) validProvider;
 
   IFujiAdmin private _fujiAdmin;
   address public override fujiERC1155;
@@ -256,6 +257,9 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
     uint256 _flashLoanAmount,
     uint256 _fee
   ) external payable override onlyFlash whenNotPaused {
+    // Check _newProvider is 'validProvider'
+    require(validProvider[_newProvider], 'invalid provider!');
+    
     // Compute Ratio of transfer before payback
     uint256 ratio = (_flashLoanAmount * 1e18) /
       (IProvider(activeProvider).getBorrowBalance(vAssets.borrowAsset));

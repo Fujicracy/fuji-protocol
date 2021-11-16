@@ -63,7 +63,7 @@ contract ProviderFuse3 is IProvider, HelperFunct {
   //Provider Core Functions
 
   /**
-   * @dev Deposit ETH/ERC20_Token.
+   * @dev Deposit '_asset'.
    * @param _asset: token address to deposit. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
    * @param _amount: token amount to deposit.
    */
@@ -99,7 +99,7 @@ contract ProviderFuse3 is IProvider, HelperFunct {
   }
 
   /**
-   * @dev Withdraw ETH/ERC20_Token.
+   * @dev Withdraw '_asset'.
    * @param _asset: token address to withdraw. (For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
    * @param _amount: token amount to withdraw.
    */
@@ -115,7 +115,7 @@ contract ProviderFuse3 is IProvider, HelperFunct {
   }
 
   /**
-   * @dev Borrow ETH/ERC20_Token.
+   * @dev Borrow '_asset'.
    * @param _asset token address to borrow.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
    * @param _amount: token amount to borrow.
    */
@@ -134,7 +134,7 @@ contract ProviderFuse3 is IProvider, HelperFunct {
   }
 
   /**
-   * @dev Payback borrowed ETH/ERC20_Token.
+   * @dev Payback borrowed '_asset'.
    * @param _asset token address to payback.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
    * @param _amount: token amount to payback.
    */
@@ -162,7 +162,7 @@ contract ProviderFuse3 is IProvider, HelperFunct {
   }
 
   /**
-   * @dev Returns the current borrowing rate (APR) of a ETH/ERC20_Token, in ray(1e27).
+   * @dev Returns the current borrowing rate (APR) of '_asset', in ray(1e27).
    * @param _asset: token address to query the current borrowing rate.
    */
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
@@ -177,7 +177,8 @@ contract ProviderFuse3 is IProvider, HelperFunct {
   }
 
   /**
-   * @dev Returns the borrow balance of a ETH/ERC20_Token.
+   * @dev Returns the borrow balance of '_asset' of caller.
+   * NOTE: Returned value is at the last update state of provider.
    * @param _asset: token address to query the balance.
    */
   function getBorrowBalance(address _asset) external view override returns (uint256) {
@@ -187,8 +188,8 @@ contract ProviderFuse3 is IProvider, HelperFunct {
   }
 
   /**
-   * @dev Return borrow balance of ETH/ERC20_Token.
-   * This function is the accurate way to get Compound borrow balance.
+   * @dev Return borrow balance of '_asset' of caller.
+   * This function updates the state of provider contract to return latest borrow balance.
    * It costs ~84K gas and is not a view function.
    * @param _asset token address to query the balance.
    * @param _who address of the account.
@@ -200,7 +201,7 @@ contract ProviderFuse3 is IProvider, HelperFunct {
   }
 
   /**
-   * @dev Returns the deposit balance of a ETH/ERC20_Token.
+   * @dev Returns the deposit balance of '_asset' of caller.
    * @param _asset: token address to query the balance.
    */
   function getDepositBalance(address _asset) external view override returns (uint256) {

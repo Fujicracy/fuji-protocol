@@ -20,6 +20,10 @@ import "./libraries/LibUniversalERC20.sol";
 import "../libraries/FlashLoans.sol";
 import "../libraries/Errors.sol";
 
+/**
+ * @dev Contract to execute liquidations and flash close.
+ */
+
 contract Fliquidator is Claimable, ReentrancyGuard {
   using SafeERC20 for IERC20;
   using LibUniversalERC20 for IERC20;
@@ -42,31 +46,68 @@ contract Fliquidator is Claimable, ReentrancyGuard {
   IFujiOracle private _oracle;
   IUniswapV2Router02 public swapper;
 
-  // Log Liquidation
+  /**
+  * @dev Log when a user is liquidated
+  */
   event Liquidate(
     address indexed userAddr,
     address indexed vault,
     uint256 amount,
     address liquidator
   );
-  // Log FlashClose
+  /**
+  * @dev Log when a user FlashClose its position
+  */
   event FlashClose(address indexed userAddr, address indexed vault, uint256 amount);
+  /**
+  * @dev Log a change in fuji admin address
+  */
+  event FujiAdminChanged(address newFujiAdmin);
+  /**
+  * @dev Log a change in the factor values
+  */
+  event FactorChanged(
+    bytes32 typehash,
+    uint64 newFactorA,
+    uint64 newFactorB
+  );
 
+  /**
+  * @dev Log a change in the oracle address
+  */
+  event OracleChanged(address newOracle);
+  /**
+  * @dev Log change of swapper address
+  */
+  event SwapperChanged(address newSwapper);
+
+  /**
+  * @dev Throws if caller is not 'owner'.
+  */
   modifier isAuthorized() {
     require(msg.sender == owner(), Errors.VL_NOT_AUTHORIZED);
     _;
   }
 
+  /**
+  * @dev Throws if caller is not '_flasher' address in {FujiAdmin}.
+  */
   modifier onlyFlash() {
     require(msg.sender == _fujiAdmin.getFlasher(), Errors.VL_NOT_AUTHORIZED);
     _;
   }
 
+  /**
+  * @dev Throws if address passed is not a recognized vault.
+  */
   modifier isValidVault(address _vaultAddr) {
     require(_fujiAdmin.validVault(_vaultAddr), "Invalid vault!");
     _;
   }
 
+  /**
+  * @dev Sets the flash close fee factor.
+  */
   constructor() {
     // 0.01
     flashCloseF.a = 1;
@@ -78,10 +119,10 @@ contract Fliquidator is Claimable, ReentrancyGuard {
   // FLiquidator Core Functions
 
   /**
-   * @dev Liquidate an undercollaterized debt and get bonus (bonusL in Vault)
+   * @dev Liquidates an undercollaterized debt and get bonus (bonusL in Vault)
    * @param _addrs: Address array of users whose position is liquidatable
    * @param _vault: Address of the vault in where liquidation will occur
-   * Emits a {Liquidate} event.
+   * Emits a {Liquidate} event for each liquidated user.
    */
   function batchLiquidate(address[] calldata _addrs, address _vault)
     external
@@ -156,7 +197,6 @@ contract Fliquidator is Claimable, ReentrancyGuard {
    * @param _addrs: Array of Address whose position is liquidatable
    * @param _vault: The vault address where the debt position exist.
    * @param _flashnum: integer identifier of flashloan provider
-   * Emits a {Liquidate} event.
    */
   function flashBatchLiquidate(
     address[] calldata _addrs,
@@ -201,7 +241,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
    * @param _vault: Vault address
    * @param _amount: amount of debt to be repaid
    * @param _flashloanFee: amount extra charged by flashloan provider
-   * Emits a {Liquidate} event.
+   * Emits a {Liquidate} event for each liquidated user.
    */
   function executeFlashBatchLiquidation(
     address[] calldata _addrs,
@@ -267,7 +307,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
 
   /**
    * @dev Initiates a flashloan used to repay partially or fully the debt position of msg.sender
-   * @param _amount: Pass -1 to fully close debt position, otherwise Amount to be repaid with a flashloan
+   * @param _amount: Pass negative number to fully close debt position, otherwise amount to be repaid with a flashloan
    * @param _vault: The vault address where the debt position exist.
    * @param _flashnum: integer identifier of flashloan provider
    */
@@ -321,6 +361,8 @@ contract Fliquidator is Claimable, ReentrancyGuard {
    * @param _amount: amount received by Flashloan
    * @param _flashloanFee: amount extra charged by flashloan provider
    * Emits a {FlashClose} event.
+   * Requirements:
+   * - Should only be called by '_flasher' contract address stored in {FujiAdmin}
    */
   function executeFlashClose(
     address payable _userAddr,
@@ -610,36 +652,48 @@ contract Fliquidator is Claimable, ReentrancyGuard {
    * @dev Set Factors "a" and "b" for a Struct Factor flashcloseF
    * @param _newFactorA: Nominator
    * @param _newFactorB: Denominator
+   * Emits a {FactorChanged} event.
    */
   function setFlashCloseFee(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
     flashCloseF.a = _newFactorA;
     flashCloseF.b = _newFactorB;
+    emit FactorChanged(
+      keccak256(abi.encode("flashCloseF")),
+      _newFactorA,
+      _newFactorB
+    );
   }
 
   /**
    * @dev Sets the fujiAdmin Address
    * @param _newFujiAdmin: FujiAdmin Contract Address
+   * Emits a {FujiAdminChanged} event.
    */
   function setFujiAdmin(address _newFujiAdmin) external isAuthorized {
     require(_newFujiAdmin != address(0), Errors.VL_ZERO_ADDR);
     _fujiAdmin = IFujiAdmin(_newFujiAdmin);
+    emit FujiAdminChanged(_newFujiAdmin);
   }
 
   /**
    * @dev Changes the Swapper contract address
    * @param _newSwapper: address of new swapper contract
+   * Emits {SwapperChanged} event.
    */
   function setSwapper(address _newSwapper) external isAuthorized {
     require(_newSwapper != address(0), Errors.VL_ZERO_ADDR);
     swapper = IUniswapV2Router02(_newSwapper);
+    emit SwapperChanged(_newSwapper);
   }
 
   /**
    * @dev Changes the Oracle contract address
    * @param _newFujiOracle: address of new oracle contract
+   * Emits {OracleChanged} event.
    */
   function setFujiOracle(address _newFujiOracle) external isAuthorized {
     require(_newFujiOracle != address(0), Errors.VL_ZERO_ADDR);
     _oracle = IFujiOracle(_newFujiOracle);
+    emit OracleChanged(_newFujiOracle);
   }
 }

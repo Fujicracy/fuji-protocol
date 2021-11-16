@@ -20,7 +20,7 @@ function testRefinance1(vaults, from, to, amountToDeposit, amountToBorrow, flash
 
       await this.f.controller
         .connect(this.users[0])
-        .doRefinancing(this.f[name].address, this.f[to].address, 1, 1, flashloanProvider);
+        .doRefinancing(this.f[name].address, this.f[to].address, flashloanProvider);
 
       const activeProvider = await this.f[name].activeProvider();
       expect(activeProvider).to.be.eq(this.f[to].address);
@@ -59,7 +59,7 @@ function testRefinance2(vaults, from, to, amountToDeposit, amountToBorrow, flash
 
       await this.f.controller
         .connect(this.users[0])
-        .doRefinancing(this.f[name].address, this.f[to].address, 1, 1, flashloanProvider);
+        .doRefinancing(this.f[name].address, this.f[to].address, flashloanProvider);
 
       const activeProvider = await this.f[name].activeProvider();
       expect(activeProvider).to.be.eq(this.f[to].address);
@@ -96,7 +96,7 @@ function testRefinance3(vaults, from, to, amountToDeposit, amountToBorrow, flash
 
       await this.f.controller
         .connect(this.users[0])
-        .doRefinancing(this.f[name].address, this.f[to].address, 1, 1, flashloanProvider);
+        .doRefinancing(this.f[name].address, this.f[to].address, flashloanProvider);
 
       const activeProvider = await this.f[name].activeProvider();
       expect(activeProvider).to.be.eq(this.f[to].address);

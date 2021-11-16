@@ -46,7 +46,6 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   //State variables
   address[] public providers;
   address public override activeProvider;
-  mapping(address => bool) validProvider;
 
   IFujiAdmin private _fujiAdmin;
   address public override fujiERC1155;
@@ -61,6 +60,8 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
 
   mapping(address => uint256) internal _userFeeTimestamps; // to be used for protocol fee calculation
   uint256 public remainingProtocolFee;
+
+  mapping(address => bool) public validProvider;
 
   modifier isAuthorized() {
     require(

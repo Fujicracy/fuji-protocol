@@ -13,7 +13,7 @@ import "./libraries/Errors.sol";
 
 /**
  * @dev Contract that controls rebalances and refinancing of the positions
- * held by the FujiVaults.
+ * held by the Fuji Vaults.
  *
  */
 

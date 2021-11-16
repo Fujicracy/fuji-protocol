@@ -19,7 +19,7 @@ contract SwapperFTM is ISwapper {
 
   /**
    * @dev Returns data structure to perform a swap transaction.
-   * Function is called by the Vault to harvest farmed tokens at baselayer Protocols
+   * Function is called by FujiVault to harvest farmed tokens at baselayer protocols
    * @param assetFrom: asset type to be swapped.
    * @param assetTo: desired asset after swap transaction.
    * @param amount: amount of assetFrom to be swapped.

@@ -9,7 +9,7 @@ import "../interfaces/IFujiAdmin.sol";
 import "../interfaces/ISwapper.sol";
 
 /**
- * @dev Contract to support Harvesting function in {FujiVault}
+ * @dev Contract to support harvesting function in {FujiVault}
  */
 
 contract Swapper is ISwapper {
@@ -19,7 +19,7 @@ contract Swapper is ISwapper {
 
   /**
    * @dev Returns data structure to perform a swap transaction.
-   * Function is called by the Vault to harvest farmed tokens at baselayer Protocols
+   * Function is called by the FujiVault to harvest farmed tokens at baselayer protocols
    * @param assetFrom: asset type to be swapped.
    * @param assetTo: desired asset after swap transaction.
    * @param amount: amount of assetFrom to be swapped.

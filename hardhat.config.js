@@ -20,11 +20,12 @@ const mainnetUrl = process.env.ALCHEMY_ID
   : `https://mainnet.infura.io/v3/${process.env.INFURA_ID}`;
 
 const network = process.env.NETWORK;
-const forkUrl = network === "fantom"
-  ? 'https://rpc.ftm.tools/'
-  : network === "bsc"
-  ? 'https://bsc-dataseed.binance.org/'
-  : mainnetUrl;
+const forkUrl =
+  network === "fantom"
+    ? "https://rpc.ftm.tools/"
+    : network === "bsc"
+    ? "https://bsc-dataseed.binance.org/"
+    : mainnetUrl;
 
 //
 // Select the network you want to deploy to here:
@@ -122,7 +123,7 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.8.0",
+        version: "0.8.2",
         settings: {
           optimizer: {
             enabled: true,
@@ -184,8 +185,7 @@ task("sync", "Sync mainnet deployment data to be used in current network")
     } catch (e) {
       console.log(`${cid}-${market}.deploy: not synced`);
     }
-  }
-  );
+  });
 
 task("wallet", "Create a wallet (pk) link", async (_, { ethers }) => {
   const randomWallet = ethers.Wallet.createRandom();

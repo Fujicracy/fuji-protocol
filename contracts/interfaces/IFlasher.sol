@@ -7,7 +7,7 @@ import "../libraries/FlashLoans.sol";
 interface IFlasher {
 
   /**
-  * @dev Log a change in fuji admin address
+  * @dev Logs a change in FujiAdmin address.
   */
   event FujiAdminChanged(address newFujiAdmin);
   

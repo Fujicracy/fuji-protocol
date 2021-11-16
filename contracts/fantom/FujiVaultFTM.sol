@@ -22,7 +22,7 @@ import "./libraries/LibUniversalERC20UpgradeableFTM.sol";
 
 /**
  * @dev Contract for the interaction of Fuji users with the Fuji protocol.
- *  - Performs deposit, withdraw, borrow, and payback functions.
+ *  - Performs deposit, withdraw, borrow and payback functions.
  *  - Contains the fallback logic to perform a switch of providers.
  */
 
@@ -581,7 +581,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   * as a service for the loan cost optimization.
   * It is a percentage (defined in 'protocolFee') on top of the users 'debtPrincipal'.
   * Requirements:
-  * - Must send all fees amount collected to the fuji treasury.
+  * - Must send all fees amount collected to the Fuji treasury.
   */
   function withdrawProtocolFee() external nonReentrant {
     IERC20Upgradeable(vAssets.borrowAsset).univTransfer(
@@ -597,7 +597,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   /**
   * @dev Returns de amount of accrued of Fuji fee by user.
   * @param _user: user to whom Fuji fee will be computed.
-  * @param _debtPrincipal: current user's debt .
+  * @param _debtPrincipal: current user's debt.
   */
   function _userProtocolFee(address _user, uint256 _debtPrincipal) internal view returns (uint256) {
     return

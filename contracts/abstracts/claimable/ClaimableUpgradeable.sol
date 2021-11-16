@@ -18,11 +18,11 @@ abstract contract ClaimableUpgradeable is Initializable, ContextUpgradeable {
   // Claimable Events
 
   /**
-   * @dev Emit when two step process of ownership transfer is completed.
+   * @dev Emits when two step process of ownership transfer is completed.
    */
   event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
   /**
-   * @dev Emit when two process of ownership transfer is initiated.
+   * @dev Emits when two process of ownership transfer is initiated.
    */
   event NewPendingOwner(address indexed owner);
 

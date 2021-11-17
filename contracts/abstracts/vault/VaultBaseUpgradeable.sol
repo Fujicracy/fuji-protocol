@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 
@@ -38,7 +37,7 @@ abstract contract VaultControlUpgradeable is OwnableUpgradeable, PausableUpgrade
 }
 
 contract VaultBaseUpgradeable is VaultControlUpgradeable {
-  using Address for address;
+  using AddressUpgradeable for address;
 
   // Internal functions
 

@@ -258,13 +258,13 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   ) external payable override onlyFlash whenNotPaused {
     // Check '_newProvider' is a valid provider
     bool validProvider;
-    for(uint i = 0; i < providers.length; i++) {
+    for (uint i = 0; i < providers.length; i++) {
       if(_newProvider == providers[i]) {
         validProvider = true;
       }
     }
-    if(validProvider == false) {
-      revert('invalid _newProvider!');
+    if (!validProvider) {
+      revert(Errors.VL_INVALID_NEW_PROVIDER);
     }
 
     // Compute Ratio of transfer before payback

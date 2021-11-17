@@ -3,28 +3,27 @@
 pragma solidity ^0.8.0;
 
 interface IVault {
-
   // Vault Events
 
   /**
-  * @dev Log a deposit transaction done by a user
-  */
+   * @dev Log a deposit transaction done by a user
+   */
   event Deposit(address indexed userAddrs, address indexed asset, uint256 amount);
   /**
-  * @dev Log a withdraw transaction done by a user
-  */
+   * @dev Log a withdraw transaction done by a user
+   */
   event Withdraw(address indexed userAddrs, address indexed asset, uint256 amount);
   /**
-  * @dev Log a borrow transaction done by a user
-  */
+   * @dev Log a borrow transaction done by a user
+   */
   event Borrow(address indexed userAddrs, address indexed asset, uint256 amount);
   /**
-  * @dev Log a payback transaction done by a user
-  */
+   * @dev Log a payback transaction done by a user
+   */
   event Payback(address indexed userAddrs, address indexed asset, uint256 amount);
   /**
-  * @dev Log a switch from provider to new provider in vault
-  */
+   * @dev Log a switch from provider to new provider in vault
+   */
   event Switch(
     address fromProviderAddrs,
     address toProviderAddr,
@@ -32,32 +31,28 @@ interface IVault {
     uint256 collattamount
   );
   /**
-  * @dev Log a change in active provider
-  */
+   * @dev Log a change in active provider
+   */
   event SetActiveProvider(address newActiveProviderAddress);
   /**
-  * @dev Log a change in the array of provider addresses
-  */
+   * @dev Log a change in the array of provider addresses
+   */
   event ProvidersChanged(address[] newProviderArray);
   /**
-  * @dev Log a change in F1155 address
-  */
+   * @dev Log a change in F1155 address
+   */
   event F1155Changed(address newF1155Address);
   /**
-  * @dev Log a change in fuji admin address
-  */
+   * @dev Log a change in fuji admin address
+   */
   event FujiAdminChanged(address newFujiAdmin);
   /**
-  * @dev Log a change in the factor values
-  */
-  event FactorChanged(
-    FactorType factorType,
-    uint64 newFactorA,
-    uint64 newFactorB
-  );
+   * @dev Log a change in the factor values
+   */
+  event FactorChanged(FactorType factorType, uint64 newFactorA, uint64 newFactorB);
   /**
-  * @dev Log a change in the oracle address
-  */
+   * @dev Log a change in the oracle address
+   */
   event OracleChanged(address newOracle);
 
   enum FactorType {

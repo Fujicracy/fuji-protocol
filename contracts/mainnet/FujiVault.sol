@@ -259,7 +259,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     // Check '_newProvider' is a valid provider
     bool validProvider;
     for (uint i = 0; i < providers.length; i++) {
-      if(_newProvider == providers[i]) {
+      if (_newProvider == providers[i]) {
         validProvider = true;
       }
     }

@@ -263,7 +263,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
         validProvider = true;
       }
     }
-    if(!validProvider) {
+    if (!validProvider) {
       revert(Errors.VL_INVALID_NEW_PROVIDER);
     }
 

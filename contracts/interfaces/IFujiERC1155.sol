@@ -27,8 +27,7 @@ interface IFujiERC1155 {
   function mint(
     address _account,
     uint256 _id,
-    uint256 _amount,
-    bytes memory _data
+    uint256 _amount
   ) external;
 
   function burn(

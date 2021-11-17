@@ -40,7 +40,7 @@ const {
   vaultfeidai,
 } = _vaults;
 
-const [DEPOSIT_ERC20, BORROW_ERC20, DEPOSIT_ETH, BORROW_ETH] = [7000, 4000, 2, 1];
+const [DEPOSIT_ERC20, BORROW_ERC20, DEPOSIT_ETH, BORROW_ETH] = [7000, 2500, 5, 1];
 
 describe("Rari Fuse", function () {
   let f;
@@ -379,7 +379,7 @@ describe("Rari Fuse", function () {
 
         await f.controller
           .connect(users[0])
-          .doRefinancing(f[name].address, f[to].address, 1, 1, flashloanProvider);
+          .doRefinancing(f[name].address, f[to].address, flashloanProvider);
 
         let postVaultDebt = await f[name].borrowBalance(f[to].address);
         postVaultDebt = formatUnitsToNum(postVaultDebt, debt.decimals);
@@ -411,7 +411,7 @@ describe("Rari Fuse", function () {
 
         await f.controller
           .connect(users[0])
-          .doRefinancing(f[name].address, f[to].address, 1, 1, flashloanProvider);
+          .doRefinancing(f[name].address, f[to].address, flashloanProvider);
 
         let postVaultDebt = await f[name].borrowBalance(f[to].address);
         postVaultDebt = formatUnitsToNum(postVaultDebt, debt.decimals);
@@ -443,7 +443,7 @@ describe("Rari Fuse", function () {
 
         await f.controller
           .connect(users[0])
-          .doRefinancing(f[name].address, f[to].address, 1, 1, flashloanProvider);
+          .doRefinancing(f[name].address, f[to].address, flashloanProvider);
 
         let postVaultDebt = await f[name].borrowBalance(f[to].address);
         postVaultDebt = formatUnitsToNum(postVaultDebt);

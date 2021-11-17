@@ -21,6 +21,11 @@ import "../libraries/LibUniversalERC20.sol";
 import "../../libraries/FlashLoans.sol";
 import "../../libraries/Errors.sol";
 
+/**
+ * @dev Contract that handles Fuji protocol flash loan logic and
+ * the specific logic of all active flash loan providers used by Fuji protocol.
+ */
+
 contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, ICallee, Claimable {
   using LibUniversalERC20 for IERC20;
 
@@ -39,6 +44,9 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
   // need to be payable because of the conversion ETH <> WETH
   receive() external payable {}
 
+  /**
+  * @dev Throws if caller is not 'owner'.
+  */
   modifier isAuthorized() {
     require(
       msg.sender == _fujiAdmin.getController() ||
@@ -52,9 +60,11 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
   /**
    * @dev Sets the fujiAdmin Address
    * @param _newFujiAdmin: FujiAdmin Contract Address
+   * Emits a {FujiAdminChanged} event.
    */
   function setFujiAdmin(address _newFujiAdmin) public onlyOwner {
     _fujiAdmin = IFujiAdmin(_newFujiAdmin);
+    emit FujiAdminChanged(_newFujiAdmin);
   }
 
   /**

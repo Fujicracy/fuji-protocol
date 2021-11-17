@@ -20,16 +20,17 @@ import "../interfaces/IProvider.sol";
 import "../libraries/Errors.sol";
 import "./libraries/LibUniversalERC20UpgradeableFTM.sol";
 
+/**
+ * @dev Contract for the interaction of Fuji users with the Fuji protocol.
+ *  - Performs deposit, withdraw, borrow and payback functions.
+ *  - Contains the fallback logic to perform a switch of providers.
+ */
+
 contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   using SafeERC20Upgradeable for IERC20Upgradeable;
   using LibUniversalERC20UpgradeableFTM for IERC20Upgradeable;
 
   address public constant FTM = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
-
-  struct Factor {
-    uint64 a;
-    uint64 b;
-  }
 
   // Safety factor
   Factor public safetyF;
@@ -61,6 +62,9 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   mapping(address => uint256) internal _userFeeTimestamps; // to be used for protocol fee calculation
   uint256 public remainingProtocolFee;
 
+  /**
+  * @dev Throws if caller is not the 'owner' or the '_controller' address stored in {FujiAdmin}
+  */
   modifier isAuthorized() {
     require(
       msg.sender == owner() || msg.sender == _fujiAdmin.getController(),
@@ -69,22 +73,41 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
     _;
   }
 
+  /**
+  * @dev Throws if caller is not the '_flasher' address stored in {FujiAdmin}
+  */
   modifier onlyFlash() {
     require(msg.sender == _fujiAdmin.getFlasher(), Errors.VL_NOT_AUTHORIZED);
     _;
   }
 
+  /**
+  * @dev Throws if caller is not the '_fliquidator' address stored in {FujiAdmin}
+  */
   modifier onlyFliquidator() {
     require(msg.sender == _fujiAdmin.getFliquidator(), Errors.VL_NOT_AUTHORIZED);
     _;
   }
 
+  /**
+  * @dev Initializes the contract by setting:
+  * - Type of collateral and borrow asset of this vault.
+  * - Addresses for fujiAdmin, _oracle.
+  */
   function initialize(
     address _fujiadmin,
     address _oracle,
     address _collateralAsset,
     address _borrowAsset
   ) external initializer {
+
+    require(
+      _fujiadmin != address(0) &&
+      _oracle != address(0) &&
+      _collateralAsset != address(0) &&
+      _borrowAsset != address(0),
+      Errors.VL_ZERO_ADDR);
+
     __Ownable_init();
     __Pausable_init();
     __ReentrancyGuard_init();
@@ -172,7 +195,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
    * @dev Withdraws Vault's type collateral from activeProvider
    * call Controller checkrates - by normal users
    * @param _withdrawAmount: amount of collateral to withdraw
-   * otherwise pass -1 to withdraw maximum amount possible of collateral (including safety factors)
+   * otherwise pass any 'negative number' to withdraw maximum amount possible of collateral (including safety factors)
    * Emits a {Withdraw} event.
    */
   function withdraw(int256 _withdrawAmount) public override nonReentrant {
@@ -207,8 +230,9 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   }
 
   /**
-   * @dev Paybacks Vault's type underlying to activeProvider - called by normal user
-   * @param _repayAmount: token amount of underlying to repay, or pass -1 to repay full ammount
+   * @dev Paybacks Vault's type underlying to activeProvider - called by users
+   * @param _repayAmount: token amount of underlying to repay, or
+   * pass any 'negative number' to repay full ammount
    * Emits a {Repay} event.
    */
   function payback(int256 _repayAmount) public payable override {
@@ -343,36 +367,44 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   }
 
   /**
-   * @dev Set Factors "a" and "b" for a Struct Factor
-   * For safetyF;  Sets Safety Factor of Vault, should be > 1, a/b
-   * For collatF; Sets Collateral Factor of Vault, should be > 1, a/b
+   * @dev Set Factors "a" and "b" for a Struct Factor.
    * @param _newFactorA: Nominator
    * @param _newFactorB: Denominator
-   * @param _type: safetyF or collatF or bonusLiqF
+   * @param _type: 0 for "safetyF", 1 for "collatF", 2 for "protocolFee", 3 for "bonusLiqF"
    * Emits a {FactorChanged} event.
+   * Requirements:
+   * - _newFactorA and _newFactorB should be non-zero values.
+   * - For safetyF;  a/b, should be > 1.
+   * - For collatF; a/b, should be > 1.
+   * - For bonusLiqF; a/b should be < 1.
+   * - For protocolFee; a/b should be < 1.
    */
   function setFactor(
     uint64 _newFactorA,
     uint64 _newFactorB,
-    string calldata _type
+    FactorType _type
   ) external isAuthorized {
-
-    bytes32 typeHash = keccak256(abi.encode(_type));
-
-    if (typeHash == keccak256(abi.encode("collatF"))) {
-      collatF.a = _newFactorA;
-      collatF.b = _newFactorB;
-    } else if (typeHash == keccak256(abi.encode("safetyF"))) {
+    if (_type == FactorType.Safety) {
+      require(_newFactorA > _newFactorB, Errors.RF_INVALID_RATIO_VALUES);
       safetyF.a = _newFactorA;
       safetyF.b = _newFactorB;
-    } else if (typeHash == keccak256(abi.encode("bonusLiqF"))) {
-      bonusLiqF.a = _newFactorA;
-      bonusLiqF.b = _newFactorB;
-    } else if (typeHash == keccak256(abi.encode("protocolFee"))) {
+    } else if (_type == FactorType.Collateralization) {
+      require(_newFactorA > _newFactorB, Errors.RF_INVALID_RATIO_VALUES);
+      collatF.a = _newFactorA;
+      collatF.b = _newFactorB;
+    } else if (_type == FactorType.ProtocolFee) {
+      require(_newFactorA < _newFactorB, Errors.RF_INVALID_RATIO_VALUES);
       protocolFee.a = _newFactorA;
       protocolFee.b = _newFactorB;
+    } else if (_type == FactorType.BonusLiquidation) {
+      require(_newFactorA < _newFactorB, Errors.RF_INVALID_RATIO_VALUES);
+      bonusLiqF.a = _newFactorA;
+      bonusLiqF.b = _newFactorB;
+    } else {
+      revert(Errors.VL_INVALID_FACTOR);
     }
-    emit FactorChanged(typeHash, _newFactorA, _newFactorB);
+
+    emit FactorChanged(_type, _newFactorA, _newFactorB);
   }
 
   /**
@@ -543,6 +575,14 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
     }
   }
 
+  /**
+  * @dev Withdraws all the collected Fuji fees in this vault.
+  * NOTE: Fuji fee is charged to all users
+  * as a service for the loan cost optimization.
+  * It is a percentage (defined in 'protocolFee') on top of the users 'debtPrincipal'.
+  * Requirements:
+  * - Must send all fees amount collected to the Fuji treasury.
+  */
   function withdrawProtocolFee() external nonReentrant {
     IERC20Upgradeable(vAssets.borrowAsset).univTransfer(
       payable(IFujiAdmin(_fujiAdmin).getTreasury()),
@@ -554,6 +594,11 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
 
   // Internal Functions
 
+  /**
+  * @dev Returns de amount of accrued of Fuji fee by user.
+  * @param _user: user to whom Fuji fee will be computed.
+  * @param _debtPrincipal: current user's debt.
+  */
   function _userProtocolFee(address _user, uint256 _debtPrincipal) internal view returns (uint256) {
     return
       (_debtPrincipal * (block.timestamp - _userFeeTimestamps[_user]) * protocolFee.a) /
@@ -561,6 +606,10 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
       ONE_YEAR;
   }
 
+  /**
+  * @dev Internal function handling logic for {deposit} without 'updateState' call
+  * See {deposit}
+  */
   function _internalDeposit(uint256 _collateralAmount) internal {
     if (vAssets.collateralAsset == FTM) {
       require(msg.value == _collateralAmount && _collateralAmount != 0, Errors.VL_AMOUNT_ERROR);
@@ -577,11 +626,15 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
     _deposit(_collateralAmount, address(activeProvider));
 
     // Collateral Management
-    IFujiERC1155(fujiERC1155).mint(msg.sender, vAssets.collateralID, _collateralAmount, "");
+    IFujiERC1155(fujiERC1155).mint(msg.sender, vAssets.collateralID, _collateralAmount);
 
     emit Deposit(msg.sender, vAssets.collateralAsset, _collateralAmount);
   }
 
+  /**
+  * @dev Internal function handling logic for {withdraw} without 'updateState' call
+  * See {withdraw}
+  */
   function _internalWithdraw(int256 _withdrawAmount) internal {
     // Get User Collateral in this Vault
     uint256 providedCollateral = IFujiERC1155(fujiERC1155).balanceOf(
@@ -620,6 +673,10 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
     emit Withdraw(msg.sender, vAssets.collateralAsset, amountToWithdraw);
   }
 
+  /**
+  * @dev Internal function handling logic for {borrow} without 'updateState' call
+  * See {borrow}
+  */
   function _internalBorrow(uint256 _borrowAmount) internal {
     uint256 providedCollateral = IFujiERC1155(fujiERC1155).balanceOf(
       msg.sender,
@@ -652,7 +709,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
       totalBorrow;
 
     // Debt Management
-    IFujiERC1155(fujiERC1155).mint(msg.sender, vAssets.borrowID, _borrowAmount, "");
+    IFujiERC1155(fujiERC1155).mint(msg.sender, vAssets.borrowID, _borrowAmount);
 
     // Delegate Call Borrow to current provider
     _borrow(_borrowAmount, address(activeProvider));
@@ -663,14 +720,16 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
     emit Borrow(msg.sender, vAssets.borrowAsset, _borrowAmount);
   }
 
+  /**
+  * @dev Internal function handling logic for {payback} without 'updateState' call
+  * See {payback}
+  */
   function _internalPayback(int256 _repayAmount) internal {
     uint256 debtBalance = IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID);
     uint256 userFee = _userProtocolFee(msg.sender, debtBalance);
 
     // Check User Debt is greater than Zero and amount is not Zero
     require(uint256(_repayAmount) > userFee && debtBalance > 0, Errors.VL_NO_DEBT_TO_PAYBACK);
-
-    // TODO: Get => corresponding amount of BaseProtocol Debt and FujiDebt
 
     // If passed argument amount is negative do MAX
     uint256 amountToPayback = _repayAmount < 0 ? debtBalance + userFee : uint256(_repayAmount);

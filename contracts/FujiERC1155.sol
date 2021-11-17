@@ -9,6 +9,13 @@ import "./interfaces/IFujiERC1155.sol";
 import "./libraries/WadRayMath.sol";
 import "./libraries/Errors.sol";
 
+/**
+ *
+ * @dev Contract implementing the extension functions for interest rate bearing tokens.
+ * See {FujiBaseERC1155}.
+ *
+ */
+
 contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   using WadRayMath for uint256;
 
@@ -26,6 +33,9 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   // AssetId => Liquidity index for asset ID
   mapping(uint256 => uint256) public indexes;
 
+  /**
+   * @dev Sets the deployer as the initial owner in {Claimable}
+   */
   function initialize() external initializer {
     __ERC165_init();
     __Context_init();
@@ -36,12 +46,14 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    * @dev Updates Index of AssetID
    * @param _assetID: ERC1155 ID of the asset which state will be updated.
    * @param newBalance: Amount
+   * Requirements:
+   * - Not less than previous index
+   * - Not overflow
    **/
   function updateState(uint256 _assetID, uint256 newBalance) external override onlyPermit {
     uint256 total = totalSupply(_assetID);
     if (newBalance > 0 && total > 0 && newBalance > total) {
       uint256 newIndex = (indexes[_assetID] * newBalance) / total;
-      require(newIndex <= type(uint128).max, Errors.VL_INDEX_OVERFLOW);
       indexes[_assetID] = uint128(newIndex);
     }
   }
@@ -51,8 +63,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    * @param _assetID: ERC1155 ID of the asset which state will be updated.
    **/
   function totalSupply(uint256 _assetID) public view virtual override returns (uint256) {
-    // TODO: include interest accrued by Fuji OptimizerFee
-
     return super.totalSupply(_assetID).rayMul(indexes[_assetID]);
   }
 
@@ -81,7 +91,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
       return 0;
     }
 
-    // TODO: include interest accrued by Fuji OptimizerFee
     return scaledBalance.rayMul(indexes[_assetID]);
   }
 
@@ -111,8 +120,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   function mint(
     address _account,
     uint256 _id,
-    uint256 _amount,
-    bytes memory _data
+    uint256 _amount
   ) external override onlyPermit {
     require(_account != address(0), Errors.VL_ZERO_ADDR_1155);
 
@@ -121,8 +129,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
     address operator = _msgSender();
 
     emit TransferSingle(operator, address(0), _account, _id, _amount);
-
-    _doSafeTransferAcceptanceCheck(operator, address(0), _account, _id, _amount, _data);
   }
 
   /**
@@ -135,8 +141,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   function mintBatch(
     address _to,
     uint256[] memory _ids,
-    uint256[] memory _amounts,
-    bytes memory _data
+    uint256[] memory _amounts
   ) external onlyPermit {
     require(_to != address(0), Errors.VL_ZERO_ADDR_1155);
     require(_ids.length == _amounts.length, Errors.VL_INPUT_ERROR);
@@ -148,8 +153,6 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
     address operator = _msgSender();
 
     emit TransferBatch(operator, address(0), _to, _ids, _amounts);
-
-    _doSafeBatchTransferAcceptanceCheck(operator, address(0), _to, _ids, _amounts, _data);
   }
 
   /**
@@ -197,6 +200,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
    * @dev Getter Function for the Asset ID locally managed
    * @param _type: enum AssetType, 0 = Collateral asset, 1 = debt asset
    * @param _addr: Reference Address of the Asset
+   * Returns token 'id' of asset '_addr'
    */
   function getAssetID(AssetType _type, address _addr) external view override returns (uint256 id) {
     id = assetIDs[_type][_addr];

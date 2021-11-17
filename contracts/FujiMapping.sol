@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: MIT
 //FujiMapping for two addresses
-
 pragma solidity ^0.8.0;
 
 import "./abstracts/claimable/Claimable.sol";
 import "./interfaces/IFujiMappings.sol";
+
+/**
+ * @dev Contract that stores and returns addresses mappings
+ * Required for getting contract addresses for some providers and flashloan providers
+ */
 
 contract FujiMapping is IFujiMappings, Claimable {
   // Address 1 =>  Address 2 (e.g. erc20 => cToken, contract a L1 => contract b L2, etc)
@@ -25,6 +29,7 @@ contract FujiMapping is IFujiMappings, Claimable {
 
   /**
    * @dev Sets a new URI
+   * Emits a {UriChanged} event.
    */
   function setURI(string memory newUri) public onlyOwner {
     uri = newUri;

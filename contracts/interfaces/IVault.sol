@@ -51,7 +51,7 @@ interface IVault {
   * @dev Log a change in the factor values
   */
   event FactorChanged(
-    bytes32 typehash,
+    FactorType factorType,
     uint64 newFactorA,
     uint64 newFactorB
   );
@@ -59,6 +59,18 @@ interface IVault {
   * @dev Log a change in the oracle address
   */
   event OracleChanged(address newOracle);
+
+  enum FactorType {
+    Safety,
+    Collateralization,
+    ProtocolFee,
+    BonusLiquidation
+  }
+
+  struct Factor {
+    uint64 a;
+    uint64 b;
+  }
 
   // Core Vault Functions
 

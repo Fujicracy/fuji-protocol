@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -7,7 +6,12 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/IFujiAdmin.sol";
 import "./libraries/Errors.sol";
 
+/**
+ * @dev Contract that controls the addresses of the Fuji Protocol contracts
+ */
+
 contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
+
   address private _flasher;
   address private _fliquidator;
   address payable private _ftreasury;
@@ -18,6 +22,9 @@ contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
 
   address private _swapper;
 
+  /**
+  * @dev Initializes the contract setting the deployer as the initial owner.
+  */
   function initialize() external initializer {
     __Ownable_init();
   }
@@ -96,26 +103,44 @@ contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
 
   // Getter Functions
 
+  /**
+   * @dev Returns the current '_flasher' address.
+   */
   function getFlasher() external view override returns (address) {
     return _flasher;
   }
 
+  /**
+   * @dev Returns the current '_fliquidator' address.
+   */
   function getFliquidator() external view override returns (address) {
     return _fliquidator;
   }
 
+  /**
+   * @dev Returns the current '_ftreasury' address.
+   */
   function getTreasury() external view override returns (address payable) {
     return _ftreasury;
   }
 
+  /**
+   * @dev Returns the current '_controller' address.
+   */
   function getController() external view override returns (address) {
     return _controller;
   }
 
+  /**
+   * @dev Returns the current '_vaultHarvester' address.
+   */
   function getVaultHarvester() external view override returns (address) {
     return _vaultHarvester;
   }
 
+  /**
+   * @dev Returns the current '_swapper' address.
+   */
   function getSwapper() external view override returns (address) {
     return _swapper;
   }

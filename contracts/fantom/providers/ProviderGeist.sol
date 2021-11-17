@@ -37,7 +37,7 @@ contract ProviderGeist is IProvider {
   }
 
   /**
-   * @dev Return the borrowing rate of ETH/ERC20_Token.
+   * @dev Return the borrowing rate of '_asset'.
    * @param _asset to query the borrowing rate.
    */
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
@@ -51,7 +51,7 @@ contract ProviderGeist is IProvider {
   }
 
   /**
-   * @dev Return borrow balance of FTM/ERC20_Token.
+   * @dev Return borrow balance of '_asset'.
    * @param _asset token address to query the balance.
    */
   function getBorrowBalance(address _asset) external view override returns (uint256) {
@@ -66,7 +66,7 @@ contract ProviderGeist is IProvider {
   }
 
   /**
-   * @dev Return borrow balance of FTM/ERC20_Token.
+   * @dev Return borrow balance of '_asset'.
    * @param _asset token address to query the balance.
    * @param _who address of the account.
    */
@@ -87,7 +87,7 @@ contract ProviderGeist is IProvider {
   }
 
   /**
-   * @dev Return deposit balance of FTM/ERC20_Token.
+   * @dev Return deposit balance of '_asset'.
    * @param _asset token address to query the balance.
    */
   function getDepositBalance(address _asset) external view override returns (uint256) {
@@ -102,7 +102,7 @@ contract ProviderGeist is IProvider {
   }
 
   /**
-   * @dev Deposit FTM/ERC20_Token.
+   * @dev Deposit '_asset'.
    * @param _asset token address to deposit.(For FTM: 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF)
    * @param _amount token amount to deposit.
    */
@@ -123,7 +123,7 @@ contract ProviderGeist is IProvider {
   }
 
   /**
-   * @dev Borrow FTM/ERC20_Token.
+   * @dev Borrow '_asset'.
    * @param _asset token address to borrow.(For FTM: 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF)
    * @param _amount token amount to borrow.
    */
@@ -144,7 +144,7 @@ contract ProviderGeist is IProvider {
   }
 
   /**
-   * @dev Withdraw FTM/ERC20_Token.
+   * @dev Withdraw '_asset'.
    * @param _asset token address to withdraw.
    * @param _amount token amount to withdraw.
    */
@@ -165,7 +165,7 @@ contract ProviderGeist is IProvider {
   }
 
   /**
-   * @dev Payback borrowed FTM/ERC20_Token.
+   * @dev Payback borrowed '_asset'.
    * @param _asset token address to payback.
    * @param _amount token amount to payback.
    */

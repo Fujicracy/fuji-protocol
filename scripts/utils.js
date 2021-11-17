@@ -108,9 +108,23 @@ const deployProxy = async (name, contractName, args = [], overrides = {}) => {
     contractArtifacts.interface.functions[initializeFunction].inputs,
     contractArgs
   );
+
   fs.writeFileSync(`artifacts/${name}.address`, deployed.address);
 
   await updateDeployments(name, contractName, deployed.address);
+
+  // Call initialize function of the implementation contract
+  // if it's not already called and renounce ownership.
+  // This is a precaution measure to make sure a malicious actor won't take control
+  // of the implementation contract.
+  const implAddr = await upgrades.erc1967.getImplementationAddress(deployed.address);
+  const implContract = await ethers.getContractAt(contractName, implAddr);
+  const implOwner = await implContract.owner();
+  const signer = await ethers.getSigner();
+  if (signer === implOwner) {
+    await implContract.initialize(...contractArgs);
+    await implContract.renounceOwnership();
+  }
 
   if (!encoded || encoded.length <= 2) return deployed;
   fs.writeFileSync(`artifacts/${name}.args`, encoded.slice(2));

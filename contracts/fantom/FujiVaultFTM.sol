@@ -61,8 +61,6 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   mapping(address => uint256) internal _userFeeTimestamps; // to be used for protocol fee calculation
   uint256 public remainingProtocolFee;
 
-  mapping(address => bool) public validProvider;
-
   modifier isAuthorized() {
     require(
       msg.sender == owner() || msg.sender == _fujiAdmin.getController(),
@@ -258,8 +256,16 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
     uint256 _flashLoanAmount,
     uint256 _fee
   ) external payable override onlyFlash whenNotPaused {
-    // Check _newProvider is 'validProvider'
-    require(validProvider[_newProvider], 'invalid provider!');
+    // Check '_newProvider' is a valid provider
+    bool validProvider;
+    for(uint i = 0; i < providers.length; i++) {
+      if(_newProvider == providers[i]) {
+        validProvider = true;
+      }
+    }
+    if(validProvider == false) {
+      revert('invalid _newProvider!');
+    }
 
     // Compute Ratio of transfer before payback
     uint256 ratio = (_flashLoanAmount * 1e18) /
@@ -388,7 +394,6 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   function setProviders(address[] calldata _providers) external isAuthorized {
     for(uint i = 0; i < _providers.length; i++) {
       require(_providers[i] != address(0), Errors.VL_ZERO_ADDR);
-      validProvider[_providers[i]] = true;
     }
     providers = _providers;
     emit ProvidersChanged(_providers);

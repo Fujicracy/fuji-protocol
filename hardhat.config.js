@@ -25,6 +25,8 @@ const forkUrl =
     ? "https://rpc.ftm.tools/"
     : network === "bsc"
     ? "https://bsc-dataseed.binance.org/"
+    : network === "polygon"
+    ? "https://polygon-rpc.com"
     : mainnetUrl;
 
 //
@@ -101,12 +103,9 @@ module.exports = {
         mnemonic: mnemonic(),
       },
     },
-    matic: {
-      url: "https://rpc-mainnet.maticvigil.com/",
-      gasPrice: 1000000000,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
+    polygon: {
+      url: "https://polygon-rpc.com",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : { mnemonic: mnemonic() },
     },
   },
   etherscan: {

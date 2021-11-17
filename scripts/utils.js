@@ -114,16 +114,15 @@ const deployProxy = async (name, contractName, args = [], overrides = {}) => {
   await updateDeployments(name, contractName, deployed.address);
 
   // Call initialize function of the implementation contract
-  // if it's not already called and renounce ownership.
+  // if it's not already called.
   // This is a precaution measure to make sure a malicious actor won't take control
   // of the implementation contract.
   const implAddr = await upgrades.erc1967.getImplementationAddress(deployed.address);
   const implContract = await ethers.getContractAt(contractName, implAddr);
   const implOwner = await implContract.owner();
-  const signer = await ethers.getSigner();
-  if (signer === implOwner) {
+  if (implOwner === "0x0000000000000000000000000000000000000000") {
     await implContract.initialize(...contractArgs);
-    await implContract.renounceOwnership();
+    console.log(`Implementation contract ${contractName}: initialized`);
   }
 
   if (!encoded || encoded.length <= 2) return deployed;

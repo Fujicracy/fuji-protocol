@@ -32,7 +32,7 @@ contract ProviderAave is IProvider {
     return 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
   }
 
-  function _getUnwrapper() internal pure returns(address) {
+  function _getUnwrapper() internal pure returns (address) {
     return 0x9e2B7c84EbC915F848bA69ba44Cf75044cF10951;
   }
 
@@ -136,7 +136,7 @@ contract ProviderAave is IProvider {
     aave.borrow(_tokenAddr, _amount, 2, 0, address(this));
 
     // convert WETH to ETH
-    if (isEth)  {
+    if (isEth) {
       address unwrapper = _getUnwrapper();
       IERC20(_tokenAddr).univTransfer(payable(unwrapper), _amount);
       IUnwrapper(unwrapper).withdraw(_amount);
@@ -157,7 +157,7 @@ contract ProviderAave is IProvider {
     aave.withdraw(_tokenAddr, _amount, address(this));
 
     // convert WETH to ETH
-    if (isEth)  {
+    if (isEth) {
       address unwrapper = _getUnwrapper();
       IERC20(_tokenAddr).univTransfer(payable(unwrapper), _amount);
       IUnwrapper(unwrapper).withdraw(_amount);

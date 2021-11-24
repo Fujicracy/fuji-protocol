@@ -10,7 +10,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
  */
 
 abstract contract ClaimableUpgradeable is Initializable, ContextUpgradeable {
-
   address private _owner;
 
   address public pendingOwner;
@@ -27,8 +26,8 @@ abstract contract ClaimableUpgradeable is Initializable, ContextUpgradeable {
   event NewPendingOwner(address indexed owner);
 
   /**
-  * @dev Initializes the contract setting the deployer as the initial owner.
-  */
+   * @dev Initializes the contract setting the deployer as the initial owner.
+   */
   function __Climable_init() internal initializer {
     __Context_init_unchained();
     __Climable_init_unchained();
@@ -41,23 +40,23 @@ abstract contract ClaimableUpgradeable is Initializable, ContextUpgradeable {
   }
 
   /**
-  * @dev Returns the address of the current owner.
-  */
+   * @dev Returns the address of the current owner.
+   */
   function owner() public view virtual returns (address) {
     return _owner;
   }
 
   /**
-  * @dev Throws if called by any account other than the owner.
-  */
+   * @dev Throws if called by any account other than the owner.
+   */
   modifier onlyOwner() {
     require(_msgSender() == owner(), "Ownable: caller is not the owner");
     _;
   }
 
   /**
-  * @dev Throws if called by any account other than the pendingOwner.
-  */
+   * @dev Throws if called by any account other than the pendingOwner.
+   */
   modifier onlyPendingOwner() {
     require(_msgSender() == pendingOwner);
     _;
@@ -83,15 +82,12 @@ abstract contract ClaimableUpgradeable is Initializable, ContextUpgradeable {
    * NOTE:`newOwner` requires to claim ownership in order to be able to call
    * {onlyOwner} modified functions.
    */
-   function transferOwnership(address newOwner) public virtual onlyOwner {
-     require(
-       newOwner != address(0),
-       'Cannot pass zero address!'
-     );
-     require(pendingOwner == address(0), "There is a pending owner!");
-     pendingOwner = newOwner;
-     emit NewPendingOwner(newOwner);
-   }
+  function transferOwnership(address newOwner) public virtual onlyOwner {
+    require(newOwner != address(0), "Cannot pass zero address!");
+    require(pendingOwner == address(0), "There is a pending owner!");
+    pendingOwner = newOwner;
+    emit NewPendingOwner(newOwner);
+  }
 
   /**
    * @dev Cancels the transfer of ownership of the contract.

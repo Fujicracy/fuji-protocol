@@ -26,7 +26,14 @@ import "../../libraries/Errors.sol";
  * the specific logic of all active flash loan providers used by Fuji protocol.
  */
 
-contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, ICallee, Claimable {
+contract Flasher is
+  IFlasher,
+  DyDxFlashloanBase,
+  IFlashLoanReceiver,
+  ICFlashloanReceiver,
+  ICallee,
+  Claimable
+{
   using LibUniversalERC20 for IERC20;
 
   IFujiAdmin private _fujiAdmin;
@@ -45,8 +52,8 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
   receive() external payable {}
 
   /**
-  * @dev Throws if caller is not 'owner'.
-  */
+   * @dev Throws if caller is not 'owner'.
+   */
   modifier isAuthorized() {
     require(
       msg.sender == _fujiAdmin.getController() ||
@@ -72,7 +79,11 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
    * @param info: struct information for flashLoan
    * @param _flashnum: integer identifier of flashloan provider
    */
-  function initiateFlashloan(FlashLoan.Info calldata info, uint8 _flashnum) external isAuthorized override {
+  function initiateFlashloan(FlashLoan.Info calldata info, uint8 _flashnum)
+    external
+    override
+    isAuthorized
+  {
     if (_flashnum == 0) {
       _initiateAaveFlashLoan(info);
     } else if (_flashnum == 1) {
@@ -221,7 +232,12 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
     bytes memory params = abi.encode(info);
 
     // Initialize Instance of IronBank LendingContract
-    IERC3156FlashLender(_cyFlashloanLender).flashLoan(ICFlashloanReceiver(address(this)), token, info.amount, params);
+    IERC3156FlashLender(_cyFlashloanLender).flashLoan(
+      ICFlashloanReceiver(address(this)),
+      token,
+      info.amount,
+      params
+    );
   }
 
   /**

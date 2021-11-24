@@ -114,6 +114,7 @@ contract VaultBaseUpgradeable is VaultControlUpgradeable {
     /// @custom:oz-upgrades-unsafe-allow delegatecall
     (bool success, bytes memory returndata) = _target.delegatecall(_data);
 
-    return AddressUpgradeable.verifyCallResult(success, returndata, "delegate call to provider failed");
+    return
+      AddressUpgradeable.verifyCallResult(success, returndata, "delegate call to provider failed");
   }
 }

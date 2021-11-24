@@ -21,7 +21,6 @@ import "../libraries/LibUniversalERC20MATIC.sol";
  * the specific logic of all active flash loan providers used by Fuji protocol.
  */
 
-
 contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver {
   using LibUniversalERC20MATIC for IERC20;
 
@@ -36,8 +35,8 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver {
   receive() external payable {}
 
   /**
-  * @dev Throws if caller is not 'owner'.
-  */
+   * @dev Throws if caller is not 'owner'.
+   */
   modifier isAuthorized() {
     require(
       msg.sender == _fujiAdmin.getController() ||
@@ -63,7 +62,11 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver {
    * @param info: struct information for flashLoan
    * @param _flashnum: integer identifier of flashloan provider
    */
-  function initiateFlashloan(FlashLoan.Info calldata info, uint8 _flashnum) external isAuthorized override {
+  function initiateFlashloan(FlashLoan.Info calldata info, uint8 _flashnum)
+    external
+    override
+    isAuthorized
+  {
     if (_flashnum == 0) {
       _initiateGeistFlashLoan(info);
     } else {
@@ -127,7 +130,12 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver {
     _executeAction(info, amounts[0], premiums[0], _value);
 
     //Approve geistLP to spend to repay flashloan
-    _approveBeforeRepay(info.asset == _MATIC, assets[0], amounts[0] + premiums[0], _aaveLendingPool);
+    _approveBeforeRepay(
+      info.asset == _MATIC,
+      assets[0],
+      amounts[0] + premiums[0],
+      _aaveLendingPool
+    );
 
     return true;
   }

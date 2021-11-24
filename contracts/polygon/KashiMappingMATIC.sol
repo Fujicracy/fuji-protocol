@@ -19,7 +19,11 @@ contract KashiMappingMATIC is IFujiKashiMapping, Claimable {
   /**
    * @dev Adds a two address Mapping
    */
-  function setMapping(address _collateral, address _borrow, address _pair) public onlyOwner {
+  function setMapping(
+    address _collateral,
+    address _borrow,
+    address _pair
+  ) public onlyOwner {
     addressMapping[_collateral][_borrow] = _pair;
     emit MappingChanged(_collateral, _borrow, _pair);
   }

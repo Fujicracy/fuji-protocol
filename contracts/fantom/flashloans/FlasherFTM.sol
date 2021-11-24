@@ -24,7 +24,6 @@ import "../libraries/LibUniversalERC20FTM.sol";
  * the specific logic of all active flash loan providers used by Fuji protocol.
  */
 
-
 contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver, ICFlashloanReceiver {
   using LibUniversalERC20FTM for IERC20;
 
@@ -41,8 +40,8 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver, ICFlashloanRecei
   receive() external payable {}
 
   /**
-  * @dev Throws if caller is not 'owner'.
-  */
+   * @dev Throws if caller is not 'owner'.
+   */
   modifier isAuthorized() {
     require(
       msg.sender == _fujiAdmin.getController() ||
@@ -68,7 +67,11 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver, ICFlashloanRecei
    * @param info: struct information for flashLoan
    * @param _flashnum: integer identifier of flashloan provider
    */
-  function initiateFlashloan(FlashLoan.Info calldata info, uint8 _flashnum) external isAuthorized override {
+  function initiateFlashloan(FlashLoan.Info calldata info, uint8 _flashnum)
+    external
+    override
+    isAuthorized
+  {
     if (_flashnum == 0) {
       _initiateGeistFlashLoan(info);
     } else if (_flashnum == 2) {
@@ -116,7 +119,10 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver, ICFlashloanRecei
     address initiator,
     bytes calldata params
   ) external override returns (bool) {
-    require(msg.sender == _geistLendingPool && initiator == address(this), Errors.VL_NOT_AUTHORIZED);
+    require(
+      msg.sender == _geistLendingPool && initiator == address(this),
+      Errors.VL_NOT_AUTHORIZED
+    );
 
     FlashLoan.Info memory info = abi.decode(params, (FlashLoan.Info));
 
@@ -156,6 +162,7 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver, ICFlashloanRecei
     // Initialize Instance of Cream crLendingContract
     ICTokenFlashloan(crToken).flashLoan(address(this), address(this), info.amount, params);
   }
+
   /**
    * @dev Executes CreamFinance Flashloan, this operation is required
    * and called by CreamFinanceflashloan when sending loaned amount

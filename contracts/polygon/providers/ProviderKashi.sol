@@ -11,54 +11,54 @@ import "../../interfaces/IWETH.sol";
 import "../../interfaces/aave/IAaveDataProvider.sol";
 import "../../interfaces/aave/IAaveLendingPool.sol";
 import "../../interfaces/aave/IAaveLendingPoolProvider.sol";
-import "../libraries/LibUniversalERC20FTM.sol";
+import "../libraries/LibUniversalERC20MATIC.sol";
 
-contract ProviderGeist is IProvider {
-  using LibUniversalERC20FTM for IERC20;
+contract ProviderKashi is IProvider {
+  using LibUniversalERC20MATIC for IERC20;
 
   function _getAaveProvider() internal pure returns (IAaveLendingPoolProvider) {
-    return IAaveLendingPoolProvider(0x6c793c628Fe2b480c5e6FB7957dDa4b9291F9c9b);
+    return IAaveLendingPoolProvider(0xd05e3E715d945B59290df0ae8eF85c1BdB684744);
   }
 
   function _getAaveDataProvider() internal pure returns (IAaveDataProvider) {
-    return IAaveDataProvider(0xf3B0611e2E4D2cd6aB4bb3e01aDe211c3f42A8C3);
+    return IAaveDataProvider(0x7551b5D2763519d4e37e8B81929D336De671d46d);
   }
 
-  function _getWftmAddr() internal pure returns (address) {
-    return 0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83;
+  function _getWmaticAddr() internal pure returns (address) {
+    return 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
   }
 
-  function _getFtmAddr() internal pure returns (address) {
+  function _getMaticAddr() internal pure returns (address) {
     return 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
   }
 
   function _getUnwrapper() internal pure returns (address) {
-    return 0xee94A39D185329d8c46dEA726E01F91641E57346;
+    return 0x03E074BB834F7C4940dFdE8b29e63584b3dE3a87;
   }
 
   /**
-   * @dev Return the borrowing rate of '_asset'.
+   * @dev Return the borrowing rate of ETH/ERC20_Token.
    * @param _asset to query the borrowing rate.
    */
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
     IAaveDataProvider aaveData = _getAaveDataProvider();
 
     (, , , , uint256 variableBorrowRate, , , , , ) = IAaveDataProvider(aaveData).getReserveData(
-      _asset == _getFtmAddr() ? _getWftmAddr() : _asset
+      _asset == _getMaticAddr() ? _getWmaticAddr() : _asset
     );
 
     return variableBorrowRate;
   }
 
   /**
-   * @dev Return borrow balance of '_asset'.
+   * @dev Return borrow balance of ETH/ERC20_Token.
    * @param _asset token address to query the balance.
    */
   function getBorrowBalance(address _asset) external view override returns (uint256) {
     IAaveDataProvider aaveData = _getAaveDataProvider();
 
-    bool isFtm = _asset == _getFtmAddr();
-    address _tokenAddr = isFtm ? _getWftmAddr() : _asset;
+    bool isEth = _asset == _getMaticAddr();
+    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
 
     (, , uint256 variableDebt, , , , , , ) = aaveData.getUserReserveData(_tokenAddr, msg.sender);
 
@@ -66,7 +66,7 @@ contract ProviderGeist is IProvider {
   }
 
   /**
-   * @dev Return borrow balance of '_asset'.
+   * @dev Return borrow balance of ETH/ERC20_Token.
    * @param _asset token address to query the balance.
    * @param _who address of the account.
    */
@@ -78,8 +78,8 @@ contract ProviderGeist is IProvider {
   {
     IAaveDataProvider aaveData = _getAaveDataProvider();
 
-    bool isFtm = _asset == _getFtmAddr();
-    address _tokenAddr = isFtm ? _getWftmAddr() : _asset;
+    bool isEth = _asset == _getMaticAddr();
+    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
 
     (, , uint256 variableDebt, , , , , , ) = aaveData.getUserReserveData(_tokenAddr, _who);
 
@@ -87,14 +87,14 @@ contract ProviderGeist is IProvider {
   }
 
   /**
-   * @dev Return deposit balance of '_asset'.
+   * @dev Return deposit balance of ETH/ERC20_Token.
    * @param _asset token address to query the balance.
    */
   function getDepositBalance(address _asset) external view override returns (uint256) {
     IAaveDataProvider aaveData = _getAaveDataProvider();
 
-    bool isFtm = _asset == _getFtmAddr();
-    address _tokenAddr = isFtm ? _getWftmAddr() : _asset;
+    bool isEth = _asset == _getMaticAddr();
+    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
 
     (uint256 atokenBal, , , , , , , , ) = aaveData.getUserReserveData(_tokenAddr, msg.sender);
 
@@ -102,18 +102,18 @@ contract ProviderGeist is IProvider {
   }
 
   /**
-   * @dev Deposit '_asset'.
-   * @param _asset token address to deposit.(For FTM: 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF)
+   * @dev Deposit ETH/ERC20_Token.
+   * @param _asset token address to deposit.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
    * @param _amount token amount to deposit.
    */
   function deposit(address _asset, uint256 _amount) external payable override {
     IAaveLendingPool aave = IAaveLendingPool(_getAaveProvider().getLendingPool());
 
-    bool isFtm = _asset == _getFtmAddr();
-    address _tokenAddr = isFtm ? _getWftmAddr() : _asset;
+    bool isEth = _asset == _getMaticAddr();
+    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
 
-    // convert FTM to WFTM
-    if (isFtm) IWETH(_tokenAddr).deposit{ value: _amount }();
+    // convert ETH to WETH
+    if (isEth) IWETH(_tokenAddr).deposit{ value: _amount }();
 
     IERC20(_tokenAddr).univApprove(address(aave), _amount);
 
@@ -123,20 +123,20 @@ contract ProviderGeist is IProvider {
   }
 
   /**
-   * @dev Borrow '_asset'.
-   * @param _asset token address to borrow.(For FTM: 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF)
+   * @dev Borrow ETH/ERC20_Token.
+   * @param _asset token address to borrow.(For ETH: 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE)
    * @param _amount token amount to borrow.
    */
   function borrow(address _asset, uint256 _amount) external payable override {
     IAaveLendingPool aave = IAaveLendingPool(_getAaveProvider().getLendingPool());
 
-    bool isFtm = _asset == _getFtmAddr();
-    address _tokenAddr = isFtm ? _getWftmAddr() : _asset;
+    bool isEth = _asset == _getMaticAddr();
+    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
 
     aave.borrow(_tokenAddr, _amount, 2, 0, address(this));
 
-    // convert WFTM to FTM
-    if (isFtm) {
+    // convert WETH to ETH
+    if (isEth) {
       address unwrapper = _getUnwrapper();
       IERC20(_tokenAddr).univTransfer(payable(unwrapper), _amount);
       IUnwrapper(unwrapper).withdraw(_amount);
@@ -144,20 +144,20 @@ contract ProviderGeist is IProvider {
   }
 
   /**
-   * @dev Withdraw '_asset'.
+   * @dev Withdraw ETH/ERC20_Token.
    * @param _asset token address to withdraw.
    * @param _amount token amount to withdraw.
    */
   function withdraw(address _asset, uint256 _amount) external payable override {
     IAaveLendingPool aave = IAaveLendingPool(_getAaveProvider().getLendingPool());
 
-    bool isFtm = _asset == _getFtmAddr();
-    address _tokenAddr = isFtm ? _getWftmAddr() : _asset;
+    bool isEth = _asset == _getMaticAddr();
+    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
 
     aave.withdraw(_tokenAddr, _amount, address(this));
 
-    // convert WFTM to FTM
-    if (isFtm) {
+    // convert WETH to ETH
+    if (isEth) {
       address unwrapper = _getUnwrapper();
       IERC20(_tokenAddr).univTransfer(payable(unwrapper), _amount);
       IUnwrapper(unwrapper).withdraw(_amount);
@@ -165,7 +165,7 @@ contract ProviderGeist is IProvider {
   }
 
   /**
-   * @dev Payback borrowed '_asset'.
+   * @dev Payback borrowed ETH/ERC20_Token.
    * @param _asset token address to payback.
    * @param _amount token amount to payback.
    */
@@ -173,11 +173,11 @@ contract ProviderGeist is IProvider {
   function payback(address _asset, uint256 _amount) external payable override {
     IAaveLendingPool aave = IAaveLendingPool(_getAaveProvider().getLendingPool());
 
-    bool isFtm = _asset == _getFtmAddr();
-    address _tokenAddr = isFtm ? _getWftmAddr() : _asset;
+    bool isEth = _asset == _getMaticAddr();
+    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
 
-    // convert FTM to WFTM
-    if (isFtm) IWETH(_tokenAddr).deposit{ value: _amount }();
+    // convert ETH to WETH
+    if (isEth) IWETH(_tokenAddr).deposit{ value: _amount }();
 
     IERC20(_tokenAddr).univApprove(address(aave), _amount);
 

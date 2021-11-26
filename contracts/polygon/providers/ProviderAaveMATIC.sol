@@ -7,20 +7,21 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../../interfaces/IProvider.sol";
 import "../../interfaces/IUnwrapper.sol";
 import "../../interfaces/IVault.sol";
-import "../../interfaces/IVaultControl.sol";
 import "../../interfaces/IWETH.sol";
 import "../../interfaces/aave/IAaveDataProvider.sol";
 import "../../interfaces/aave/IAaveLendingPool.sol";
-import "../../interfaces/IFujiKashiMapping.sol";
-import "../../interfaces/kashi/IKashiPair.sol";
-import "../../interfaces/kashi/IBentoBox.sol";
+import "../../interfaces/aave/IAaveLendingPoolProvider.sol";
 import "../libraries/LibUniversalERC20MATIC.sol";
 
 contract ProviderAaveMATIC is IProvider {
   using LibUniversalERC20MATIC for IERC20;
 
-  function _getKashiMapping() internal pure returns (IFujiKashiMapping) {
-    return IFujiKashiMapping(0xb41fD44a65BB5e974726cFe061B6d20f224b2671);
+  function _getAaveProvider() internal pure returns (IAaveLendingPoolProvider) {
+    return IAaveLendingPoolProvider(0xd05e3E715d945B59290df0ae8eF85c1BdB684744);
+  }
+
+  function _getAaveDataProvider() internal pure returns (IAaveDataProvider) {
+    return IAaveDataProvider(0x7551b5D2763519d4e37e8B81929D336De671d46d);
   }
 
   function _getWmaticAddr() internal pure returns (address) {
@@ -35,55 +36,54 @@ contract ProviderAaveMATIC is IProvider {
     return 0x03E074BB834F7C4940dFdE8b29e63584b3dE3a87;
   }
 
-  function _getBentoBox() internal pure returns (IBentoBox) {
-    return IBentoBox(0x0319000133d3AdA02600f0875d2cf03D442C3367);
-  }
-
-  function _getKashiPair(address _vault) internal view returns (IKashiPair) {
-    IVaultControl.VaultAssets memory vAssets = IVaultControl(_vault).vAssets();
-    IFujiKashiMapping kashiMapper = _getKashiMapping();
-    return IKashiPair(kashiMapper.addressMapping(vAssets.collateralAsset, vAssets.borrowAsset));
-  }
-
   /**
    * @dev Return the borrowing rate of ETH/ERC20_Token.
    * @param _asset to query the borrowing rate.
    */
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
-    // IFujiKashiMapping kashiMapper = _getKashiMapping();
-    // (, , , , uint256 variableBorrowRate, , , , , ) = IAaveDataProvider(aaveData).getReserveData(
-    //   _asset == _getMaticAddr() ? _getWmaticAddr() : _asset
-    // );
-    // return variableBorrowRate;
+    IAaveDataProvider aaveData = _getAaveDataProvider();
+
+    (, , , , uint256 variableBorrowRate, , , , , ) = IAaveDataProvider(aaveData).getReserveData(
+      _asset == _getMaticAddr() ? _getWmaticAddr() : _asset
+    );
+
+    return variableBorrowRate;
   }
 
   /**
    * @dev Return borrow balance of ETH/ERC20_Token.
-   * param _asset token address to query the balance.
+   * @param _asset token address to query the balance.
    */
-  function getBorrowBalance(address) external view override returns (uint256) {
-    IKashiPair kashiPair = _getKashiPair(msg.sender);
+  function getBorrowBalance(address _asset) external view override returns (uint256) {
+    IAaveDataProvider aaveData = _getAaveDataProvider();
 
-    uint256 part = kashiPair.userBorrowPart(msg.sender);
-    (uint128 elastic, uint128 base) = kashiPair.totalBorrow();
-    uint256 amount = (part * elastic) / base;
+    bool isEth = _asset == _getMaticAddr();
+    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
 
-    return amount;
+    (, , uint256 variableDebt, , , , , , ) = aaveData.getUserReserveData(_tokenAddr, msg.sender);
+
+    return variableDebt;
   }
 
   /**
    * @dev Return borrow balance of ETH/ERC20_Token.
-   * param _asset token address to query the balance.
+   * @param _asset token address to query the balance.
    * @param _who address of the account.
    */
-  function getBorrowBalanceOf(address, address _who) external view override returns (uint256) {
-    IKashiPair kashiPair = _getKashiPair(_who);
+  function getBorrowBalanceOf(address _asset, address _who)
+    external
+    view
+    override
+    returns (uint256)
+  {
+    IAaveDataProvider aaveData = _getAaveDataProvider();
 
-    uint256 part = kashiPair.userBorrowPart(_who);
-    (uint128 elastic, uint128 base) = kashiPair.totalBorrow();
-    uint256 amount = (part * elastic) / base;
+    bool isEth = _asset == _getMaticAddr();
+    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
 
-    return amount;
+    (, , uint256 variableDebt, , , , , , ) = aaveData.getUserReserveData(_tokenAddr, _who);
+
+    return variableDebt;
   }
 
   /**
@@ -91,14 +91,14 @@ contract ProviderAaveMATIC is IProvider {
    * @param _asset token address to query the balance.
    */
   function getDepositBalance(address _asset) external view override returns (uint256) {
+    IAaveDataProvider aaveData = _getAaveDataProvider();
+
     bool isEth = _asset == _getMaticAddr();
     address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
 
-    IKashiPair kashiPair = _getKashiPair(msg.sender);
-    IBentoBox bentoBox = _getBentoBox();
+    (uint256 atokenBal, , , , , , , , ) = aaveData.getUserReserveData(_tokenAddr, msg.sender);
 
-    uint256 share = kashiPair.userCollateralShare(msg.sender);
-    return bentoBox.toAmount(_tokenAddr, share, false);
+    return atokenBal;
   }
 
   /**
@@ -107,8 +107,7 @@ contract ProviderAaveMATIC is IProvider {
    * @param _amount token amount to deposit.
    */
   function deposit(address _asset, uint256 _amount) external payable override {
-    IKashiPair kashiPair = _getKashiPair(address(this));
-    IBentoBox bentoBox = _getBentoBox();
+    IAaveLendingPool aave = IAaveLendingPool(_getAaveProvider().getLendingPool());
 
     bool isEth = _asset == _getMaticAddr();
     address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
@@ -116,9 +115,11 @@ contract ProviderAaveMATIC is IProvider {
     // convert ETH to WETH
     if (isEth) IWETH(_tokenAddr).deposit{ value: _amount }();
 
-    IERC20(_tokenAddr).univApprove(address(bentoBox), _amount);
-    (, uint256 share) = bentoBox.deposit(_tokenAddr, address(this), address(kashiPair), _amount, 0);
-    kashiPair.addCollateral(address(this), true, share);
+    IERC20(_tokenAddr).univApprove(address(aave), _amount);
+
+    aave.deposit(_tokenAddr, _amount, address(this), 0);
+
+    aave.setUserUseReserveAsCollateral(_tokenAddr, true);
   }
 
   /**
@@ -127,14 +128,12 @@ contract ProviderAaveMATIC is IProvider {
    * @param _amount token amount to borrow.
    */
   function borrow(address _asset, uint256 _amount) external payable override {
-    IKashiPair kashiPair = _getKashiPair(address(this));
-    IBentoBox bentoBox = _getBentoBox();
+    IAaveLendingPool aave = IAaveLendingPool(_getAaveProvider().getLendingPool());
 
     bool isEth = _asset == _getMaticAddr();
     address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
 
-    (, uint256 share) = kashiPair.borrow(address(this), _amount);
-    (_amount, ) = bentoBox.withdraw(_tokenAddr, address(this), address(this), 0, share);
+    aave.borrow(_tokenAddr, _amount, 2, 0, address(this));
 
     // convert WETH to ETH
     if (isEth) {
@@ -150,15 +149,12 @@ contract ProviderAaveMATIC is IProvider {
    * @param _amount token amount to withdraw.
    */
   function withdraw(address _asset, uint256 _amount) external payable override {
-    IKashiPair kashiPair = _getKashiPair(address(this));
-    IBentoBox bentoBox = _getBentoBox();
+    IAaveLendingPool aave = IAaveLendingPool(_getAaveProvider().getLendingPool());
 
     bool isEth = _asset == _getMaticAddr();
     address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
 
-    uint256 share = bentoBox.toShare(_tokenAddr, _amount, false);
-    kashiPair.removeCollateral(address(this), share);
-    (_amount, ) = bentoBox.withdraw(_tokenAddr, address(this), address(this), 0, share);
+    aave.withdraw(_tokenAddr, _amount, address(this));
 
     // convert WETH to ETH
     if (isEth) {
@@ -175,8 +171,7 @@ contract ProviderAaveMATIC is IProvider {
    */
 
   function payback(address _asset, uint256 _amount) external payable override {
-    IKashiPair kashiPair = _getKashiPair(address(this));
-    IBentoBox bentoBox = _getBentoBox();
+    IAaveLendingPool aave = IAaveLendingPool(_getAaveProvider().getLendingPool());
 
     bool isEth = _asset == _getMaticAddr();
     address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
@@ -184,12 +179,8 @@ contract ProviderAaveMATIC is IProvider {
     // convert ETH to WETH
     if (isEth) IWETH(_tokenAddr).deposit{ value: _amount }();
 
-    IERC20(_tokenAddr).univApprove(address(bentoBox), _amount);
-    (_amount, ) = bentoBox.deposit(_tokenAddr, address(this), address(kashiPair), _amount, 0);
+    IERC20(_tokenAddr).univApprove(address(aave), _amount);
 
-    (uint128 elastic, uint128 base) = kashiPair.totalBorrow();
-    uint256 part = (_amount * base) / elastic;
-
-    kashiPair.repay(address(this), true, part);
+    aave.repay(_tokenAddr, _amount, 2, address(this));
   }
 }

@@ -229,6 +229,44 @@ function testBorrow2(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
+function testBorrow2k(vaults, amountToDeposit, amountToBorrow) {
+  for (let i = 0; i < vaults.length; i += 1) {
+    const { name, collateral, debt } = vaults[i];
+    it(`borrow ${amountToBorrow} ERC20 -> ${debt.nameUp} after depositing ${amountToDeposit} ERC20 -> ${collateral.nameUp} as collateral`, async function () {
+      const depositAmount = parseUnits(amountToDeposit, collateral.decimals);
+      const negdepositAmount = parseUnits(-amountToDeposit, collateral.decimals);
+      const borrowAmount = parseUnits(amountToBorrow, debt.decimals);
+      const { collateralID, borrowID } = await this.f[name].vAssets();
+
+      await this.f[collateral.name]
+        .connect(this.user1)
+        .approve(this.f[name].address, depositAmount);
+      await checkTokenChange(
+        this.f[name].connect(this.user1).deposit(depositAmount),
+        this.f[collateral.name],
+        this.user1.address,
+        negdepositAmount
+      );
+      await expect(await this.f.f1155.balanceOf(this.user1.address, collateralID)).to.be.equal(
+        depositAmount
+      );
+
+      const balanceBefore = await this.f[debt.name].balanceOf(this.user1.address);
+
+      await this.f[name].connect(this.user1).borrow(borrowAmount);
+
+      const balanceAfter = await this.f[debt.name].balanceOf(this.user1.address);
+
+      expect(balanceAfter.sub(balanceBefore)).to.closeTo(borrowAmount, 1);
+
+      await expect(await this.f.f1155.balanceOf(this.user1.address, borrowID)).to.be.closeTo(
+        borrowAmount,
+        1
+      );
+    });
+  }
+}
+
 function testBorrow3(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
@@ -410,6 +448,7 @@ module.exports = {
   testDeposit2a,
   testBorrow1,
   testBorrow2,
+  testBorrow2k,
   testBorrow3,
   testPaybackAndWithdraw1,
   testPaybackAndWithdraw2,

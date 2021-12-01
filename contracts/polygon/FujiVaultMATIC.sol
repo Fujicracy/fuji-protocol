@@ -683,6 +683,13 @@ contract FujiVaultMATIC is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVa
       Errors.VL_INVALID_BORROW_AMOUNT
     );
 
+    uint256 balanceBefore = IERC20Upgradeable(vAssets.borrowAsset).univBalanceOf(address(this));
+    // Delegate Call Borrow to current provider
+    _borrow(_borrowAmount, address(activeProvider));
+
+    _borrowAmount = IERC20Upgradeable(vAssets.borrowAsset).univBalanceOf(address(this)) - balanceBefore;
+    totalBorrow = _borrowAmount + debtPrincipal;
+
     // Update timestamp for fee calculation
 
     uint256 userFee = (debtPrincipal *
@@ -699,9 +706,6 @@ contract FujiVaultMATIC is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVa
 
     // Debt Management
     IFujiERC1155(fujiERC1155).mint(msg.sender, vAssets.borrowID, _borrowAmount);
-
-    // Delegate Call Borrow to current provider
-    _borrow(_borrowAmount, address(activeProvider));
 
     // Transer Assets to User
     IERC20Upgradeable(vAssets.borrowAsset).univTransfer(payable(msg.sender), _borrowAmount);

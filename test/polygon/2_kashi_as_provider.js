@@ -12,6 +12,7 @@ const {
   testDeposit2,
   testBorrow1,
   testBorrow2,
+  testBorrow2k,
   testBorrow3,
   testPaybackAndWithdraw1,
   testPaybackAndWithdraw2,
@@ -183,7 +184,7 @@ describe("Fantom Fuji Instance", function () {
       //   DEPOSIT_WBTC
       // );
 
-      testBorrow2([vaultwethdai], DEPOSIT_WETH, BORROW_STABLE);
+      testBorrow2k([vaultwethdai], DEPOSIT_WETH, BORROW_STABLE);
       // testBorrow2([vaultwethdai, vaultwethusdc], DEPOSIT_WETH, BORROW_STABLE);
       // testBorrow2([vaultwbtcdai, vaultwbtcusdc], DEPOSIT_WBTC, BORROW_STABLE);
       // testBorrow2([vaultdaiwmatic, vaultusdcwmatic], DEPOSIT_STABLE, BORROW_MATIC);

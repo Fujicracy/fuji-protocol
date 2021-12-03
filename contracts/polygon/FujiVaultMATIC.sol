@@ -650,11 +650,14 @@ contract FujiVaultMATIC is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVa
       Errors.VL_INVALID_WITHDRAW_AMOUNT
     );
 
-    // Collateral Management before Withdraw Operation
-    IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.collateralID, amountToWithdraw);
-
+    uint256 balanceBefore = IERC20Upgradeable(vAssets.collateralAsset).univBalanceOf(address(this));
     // Delegate Call Withdraw to current provider
     _withdraw(amountToWithdraw, address(activeProvider));
+
+    amountToWithdraw = IERC20Upgradeable(vAssets.collateralAsset).univBalanceOf(address(this)) - balanceBefore;
+
+    // Collateral Management before Withdraw Operation
+    IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.collateralID, amountToWithdraw);
 
     // Transer Assets to User
     IERC20Upgradeable(vAssets.collateralAsset).univTransfer(payable(msg.sender), amountToWithdraw);

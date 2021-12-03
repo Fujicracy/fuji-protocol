@@ -37,6 +37,11 @@ interface IBentoBox {
     bool roundUp
   ) external view returns (uint256 share);
 
+  function balanceOf(
+    address token,
+    address user
+  ) external view returns (uint256 amount);
+
   function transfer(
     address token,
     address from,

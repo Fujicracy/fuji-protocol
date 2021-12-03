@@ -16,6 +16,7 @@ const {
   testBorrow3,
   testPaybackAndWithdraw1,
   testPaybackAndWithdraw2,
+  testPaybackAndWithdraw2k,
   testPaybackAndWithdraw3,
   testDeposit1b,
 } = require("../FujiVault");
@@ -191,6 +192,7 @@ describe("Fantom Fuji Instance", function () {
       // testBorrow2([vaultdaiweth, vaultusdcweth], DEPOSIT_STABLE, BORROW_WETH);
       // testBorrow2([vaultdaiwbtc, vaultusdcwbtc], DEPOSIT_STABLE, BORROW_WBTC);
 
+      testPaybackAndWithdraw2k([vaultwethdai], DEPOSIT_WETH, BORROW_STABLE);
       // testPaybackAndWithdraw2([vaultdaiweth, vaultusdcweth], DEPOSIT_STABLE, BORROW_WETH);
       // testPaybackAndWithdraw2([vaultdaiwbtc, vaultusdcwbtc], DEPOSIT_STABLE, BORROW_WBTC);
 

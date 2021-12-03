@@ -185,8 +185,10 @@ contract ProviderKashi is IProvider {
     if (isEth) IWETH(_tokenAddr).deposit{ value: _amount }();
 
     IERC20(_tokenAddr).univApprove(address(bentoBox), _amount);
-    (_amount, ) = bentoBox.deposit(_tokenAddr, address(this), address(kashiPair), _amount, 0);
+    (, uint256 share) = bentoBox.deposit(_tokenAddr, address(this), address(kashiPair), _amount, 0);
+    _amount = bentoBox.toAmount(_tokenAddr, share, false);
 
+    kashiPair.accrue();
     (uint128 elastic, uint128 base) = kashiPair.totalBorrow();
     uint256 part = (_amount * base) / elastic;
 

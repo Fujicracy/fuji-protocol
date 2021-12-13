@@ -84,6 +84,18 @@ contract Controller is Claimable {
       Errors.RF_INVALID_NEW_ACTIVEPROVIDER
     );
 
+    address[] memory providers = vault.getProviders();
+    // Check '_newProvider' is a valid provider
+    bool validProvider;
+    for (uint i = 0; i < providers.length && !validProvider; i++) {
+      if (_newProvider == providers[i]) {
+        validProvider = true;
+      }
+    }
+    if (!validProvider) {
+      revert(Errors.VL_INVALID_NEW_PROVIDER);
+    }
+
     IVaultControl.VaultAssets memory vAssets = IVaultControl(_vaultAddr).vAssets();
     vault.updateF1155Balances();
 

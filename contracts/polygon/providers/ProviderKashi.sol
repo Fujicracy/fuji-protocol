@@ -46,15 +46,13 @@ contract ProviderKashi is IProvider {
   }
 
   /**
-   * @dev Return the borrowing rate of ETH/ERC20_Token.
-   * @param _asset to query the borrowing rate.
+   * @dev Returns the current borrowing rate (APR) of '_vault's borrowing asset, in ray(1e27).
+   * @param _vault to query the borrowing rate.
    */
-  function getBorrowRateFor(address _asset) external view override returns (uint256) {
-    // IFujiKashiMapping kashiMapper = _getKashiMapping();
-    // (, , , , uint256 variableBorrowRate, , , , , ) = IAaveDataProvider(aaveData).getReserveData(
-    //   _asset == _getMaticAddr() ? _getWmaticAddr() : _asset
-    // );
-    // return variableBorrowRate;
+  function getBorrowRateFor(address _vault) external view override returns (uint256) {
+    IKashiPair kashiPair = _getKashiPair(_vault);
+    (uint256 interestPerSecond,,) = kashiPair.accrueInfo();
+    return interestPerSecond * 52 weeks * 10**9;
   }
 
   /**

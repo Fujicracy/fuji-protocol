@@ -69,7 +69,7 @@ const [BORROW_STABLE, BORROW_MATIC, BORROW_WETH, BORROW_WBTC] = [
   DEPOSIT_WBTC / 2,
 ];
 
-describe("Fantom Fuji Instance", function () {
+describe("Polygon Fuji Instance", function () {
   let evmSnapshot0;
   let evmSnapshot1;
   let evmSnapshot2;
@@ -137,7 +137,7 @@ describe("Fantom Fuji Instance", function () {
     evmRevert(evmSnapshot0);
   });
 
-  describe("Kashi! as Provider", function () {
+  describe("Kashi as Provider", function () {
     before(async function () {
       evmRevert(evmSnapshot1);
 
@@ -226,5 +226,15 @@ describe("Fantom Fuji Instance", function () {
     //   testRefinance3([vaultwbtcmatic], "kashi", "cream", DEPOSIT_WBTC, BORROW_MATIC, 0);
     //   testRefinance3([vaultwethmatic], "kashi", "cream", DEPOSIT_WETH, BORROW_MATIC, 0);
     // });
+
+    describe("View Function Tests.", function () {
+      it("Should get a valid borrowing rate", async function (){
+        const rate = await this.f['kashi'].getBorrowRateFor(this.f['vaultwethdai'].address);
+        // console.log('rate', rate);
+        await expect(rate).to.be.gt(0);
+      });
+
+    });
+
   });
 });

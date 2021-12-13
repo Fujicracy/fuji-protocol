@@ -108,7 +108,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
       _borrowAsset != address(0),
       Errors.VL_ZERO_ADDR);
 
-    __Ownable_init();
+    __Climable_init();
     __Pausable_init();
     __ReentrancyGuard_init();
 

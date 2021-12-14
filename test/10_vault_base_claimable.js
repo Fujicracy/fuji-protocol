@@ -31,7 +31,7 @@ describe("Core Fuji Instance", function () {
     evmRevert(this.evmSnapshot0);
   });
 
-  describe("Admin functions of Controller", function () {
+  describe("Admin functions of FujiVault", function () {
     describe("Testing ownership transfer", function () {
       it("Revert: User tricks to have ownership of the contract", async function () {
         await expect(

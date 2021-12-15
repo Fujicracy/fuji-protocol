@@ -46,18 +46,30 @@ contract ProviderKashi is IProvider {
   }
 
   /**
-   * @dev Returns the current borrowing rate (APR) of '_vault's borrowing asset, in ray(1e27).
+   * @dev Returns the current borrowing rate (APR) of '_vault's' borrowing asset, in ray(1e27).
+   * @dev First argument is not needed. 
+   * @dev Kashi provider required a different function signature for getBorrowRateFor() 
    * @param _vault to query the borrowing rate.
    */
-  function getBorrowRateFor(address _vault) external view override returns (uint256) {
+  function getBorrowRateFor(address, address _vault) external view returns (uint256) {
     IKashiPair kashiPair = _getKashiPair(_vault);
     (uint256 interestPerSecond,,) = kashiPair.accrueInfo();
     return interestPerSecond * 52 weeks * 10**9;
   }
 
   /**
-   * @dev Return borrow balance of ETH/ERC20_Token.
-   * param _asset token address to query the balance.
+   * @dev Not implemented see 'getBorrowRateFor(address, address _vault)'
+   * @param _asset Not implemented.
+   */
+  function getBorrowRateFor(address _asset) external pure override returns (uint256) {
+    _asset;
+    revert("Refer to Kashi Provider getBorrowRateFor(address, address)");
+  }
+
+  /**
+   * @dev Return borrow balance of 'borrowAsset' of caller vault address.
+   * @dev Caller must be a vault address. 
+   * @dev First address argument is not needed.
    */
   function getBorrowBalance(address) external view override returns (uint256) {
     IKashiPair kashiPair = _getKashiPair(msg.sender);
@@ -70,9 +82,9 @@ contract ProviderKashi is IProvider {
   }
 
   /**
-   * @dev Return borrow balance of ETH/ERC20_Token.
-   * param _asset token address to query the balance.
-   * @param _who address of the account.
+   * @dev Return borrow balance of 'borrowAsset' of any vault address.
+   * @dev First address argument is not needed.
+   * @param _who Must be a vault address.
    */
   function getBorrowBalanceOf(address, address _who) external view override returns (uint256) {
     IKashiPair kashiPair = _getKashiPair(_who);
@@ -85,18 +97,17 @@ contract ProviderKashi is IProvider {
   }
 
   /**
-   * @dev Return deposit balance of ETH/ERC20_Token.
-   * @param _asset token address to query the balance.
+   * @dev Return deposit balance of 'collateralAsset' of caller vault address.
+   * @dev Caller must be a vault address.
+   * @dev First address argument is not needed.
    */
-  function getDepositBalance(address _asset) external view override returns (uint256) {
-    bool isEth = _asset == _getMaticAddr();
-    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
-
+  function getDepositBalance(address) external view override returns (uint256) {
+    IVaultControl.VaultAssets memory vAssets = IVaultControl(msg.sender).vAssets();
     IKashiPair kashiPair = _getKashiPair(msg.sender);
     IBentoBox bentoBox = _getBentoBox();
 
     uint256 share = kashiPair.userCollateralShare(msg.sender);
-    return bentoBox.toAmount(_tokenAddr, share, false);
+    return bentoBox.toAmount(vAssets.collateralAsset, share, false);
   }
 
   /**

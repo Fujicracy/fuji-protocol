@@ -29,6 +29,17 @@ contract NFTBondLogic is ERC1155 {
     uint256 private POINT_PER_DEBTUNIT_PER_DAY = 1; //tbd
     uint256 private MULTIPLIER_RATE = 1; //tbd
 
+    modifier onlyVault() {
+        bool isVault;
+        for(uint i; i < validVaults.length; i++) {
+            if(isVault == false) {
+                isVault = msg.sender == validVaults[i] ? true : false;
+            }
+        }
+        require(isVault == true, 'only valid vault caller!');
+        _;
+    }
+
     constructor(string memory uri_) ERC1155(uri_) {
     }
 
@@ -36,14 +47,15 @@ contract NFTBondLogic is ERC1155 {
 
     /**
     * @notice Returns the balance of token Id.
-    * @dev If id == 0, refers to point score system, else is NFT balance. 
+    * @dev If id == 0, refers to point score system, else is calls ERC1155 NFT balance. 
     */
-    function balanceOf(address user, uint256 id) public pure override returns(uint256){
+    function balanceOf(address user, uint256 id) public view override returns(uint256){
         // To query points balance, id == 0
         if(id == 0 ) {
             return _pointsBalanceOf(user);
         } else {
-
+            // Otherwise check ERC1155
+            return super.balanceOf(user,id);
         }
     }
 
@@ -55,10 +67,20 @@ contract NFTBondLogic is ERC1155 {
     }
 
     /**
+    * @notice Compute user's rate of point accrual.
+    * @dev Unit should be points per second.
+    */
+    function computeRateOfAccrual() public pure returns(uint256) {
+        return 1;
+    }
+
+    /**
     * @notice Compute user's total debt in Fuji in all vaults of this chain.
     * @dev Must consider all fuji active vaults, and different decimals. 
     */
     function getUserDebt() public pure returns(uint256){
+        // 1.- Get debt from all 'validVaults'.
+        // 2.- Add and return value
         return 1;
     }
 
@@ -66,11 +88,19 @@ contract NFTBondLogic is ERC1155 {
     
     /**
     * @notice Compute user's total debt in Fuji in all vaults of this chain.
+    * @dev Called whenever a user performs a 'borrow()' or 'payback()' call on {FujiVault} contract
     * @dev Must consider all fuji active vaults, and different decimals. 
     */
-    function checkStateOfPoints() external {
-        // 1.- Check 'getUserDebt()'.
-        // 2.- Check 
+    function checkStateOfPoints(address user) external onlyVault {
+        // 1.- Call and store 'getUserDebt()'.
+        // 2.- Call and check if user exist in mapping 'userdata'.
+    }
+
+    /**
+    * @notice Claims bonus points given to user before 'gameLaunchTimestamp'.
+    */
+    function claimBonusPoints() public {
+
     }
 
     function setMerkleRoot(bytes32 _merkleRoot) external {
@@ -80,12 +110,22 @@ contract NFTBondLogic is ERC1155 {
 
     // Internal Functions
 
+    /**
+    * @dev Returns de balance of accrued points of a user.
+    */
     function _pointsBalanceOf(address user) internal pure returns(uint256){
         user;
         // 1.- Get user's accruedPoints
         // 2.- Get 'computeAccrued()'
         // 3.- add the values from 1 and 2 and return it.
         return 1;
+    }
+
+    /**
+    * @dev Adds 'computeAccrued()' to recorded 'accruedPoints' in UserData.
+    * @dev Must update all fields of UserData information.
+    */
+    function _compoundPoints() internal {
     }
 
     function _beforeTokenTransfer(

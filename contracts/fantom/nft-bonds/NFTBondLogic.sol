@@ -35,8 +35,8 @@ contract NFTBondLogic is ERC1155 {
     // View Functions
 
     /**
-    * @notice Compute user's total debt in Fuji in all vaults of this chain.
-    * @dev Must consider all fuji active vaults, and different decimals. 
+    * @notice Returns the balance of token Id.
+    * @dev If id == 0, refers to point score system, else is NFT balance. 
     */
     function balanceOf(address user, uint256 id) public pure override returns(uint256){
         // To query points balance, id == 0
@@ -70,7 +70,12 @@ contract NFTBondLogic is ERC1155 {
     */
     function checkStateOfPoints() external {
         // 1.- Check 'getUserDebt()'.
-        // 2.- 
+        // 2.- Check 
+    }
+
+    function setMerkleRoot(bytes32 _merkleRoot) external {
+        require(_merkleRoot[0] != 0, 'empty merkleRoot!');
+        merkleRoot = _merkleRoot;
     }
 
     // Internal Functions

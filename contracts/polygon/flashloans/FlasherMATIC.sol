@@ -178,7 +178,7 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver, IFlashLoanReci
     uint256[] memory amounts,
     uint256[] memory feeAmounts,
     bytes memory userData
-  ) external {
+  ) external override {
     require(msg.sender == _balancerVault, Errors.VL_NOT_AUTHORIZED);
 
     FlashLoan.Info memory info = abi.decode(userData, (FlashLoan.Info));

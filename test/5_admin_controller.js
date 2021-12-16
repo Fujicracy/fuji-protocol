@@ -103,6 +103,7 @@ describe("Core Fuji Instance", function () {
       it("Success: Changing to new provider within vault's providers", async function () {
         const providers = [this.f.aave.address, this.f.dydx.address];
         const vault = this.f.vaultethdai;
+
         await vault.connect(this.owner).setProviders(providers);
 
         await vault.setActiveProvider(providers[0]);
@@ -110,6 +111,20 @@ describe("Core Fuji Instance", function () {
         await this.f.controller.connect(this.owner).doRefinancing(vault.address, providers[1], 0);
 
         expect(await vault.activeProvider()).to.be.equal(providers[1]);
+      });
+
+      it("Revert: Changing to new provider not within vault's providers", async function () {
+        const providers = [this.f.aave.address, this.f.dydx.address];
+        const vault = this.f.vaultethdai;
+        const invalidProvider = this.f.ironBank.address;
+
+        await vault.connect(this.owner).setProviders(providers);
+
+        await vault.setActiveProvider(providers[0]);
+
+        await expect(
+          this.f.controller.connect(this.owner).doRefinancing(vault.address, invalidProvider, 0)
+        ).to.be.reverted;
       });
     });
   });

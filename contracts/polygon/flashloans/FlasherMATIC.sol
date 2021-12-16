@@ -23,7 +23,7 @@ import "../libraries/LibUniversalERC20MATIC.sol";
  * the specific logic of all active flash loan providers used by Fuji protocol.
  */
 
-contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver {
+contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver, IFlashLoanRecipient {
   using LibUniversalERC20MATIC for IERC20;
 
   IFujiAdmin private _fujiAdmin;
@@ -167,6 +167,42 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver {
 
     //Balancer Flashloan initiated.
     balVault.flashLoan(receiverAddress, assets, amounts, abi.encode(info));
+  }
+
+  /**
+   * @dev Executes Balancer Flashloan, this operation is required
+   * and called by Balancer flashloan when sending loaned amount
+   */
+  function receiveFlashLoan(
+    IERC20[] memory tokens,
+    uint256[] memory amounts,
+    uint256[] memory feeAmounts,
+    bytes memory userData
+  ) external {
+    require(msg.sender == _balancerVault, Errors.VL_NOT_AUTHORIZED);
+
+    FlashLoan.Info memory info = abi.decode(userData, (FlashLoan.Info));
+
+    uint256 _value;
+    if (info.asset == _MATIC) {
+      // Convert WETH to ETH and assign amount to be set as msg.value
+      _convertWethToEth(amounts[0]);
+      _value = info.amount;
+    } else {
+      // Transfer to Vault the flashloan Amount
+      // _value is 0
+      tokens[0].univTransfer(payable(info.vault), amounts[0]);
+    }
+
+    _executeAction(info, amounts[0], feeAmounts[0], _value);
+
+    //Approve balancer to spend to repay flashloan
+    _approveBeforeRepay(
+      info.asset == _MATIC,
+      address(tokens[0]),
+      amounts[0] + feeAmounts[0],
+      _balancerVault
+    );
   }
 
   function _executeAction(

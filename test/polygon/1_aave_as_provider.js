@@ -64,7 +64,7 @@ const [BORROW_STABLE, BORROW_MATIC, BORROW_WETH, BORROW_WBTC] = [
   DEPOSIT_WBTC / 2,
 ];
 
-describe("Fantom Fuji Instance", function () {
+describe("Polygon Fuji Instance", function () {
   let evmSnapshot0;
   let evmSnapshot1;
   let evmSnapshot2;

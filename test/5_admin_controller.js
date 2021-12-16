@@ -98,5 +98,19 @@ describe("Core Fuji Instance", function () {
         expect(await this.f.controller.pendingOwner()).to.be.equal(ZERO_ADDR);
       });
     });
+
+    describe("Refinancing to a new provider", function () {
+      it("Success: Changing to new provider within vault's providers", async function () {
+        const providers = [this.f.aave.address, this.f.dydx.address];
+        const vault = this.f.vaultethdai;
+        await vault.connect(this.owner).setProviders(providers);
+
+        await vault.setActiveProvider(providers[0]);
+
+        await this.f.controller.connect(this.owner).doRefinancing(vault.address, providers[1], 0);
+
+        expect(await vault.activeProvider()).to.be.equal(providers[1]);
+      });
+    });
   });
 });

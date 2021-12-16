@@ -20,25 +20,9 @@ import "./IFlashLoanRecipient.sol";
 pragma solidity ^0.8.0;
 
 /**
- * @dev Full external interface for the Vault core contract - no external or public methods exist in the contract that
- * don't override one of these declarations.
+ * @dev Partial interface for the vault, only for flash loans
  */
 interface IBalancerVault {
-    // Generalities about the Vault:
-    //
-    // - Whenever documentation refers to 'tokens', it strictly refers to ERC20-compliant token contracts. Tokens are
-    // transferred out of the Vault by calling the `IERC20.transfer` function, and transferred in by calling
-    // `IERC20.transferFrom`. In these cases, the sender must have previously allowed the Vault to use their tokens by
-    // calling `IERC20.approve`. The only deviation from the ERC20 standard that is supported is functions not returning
-    // a boolean value: in these scenarios, a non-reverting call is assumed to be successful.
-    //
-    // - All non-view functions in the Vault are non-reentrant: calling them while another one is mid-execution (e.g.
-    // while execution control is transferred to a token contract during a swap) will result in a revert. View
-    // functions can be called in a re-reentrant way, but doing so might cause them to return inconsistent results.
-    // Contracts calling view functions in the Vault must make sure the Vault has not already been entered.
-    //
-    // - View functions revert if referring to either unregistered Pools, or unregistered tokens for registered Pools.
-
     // Flash Loans
 
     /**

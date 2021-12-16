@@ -14,6 +14,8 @@ import "../../libraries/FlashLoans.sol";
 import "../../libraries/Errors.sol";
 import "../../interfaces/aave/IFlashLoanReceiver.sol";
 import "../../interfaces/aave/IAaveLendingPool.sol";
+import "../../interfaces/balancer/IBalancerVault.sol";
+import "../../interfaces/balancer/IFlashLoanRecipient.sol";
 import "../libraries/LibUniversalERC20MATIC.sol";
 
 /**
@@ -30,6 +32,7 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver {
   address private constant _WMATIC = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
 
   address private immutable _aaveLendingPool = 0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf;
+  address private immutable _balancerVault = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
   // need to be payable because of the conversion ETH <> WETH
   receive() external payable {}
@@ -69,10 +72,14 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver {
   {
     if (_flashnum == 0) {
       _initiateGeistFlashLoan(info);
+    } else if (_flashnum == 3) {
+      _initiateBalancerFlashLoan(info);
     } else {
       revert(Errors.VL_INVALID_FLASH_NUMBER);
     }
   }
+
+  // ===================== Geist FlashLoan ===================================
 
   /**
    * @dev Initiates an Geist flashloan.
@@ -140,11 +147,27 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver {
     return true;
   }
 
-  // ========================================================
-  //
-  // flash loans come here....
-  //
-  // ========================================================
+
+  // ===================== Balancer FlashLoan ===================================
+  
+  /**
+   * @dev Initiates a Balancer flashloan.
+   * @param info: data to be passed between functions executing flashloan logic
+   */
+  function _initiateBalancerFlashLoan(FlashLoan.Info calldata info) internal {
+    //Initialize Instance of Balancer Vault
+    IBalancerVault balVault = IBalancerVault(_balancerVault);
+
+    //Passing arguments to construct Balancer flashloan -limited to 1 asset type for now.
+    IFlashLoanRecipient receiverAddress = IFlashLoanRecipient(address(this));
+    IERC20[] memory assets = new IERC20[](1);
+    assets[0] = IERC20(address(info.asset == _MATIC ? _WMATIC : info.asset));
+    uint256[] memory amounts = new uint256[](1);
+    amounts[0] = info.amount;
+
+    //Balancer Flashloan initiated.
+    balVault.flashLoan(receiverAddress, assets, amounts, abi.encode(info));
+  }
 
   function _executeAction(
     FlashLoan.Info memory _info,

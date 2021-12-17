@@ -118,7 +118,7 @@ describe("Core Fuji Instance", function () {
       it("Revert: Changing to new provider not within vault's providers", async function () {
         const providers = [this.f.aave.address, this.f.ironBank.address];
         const vault = this.f.vaultethdai;
-        const invalidProvider = this.f.ironBank.address;
+        const invalidProvider = this.f.compound.address;
 
         await vault.connect(this.owner).setProviders(providers);
 

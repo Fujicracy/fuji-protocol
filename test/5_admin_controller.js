@@ -101,12 +101,14 @@ describe("Core Fuji Instance", function () {
 
     describe("Refinancing to a new provider", function () {
       it("Success: Changing to new provider within vault's providers", async function () {
-        const providers = [this.f.aave.address, this.f.dydx.address];
+        const providers = [this.f.aave.address, this.f.ironBank.address];
         const vault = this.f.vaultethdai;
 
         await vault.connect(this.owner).setProviders(providers);
 
         await vault.setActiveProvider(providers[0]);
+
+        await vault.depositAndBorrow(parseUnits(10), parseUnits(20), { value: parseUnits(10) });
 
         await this.f.controller.connect(this.owner).doRefinancing(vault.address, providers[1], 0);
 
@@ -114,13 +116,15 @@ describe("Core Fuji Instance", function () {
       });
 
       it("Revert: Changing to new provider not within vault's providers", async function () {
-        const providers = [this.f.aave.address, this.f.dydx.address];
+        const providers = [this.f.aave.address, this.f.ironBank.address];
         const vault = this.f.vaultethdai;
         const invalidProvider = this.f.ironBank.address;
 
         await vault.connect(this.owner).setProviders(providers);
 
         await vault.setActiveProvider(providers[0]);
+
+        await vault.depositAndBorrow(parseUnits(10), parseUnits(20), { value: parseUnits(10) });
 
         await expect(
           this.f.controller.connect(this.owner).doRefinancing(vault.address, invalidProvider, 0)

@@ -196,8 +196,8 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver, IFlashLoanReci
 
     _executeAction(info, amounts[0], feeAmounts[0], _value);
 
-    //Approve balancer to spend to repay flashloan
-    _approveBeforeRepay(
+    // Repay flashloan
+    _repay(
       info.asset == _MATIC,
       address(tokens[0]),
       amounts[0] + feeAmounts[0],
@@ -243,6 +243,20 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver, IFlashLoanReci
       IERC20(_WMATIC).univApprove(payable(_spender), _amount);
     } else {
       IERC20(_asset).univApprove(payable(_spender), _amount);
+    }
+  }
+
+  function _repay(
+    bool _isMATIC,
+    address _asset,
+    uint256 _amount,
+    address _spender
+  ) internal {
+    if (_isMATIC) {
+      _convertEthToWeth(_amount);
+      IERC20(_WMATIC).univTransfer(payable(_spender), _amount);
+    } else {
+      IERC20(_asset).univTransfer(payable(_spender), _amount);
     }
   }
 

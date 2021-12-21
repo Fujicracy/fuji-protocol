@@ -73,11 +73,9 @@ contract ProviderKashi is IProvider {
    */
   function getBorrowBalance(address) external view override returns (uint256) {
     IKashiPair kashiPair = _getKashiPair(msg.sender);
-
     uint256 part = kashiPair.userBorrowPart(msg.sender);
     (uint128 elastic, uint128 base) = kashiPair.totalBorrow();
-    uint256 amount = (part * elastic) / base;
-
+    uint256 amount = base > 0 ? (part * elastic) / base : 0;
     return amount;
   }
 
@@ -91,7 +89,7 @@ contract ProviderKashi is IProvider {
 
     uint256 part = kashiPair.userBorrowPart(_who);
     (uint128 elastic, uint128 base) = kashiPair.totalBorrow();
-    uint256 amount = (part * elastic) / base;
+    uint256 amount = base > 0 ? (part * elastic) / base : 0;
 
     return amount;
   }
@@ -119,11 +117,11 @@ contract ProviderKashi is IProvider {
     IKashiPair kashiPair = _getKashiPair(address(this));
     IBentoBox bentoBox = _getBentoBox();
 
-    bool isEth = _asset == _getMaticAddr();
-    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
+    bool isNative = _asset == _getMaticAddr();
+    address _tokenAddr = isNative ? _getWmaticAddr() : _asset;
 
     // convert ETH to WETH
-    if (isEth) IWETH(_tokenAddr).deposit{ value: _amount }();
+    if (isNative) IWETH(_tokenAddr).deposit{ value: _amount }();
 
     IERC20(_tokenAddr).univApprove(address(bentoBox), _amount);
     (, uint256 share) = bentoBox.deposit(_tokenAddr, address(this), address(kashiPair), _amount, 0);
@@ -139,14 +137,14 @@ contract ProviderKashi is IProvider {
     IKashiPair kashiPair = _getKashiPair(address(this));
     IBentoBox bentoBox = _getBentoBox();
 
-    bool isEth = _asset == _getMaticAddr();
-    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
+    bool isNative = _asset == _getMaticAddr();
+    address _tokenAddr = isNative ? _getWmaticAddr() : _asset;
 
     (, uint256 share) = kashiPair.borrow(address(this), _amount+1);
     (_amount, ) = bentoBox.withdraw(_tokenAddr, address(this), address(this), 0, share);
 
     // convert WETH to ETH
-    if (isEth) {
+    if (isNative) {
       address unwrapper = _getUnwrapper();
       IERC20(_tokenAddr).univTransfer(payable(unwrapper), _amount);
       IUnwrapper(unwrapper).withdraw(_amount);
@@ -162,15 +160,15 @@ contract ProviderKashi is IProvider {
     IKashiPair kashiPair = _getKashiPair(address(this));
     IBentoBox bentoBox = _getBentoBox();
 
-    bool isEth = _asset == _getMaticAddr();
-    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
+    bool isNative = _asset == _getMaticAddr();
+    address _tokenAddr = isNative ? _getWmaticAddr() : _asset;
 
     uint256 share = bentoBox.toShare(_tokenAddr, _amount, false);
     kashiPair.removeCollateral(address(this), share);
     (_amount, ) = bentoBox.withdraw(_tokenAddr, address(this), address(this), 0, share);
 
     // convert WETH to ETH
-    if (isEth) {
+    if (isNative) {
       address unwrapper = _getUnwrapper();
       IERC20(_tokenAddr).univTransfer(payable(unwrapper), _amount);
       IUnwrapper(unwrapper).withdraw(_amount);
@@ -187,11 +185,11 @@ contract ProviderKashi is IProvider {
     IKashiPair kashiPair = _getKashiPair(address(this));
     IBentoBox bentoBox = _getBentoBox();
 
-    bool isEth = _asset == _getMaticAddr();
-    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
+    bool isNative = _asset == _getMaticAddr();
+    address _tokenAddr = isNative ? _getWmaticAddr() : _asset;
 
     // convert ETH to WETH
-    if (isEth) IWETH(_tokenAddr).deposit{ value: _amount }();
+    if (isNative) IWETH(_tokenAddr).deposit{ value: _amount }();
 
     IERC20(_tokenAddr).univApprove(address(bentoBox), _amount);
     (, uint256 share) = bentoBox.deposit(_tokenAddr, address(this), address(kashiPair), _amount, 0);

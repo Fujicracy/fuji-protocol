@@ -147,94 +147,32 @@ describe("Polygon Fuji Instance", function () {
       }
     });
 
-    // describe("Native token as collateral, ERC20 as borrow asset.", function () {
-    //   testDeposit1(
-    //     FUJI_SCREAM_MAPPING,
-    //     [vaultmaticdai, vaultmaticusdc, vaultmaticweth, vaultmaticwbtc],
-    //     DEPOSIT_MATIC
-    //   );
+    describe("Native token as collateral, ERC20 as borrow asset.", function () {
 
-    //   testBorrow1([vaultmaticdai, vaultmaticusdc], DEPOSIT_MATIC, BORROW_STABLE);
-    //   testBorrow1([vaultmaticweth], DEPOSIT_MATIC, BORROW_WETH);
-    //   testBorrow1([vaultmaticwbtc], DEPOSIT_MATIC, BORROW_WBTC);
+      // Kashi kmWMATICDAI is iliquid. 12/20/2021
+      testBorrow1([vaultmaticusdc], DEPOSIT_MATIC, BORROW_STABLE);
+      testPaybackAndWithdraw1([vaultmaticusdc], DEPOSIT_MATIC, BORROW_STABLE);
+      testRefinance3([vaultmaticusdc], "kashi", "aave", DEPOSIT_MATIC, BORROW_STABLE, 0);
 
-    //   testPaybackAndWithdraw1([vaultmaticdai, vaultmaticusdc], DEPOSIT_MATIC, BORROW_STABLE);
-    //   testPaybackAndWithdraw1([vaultmaticweth], DEPOSIT_MATIC, BORROW_WETH);
-    //   testPaybackAndWithdraw1([vaultmaticwbtc], DEPOSIT_MATIC, BORROW_WBTC);
-
-    //   testRefinance1([vaultmaticusdc, vaultmaticdai], "kashi", "cream", DEPOSIT_MATIC, BORROW_STABLE, 0);
-    //   testRefinance1([vaultmaticweth], "kashi", "cream", DEPOSIT_MATIC, BORROW_WETH, 0);
-    //   testRefinance1([vaultmaticwbtc], "kashi", "cream", DEPOSIT_MATIC, BORROW_WBTC, 0);
-    // });
+    });
 
     describe("ERC20 token as collateral, ERC20 as borrow asset.", function () {
-      // testDeposit2(
-      //   FUJI_SCREAM_MAPPING,
-      //   [vaultwmaticdai, vaultwmaticusdc, vaultwmaticweth, vaultwmaticwbtc],
-      //   DEPOSIT_MATIC
-      // );
-      // testDeposit2(FUJI_SCREAM_MAPPING, [vaultdaiwmatic, vaultusdcwmatic], DEPOSIT_STABLE);
-      // testDeposit2(
-      //   FUJI_SCREAM_MAPPING,
-      //   [vaultwethwmatic, vaultwethdai, vaultwethusdc, vaultwethwbtc],
-      //   DEPOSIT_WETH
-      // );
-      // testDeposit2(
-      //   FUJI_SCREAM_MAPPING,
-      //   [vaultwbtcwmatic, vaultwbtcdai, vaultwbtcusdc, vaultwbtcweth],
-      //   DEPOSIT_WBTC
-      // );
 
-      testBorrow2k([vaultwethdai], DEPOSIT_WETH, BORROW_STABLE);
-      // testBorrow2([vaultwethdai, vaultwethusdc], DEPOSIT_WETH, BORROW_STABLE);
-      // testBorrow2([vaultwbtcdai, vaultwbtcusdc], DEPOSIT_WBTC, BORROW_STABLE);
-      // testBorrow2([vaultdaiwmatic, vaultusdcwmatic], DEPOSIT_STABLE, BORROW_MATIC);
-      // testBorrow2([vaultdaiweth, vaultusdcweth], DEPOSIT_STABLE, BORROW_WETH);
-      // testBorrow2([vaultdaiwbtc, vaultusdcwbtc], DEPOSIT_STABLE, BORROW_WBTC);
+      // testBorrow2k([vaultwethdai, vaultwethusdc], DEPOSIT_WETH, BORROW_STABLE);
+      // testPaybackAndWithdraw2k([vaultwethdai, vaultwethusdc], DEPOSIT_WETH, BORROW_STABLE);
+      // testRefinance2([vaultwethdai], "aave", "kashi", DEPOSIT_WETH, BORROW_STABLE, 0);
 
-      testPaybackAndWithdraw2k([vaultwethdai], DEPOSIT_WETH, BORROW_STABLE);
-      // testPaybackAndWithdraw2([vaultdaiweth, vaultusdcweth], DEPOSIT_STABLE, BORROW_WETH);
-      // testPaybackAndWithdraw2([vaultdaiwbtc, vaultusdcwbtc], DEPOSIT_STABLE, BORROW_WBTC);
-
-      // testRefinance2(
-      //   [vaultwethdai, vaultwethusdc],
-      //   "kashi",
-      //   "cream",
-      //   DEPOSIT_WETH,
-      //   BORROW_STABLE,
-      //   0
-      // );
-      // testRefinance2([vaultwethwbtc], "kashi", "cream", DEPOSIT_WETH, BORROW_WBTC, 0);
-      // testRefinance2(
-      //   [vaultdaiweth, vaultusdcweth],
-      //   "kashi",
-      //   "cream",
-      //   DEPOSIT_STABLE,
-      //   BORROW_WETH,
-      //   0
-      // );
     });
 
-    // describe("ERC20 token as collateral, native token as borrow asset.", function () {
-    //   testBorrow3([vaultdaimatic], DEPOSIT_STABLE, BORROW_MATIC);
-
-    //   testPaybackAndWithdraw3([vaultwbtcmatic], DEPOSIT_WBTC, BORROW_MATIC * 0.5);
-    //   testPaybackAndWithdraw3([vaultwethmatic], DEPOSIT_WETH, BORROW_MATIC * 0.5);
-    //   testPaybackAndWithdraw3([vaultdaimatic, vaultusdcmatic], DEPOSIT_STABLE, BORROW_MATIC * 0.5);
-
-    //   testRefinance3([vaultusdcmatic, vaultdaimatic], "kashi", "cream", DEPOSIT_STABLE, BORROW_MATIC, 0);
-    //   testRefinance3([vaultwbtcmatic], "kashi", "cream", DEPOSIT_WBTC, BORROW_MATIC, 0);
-    //   testRefinance3([vaultwethmatic], "kashi", "cream", DEPOSIT_WETH, BORROW_MATIC, 0);
+    // This test can only be run by modifying ProviderKashi file. 
+    // It requires only one implementation of 'getBorrowRateFor'
+    // describe("View Function Tests.", function () {
+    //   it("Should get a valid borrowing rate", async function (){
+    //     const rate = await this.f['kashi'].getBorrowRateFor(this.f['vaultwethdai'].address,this.f['vaultwethdai'].address);
+    //     // console.log('rate', rate);
+    //     await expect(rate).to.be.gt(0);
+    //   });
     // });
-
-    describe("View Function Tests.", function () {
-      it("Should get a valid borrowing rate", async function (){
-        const rate = await this.f['kashi'].getBorrowRateFor(this.f['vaultwethdai'].address);
-        // console.log('rate', rate);
-        await expect(rate).to.be.gt(0);
-      });
-
-    });
 
   });
 });

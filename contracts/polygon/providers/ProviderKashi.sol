@@ -46,24 +46,26 @@ contract ProviderKashi is IProvider {
   }
 
   /**
-   * @dev Returns the current borrowing rate (APR) of '_vault's' borrowing asset, in ray(1e27).
-   * @dev First argument is not needed. 
+   * @dev Returns the current borrowing rate (APR) of a borrowing asset, in ray(1e27).
+   * @dev First argument '_collateralAsset' is required to get kashi market from mapping. 
    * @dev Kashi provider required a different function signature for getBorrowRateFor() 
-   * @param _vault to query the borrowing rate.
+   * @param _collateralAsset required to get kashi market from mapping.
+   * @param _borrowAsset to query the borrowing rate.
    */
-  function getBorrowRateFor(address, address _vault) external view returns (uint256) {
-    IKashiPair kashiPair = _getKashiPair(_vault);
+  function getBorrowRateFor(address _collateralAsset, address _borrowAsset) external view returns (uint256) {
+    IFujiKashiMapping kashiMapper = _getKashiMapping();
+    IKashiPair kashiPair = IKashiPair(kashiMapper.addressMapping(_collateralAsset, _borrowAsset));
     (uint256 interestPerSecond,,) = kashiPair.accrueInfo();
     return interestPerSecond * 52 weeks * 10**9;
   }
 
   /**
-   * @dev Not implemented see 'getBorrowRateFor(address, address _vault)'
+   * @dev Not implemented see 'getBorrowRateFor(address, address)'
    * @param _asset Not implemented.
    */
   function getBorrowRateFor(address _asset) external pure override returns (uint256) {
     _asset;
-    revert("Refer to Kashi Provider getBorrowRateFor(address, address)");
+    revert("Refer to KashiProvider.getBorrowRateFor(address, address)");
   }
 
   /**
@@ -95,11 +97,12 @@ contract ProviderKashi is IProvider {
   }
 
   /**
-   * @dev Return deposit balance of 'collateralAsset' of caller vault address.
+   * @dev Return deposit balance of 'collateralAsset' defined in caller vault address.
    * @dev Caller must be a vault address.
-   * @dev First address argument is not needed.
+   * @param _asset token address to query the balance.
    */
-  function getDepositBalance(address) external view override returns (uint256) {
+  function getDepositBalance(address _asset) external view override returns (uint256) {
+    _asset;
     IVaultControl.VaultAssets memory vAssets = IVaultControl(msg.sender).vAssets();
     IKashiPair kashiPair = _getKashiPair(msg.sender);
     IBentoBox bentoBox = _getBentoBox();

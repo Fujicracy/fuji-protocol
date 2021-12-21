@@ -23,8 +23,6 @@ const {
 
 const { testRefinance1, testRefinance2, testRefinance3 } = require("../controller");
 
-const FUJI_SCREAM_MAPPING = "0xA9c29eA1a067740be6dB1F98FcbA0043C475041A";
-
 const vaults = {};
 for (const v of VAULTS) {
   vaults[v.name] = v;
@@ -150,9 +148,9 @@ describe("Polygon Fuji Instance", function () {
     describe("Native token as collateral, ERC20 as borrow asset.", function () {
 
       // Kashi kmWMATICDAI is iliquid. 12/20/2021
-      testBorrow1([vaultmaticusdc], DEPOSIT_MATIC, BORROW_STABLE);
-      testPaybackAndWithdraw1([vaultmaticusdc], DEPOSIT_MATIC, BORROW_STABLE);
-      testRefinance3([vaultmaticusdc], "kashi", "aave", DEPOSIT_MATIC, BORROW_STABLE, 0);
+      // testBorrow1([vaultmaticusdc], DEPOSIT_MATIC, BORROW_STABLE);
+      // testPaybackAndWithdraw1([vaultmaticusdc], DEPOSIT_MATIC, BORROW_STABLE);
+      // testRefinance3([vaultmaticusdc], "kashi", "aave", DEPOSIT_MATIC, BORROW_STABLE, 0);
 
     });
 
@@ -166,13 +164,13 @@ describe("Polygon Fuji Instance", function () {
 
     // This test can only be run by modifying ProviderKashi file. 
     // It requires only one implementation of 'getBorrowRateFor'
-    // describe("View Function Tests.", function () {
-    //   it("Should get a valid borrowing rate", async function (){
-    //     const rate = await this.f['kashi'].getBorrowRateFor(this.f['vaultwethdai'].address,this.f['vaultwethdai'].address);
-    //     // console.log('rate', rate);
-    //     await expect(rate).to.be.gt(0);
-    //   });
-    // });
+    describe("View Function Tests.", function () {
+      it("Should get a valid borrowing rate", async function (){
+        const rate = await this.f['kashi'].getBorrowRateFor(ASSETS.WETH.address,ASSETS.DAI.address);
+        // console.log('rate', rate);
+        await expect(rate).to.be.gt(0);
+      });
+    });
 
   });
 });

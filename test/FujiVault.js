@@ -14,12 +14,12 @@ const {
 
 const { getContractAt } = ethers;
 
-// testing deposits in ETH
+// testing deposits in Native Token
 // in Compound-like providers (Compound, IronBank)
 function testDeposit1(mapperAddr, vaults, amount) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
-    it(`deposit ${amount} ETH as collateral, check ${vault.name} balance`, async function () {
+    it(`deposit ${amount} Native Token as collateral, check ${vault.name} balance`, async function () {
       const fujimapper = await getContractAt("FujiMapping", mapperAddr);
       const vAssets = await this.f[vault.name].vAssets();
       const cTokenAddr = await fujimapper.addressMapping(vAssets.collateralAsset);
@@ -47,12 +47,12 @@ function testDeposit1(mapperAddr, vaults, amount) {
   }
 }
 
-// testing deposits in ETH
+// testing deposits in Native Token
 // in Aave
 function testDeposit1a(vaults, amount, aeth) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
-    it(`deposit ${amount} ETH as collateral, check ${vault.name} balance`, async function () {
+    it(`deposit ${amount} Native Token as collateral, check ${vault.name} balance`, async function () {
       const aWETH = await getContractAt("IERC20", aeth);
 
       const depositAmount = parseUnits(amount);
@@ -71,8 +71,8 @@ function testDeposit1a(vaults, amount, aeth) {
   }
 }
 
-// testing deposits in ETH
-// in dydx
+// testing deposits in Native Token
+// In dydx
 function testDeposit1b(vaults, amount) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
@@ -160,10 +160,11 @@ function testDeposit2a(vaults, amount, assets = ASSETS) {
   }
 }
 
+// Testing borrow of ERC20, after depositing Native Token
 function testBorrow1(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
-    it(`borrow ${amountToBorrow} ERC20 -> ${debt.nameUp} after depositing ${amountToDeposit} ETH as collateral`, async function () {
+    it(`borrow ${amountToBorrow} ERC20 -> ${debt.nameUp} after depositing ${amountToDeposit} Native Token as collateral`, async function () {
       const depositAmount = parseUnits(amountToDeposit);
       const negdepositAmount = parseUnits(-amountToDeposit);
       const borrowAmount = parseUnits(amountToBorrow, debt.decimals);
@@ -194,6 +195,7 @@ function testBorrow1(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
+// Testing borrow of ERC20, after depositing ERC20
 function testBorrow2(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
@@ -306,7 +308,7 @@ function testBorrow3(vaults, amountToDeposit, amountToBorrow) {
 function testPaybackAndWithdraw1(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
-    it(`payback ${amountToBorrow} ERC20 -> ${debt.nameUp} and withdraw ${amountToDeposit} ETH`, async function () {
+    it(`payback ${amountToBorrow} ERC20 -> ${debt.nameUp} and withdraw ${amountToDeposit} Native`, async function () {
       const depositAmount = parseUnits(amountToDeposit);
       const borrowAmount = parseUnits(amountToBorrow, debt.decimals);
       const one = parseUnits(1, debt.decimals);
@@ -334,11 +336,12 @@ function testPaybackAndWithdraw1(vaults, amountToDeposit, amountToBorrow) {
         await expect(await this.f.f1155.balanceOf(this.users[x].address, borrowID)).to.be.lt(one);
       }
 
+      const oneCol = parseUnits(1, collateral.decimals);
       for (let x = 1; x < 4; x += 1) {
         await this.f[name].connect(this.users[x]).withdraw(-1);
         await timeTravel(60);
         await expect(await this.f.f1155.balanceOf(this.users[x].address, collateralID)).to.be.lt(
-          1e15
+          oneCol
         );
       }
     });

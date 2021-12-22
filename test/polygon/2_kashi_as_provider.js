@@ -148,29 +148,29 @@ describe("Polygon Fuji Instance", function () {
     describe("Native token as collateral, ERC20 as borrow asset.", function () {
 
       // Kashi kmWMATICDAI is iliquid. 12/20/2021
-      // testBorrow1([vaultmaticusdc], DEPOSIT_MATIC, BORROW_STABLE);
-      // testPaybackAndWithdraw1([vaultmaticusdc], DEPOSIT_MATIC, BORROW_STABLE);
-      // testRefinance3([vaultmaticusdc], "kashi", "aave", DEPOSIT_MATIC, BORROW_STABLE, 0);
+      testBorrow1([vaultmaticusdc], DEPOSIT_MATIC, BORROW_STABLE);
+      testPaybackAndWithdraw1([vaultmaticusdc], DEPOSIT_MATIC, BORROW_STABLE);
+      testRefinance1([vaultmaticusdc], "kashi", "aave", DEPOSIT_MATIC, BORROW_STABLE, 0);
 
     });
 
     describe("ERC20 token as collateral, ERC20 as borrow asset.", function () {
 
-      // testBorrow2k([vaultwethdai, vaultwethusdc], DEPOSIT_WETH, BORROW_STABLE);
-      // testPaybackAndWithdraw2k([vaultwethdai, vaultwethusdc], DEPOSIT_WETH, BORROW_STABLE);
-      // testRefinance2([vaultwethdai], "aave", "kashi", DEPOSIT_WETH, BORROW_STABLE, 0);
+      testBorrow2k([vaultwethdai, vaultwethusdc], DEPOSIT_WETH, BORROW_STABLE);
+      testPaybackAndWithdraw2k([vaultwethdai, vaultwethusdc], DEPOSIT_WETH, BORROW_STABLE);
+      testRefinance2([vaultwethdai], "aave", "kashi", DEPOSIT_WETH, BORROW_STABLE, 0);
 
     });
 
     // This test can only be run by modifying ProviderKashi file. 
     // It requires only one implementation of 'getBorrowRateFor'
-    describe("View Function Tests.", function () {
-      it("Should get a valid borrowing rate", async function (){
-        const rate = await this.f['kashi'].getBorrowRateFor(ASSETS.WETH.address,ASSETS.DAI.address);
-        // console.log('rate', rate);
-        await expect(rate).to.be.gt(0);
-      });
-    });
+    // describe("View Function Tests.", function () {
+    //   it("Should get a valid borrowing rate", async function (){
+    //     const rate = await this.f['kashi'].getBorrowRateFor(ASSETS.WETH.address,ASSETS.DAI.address);
+    //     // console.log('rate', rate);
+    //     await expect(rate).to.be.gt(0);
+    //   });
+    // });
 
   });
 });

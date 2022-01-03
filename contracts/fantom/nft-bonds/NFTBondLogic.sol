@@ -19,6 +19,8 @@ contract NFTBondLogic is ERC1155 {
         uint128 multiplierValue; 
     }
 
+    uint constant SEC = 86400;
+
     // Sate Variables
 
     uint64 public gameLaunchTimestamp;
@@ -37,7 +39,6 @@ contract NFTBondLogic is ERC1155 {
         bool isVault;
         for(uint i = 0; i < validVaults.length && !isVault; i++) {
             isVault = msg.sender == validVaults[i] ? true : false;
-            }
         }
         require(isVault == true, 'only valid vault caller!');
         _;
@@ -65,8 +66,9 @@ contract NFTBondLogic is ERC1155 {
     /**
     * @notice Compute user's accrued points since user's 'lastTimestampUpdate'.
     */
-    function computeAccrued() public pure returns(uint256) {
-        return 1;
+    function computeAccrued(address user) public view returns(uint256) {
+        UserData memory info = userdata[user];
+        return (block.timestamp - info.lastTimestampUpdate) * info.rateOfAccrual;
     }
 
     /**
@@ -104,7 +106,26 @@ contract NFTBondLogic is ERC1155 {
     */
     function checkStateOfPoints(address user) external onlyVault {
         // 1.- Call and store 'getUserDebt()'.
+        uint128 userDebt = uint128(getUserDebt(user));
+
         // 2.- Call and check if user exist in mapping 'userdata'.
+        UserData storage info = userdata[user];
+
+        //if points == 0, new user, just set the rate
+
+        if (info.accruedPoints != 0 && info.rateOfAccrual == 0) {
+            // ongoing user, first time game (claimed bonus already)
+
+            // extract from merkel tree
+
+        } else if (info.accruedPoints != 0 && info.rateOfAccrual != 0) {
+            // ongoing user, ongoing game
+
+            _compoundPoints(user);
+        } 
+
+        // Set rate
+        info.rateOfAccrual = uint64(userDebt / SEC);
     }
 
     /**
@@ -136,7 +157,10 @@ contract NFTBondLogic is ERC1155 {
     * @dev Adds 'computeAccrued()' to recorded 'accruedPoints' in UserData.
     * @dev Must update all fields of UserData information.
     */
-    function _compoundPoints() internal {
+    function _compoundPoints(address user) internal {
+        UserData storage info = userdata[user];
+        info.accruedPoints += uint128(computeAccrued(user));
+        info.lastTimestampUpdate = uint64(block.timestamp);
     }
 
     function _beforeTokenTransfer(

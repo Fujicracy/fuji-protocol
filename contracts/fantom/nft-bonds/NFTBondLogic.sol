@@ -75,8 +75,8 @@ contract NFTBondLogic is ERC1155 {
     * @notice Compute user's rate of point accrual.
     * @dev Unit should be points per second.
     */
-    function computeRateOfAccrual() public pure returns(uint256) {
-        return 1;
+    function computeRateOfAccrual(address user) public view returns(uint256) {
+        return getUserDebt(user) / SEC;
     }
 
     /**
@@ -105,10 +105,6 @@ contract NFTBondLogic is ERC1155 {
     * @dev Must consider all fuji active vaults, and different decimals. 
     */
     function checkStateOfPoints(address user) external onlyVault {
-        // 1.- Call and store 'getUserDebt()'.
-        uint128 userDebt = uint128(getUserDebt(user));
-
-        // 2.- Call and check if user exist in mapping 'userdata'.
         UserData storage info = userdata[user];
 
         //if points == 0, new user, just set the rate
@@ -125,7 +121,7 @@ contract NFTBondLogic is ERC1155 {
         } 
 
         // Set rate
-        info.rateOfAccrual = uint64(userDebt / SEC);
+        info.rateOfAccrual = uint64(computeRateOfAccrual(user));
     }
 
     /**

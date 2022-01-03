@@ -387,12 +387,12 @@ contract Flasher is
   }
 
   function _repay(
-    bool _isMATIC,
+    bool _isETH,
     address _asset,
     uint256 _amount,
     address _spender
   ) internal {
-    if (_isMATIC) {
+    if (_isETH) {
       _convertEthToWeth(_amount);
       IERC20(_WETH).univTransfer(payable(_spender), _amount);
     } else {

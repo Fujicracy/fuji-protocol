@@ -16,7 +16,8 @@ contract NFTBondLogic is ERC1155 {
         uint64 lastTimestampUpdate;
         uint64 rateOfAccrual;
         uint128 accruedPoints;
-        uint128 multiplierValue; 
+        uint128 multiplierValue;
+        uint128 recordedDebtBalance;
     }
 
     uint constant SEC = 86400;
@@ -59,7 +60,7 @@ contract NFTBondLogic is ERC1155 {
             return _pointsBalanceOf(user);
         } else {
             // Otherwise check ERC1155
-            return super.balanceOf(user,id);
+            return super.balanceOf(user, id);
         }
     }
 
@@ -104,7 +105,7 @@ contract NFTBondLogic is ERC1155 {
     * @dev Called whenever a user performs a 'borrow()' or 'payback()' call on {FujiVault} contract
     * @dev Must consider all fuji active vaults, and different decimals. 
     */
-    function checkStateOfPoints(address user) external onlyVault {
+    function checkStateOfPoints(address user, uint balanceChange, bool addOrSubstract) external onlyVault {
         UserData storage info = userdata[user];
 
         //if points == 0, new user, just set the rate

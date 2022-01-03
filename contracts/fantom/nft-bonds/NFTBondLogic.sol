@@ -35,9 +35,8 @@ contract NFTBondLogic is ERC1155 {
 
     modifier onlyVault() {
         bool isVault;
-        for(uint i; i < validVaults.length; i++) {
-            if(isVault == false) {
-                isVault = msg.sender == validVaults[i] ? true : false;
+        for(uint i = 0; i < validVaults.length && !isVault; i++) {
+            isVault = msg.sender == validVaults[i] ? true : false;
             }
         }
         require(isVault == true, 'only valid vault caller!');

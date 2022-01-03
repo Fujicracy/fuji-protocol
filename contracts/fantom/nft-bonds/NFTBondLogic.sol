@@ -6,6 +6,10 @@
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 
+import "../../interfaces/IVault.sol";
+import "../../interfaces/IVaultControl.sol";
+import "../../interfaces/IERC20Extended.sol";
+
 contract NFTBondLogic is ERC1155 {
 
     struct UserData {
@@ -78,10 +82,18 @@ contract NFTBondLogic is ERC1155 {
     * @notice Compute user's total debt in Fuji in all vaults of this chain.
     * @dev Must consider all fuji active vaults, and different decimals. 
     */
-    function getUserDebt() public pure returns(uint256){
-        // 1.- Get debt from all 'validVaults'.
-        // 2.- Add and return value
-        return 1;
+    function getUserDebt(address user) public view returns(uint256){
+        uint totalDebt = 0;
+
+        IVaultControl.VaultAssets memory vAssets; 
+        uint decimals;
+        for(uint i = 0; i < validVaults.length; i++) {
+            vAssets = IVaultControl(validVaults[i]).vAssets();
+            decimals = IERC20Extended(vAssets.borrowAsset).decimals();
+
+            totalDebt += IVault(validVaults[i]).userDebtBalance(user) / 10^decimals;
+        }
+        return totalDebt;
     }
 
     // State Changing Functions

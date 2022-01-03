@@ -145,12 +145,8 @@ contract NFTBondLogic is ERC1155 {
     /**
     * @dev Returns de balance of accrued points of a user.
     */
-    function _pointsBalanceOf(address user) internal pure returns(uint256){
-        user;
-        // 1.- Get user's accruedPoints
-        // 2.- Get 'computeAccrued()'
-        // 3.- add the values from 1 and 2 and return it.
-        return 1;
+    function _pointsBalanceOf(address user) internal view returns(uint256){
+        return userdata[user].accruedPoints + computeAccrued(user);
     }
 
     /**

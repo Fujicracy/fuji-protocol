@@ -30,6 +30,9 @@ contract NFTBondLogic is ERC1155 {
 
     mapping (address => UserData) public userdata;
 
+    // TokenID =>  supply amount
+    mapping (uint256 => uint256) public totalSupply;
+
     address[] public validVaults;
 
     uint256 private MINIMUM_DAILY_DEBT_POSITION = 1; //tbd
@@ -81,8 +84,9 @@ contract NFTBondLogic is ERC1155 {
     }
 
     /**
-    * @notice Compute user's total debt in Fuji in all vaults of this chain.
-    * @dev Must consider all fuji active vaults, and different decimals. 
+    * @notice Compute user's (floored) total debt in Fuji in all vaults of this chain.
+    * @dev Must consider all fuji's active vaults, and different decimals.
+    * @dev This function floors decimals to the nearest integer amount of debt. Example 1.78784 usdc = 1 unit of debt
     */
     function getUserDebt(address user) public view returns(uint256){
         uint totalDebt = 0;
@@ -147,13 +151,15 @@ contract NFTBondLogic is ERC1155 {
     }
 
     /**
-    * @dev Adds 'computeAccrued()' to recorded 'accruedPoints' in UserData.
+    * @dev Adds 'computeAccrued()' to recorded 'accruedPoints' in UserData and totalSupply
     * @dev Must update all fields of UserData information.
     */
     function _compoundPoints(address user) internal {
         UserData storage info = userdata[user];
         info.accruedPoints += uint128(computeAccrued(user));
         info.lastTimestampUpdate = uint64(block.timestamp);
+
+        // TODO Need to keep track of totalSupply of points.
     }
 
     function _beforeTokenTransfer(

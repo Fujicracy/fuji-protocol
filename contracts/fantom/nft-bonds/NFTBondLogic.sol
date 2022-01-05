@@ -103,8 +103,9 @@ contract NFTBondLogic is ERC1155 {
     * @dev Called whenever a user performs a 'borrow()' or 'payback()' call on {FujiVault} contract
     * @dev Must consider all fuji active vaults, and different decimals. 
     */
-    function checkStateOfPoints(address user, uint balanceChange, bool addOrSubstract) external onlyVault {
+    function checkStateOfPoints(address user, uint balanceChange, bool addOrSubtract) external onlyVault {
         UserData memory info = userdata[user];
+        uint debt = getUserDebt(user);
 
         //if points == 0, new user, just set the rate
 
@@ -115,13 +116,12 @@ contract NFTBondLogic is ERC1155 {
 
         } else if (info.accruedPoints != 0 && info.rateOfAccrual != 0) {
             // ongoing user, ongoing game
-
-            _compoundPoints(user);
+            _compoundPoints(user, addOrSubtract ? debt - balanceChange : debt + balanceChange);
         } 
 
         // Set User parameters
         info.lastTimestampUpdate = uint64(block.timestamp);
-        info.rateOfAccrual = uint64(computeRateOfAccrual(user));
+        info.rateOfAccrual = uint64(debt / SEC);
         
     }
 
@@ -143,28 +143,34 @@ contract NFTBondLogic is ERC1155 {
     * @dev Returns de balance of accrued points of a user.
     */
     function _pointsBalanceOf(address user) internal view returns(uint256){
-        return userdata[user].accruedPoints + _computeAccrued(user);
+        return userdata[user].accruedPoints + _computeAccrued(user, getUserDebt(user));
     }
 
     /**
     * @notice Compute user's accrued points since user's 'lastTimestampUpdate'.
     */
-    function _computeAccrued(address user) internal view returns(uint256) {
+    function _computeAccrued(address user, uint debt) internal view returns(uint256) {
         UserData memory info = userdata[user];
-        return (_timestampDifference(info.lastTimestampUpdate)) * info.rateOfAccrual * _computeLatestMultiplier(info.lastMultiplierValue, info.lastTimestampUpdate);
+        // 1 - compute points from normal rate
+        // 2 - add points by interest
+        // 3 - multiply all by multiplier
+        return (_timestampDifference(info.lastTimestampUpdate) * info.rateOfAccrual + 
+        ((debt - info.recordedDebtBalance) * _timestampDifference(info.lastTimestampUpdate) / 2)) * 
+        _computeLatestMultiplier(info.lastMultiplierValue, info.lastTimestampUpdate);
     }
 
     /**
     * @dev Adds 'computeAccrued()' to recorded 'accruedPoints' in UserData and totalSupply
     * @dev Must update all fields of UserData information.
     */
-    function _compoundPoints(address user) internal {
+    function _compoundPoints(address user, uint debt) internal {
         // Read the current state of userdata
         UserData memory info = userdata[user];
 
         // Change the state
-        userdata[user].accruedPoints += uint128(_computeAccrued(user));
+        userdata[user].accruedPoints += uint128(_computeAccrued(user, debt));
         userdata[user].lastMultiplierValue = uint128(_computeLatestMultiplier(info.lastMultiplierValue, info.lastTimestampUpdate));
+        userdata[user].recordedDebtBalance = uint128(debt);
 
         // TODO Need to keep track of totalSupply of points.
     }

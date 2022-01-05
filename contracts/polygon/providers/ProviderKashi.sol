@@ -55,16 +55,15 @@ contract ProviderKashi is IProvider {
   function getBorrowRateFor(address _collateralAsset, address _borrowAsset) external view returns (uint256) {
     IFujiKashiMapping kashiMapper = _getKashiMapping();
     IKashiPair kashiPair = IKashiPair(kashiMapper.addressMapping(_collateralAsset, _borrowAsset));
+
     (uint256 interestPerSecond,,) = kashiPair.accrueInfo();
     return interestPerSecond * 52 weeks * 10**9;
   }
 
   /**
-   * @dev Not implemented see 'getBorrowRateFor(address, address)'
-   * @param _asset Not implemented.
+   * @dev Not implemented, see 'getBorrowRateFor(address, address)'
    */
-  function getBorrowRateFor(address _asset) external pure override returns (uint256) {
-    _asset;
+  function getBorrowRateFor(address) external pure override returns (uint256) {
     revert("Refer to KashiProvider.getBorrowRateFor(address, address)");
   }
 
@@ -73,12 +72,13 @@ contract ProviderKashi is IProvider {
    * @dev Caller must be a vault address. 
    * @dev First address argument is not needed.
    */
-  function getBorrowBalance(address) external view override returns (uint256) {
+  function getBorrowBalance(address) external view override returns (uint256 amount) {
     IKashiPair kashiPair = _getKashiPair(msg.sender);
     uint256 part = kashiPair.userBorrowPart(msg.sender);
+
     (uint128 elastic, uint128 base) = kashiPair.totalBorrow();
-    uint256 amount = base > 0 ? (part * elastic) / base : 0;
-    return amount;
+
+    amount = base > 0 ? (part * elastic) / base : 0;
   }
 
   /**
@@ -86,14 +86,13 @@ contract ProviderKashi is IProvider {
    * @dev First address argument is not needed.
    * @param _who Must be a vault address.
    */
-  function getBorrowBalanceOf(address, address _who) external view override returns (uint256) {
+  function getBorrowBalanceOf(address, address _who) external view override returns (uint256 amount) {
     IKashiPair kashiPair = _getKashiPair(_who);
 
     uint256 part = kashiPair.userBorrowPart(_who);
     (uint128 elastic, uint128 base) = kashiPair.totalBorrow();
-    uint256 amount = base > 0 ? (part * elastic) / base : 0;
 
-    return amount;
+    amount = base > 0 ? (part * elastic) / base : 0;
   }
 
   /**
@@ -102,13 +101,11 @@ contract ProviderKashi is IProvider {
    * @param _asset token address to query the balance.
    */
   function getDepositBalance(address _asset) external view override returns (uint256) {
-    _asset;
-    IVaultControl.VaultAssets memory vAssets = IVaultControl(msg.sender).vAssets();
     IKashiPair kashiPair = _getKashiPair(msg.sender);
     IBentoBox bentoBox = _getBentoBox();
 
     uint256 share = kashiPair.userCollateralShare(msg.sender);
-    return bentoBox.toAmount(vAssets.collateralAsset, share, false);
+    return bentoBox.toAmount(_asset, share, false);
   }
 
   /**

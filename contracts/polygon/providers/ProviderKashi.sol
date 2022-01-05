@@ -140,7 +140,7 @@ contract ProviderKashi is IProvider {
     bool isNative = _asset == _getMaticAddr();
     address _tokenAddr = isNative ? _getWmaticAddr() : _asset;
 
-    (, uint256 share) = kashiPair.borrow(address(this), _amount+1);
+    (, uint256 share) = kashiPair.borrow(address(this), _amount + 1);
     (_amount, ) = bentoBox.withdraw(_tokenAddr, address(this), address(this), 0, share);
 
     // convert WETH to ETH

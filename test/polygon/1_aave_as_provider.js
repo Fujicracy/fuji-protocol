@@ -186,6 +186,7 @@ describe("Polygon Fuji Instance", function () {
       testPaybackAndWithdraw2([vaultdaiwbtc, vaultusdcwbtc], DEPOSIT_STABLE, BORROW_WBTC);
 
       testRefinance2([vaultwethdai], "aave", "kashi", DEPOSIT_WETH, BORROW_STABLE, 0);
+      testRefinance2([vaultwethdai], "aave", "kashi", DEPOSIT_WETH, BORROW_STABLE, 3);
     });
 
     describe("ERC20 token as collateral, native token as borrow asset.", function () {

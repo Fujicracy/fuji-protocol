@@ -40,6 +40,7 @@ contract NFTBondLogic is ERC1155 {
     uint256 private constant POINT_PER_DEBTUNIT_PER_DAY = 1; //tbd
     uint256 private constant MULTIPLIER_RATE = 100000000; // tbd
     uint256 private constant  CONSTANT_DECIMALS = 8; // Applies to all constants
+    uint256 private constant POINTS_ID = 0;
 
     modifier onlyVault() {
         bool isVault;
@@ -61,7 +62,7 @@ contract NFTBondLogic is ERC1155 {
     */
     function balanceOf(address user, uint256 id) public view override returns(uint256){
         // To query points balance, id == 0
-        if(id == 0 ) {
+        if(id == POINTS_ID) {
             return _pointsBalanceOf(user);
         } else {
             // Otherwise check ERC1155
@@ -168,11 +169,12 @@ contract NFTBondLogic is ERC1155 {
         UserData memory info = userdata[user];
 
         // Change the state
-        userdata[user].accruedPoints += uint128(_computeAccrued(user, debt));
+        uint points = _computeAccrued(user, debt);
+        userdata[user].accruedPoints += uint128(points);
         userdata[user].lastMultiplierValue = uint128(_computeLatestMultiplier(info.lastMultiplierValue, info.lastTimestampUpdate));
         userdata[user].recordedDebtBalance = uint128(debt);
 
-        // TODO Need to keep track of totalSupply of points.
+        totalSupply[POINTS_ID] += points;
     }
 
     function _timestampDifference(uint oldTimestamp) internal view returns(uint){

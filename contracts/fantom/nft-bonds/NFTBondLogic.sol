@@ -72,7 +72,7 @@ contract NFTBondLogic is ERC1155 {
     */
     function computeAccrued(address user) public view returns(uint256) {
         UserData memory info = userdata[user];
-        return (block.timestamp - info.lastTimestampUpdate) * info.rateOfAccrual;
+        return (block.timestamp - info.lastTimestampUpdate) * info.rateOfAccrual * POINT_PER_DEBTUNIT_PER_DAY;
     }
 
     /**

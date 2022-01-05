@@ -28,12 +28,12 @@ abstract contract ClaimableUpgradeable is Initializable, ContextUpgradeable {
   /**
    * @dev Initializes the contract setting the deployer as the initial owner.
    */
-  function __Climable_init() internal initializer {
+  function __Claimable_init() internal initializer {
     __Context_init_unchained();
-    __Climable_init_unchained();
+    __Claimable_init_unchained();
   }
 
-  function __Climable_init_unchained() internal initializer {
+  function __Claimable_init_unchained() internal initializer {
     address msgSender = _msgSender();
     _owner = msgSender;
     emit OwnershipTransferred(address(0), msgSender);

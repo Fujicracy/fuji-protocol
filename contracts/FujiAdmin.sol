@@ -96,6 +96,7 @@ contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
    * @param _permission: permission boolean
    */
   function allowVault(address _vaultAddr, bool _permission) external onlyOwner {
+    require(_vaultAddr != address(0), Errors.VL_ZERO_ADDR);
     validVault[_vaultAddr] = _permission;
     emit VaultPermitChanged(_vaultAddr, _permission);
   }

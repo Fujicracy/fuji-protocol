@@ -3,9 +3,9 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 
+import "../claimable/ClaimableUpgradeable.sol";
 import "../../interfaces/IVaultControl.sol";
 import "../../libraries/Errors.sol";
 
@@ -15,7 +15,7 @@ import "../../libraries/Errors.sol";
  *
  */
 
-abstract contract VaultControlUpgradeable is OwnableUpgradeable, PausableUpgradeable {
+abstract contract VaultControlUpgradeable is ClaimableUpgradeable, PausableUpgradeable {
   // Vault Struct for Managed Assets
   IVaultControl.VaultAssets public vAssets;
 
@@ -101,7 +101,7 @@ contract VaultBaseUpgradeable is VaultControlUpgradeable {
    * @dev Returns byte response of delegatcalls
    */
   function _execute(address _target, bytes memory _data)
-    internal
+    private
     whenNotPaused
     returns (bytes memory response)
   {

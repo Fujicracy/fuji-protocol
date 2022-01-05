@@ -222,23 +222,23 @@ describe("Core Fuji Instance", function () {
         FLASHLOAN.CREAM
       );
 
-      testRefinance3(
-        [vaultdaieth, vaultusdceth],
-        "compound",
-        "dydx",
-        DEPOSIT_STABLE,
-        BORROW_ETH,
-        FLASHLOAN.AAVE
-      );
-      //testRefinance3([vaultdaieth, vaultusdceth], "compound", "dydx", DEPOSIT_STABLE, BORROW_ETH, FLASHLOAN.DYDX);
-      testRefinance3(
-        [vaultdaieth, vaultusdceth],
-        "compound",
-        "dydx",
-        DEPOSIT_STABLE,
-        BORROW_ETH,
-        FLASHLOAN.CREAM
-      );
+      // testRefinance3(
+      //   [vaultdaieth, vaultusdceth],
+      //   "compound",
+      //   "dydx",
+      //   DEPOSIT_STABLE,
+      //   BORROW_ETH,
+      //   FLASHLOAN.AAVE
+      // );
+      // testRefinance3([vaultdaieth, vaultusdceth], "compound", "dydx", DEPOSIT_STABLE, BORROW_ETH, FLASHLOAN.DYDX);
+      // testRefinance3(
+      //   [vaultdaieth, vaultusdceth],
+      //   "compound",
+      //   "dydx",
+      //   DEPOSIT_STABLE,
+      //   BORROW_ETH,
+      //   FLASHLOAN.CREAM
+      // );
 
       testRefinance3(
         [vaultdaieth, vaultusdceth],

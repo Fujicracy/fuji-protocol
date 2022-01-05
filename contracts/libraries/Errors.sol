@@ -49,6 +49,7 @@ library Errors {
   string public constant VL_INVALID_HARVEST_PROTOCOL_NUMBER = "132"; // invalid flashloan number
   string public constant VL_INVALID_HARVEST_TYPE = "133"; // invalid flashloan number
   string public constant VL_INVALID_FACTOR = "134"; // invalid factor
+  string public constant VL_INVALID_NEW_PROVIDER ="135"; // invalid newProvider in executeSwitch
 
   string public constant MATH_DIVISION_BY_ZERO = "201";
   string public constant MATH_ADDITION_OVERFLOW = "202";

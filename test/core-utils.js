@@ -135,6 +135,13 @@ const fixture = async ([wallet]) => {
     await f1155.setPermit(vault.address, true);
     await vault.setFujiERC1155(f1155.address);
     await fujiadmin.allowVault(vault.address, true);
+    await vault.setProviders(
+      [
+        compound.address,
+        aave.address,
+        ironBank.address
+      ]
+    );
 
     vaults[name] = vault;
   }

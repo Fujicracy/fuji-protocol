@@ -78,6 +78,18 @@ contract Controller is Claimable {
     // Validate _newProvider is not equal to vault's activeProvider
     require(vault.activeProvider() != _newProvider, Errors.RF_INVALID_NEW_ACTIVEPROVIDER);
 
+    address[] memory providers = vault.getProviders();
+    // Check '_newProvider' is a valid provider
+    bool validProvider;
+    for (uint i = 0; i < providers.length && !validProvider; i++) {
+      if (_newProvider == providers[i]) {
+        validProvider = true;
+      }
+    }
+    if (!validProvider) {
+      revert(Errors.VL_INVALID_NEW_PROVIDER);
+    }
+
     IVaultControl.VaultAssets memory vAssets = IVaultControl(_vaultAddr).vAssets();
     vault.updateF1155Balances();
 

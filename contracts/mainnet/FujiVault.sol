@@ -108,7 +108,7 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
       Errors.VL_ZERO_ADDR
     );
 
-    __Ownable_init();
+    __Claimable_init();
     __Pausable_init();
     __ReentrancyGuard_init();
 
@@ -280,6 +280,17 @@ contract FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
     uint256 _flashLoanAmount,
     uint256 _fee
   ) external payable override onlyFlash whenNotPaused {
+    // Check '_newProvider' is a valid provider
+    bool validProvider;
+    for (uint256 i = 0; i < providers.length; i++) {
+      if (_newProvider == providers[i]) {
+        validProvider = true;
+      }
+    }
+    if (!validProvider) {
+      revert(Errors.VL_INVALID_NEW_PROVIDER);
+    }
+
     // Compute Ratio of transfer before payback
     uint256 ratio = (_flashLoanAmount * 1e18) /
       (IProvider(activeProvider).getBorrowBalance(vAssets.borrowAsset));

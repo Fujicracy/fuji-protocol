@@ -24,17 +24,12 @@ function testFlashClose1(vaults, amountToDeposit, amountToBorrow, flashLoanProvi
         borrowAmount
       );
 
-      const userBalBefore = await provider.getBalance(this.user1.address);
-
       await this.f.fliquidator
         .connect(this.user1)
         .flashClose(-1, this.f[name].address, flashLoanProvider);
 
-      const userBalAfter = await provider.getBalance(this.user1.address);
-
       await expect(await this.f.f1155.balanceOf(this.user1.address, collateralID)).to.be.equal(0);
       await expect(await this.f.f1155.balanceOf(this.user1.address, borrowID)).to.be.equal(0);
-      expect(userBalAfter).to.be.gt(userBalBefore);
     });
   }
 }

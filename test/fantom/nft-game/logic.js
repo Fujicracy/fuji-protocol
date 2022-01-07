@@ -31,9 +31,9 @@ describe("Core Fuji Instance", function () {
   describe("NFT Bond Logic", function () {
     describe("Valid Vaults", function () {
       it("Set valid vaults", async function () {
+        await expect(this.f.nftbondlogic.validVaults(0)).to.be.reverted;
         await this.f.nftbondlogic.setValidVaults([this.f.vaultftmdai.address]);
-        const res = await this.f.nftbondlogic.validVaults();
-        console.log(res);
+        expect(await this.f.nftbondlogic.validVaults(0)).to.be.equal(this.f.vaultftmdai.address);
       });
     });
   });

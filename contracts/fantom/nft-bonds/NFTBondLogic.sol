@@ -100,6 +100,13 @@ contract NFTBondLogic is ERC1155 {
     // State Changing Functions
     
     /**
+    * @notice Sets the list of vaults that count towards the game
+     */
+    function setValidVaults(address[] memory vaults) external {
+        validVaults = vaults;
+    }
+
+    /**
     * @notice Compute user's total debt in Fuji in all vaults of this chain.
     * @dev Called whenever a user performs a 'borrow()' or 'payback()' call on {FujiVault} contract
     * @dev Must consider all fuji active vaults, and different decimals. 

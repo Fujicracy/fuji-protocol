@@ -118,6 +118,8 @@ const fixture = async ([wallet]) => {
   const aave = await ProviderAaveMATIC.deploy([]);
   const ProviderKashi = await getContractFactory("ProviderKashi");
   const kashi = await ProviderKashi.deploy([]);
+  const ProviderWepiggy = await getContractFactory("ProviderWepiggy");
+  const wepiggy = await ProviderWepiggy.deploy([]);
 
   // Log if debug is set true
   if (DEBUG) {
@@ -170,6 +172,7 @@ const fixture = async ([wallet]) => {
     ...vaults,
     aave,
     kashi,
+    wepiggy,
     oracle,
     fujiadmin,
     fliquidator,

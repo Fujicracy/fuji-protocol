@@ -231,6 +231,7 @@ function testBorrow2(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
+// Kashi Only! -> Testing borrow of ERC20, after depositing ERC20
 function testBorrow2k(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
@@ -269,10 +270,11 @@ function testBorrow2k(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
+// Testing borrow of Native token, after depositing ERC20
 function testBorrow3(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
-    it(`borrow ${amountToBorrow} ETH after depositing ${amountToDeposit} ERC20 -> ${collateral.nameUp} as collateral`, async function () {
+    it(`borrow ${amountToBorrow} Native after depositing ${amountToDeposit} ERC20 -> ${collateral.nameUp} as collateral`, async function () {
       const depositAmount = parseUnits(amountToDeposit, collateral.decimals);
       const negdepositAmount = parseUnits(-amountToDeposit, collateral.decimals);
       const borrowAmount = parseUnits(amountToBorrow);
@@ -305,6 +307,7 @@ function testBorrow3(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
+// Deposit Native token as collateral, borrow an ERC20 token, then payback and withdraw.
 function testPaybackAndWithdraw1(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
@@ -348,6 +351,7 @@ function testPaybackAndWithdraw1(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
+// Deposit ERC20 token as collateral, borrow a different ERC20 token, then payback and withdraw
 function testPaybackAndWithdraw2(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
@@ -396,6 +400,7 @@ function testPaybackAndWithdraw2(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
+// Kashi Only -> Deposit ERC20 token as collateral, borrow a different ERC20 token, then payback and withdraw
 function testPaybackAndWithdraw2k(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
@@ -448,6 +453,7 @@ function testPaybackAndWithdraw2k(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
+// Deposit ERC20 token as collateral, borrow a different Native token, then payback and withdraw
 function testPaybackAndWithdraw3(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];

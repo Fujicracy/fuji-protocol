@@ -42,6 +42,8 @@ contract NFTBondLogic is ERC1155 {
     uint256 private constant  CONSTANT_DECIMALS = 8; // Applies to all constants
     uint256 private constant POINTS_ID = 0;
 
+    address private constant _FTM = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+
     modifier onlyVault() {
         bool isVault;
         for(uint i = 0; i < validVaults.length && !isVault; i++) {
@@ -90,9 +92,8 @@ contract NFTBondLogic is ERC1155 {
         uint decimals;
         for(uint i = 0; i < validVaults.length; i++) {
             vAssets = IVaultControl(validVaults[i]).vAssets();
-            decimals = IERC20Extended(vAssets.borrowAsset).decimals();
-
-            totalDebt += IVault(validVaults[i]).userDebtBalance(user) / 10^decimals;
+            decimals = vAssets.borrowAsset == _FTM ? 18 : IERC20Extended(vAssets.borrowAsset).decimals();
+            totalDebt += IVault(validVaults[i]).userDebtBalance(user) / 10**decimals;
         }
         return totalDebt;
     }

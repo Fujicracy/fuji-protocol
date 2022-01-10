@@ -38,8 +38,8 @@ describe("Core Fuji Instance", function () {
 
       it("Set multiple valid vaults", async function () {
         await expect(this.f.nftbondlogic.validVaults(0)).to.be.reverted;
+        await this.f.nftbondlogic.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
         for (let i = 0; i < VAULTS.length; i++) {
-          console.log(await this.f.nftbondlogic.validVaults(i));
           expect(await this.f.nftbondlogic.validVaults(i)).to.be.equal(
             this.f[VAULTS[i].name].address
           );

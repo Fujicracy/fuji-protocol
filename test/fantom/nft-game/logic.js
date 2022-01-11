@@ -5,7 +5,13 @@ const { createFixtureLoader } = require("ethereum-waffle");
 const { getContractAt, provider } = ethers;
 
 const { fixture, ASSETS, VAULTS } = require("../utils");
-const { parseUnits, formatUnitsToNum, evmSnapshot, evmRevert } = require("../../helpers");
+const {
+  parseUnits,
+  formatUnitsToNum,
+  evmSnapshot,
+  evmRevert,
+  timeTravel,
+} = require("../../helpers");
 
 describe("Core Fuji Instance", function () {
   before(async function () {
@@ -107,6 +113,25 @@ describe("Core Fuji Instance", function () {
         }
 
         expect(await this.f.nftbondlogic.getUserDebt(this.user.address)).to.be.equal(borrowSum);
+      });
+
+      it.only("Interest", async function () {
+        const vaults = [this.f.vaultftmdai, this.f.vaultftmusdc];
+        const depositAmounts = [parseUnits(5000), parseUnits(4000)];
+        const borrowAmounts = [parseUnits(1500), parseUnits(1000, 6)];
+        const borrowDecimals = [18, 6];
+
+        let borrowSum = 0;
+        for (let i = 0; i < vaults.length; i++) {
+          await vaults[i].connect(this.user).depositAndBorrow(depositAmounts[i], borrowAmounts[i], {
+            value: depositAmounts[i],
+          });
+          borrowSum += formatUnitsToNum(borrowAmounts[i], borrowDecimals[i]);
+        }
+
+        await timeTravel(99999999);
+
+        expect(await this.f.nftbondlogic.getUserDebt(this.user.address)).to.be.gt(borrowSum);
       });
     });
   });

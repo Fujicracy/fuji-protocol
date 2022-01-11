@@ -101,6 +101,12 @@ const fixture = async ([wallet]) => {
   const Flasher = await getContractFactory("FlasherFTM");
   const flasher = await Flasher.deploy([]);
 
+  const Harvester = await getContractFactory("VaultHarvesterFTM");
+  const harvester = await Harvester.deploy([]);
+
+  const FujiSwapper = await getContractFactory("SwapperFTM");
+  const fujiSwapper = await FujiSwapper.deploy([]);
+
   const Controller = await getContractFactory("Controller");
   const controller = await Controller.deploy([]);
 
@@ -159,6 +165,8 @@ const fixture = async ([wallet]) => {
 
   // Step 4: Setup
   await fujiadmin.setFlasher(flasher.address);
+  await fujiadmin.setSwapper(fujiSwapper.address);
+  await fujiadmin.setVaultHarvester(harvester.address);
   await fujiadmin.setFliquidator(fliquidator.address);
   await fujiadmin.setTreasury(TREASURY_ADDR);
   await fujiadmin.setController(controller.address);

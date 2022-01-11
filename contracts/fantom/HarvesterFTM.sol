@@ -18,49 +18,22 @@ contract VaultHarvesterFTM is IHarvester {
     returns (address claimedToken, Transaction memory transaction)
   {
     if (_farmProtocolNum == 0) {
-      transaction.to = 0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B;
-      transaction.data = abi.encodeWithSelector(
-        bytes4(keccak256("claimComp(address)")),
-        msg.sender
-      );
-      claimedToken = 0xc00e94Cb662C3520282E6f5717214004A7f26888;
-    } else if (_farmProtocolNum == 1) {
-      uint256 harvestType = abi.decode(_data, (uint256));
-
-      if (harvestType == 0) {
-        // claim
-        (, address[] memory assets) = abi.decode(_data, (uint256, address[]));
-        transaction.to = 0xd784927Ff2f95ba542BfC824c8a8a98F3495f6b5;
-        transaction.data = abi.encodeWithSelector(
-          bytes4(keccak256("claimRewards(address[],uint256,address)")),
-          assets,
-          type(uint256).max,
-          msg.sender
-        );
-      } else if (harvestType == 1) {
-        // cooldown
-        transaction.to = 0x4da27a545c0c5B758a6BA100e3a049001de870f5;
-        transaction.data = abi.encodeWithSelector(bytes4(keccak256("cooldown()")));
-      } else if (harvestType == 2) {
-        // redeem
-        transaction.to = 0x4da27a545c0c5B758a6BA100e3a049001de870f5;
-        transaction.data = abi.encodeWithSelector(
-          bytes4(keccak256("redeem(address,uint256)")),
-          msg.sender,
-          type(uint256).max
-        );
-        claimedToken = 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9;
-      } else {
-        revert(Errors.VL_INVALID_HARVEST_TYPE);
-      }
+      return _getGeistTransaction(_data);
     } else {
       revert(Errors.VL_INVALID_HARVEST_PROTOCOL_NUMBER);
     }
   }
 
-  function _getGeistTransaction(bytes memory _data) internal view returns (Transaction memory transaction) {
+  function _getGeistTransaction(bytes memory _data)
+    internal
+    view
+    returns (address claimedToken, Transaction memory transaction)
+  {
     uint256 harvestType = abi.decode(_data, (uint256));
     if (harvestType == 0) {
+      // claim vested GEIST
+      // assets are all gTokens and variableDebtTokens
+      // "to": ChefIncentivesController
       (, address[] memory assets) = abi.decode(_data, (uint256, address[]));
       transaction.to = 0x297FddC5c33Ef988dd03bd13e162aE084ea1fE57;
       transaction.data = abi.encodeWithSelector(
@@ -69,10 +42,28 @@ contract VaultHarvesterFTM is IHarvester {
         assets
       );
     } else if (harvestType == 1) {
+      // get gTokens
+      // "to": Geist Staking Contract
       transaction.to = 0x49c93a95dbcc9A6A4D8f77E59c038ce5020e82f8;
       transaction.data = abi.encodeWithSelector(
         bytes4(keccak256("getReward()"))
       );
+    } else if (harvestType == 2) {
+      (, address asset) = abi.decode(_data, (uint256, address));
+      // withdraw gToken
+      // "to": Geist Lending Pool
+      transaction.to = 0x9FAD24f572045c7869117160A571B2e50b10d068;
+      transaction.data = abi.encodeWithSelector(
+        bytes4(keccak256("withdraw(address,uint256,address)")),
+        asset,
+        type(uint256).max,
+        msg.sender
+      );
+      claimedToken = asset;
+    } else if (harvestType == 3) {
+      // TODO: harvest GEIST
+    } else {
+      revert(Errors.VL_INVALID_HARVEST_TYPE);
     }
   }
 }

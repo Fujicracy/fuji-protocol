@@ -17,7 +17,7 @@ contract NFTBondLogic is ERC1155 {
         uint64 lastTimestampUpdate;
         uint64 rateOfAccrual;
         uint128 accruedPoints;
-        uint128 lastMultiplierValue;
+        // uint128 lastMultiplierValue;
         uint128 recordedDebtBalance;
     }
 
@@ -38,8 +38,8 @@ contract NFTBondLogic is ERC1155 {
 
     uint256 private constant MINIMUM_DAILY_DEBT_POSITION = 1; //tbd
     uint256 private constant POINT_PER_DEBTUNIT_PER_DAY = 1; //tbd
-    uint256 private constant MULTIPLIER_RATE = 100000000; // tbd
-    uint256 private constant  CONSTANT_DECIMALS = 8; // Applies to all constants
+    // uint256 private constant MULTIPLIER_RATE = 100000000; // tbd
+    uint256 private constant CONSTANT_DECIMALS = 8; // Applies to all constants
     uint256 private constant POINTS_ID = 0;
 
     address private constant _FTM = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
@@ -163,8 +163,8 @@ contract NFTBondLogic is ERC1155 {
         // 2 - add points by interest
         // 3 - multiply all by multiplier
         return (_timestampDifference(info.lastTimestampUpdate) * (info.rateOfAccrual / SEC) + 
-        ((debt - info.recordedDebtBalance) * _timestampDifference(info.lastTimestampUpdate) / 2)) * 
-        _computeLatestMultiplier(info.lastMultiplierValue, info.lastTimestampUpdate);
+        ((debt - info.recordedDebtBalance) * _timestampDifference(info.lastTimestampUpdate) / 2)); // *
+        // _computeLatestMultiplier(info.lastMultiplierValue, info.lastTimestampUpdate);
     }
 
     /**
@@ -173,12 +173,12 @@ contract NFTBondLogic is ERC1155 {
     */
     function _compoundPoints(address user, uint debt) internal {
         // Read the current state of userdata
-        UserData memory info = userdata[user];
+        // UserData memory info = userdata[user];
 
         // Change the state
         uint points = _computeAccrued(user, debt);
         userdata[user].accruedPoints += uint128(points);
-        userdata[user].lastMultiplierValue = uint128(_computeLatestMultiplier(info.lastMultiplierValue, info.lastTimestampUpdate));
+        // userdata[user].lastMultiplierValue = uint128(_computeLatestMultiplier(info.lastMultiplierValue, info.lastTimestampUpdate));
         userdata[user].recordedDebtBalance = uint128(debt);
 
         totalSupply[POINTS_ID] += points;
@@ -188,9 +188,9 @@ contract NFTBondLogic is ERC1155 {
         return block.timestamp - oldTimestamp;
     }
 
-    function _computeLatestMultiplier(uint lastMultiplier, uint oldTimestamp) internal view returns(uint) {
-        return lastMultiplier * MULTIPLIER_RATE ** (_timestampDifference(oldTimestamp)) / 10^(CONSTANT_DECIMALS);
-    }
+    // function _computeLatestMultiplier(uint lastMultiplier, uint oldTimestamp) internal view returns(uint) {
+    //     return lastMultiplier * MULTIPLIER_RATE ** (_timestampDifference(oldTimestamp)) / 10^(CONSTANT_DECIMALS);
+    // }
 
     function _beforeTokenTransfer(
         address operator,

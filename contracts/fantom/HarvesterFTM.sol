@@ -61,7 +61,16 @@ contract VaultHarvesterFTM is IHarvester {
       );
       claimedToken = asset;
     } else if (harvestType == 3) {
-      // TODO: harvest GEIST
+      (, uint256 amount) = abi.decode(_data, (uint256, uint256));
+      // withdraw GEIST
+      // "to": Geist Staking Contract
+      transaction.to = 0x49c93a95dbcc9A6A4D8f77E59c038ce5020e82f8;
+      transaction.data = abi.encodeWithSelector(
+        bytes4(keccak256("withdraw(uint256)")),
+        amount
+      );
+      // GEIST
+      claimedToken = 0xd8321AA83Fb0a4ECd6348D4577431310A6E0814d;
     } else {
       revert(Errors.VL_INVALID_HARVEST_TYPE);
     }

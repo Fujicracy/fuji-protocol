@@ -74,10 +74,10 @@ contract NFTBondLogic is ERC1155 {
 
     /**
     * @notice Compute user's rate of point accrual.
-    * @dev Unit should be points per second.
+    * @dev Unit should be points per day.
     */
     function computeRateOfAccrual(address user) public view returns(uint256) {
-        return getUserDebt(user) / SEC;
+        return getUserDebt(user);
     }
 
     /**
@@ -130,8 +130,7 @@ contract NFTBondLogic is ERC1155 {
 
         // Set User parameters
         info.lastTimestampUpdate = uint64(block.timestamp);
-        info.rateOfAccrual = uint64(debt / SEC);
-        
+        info.rateOfAccrual = uint64(debt);
     }
 
     /**
@@ -163,7 +162,7 @@ contract NFTBondLogic is ERC1155 {
         // 1 - compute points from normal rate
         // 2 - add points by interest
         // 3 - multiply all by multiplier
-        return (_timestampDifference(info.lastTimestampUpdate) * info.rateOfAccrual + 
+        return (_timestampDifference(info.lastTimestampUpdate) * (info.rateOfAccrual / SEC) + 
         ((debt - info.recordedDebtBalance) * _timestampDifference(info.lastTimestampUpdate) / 2)) * 
         _computeLatestMultiplier(info.lastMultiplierValue, info.lastTimestampUpdate);
     }

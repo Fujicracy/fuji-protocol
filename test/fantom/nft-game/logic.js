@@ -38,33 +38,31 @@ describe("Core Fuji Instance", function () {
   describe("NFT Bond Logic", function () {
     describe("Valid Vaults", function () {
       it("Set single valid vault", async function () {
-        await expect(this.f.nftbondlogic.validVaults(0)).to.be.reverted;
-        await this.f.nftbondlogic.setValidVaults([this.f.vaultftmdai.address]);
-        expect(await this.f.nftbondlogic.validVaults(0)).to.be.equal(this.f.vaultftmdai.address);
+        await expect(this.f.nftbond.validVaults(0)).to.be.reverted;
+        await this.f.nftbond.setValidVaults([this.f.vaultftmdai.address]);
+        expect(await this.f.nftbond.validVaults(0)).to.be.equal(this.f.vaultftmdai.address);
       });
 
       it("Set multiple valid vaults", async function () {
-        await expect(this.f.nftbondlogic.validVaults(0)).to.be.reverted;
-        await this.f.nftbondlogic.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
+        await expect(this.f.nftbond.validVaults(0)).to.be.reverted;
+        await this.f.nftbond.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
         for (let i = 0; i < VAULTS.length; i++) {
-          expect(await this.f.nftbondlogic.validVaults(i)).to.be.equal(
-            this.f[VAULTS[i].name].address
-          );
+          expect(await this.f.nftbond.validVaults(i)).to.be.equal(this.f[VAULTS[i].name].address);
         }
       });
     });
 
-    describe.only("User Debt", function () {
+    describe("User Debt", function () {
       before(async function () {
         for (let i = 0; i < VAULTS.length; i += 1) {
           const vault = VAULTS[i];
           await this.f[vault.name].setActiveProvider(this.f.geist.address);
         }
-        await this.f.nftbondlogic.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
+        await this.f.nftbond.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
       });
 
       it("No Deposits", async function () {
-        expect(await this.f.nftbondlogic.getUserDebt(this.user.address)).to.be.equal(0);
+        expect(await this.f.nftbond.getUserDebt(this.user.address)).to.be.equal(0);
       });
 
       it("Single Valid Vault Deposit", async function () {
@@ -76,7 +74,7 @@ describe("Core Fuji Instance", function () {
           value: depositAmount,
         });
 
-        expect(await this.f.nftbondlogic.getUserDebt(this.user.address)).to.be.equal(
+        expect(await this.f.nftbond.getUserDebt(this.user.address)).to.be.equal(
           formatUnitsToNum(borrowAmount)
         );
       });
@@ -89,13 +87,13 @@ describe("Core Fuji Instance", function () {
 
         expect(vault).to.not.be.equal(validVault);
 
-        await this.f.nftbondlogic.setValidVaults([validVault.address]);
+        await this.f.nftbond.setValidVaults([validVault.address]);
 
         await vault.connect(this.user).depositAndBorrow(depositAmount, borrowAmount, {
           value: depositAmount,
         });
 
-        expect(await this.f.nftbondlogic.getUserDebt(this.user.address)).to.be.equal(0);
+        expect(await this.f.nftbond.getUserDebt(this.user.address)).to.be.equal(0);
       });
 
       it("Multiple Vaults", async function () {
@@ -112,10 +110,10 @@ describe("Core Fuji Instance", function () {
           borrowSum += formatUnitsToNum(borrowAmounts[i], borrowDecimals[i]);
         }
 
-        expect(await this.f.nftbondlogic.getUserDebt(this.user.address)).to.be.equal(borrowSum);
+        expect(await this.f.nftbond.getUserDebt(this.user.address)).to.be.equal(borrowSum);
       });
 
-      it.only("Interest", async function () {
+      it("Interest", async function () {
         const vaults = [this.f.vaultftmdai, this.f.vaultftmusdc];
         const depositAmounts = [parseUnits(5000), parseUnits(4000)];
         const borrowAmounts = [parseUnits(1500), parseUnits(1000, 6)];
@@ -131,7 +129,50 @@ describe("Core Fuji Instance", function () {
 
         await timeTravel(99999999);
 
-        expect(await this.f.nftbondlogic.getUserDebt(this.user.address)).to.be.gt(borrowSum);
+        expect(await this.f.nftbond.getUserDebt(this.user.address)).to.be.gt(borrowSum);
+      });
+    });
+
+    describe("Point System", function () {
+      before(async function () {
+        for (let i = 0; i < VAULTS.length; i += 1) {
+          const vault = VAULTS[i];
+          await this.f[vault.name].setActiveProvider(this.f.geist.address);
+        }
+        await this.f.nftbond.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
+      });
+
+      it("New user starting points", async function () {
+        expect(await this.f.nftbond.balanceOf(this.user.address, 0)).to.be.equal(0);
+      });
+
+      it("Reverting state of points outside contract", async function () {
+        await expect(this.f.nftbond.checkStateOfPoints(this.user.address, 0, true)).to.be.reverted;
+      });
+
+      it("Get points balance after time passed", async function () {
+        const vault = this.f.vaultftmdai;
+        const depositAmount = parseUnits(1000);
+        const borrowAmount = parseUnits(100);
+        const secsInADay = 60 * 60 * 24;
+        const time = 60 * 60 * 24 * 365; // 1 year
+
+        await vault.connect(this.user).depositAndBorrow(depositAmount, borrowAmount, {
+          value: depositAmount,
+        });
+
+        await timeTravel(time);
+
+        const pointsFromRate = time * (formatUnitsToNum(borrowAmount) / secsInADay);
+        const pointsFromInterest =
+          (((await this.f.nftbond.getUserDebt(this.user.address)) -
+            formatUnitsToNum(borrowAmount)) *
+            time) /
+          2;
+
+        expect(await this.f.nftbond.balanceOf(this.user.address, 0)).to.be.equal(
+          pointsFromRate + pointsFromInterest
+        );
       });
     });
   });

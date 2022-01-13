@@ -19,6 +19,7 @@ import "../interfaces/IFujiERC1155.sol";
 import "../interfaces/IProvider.sol";
 import "../libraries/Errors.sol";
 import "./libraries/LibUniversalERC20UpgradeableFTM.sol";
+import "./nft-bonds/NFTBond.sol";
 
 /**
  * @dev Contract for the interaction of Fuji users with the Fuji protocol.
@@ -29,6 +30,11 @@ import "./libraries/LibUniversalERC20UpgradeableFTM.sol";
 contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   using SafeERC20Upgradeable for IERC20Upgradeable;
   using LibUniversalERC20UpgradeableFTM for IERC20Upgradeable;
+
+  /**
+  * @dev Log a change in fuji admin address
+  */
+  event NFTBondChanged(address newNFTBond);
 
   address public constant FTM = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
 
@@ -51,6 +57,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   IFujiAdmin private _fujiAdmin;
   address public override fujiERC1155;
   IFujiOracle public oracle;
+  address public nftBond;
 
   string public name;
 
@@ -419,6 +426,17 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   }
 
   /**
+   * @dev Sets the NFT Bond Logic address
+   * @param _nftbond: new NFT Bond Logic address
+   * Emits a {OracleChanged} event.
+   */
+  function setNFTBond(address _nftbond) external isAuthorized {
+    require(_nftbond != address(0), Errors.VL_ZERO_ADDR);
+    nftBond = _nftbond;
+    emit NFTBondChanged(_nftbond);
+  }
+
+  /**
    * @dev Set providers to the Vault
    * @param _providers: new providers' addresses
    * Emits a {ProvidersChanged} event.
@@ -718,6 +736,8 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
     IERC20Upgradeable(vAssets.borrowAsset).univTransfer(payable(msg.sender), _borrowAmount);
 
     emit Borrow(msg.sender, vAssets.borrowAsset, _borrowAmount);
+
+    NFTBond(nftBond).checkStateOfPoints(msg.sender, _borrowAmount, false);
   }
 
   /**
@@ -769,5 +789,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
     remainingProtocolFee += userFee;
 
     emit Payback(msg.sender, vAssets.borrowAsset, debtBalance);
+
+    NFTBond(nftBond).checkStateOfPoints(msg.sender, amountToPayback, true);
   }
 }

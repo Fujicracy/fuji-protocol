@@ -113,8 +113,8 @@ const fixture = async ([wallet]) => {
     Object.values(ASSETS).map((asset) => asset.oracle)
   );
 
-  const NFTBondLogic = await getContractFactory("NFTBondLogic");
-  const nftbondlogic = await NFTBondLogic.deploy([]);
+  const NFTBond = await getContractFactory("NFTBond");
+  const nftbond = await NFTBond.deploy([]);
 
   // Step 2: Providers
   const ProviderCream = await getContractFactory("ProviderCream");
@@ -132,7 +132,7 @@ const fixture = async ([wallet]) => {
     console.log("controller", controller.address);
     console.log("f1155", f1155.address);
     console.log("oracle", oracle.address);
-    console.log("nftbondlogic", nftbondlogic.address);
+    console.log("nftbondlogic", nftbond.address);
     console.log("cream", cream.address);
     console.log("scream", scream.address);
     console.log("geist", geist.address);
@@ -156,6 +156,7 @@ const fixture = async ([wallet]) => {
 
     await f1155.setPermit(vault.address, true);
     await vault.setFujiERC1155(f1155.address);
+    await vault.setNFTBond(nftbond.address);
     await fujiadmin.allowVault(vault.address, true);
 
     vaults[name] = vault;
@@ -178,7 +179,7 @@ const fixture = async ([wallet]) => {
     cream,
     scream,
     geist,
-    nftbondlogic,
+    nftbond,
     oracle,
     fujiadmin,
     fliquidator,

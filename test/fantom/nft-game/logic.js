@@ -54,6 +54,7 @@ describe("Core Fuji Instance", function () {
 
     describe("User Debt", function () {
       before(async function () {
+        await evmRevert(this.evmSnapshot0);
         for (let i = 0; i < VAULTS.length; i += 1) {
           const vault = VAULTS[i];
           await this.f[vault.name].setActiveProvider(this.f.geist.address);
@@ -135,6 +136,7 @@ describe("Core Fuji Instance", function () {
 
     describe("Point System", function () {
       before(async function () {
+        await evmRevert(this.evmSnapshot0);
         for (let i = 0; i < VAULTS.length; i += 1) {
           const vault = VAULTS[i];
           await this.f[vault.name].setActiveProvider(this.f.geist.address);

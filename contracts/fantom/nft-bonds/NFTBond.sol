@@ -57,9 +57,9 @@ contract NFTBond is ERC1155 {
   // View Functions
 
   /**
-   * @notice Returns the balance of token Id.
-   * @dev If id == 0, refers to point score system, else is calls ERC1155 NFT balance.
-   */
+  * @notice Returns the balance of token Id.
+  * @dev If id == 0, refers to point score system, else is calls ERC1155 NFT balance.
+  */
   function balanceOf(address user, uint256 id) public view override returns (uint256) {
     // To query points balance, id == 0
     if (id == POINTS_ID) {
@@ -71,18 +71,18 @@ contract NFTBond is ERC1155 {
   }
 
   /**
-   * @notice Compute user's rate of point accrual.
-   * @dev Unit should be points per day.
-   */
+  * @notice Compute user's rate of point accrual.
+  * @dev Unit should be points per day.
+  */
   function computeRateOfAccrual(address user) public view returns (uint256) {
     return getUserDebt(user);
   }
 
   /**
-   * @notice Compute user's (floored) total debt in Fuji in all vaults of this chain.
-   * @dev Must consider all fuji's active vaults, and different decimals.
-   * @dev This function floors decimals to the nearest integer amount of debt. Example 1.78784 usdc = 1 unit of debt
-   */
+  * @notice Compute user's (floored) total debt in Fuji in all vaults of this chain.
+  * @dev Must consider all fuji's active vaults, and different decimals.
+  * @dev This function floors decimals to the nearest integer amount of debt. Example 1.78784 usdc = 1 unit of debt
+  */
   function getUserDebt(address user) public view returns (uint256) {
     uint256 totalDebt = 0;
 
@@ -99,17 +99,29 @@ contract NFTBond is ERC1155 {
   // State Changing Functions
 
   /**
-   * @notice Sets the list of vaults that count towards the game
-   */
+  * @notice Sets the list of vaults that count towards the game
+  */
   function setValidVaults(address[] memory vaults) external {
     validVaults = vaults;
   }
 
   /**
-   * @notice Compute user's total debt in Fuji in all vaults of this chain.
-   * @dev Called whenever a user performs a 'borrow()' or 'payback()' call on {FujiVault} contract
-   * @dev Must consider all fuji active vaults, and different decimals.
-   */
+  * @notice Checks if a given vault is a valid vault
+  */
+  function isValidVault(address vault) external view returns (bool){
+    for (uint256 i = 0; i < validVaults.length; i++) {
+      if (validVaults[i] == vault) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+  * @notice Compute user's total debt in Fuji in all vaults of this chain.
+  * @dev Called whenever a user performs a 'borrow()' or 'payback()' call on {FujiVault} contract
+  * @dev Must consider all fuji active vaults, and different decimals.
+  */
   function checkStateOfPoints(
     address user,
     uint256 balanceChange,
@@ -134,8 +146,8 @@ contract NFTBond is ERC1155 {
   }
 
   /**
-   * @notice Claims bonus points given to user before 'gameLaunchTimestamp'.
-   */
+  * @notice Claims bonus points given to user before 'gameLaunchTimestamp'.
+  */
   function claimBonusPoints() public {}
 
   function setMerkleRoot(bytes32 _merkleRoot) external {
@@ -146,15 +158,15 @@ contract NFTBond is ERC1155 {
   // Internal Functions
 
   /**
-   * @dev Returns de balance of accrued points of a user.
-   */
+  * @dev Returns de balance of accrued points of a user.
+  */
   function _pointsBalanceOf(address user) internal view returns (uint256) {
     return userdata[user].accruedPoints + _computeAccrued(user, getUserDebt(user));
   }
 
   /**
-   * @notice Compute user's accrued points since user's 'lastTimestampUpdate'.
-   */
+  * @notice Compute user's accrued points since user's 'lastTimestampUpdate'.
+  */
   function _computeAccrued(address user, uint256 debt) internal view returns (uint256) {
     UserData memory info = userdata[user];
     // 1 - compute points from normal rate
@@ -167,9 +179,9 @@ contract NFTBond is ERC1155 {
   }
 
   /**
-   * @dev Adds 'computeAccrued()' to recorded 'accruedPoints' in UserData and totalSupply
-   * @dev Must update all fields of UserData information.
-   */
+  * @dev Adds 'computeAccrued()' to recorded 'accruedPoints' in UserData and totalSupply
+  * @dev Must update all fields of UserData information.
+  */
   function _compoundPoints(address user, uint256 debt) internal {
     // Read the current state of userdata
     // UserData memory info = userdata[user];

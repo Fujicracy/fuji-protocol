@@ -63,7 +63,7 @@ const [DEPOSIT_STABLE, DEPOSIT_MATIC, DEPOSIT_WETH, DEPOSIT_WBTC] = [80, 48, 0.0
 
 const [BORROW_STABLE, BORROW_MATIC, BORROW_WETH, BORROW_WBTC] = [
     DEPOSIT_STABLE / 2,
-    DEPOSIT_MATIC / 2,
+    DEPOSIT_MATIC / 4,
     DEPOSIT_WETH / 2,
     DEPOSIT_WBTC / 2,
   ];
@@ -216,7 +216,7 @@ describe("Polygon Fuji Instance", function () {
 
     describe("ERC20 token as collateral, native token as borrow asset.", function () {
         testBorrow3([vaultwethmatic], DEPOSIT_WETH, BORROW_MATIC);
-        testPaybackAndWithdraw2([vaultwethmatic], DEPOSIT_WETH, BORROW_MATIC);
+        testPaybackAndWithdraw3([vaultwethmatic], DEPOSIT_WETH, BORROW_MATIC);
         testRefinance3(
             [vaultwethmatic],
             "wepiggy",

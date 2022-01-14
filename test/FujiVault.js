@@ -14,8 +14,13 @@ const {
 
 const { getContractAt } = ethers;
 
-// testing deposits in Native Token
-// in Compound-like providers (Compound, IronBank)
+/**
+ * Performs deposit test in native token.
+ * Provider should have Compound-like compatible smartcontracts interfaces.
+ * @param {string} mapperAddr - Address of the deployed instance FujiMapping.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amount - Etherjs compatible BigNumber.
+ */
 function testDeposit1(mapperAddr, vaults, amount) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
@@ -47,8 +52,13 @@ function testDeposit1(mapperAddr, vaults, amount) {
   }
 }
 
-// testing deposits in Native Token
-// in Aave
+/**
+ * Performs deposit test in native token.
+ * Provider should have Aave-like compatible smartcontracts interfaces.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amount - Etherjs compatible BigNumber.
+ * @param {string} aeth - Address of aToken type contract for native asset.
+ */
 function testDeposit1a(vaults, amount, aeth) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
@@ -71,8 +81,14 @@ function testDeposit1a(vaults, amount, aeth) {
   }
 }
 
-// testing deposits in Native Token
-// In dydx
+
+/**
+ * DEPRECATED
+ * Performs deposit test in native token.
+ * Provider should have Dydx compatible smartcontracts interfaces.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amount - Etherjs compatible BigNumber.
+ */
 function testDeposit1b(vaults, amount) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
@@ -93,8 +109,13 @@ function testDeposit1b(vaults, amount) {
   }
 }
 
-// testing deposits in ERC20
-// in Compound-like providers (Compound, IronBank)
+/**
+ * Performs deposit test in ERC20 token.
+ * Provider should have Compound-like compatible smartcontracts interfaces.
+ * @param {string} mapperAddr - Address of the deployed instance FujiMapping.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amount - Etherjs compatible BigNumber.
+ */
 function testDeposit2(mapperAddr, vaults, amount) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
@@ -131,8 +152,13 @@ function testDeposit2(mapperAddr, vaults, amount) {
   }
 }
 
-// testing deposits in ERC20
-// in Aave
+/**
+ * Performs deposit test in ERC20 token.
+ * Provider should have Aave-like compatible smartcontracts interfaces.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amount - Etherjs compatible BigNumber.
+ * @param {array} assets - Array of objects defining vault assets. See core-utils.js.
+ */
 function testDeposit2a(vaults, amount, assets = ASSETS) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
@@ -160,7 +186,12 @@ function testDeposit2a(vaults, amount, assets = ASSETS) {
   }
 }
 
-// Testing borrow of ERC20, after depositing Native Token
+/**
+ * Performs borrow test of an ERC20 token, after depositing native token.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amountToDeposit - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ * @param {array} amountToBorrow - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ */
 function testBorrow1(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
@@ -195,7 +226,12 @@ function testBorrow1(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
-// Testing borrow of ERC20, after depositing ERC20
+/**
+ * Performs borrow test of an ERC20 token, after depositing ERC20 token.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amountToDeposit - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ * @param {array} amountToBorrow - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ */
 function testBorrow2(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
@@ -231,7 +267,13 @@ function testBorrow2(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
-// Kashi Only! -> Testing borrow of ERC20, after depositing ERC20
+/**
+ * Performs borrow test of an ERC20 token, after depositing ERC20 token.
+ * Test is only applicable to Kashi-type smartcontracts (from Sushi platform).
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amountToDeposit - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ * @param {array} amountToBorrow - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ */
 function testBorrow2k(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
@@ -270,7 +312,12 @@ function testBorrow2k(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
-// Testing borrow of Native token, after depositing ERC20
+/**
+ * Performs borrow test of native token, after depositing ERC20 token.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amountToDeposit - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ * @param {array} amountToBorrow - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ */
 function testBorrow3(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
@@ -307,7 +354,12 @@ function testBorrow3(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
-// Deposit Native token as collateral, borrow an ERC20 token, then payback and withdraw.
+/**
+ * Performs withdrawal test of native token as collateral, after payback of borrowed ERC20 token.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amountToDeposit - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ * @param {array} amountToBorrow - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ */
 function testPaybackAndWithdraw1(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
@@ -351,7 +403,12 @@ function testPaybackAndWithdraw1(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
-// Deposit ERC20 token as collateral, borrow a different ERC20 token, then payback and withdraw
+/**
+ * Performs withdrawal test of ERC20 token as collateral, after payback of borrowed ERC20 token.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amountToDeposit - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ * @param {array} amountToBorrow - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ */
 function testPaybackAndWithdraw2(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
@@ -400,7 +457,13 @@ function testPaybackAndWithdraw2(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
-// Kashi Only -> Deposit ERC20 token as collateral, borrow a different ERC20 token, then payback and withdraw
+/**
+ * Performs withdrawal test of ERC20 token as collateral, after payback of borrowed ERC20 token.
+ * Test is only applicable to Kashi-type smartcontracts (from Sushi platform).
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amountToDeposit - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ * @param {array} amountToBorrow - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ */
 function testPaybackAndWithdraw2k(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
@@ -453,7 +516,12 @@ function testPaybackAndWithdraw2k(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
-// Deposit ERC20 token as collateral, borrow a different Native token, then payback and withdraw
+/**
+ * Performs withdrawal test of ERC20 token as collateral, after payback of borrowed native token.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amountToDeposit - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ * @param {array} amountToBorrow - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ */
 function testPaybackAndWithdraw3(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];

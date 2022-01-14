@@ -131,6 +131,7 @@ const fixture = async ([wallet]) => {
     console.log("oracle", oracle.address);
     console.log("aave", aave.address);
     console.log("kashi", kashi.address);
+    console.log("wepiggy",wepiggy.address);
   }
 
   // Setp 3: Vaults
@@ -152,6 +153,13 @@ const fixture = async ([wallet]) => {
     await f1155.setPermit(vault.address, true);
     await vault.setFujiERC1155(f1155.address);
     await fujiadmin.allowVault(vault.address, true);
+    await vault.setProviders(
+      [
+        aave.address,
+        kashi.address,
+        wepiggy.address
+      ]
+    );
 
     vaults[name] = vault;
   }

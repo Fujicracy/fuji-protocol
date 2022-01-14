@@ -143,8 +143,9 @@ contract NFTBond is ERC1155 {
     }
 
     // Set User parameters
-    info.lastTimestampUpdate = uint64(block.timestamp);
-    info.rateOfAccrual = uint64(debt);
+    userdata[user].lastTimestampUpdate = uint64(block.timestamp);
+    userdata[user].rateOfAccrual = uint64(debt * (10**POINTS_DECIMALS) / SEC);
+    userdata[user].recordedDebtBalance = uint128(debt);
   }
 
   /**
@@ -174,9 +175,8 @@ contract NFTBond is ERC1155 {
     // 1 - compute points from normal rate
     // 2 - add points by interest
     // 3 - multiply all by multiplier
-    return (_timestampDifference(info.lastTimestampUpdate) *
-      (info.rateOfAccrual / SEC) +
-      (((debt - info.recordedDebtBalance) * _timestampDifference(info.lastTimestampUpdate)) / 2)); // *
+    return _timestampDifference(info.lastTimestampUpdate) * (info.rateOfAccrual) +
+      (((debt - info.recordedDebtBalance) * _timestampDifference(info.lastTimestampUpdate)) / 2); // *
     // _computeLatestMultiplier(info.lastMultiplierValue, info.lastTimestampUpdate);
   }
 

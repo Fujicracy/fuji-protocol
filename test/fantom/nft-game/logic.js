@@ -22,6 +22,10 @@ describe("Core Fuji Instance", function () {
 
     const loadFixture = createFixtureLoader(this.users, provider);
     this.f = await loadFixture(fixture);
+
+    this.pointsDecimals = await this.f.nftbond.POINTS_DECIMALS();
+    this.sec = 60 * 60 * 24;
+
     this.evmSnapshot0 = await evmSnapshot();
   });
 
@@ -153,9 +157,8 @@ describe("Core Fuji Instance", function () {
           value: depositAmount,
         });
 
-        const pointsDecimals = await this.f.nftbond.POINTS_DECIMALS();
-        const sec = 60 * 60 * 24;
-        const pps = (formatUnitsToNum(borrowAmount) / sec) * 10 ** pointsDecimals;
+        const pps = (formatUnitsToNum(borrowAmount) / this.sec) * 10 ** this.pointsDecimals;
+
         expect(await this.f.nftbond.computeRateOfAccrual(this.user.address)).to.be.equal(
           Math.floor(pps)
         );
@@ -173,7 +176,6 @@ describe("Core Fuji Instance", function () {
         const vault = this.f.vaultftmdai;
         const depositAmount = parseUnits(1000);
         const borrowAmount = parseUnits(100);
-        const secsInADay = 60 * 60 * 24;
         const time = 60 * 60 * 24 * 365; // 1 year
 
         await vault.connect(this.user).depositAndBorrow(depositAmount, borrowAmount, {
@@ -182,15 +184,16 @@ describe("Core Fuji Instance", function () {
 
         await timeTravel(time);
 
-        const pointsFromRate = time * (formatUnitsToNum(borrowAmount) / secsInADay);
-        const pointsFromInterest =
-          (((await this.f.nftbond.getUserDebt(this.user.address)) -
-            formatUnitsToNum(borrowAmount)) *
-            time) /
-          2;
+        const pps = await this.f.nftbond.computeRateOfAccrual(this.user.address);
+        const pointsFromRate = pps.mul(time);
+
+        const newDebt = await this.f.nftbond.getUserDebt(this.user.address);
+        const pointsFromInterest = ((newDebt - formatUnitsToNum(borrowAmount)) * time) / 2;
+
+        console.log(pointsFromRate.add(pointsFromInterest));
 
         expect(await this.f.nftbond.balanceOf(this.user.address, 0)).to.be.equal(
-          pointsFromRate + pointsFromInterest
+          pointsFromRate.add(pointsFromInterest)
         );
       });
     });

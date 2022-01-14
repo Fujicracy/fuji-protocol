@@ -40,6 +40,8 @@ contract NFTBond is ERC1155 {
   // uint256 private constant MULTIPLIER_RATE = 100000000; // tbd
   uint256 private constant CONSTANT_DECIMALS = 8; // Applies to all constants
   uint256 private constant POINTS_ID = 0;
+  
+  uint256 public constant POINTS_DECIMALS = 18;
 
   address private constant _FTM = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
 
@@ -72,10 +74,10 @@ contract NFTBond is ERC1155 {
 
   /**
   * @notice Compute user's rate of point accrual.
-  * @dev Unit should be points per day.
+  * @dev Unit should be points per second.
   */
   function computeRateOfAccrual(address user) public view returns (uint256) {
-    return getUserDebt(user);
+    return getUserDebt(user) * (10**POINTS_DECIMALS) / SEC;
   }
 
   /**

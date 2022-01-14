@@ -144,6 +144,23 @@ describe("Core Fuji Instance", function () {
         await this.f.nftbond.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
       });
 
+      it("Rate of accrual", async function () {
+        const vault = this.f.vaultftmdai;
+        const depositAmount = parseUnits(1000);
+        const borrowAmount = parseUnits(100);
+
+        await vault.connect(this.user).depositAndBorrow(depositAmount, borrowAmount, {
+          value: depositAmount,
+        });
+
+        const pointsDecimals = await this.f.nftbond.POINTS_DECIMALS();
+        const sec = 60 * 60 * 24;
+        const pps = (formatUnitsToNum(borrowAmount) / sec) * 10 ** pointsDecimals;
+        expect(await this.f.nftbond.computeRateOfAccrual(this.user.address)).to.be.equal(
+          Math.floor(pps)
+        );
+      });
+
       it("New user starting points", async function () {
         expect(await this.f.nftbond.balanceOf(this.user.address, 0)).to.be.equal(0);
       });

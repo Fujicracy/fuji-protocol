@@ -54,6 +54,9 @@ const allAssets = [
   variableDebtLINKAddr
 ];
 
+const DEPOSIT_WBTC = 0.1;
+const DEPOSIT_WETH = 1;
+
 describe("Fantom Fuji Instance", function () {
   before(async function () {
     this.users = await ethers.getSigners();
@@ -64,6 +67,26 @@ describe("Fantom Fuji Instance", function () {
     const loadFixture = createFixtureLoader(this.users, provider);
     this.f = await loadFixture(fixture);
     this.evmSnapshot0 = await evmSnapshot();
+
+    const block = await provider.getBlock();
+    await this.f.swapper
+      .connect(this.user)
+      .swapETHForExactTokens(
+        parseUnits(DEPOSIT_WETH),
+        [ASSETS.WFTM.address, ASSETS.WETH.address],
+        this.user.address,
+        block.timestamp + 60,
+        { value: parseUnits(2000) }
+      );
+    await this.f.swapper
+      .connect(this.user)
+      .swapETHForExactTokens(
+        parseUnits(DEPOSIT_WBTC, 8),
+        [ASSETS.WFTM.address, ASSETS.WBTC.address],
+        this.user.address,
+        block.timestamp + 60,
+        { value: parseUnits(1500) }
+      );
   });
 
   beforeEach(async function () {
@@ -77,8 +100,123 @@ describe("Fantom Fuji Instance", function () {
   });
 
   describe("Harvesting in Geist Finance", function () {
-    it("Should harvest gDAI", async function () {
-      // Set up variables
+    it("Should harvest gDAI in wethdai vault", async function () {
+      const vault = this.f.vaultwethdai;
+      const borrowAmount = parseUnits("2000");
+
+      // set Geist as activeProvider
+      await vault.setActiveProvider(this.f.geist.address);
+
+      await this.f.weth
+        .connect(this.user)
+        .approve(vault.address, parseUnits(DEPOSIT_WETH));
+      // Deposit and Borrow
+      await vault
+        .connect(this.user)
+        .depositAndBorrow(parseUnits(DEPOSIT_WETH), borrowAmount);
+
+      const vAssetStruct = await vault.vAssets();
+      const collateralBalanceBefore = await this.f.f1155.balanceOf(
+        this.user.address,
+        vAssetStruct.collateralID
+      );
+
+      const farmProtocolNum = 0;
+      const gDAI = await getContractAt("IERC20", gDAIAddr);
+
+      // CLAIM
+      await vault.connect(this.deployer).harvestRewards(
+        farmProtocolNum,
+        ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "address[]"],
+          [0, allAssets]
+        )
+      );
+
+      // pass 7d
+      await timeTravel(7 * 24 * 60 * 60);
+
+      await expect(await gDAI.balanceOf(vault.address)).to.be.equal(toBN(0));
+      // GET_REWARD
+      await vault
+        .connect(this.deployer)
+        .harvestRewards(farmProtocolNum, ethers.utils.defaultAbiCoder.encode(["uint256"], [1]));
+
+      // check gDAI balanceOf vault > 0
+      await expect(await gDAI.balanceOf(vault.address)).to.be.gt(toBN(0));
+
+      // WITHDRAW, SWAP and increase collateral
+      await vault
+        .connect(this.deployer)
+        .harvestRewards(
+          farmProtocolNum,
+          ethers.utils.defaultAbiCoder.encode(["uint256", "address"], [2, ASSETS.DAI.address])
+        );
+
+      expect(await this.f.f1155.balanceOf(this.user.address, vAssetStruct.collateralID)).to.gt(
+        collateralBalanceBefore
+      );
+    });
+
+    it("Should harvest gDAI in wbtcdai vault", async function () {
+      const vault = this.f.vaultwbtcdai;
+      const borrowAmount = parseUnits("2000");
+
+      // set Geist as activeProvider
+      await vault.setActiveProvider(this.f.geist.address);
+
+      await this.f.wbtc
+        .connect(this.user)
+        .approve(vault.address, parseUnits(DEPOSIT_WBTC, 8));
+      // Deposit and Borrow
+      await vault
+        .connect(this.user)
+        .depositAndBorrow(parseUnits(DEPOSIT_WBTC, 8), borrowAmount);
+
+      const vAssetStruct = await vault.vAssets();
+      const collateralBalanceBefore = await this.f.f1155.balanceOf(
+        this.user.address,
+        vAssetStruct.collateralID
+      );
+
+      const farmProtocolNum = 0;
+      const gDAI = await getContractAt("IERC20", gDAIAddr);
+
+      // CLAIM
+      await vault.connect(this.deployer).harvestRewards(
+        farmProtocolNum,
+        ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "address[]"],
+          [0, allAssets]
+        )
+      );
+
+      // pass 7d
+      await timeTravel(7 * 24 * 60 * 60);
+
+      await expect(await gDAI.balanceOf(vault.address)).to.be.equal(toBN(0));
+      // GET_REWARD
+      await vault
+        .connect(this.deployer)
+        .harvestRewards(farmProtocolNum, ethers.utils.defaultAbiCoder.encode(["uint256"], [1]));
+
+      // check gDAI balanceOf vault > 0
+      await expect(await gDAI.balanceOf(vault.address)).to.be.gt(toBN(0));
+
+      // WITHDRAW, SWAP and increase collateral
+      await vault
+        .connect(this.deployer)
+        .harvestRewards(
+          farmProtocolNum,
+          ethers.utils.defaultAbiCoder.encode(["uint256", "address"], [2, ASSETS.DAI.address])
+        );
+
+      expect(await this.f.f1155.balanceOf(this.user.address, vAssetStruct.collateralID)).to.gt(
+        collateralBalanceBefore
+      );
+    });
+
+    it("Should harvest gDAI in ftmdai vault", async function () {
       const vault = this.f.vaultftmdai;
       const depositAmount = parseUnits("3000");
       const borrowAmount = parseUnits("2000");

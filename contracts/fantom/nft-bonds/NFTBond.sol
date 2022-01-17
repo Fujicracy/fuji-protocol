@@ -40,9 +40,9 @@ contract NFTBond is ERC1155 {
   // uint256 private constant MULTIPLIER_RATE = 100000000; // tbd
   uint256 private constant CONSTANT_DECIMALS = 8; // Applies to all constants
   uint256 private constant POINTS_ID = 0;
-  uint256 private constant CRATE_COMMON_ID = 1;
-  uint256 private constant CRATE_EPIC_ID = 2;
-  uint256 private constant CRATE_LEGENDARY_ID = 3;
+  uint256 public constant CRATE_COMMON_ID = 1;
+  uint256 public constant CRATE_EPIC_ID = 2;
+  uint256 public constant CRATE_LEGENDARY_ID = 3;
 
   uint256 public constant POINTS_DECIMALS = 18;
 
@@ -170,11 +170,11 @@ contract NFTBond is ERC1155 {
   * @notice Burns user points to mint a new crate
   * @param rarity: common (0), epic (1), legendary (2)
   */
-  function buyCrate(uint256 rarity, uint256 amount) external {
+  function getCrates(uint256 rarity, uint256 amount) external {
     require(rarity == 0 || rarity == 1 || rarity == 2, "Invalid rarity");
 
-    uint price = cratePrices[rarity];
-    require(_pointsBalanceOf(msg.sender) >= price * amount, "Not enough points");
+    uint price = cratePrices[rarity] * amount;
+    require(_pointsBalanceOf(msg.sender) >= price, "Not enough points");
 
     _compoundPoints(msg.sender, getUserDebt(msg.sender));
     userdata[msg.sender].accruedPoints -= uint128(price);

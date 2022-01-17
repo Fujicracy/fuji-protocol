@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { createFixtureLoader } = require("ethereum-waffle");
 
-const { getContractAt, provider } = ethers;
+const { BigNumber, provider } = ethers;
 
 const { fixture, ASSETS, VAULTS } = require("../utils");
 const {
@@ -187,13 +187,46 @@ describe("Core Fuji Instance", function () {
         const pps = await this.f.nftbond.computeRateOfAccrual(this.user.address);
         const pointsFromRate = pps.mul(time);
 
-        const newDebt = await this.f.nftbond.getUserDebt(this.user.address);
-        const pointsFromInterest = ((newDebt - formatUnitsToNum(borrowAmount)) * time) / 2;
-
-        console.log(pointsFromRate.add(pointsFromInterest));
+        // const newDebt = await this.f.nftbond.getUserDebt(this.user.address);
+        // const pointsFromInterest = ((newDebt - formatUnitsToNum(borrowAmount)) * time) / 2;
 
         expect(await this.f.nftbond.balanceOf(this.user.address, 0)).to.be.equal(
-          pointsFromRate.add(pointsFromInterest)
+          // pointsFromRate.add(pointsFromInterest)
+          pointsFromRate
+        );
+      });
+
+      it("Points balance, multiple borrows", async function () {
+        const vault = this.f.vaultftmdai;
+        const depositAmount = [parseUnits(1000), parseUnits(1500)];
+        const borrowAmount = [parseUnits(100), parseUnits(150)];
+        const time = 60 * 60 * 24 * 365; // 1 year
+
+        let pps;
+        let pointsFromRate = BigNumber.from(0);
+        // let newDebt;
+        // let pointsFromInterest = 0;
+
+        for (let i = 0; i < borrowAmount.length; i++) {
+          await vault.connect(this.user).depositAndBorrow(depositAmount[i], borrowAmount[i], {
+            value: depositAmount[i],
+          });
+
+          await timeTravel(time);
+
+          pps = await this.f.nftbond.computeRateOfAccrual(this.user.address);
+          pointsFromRate = pointsFromRate.add(pps.mul(time));
+
+          // newDebt = await this.f.nftbond.getUserDebt(this.user.address);
+          // pointsFromInterest +=
+          //   ((newDebt - formatUnitsToNum(borrowAmount.slice(0, i + 1).reduce((a, b) => a + b))) *
+          //     time) /
+          //   2;
+        }
+
+        expect(await this.f.nftbond.balanceOf(this.user.address, 0)).to.be.equal(
+          // pointsFromRate.add(pointsFromInterest)
+          pointsFromRate
         );
       });
     });

@@ -132,12 +132,7 @@ contract NFTBond is ERC1155 {
     UserData memory info = userdata[user];
     uint256 debt = getUserDebt(user);
 
-    //if points == 0, new user, just set the rate
-
-    if (info.accruedPoints != 0 && info.rateOfAccrual == 0) {
-      // ongoing user, first time game (claimed bonus already)
-      // extract from merkel tree
-    } else if (info.accruedPoints != 0 && info.rateOfAccrual != 0) {
+    if (info.rateOfAccrual != 0) {
       // ongoing user, ongoing game
       _compoundPoints(user, addOrSubtract ? debt - balanceChange : debt + balanceChange);
     }
@@ -175,8 +170,8 @@ contract NFTBond is ERC1155 {
     // 1 - compute points from normal rate
     // 2 - add points by interest
     // 3 - multiply all by multiplier
-    return _timestampDifference(info.lastTimestampUpdate) * (info.rateOfAccrual) +
-      (((debt - info.recordedDebtBalance) * _timestampDifference(info.lastTimestampUpdate)) / 2); // *
+    return _timestampDifference(info.lastTimestampUpdate) * (info.rateOfAccrual); // +
+    // (((debt - info.recordedDebtBalance) * _timestampDifference(info.lastTimestampUpdate)) / 2); *
     // _computeLatestMultiplier(info.lastMultiplierValue, info.lastTimestampUpdate);
   }
 

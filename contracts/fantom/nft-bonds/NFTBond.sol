@@ -40,8 +40,13 @@ contract NFTBond is ERC1155 {
   // uint256 private constant MULTIPLIER_RATE = 100000000; // tbd
   uint256 private constant CONSTANT_DECIMALS = 8; // Applies to all constants
   uint256 private constant POINTS_ID = 0;
-  
+  uint256 private constant CRATE_COMMON_ID = 1;
+  uint256 private constant CRATE_EPIC_ID = 2;
+  uint256 private constant CRATE_LEGENDARY_ID = 3;
+
   uint256 public constant POINTS_DECIMALS = 18;
+
+  uint256[3] public cratePrices;
 
   address private constant _FTM = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
 
@@ -151,6 +156,32 @@ contract NFTBond is ERC1155 {
   function setMerkleRoot(bytes32 _merkleRoot) external {
     require(_merkleRoot[0] != 0, "empty merkleRoot!");
     merkleRoot = _merkleRoot;
+  }
+
+  /**
+  * @notice sets the prices for the crates
+  @ dev indexes: 0 - common, 1 - epic, 2 - legendary
+  */
+  function setCratePrices(uint256[3] memory prices) external {
+    cratePrices = prices;
+  }
+
+  /**
+  * @notice Burns user points to mint a new crate
+  * @param rarity: common (0), epic (1), legendary (2)
+  */
+  function buyCrate(uint256 rarity, uint256 amount) external {
+    require(rarity == 0 || rarity == 1 || rarity == 2, "Invalid rarity");
+
+    uint price = cratePrices[rarity];
+    require(_pointsBalanceOf(msg.sender) >= price * amount, "Not enough points");
+
+    _compoundPoints(msg.sender, getUserDebt(msg.sender));
+    userdata[msg.sender].accruedPoints -= uint128(price);
+
+    uint id = rarity == 0 ? CRATE_COMMON_ID : rarity == 1 ? CRATE_EPIC_ID : CRATE_LEGENDARY_ID;
+
+    _mint(msg.sender, id, amount, "");
   }
 
   // Internal Functions

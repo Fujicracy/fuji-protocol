@@ -127,14 +127,14 @@ contract NFTBond is ERC1155 {
   function checkStateOfPoints(
     address user,
     uint256 balanceChange,
-    bool addOrSubtract
+    bool isPayback
   ) external onlyVault {
     UserData memory info = userdata[user];
     uint256 debt = getUserDebt(user);
 
     if (info.rateOfAccrual != 0) {
       // ongoing user, ongoing game
-      _compoundPoints(user, addOrSubtract ? debt - balanceChange : debt + balanceChange);
+      _compoundPoints(user, isPayback ? debt - balanceChange : debt + balanceChange);
     }
 
     // Set User parameters

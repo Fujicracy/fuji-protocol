@@ -45,8 +45,7 @@ contract NFTBond is ERC1155, Claimable {
   uint256 public constant CRATE_COMMON_ID = 1;
   uint256 public constant CRATE_EPIC_ID = 2;
   uint256 public constant CRATE_LEGENDARY_ID = 3;
-
-  uint256 public constant POINTS_DECIMALS = 18;
+  uint256 public constant POINTS_DECIMALS = 5;
 
   uint256[3] public cratePrices;
 
@@ -100,7 +99,7 @@ contract NFTBond is ERC1155, Claimable {
     for (uint256 i = 0; i < validVaults.length; i++) {
       vAssets = IVaultControl(validVaults[i]).vAssets();
       decimals = vAssets.borrowAsset == _FTM ? 18 : IERC20Extended(vAssets.borrowAsset).decimals();
-      totalDebt += IVault(validVaults[i]).userDebtBalance(user) / 10**decimals;
+      totalDebt += _convertToDebtUnits(IVault(validVaults[i]).userDebtBalance(user), decimals);
     }
     return totalDebt;
   }
@@ -134,14 +133,16 @@ contract NFTBond is ERC1155, Claimable {
   function checkStateOfPoints(
     address user,
     uint256 balanceChange,
-    bool addOrSubtract
+    bool isPayback,
+    uint256 decimals
   ) external onlyVault {
     UserData memory info = userdata[user];
     uint256 debt = getUserDebt(user);
 
     if (info.rateOfAccrual != 0) {
       // ongoing user, ongoing game
-      _compoundPoints(user, addOrSubtract ? debt - balanceChange : debt + balanceChange);
+      balanceChange = _convertToDebtUnits(balanceChange, decimals);
+      _compoundPoints(user, isPayback ? debt + balanceChange : debt - balanceChange);
     }
 
     // Set User parameters
@@ -203,8 +204,8 @@ contract NFTBond is ERC1155, Claimable {
     // 1 - compute points from normal rate
     // 2 - add points by interest
     // 3 - multiply all by multiplier
-    return _timestampDifference(info.lastTimestampUpdate) * (info.rateOfAccrual); // +
-    // (((debt - info.recordedDebtBalance) * _timestampDifference(info.lastTimestampUpdate)) / 2); *
+    return _timestampDifference(info.lastTimestampUpdate) * (info.rateOfAccrual) +
+    (((debt - info.recordedDebtBalance) * _timestampDifference(info.lastTimestampUpdate)) / 2); // *
     // _computeLatestMultiplier(info.lastMultiplierValue, info.lastTimestampUpdate);
   }
 
@@ -227,6 +228,10 @@ contract NFTBond is ERC1155, Claimable {
 
   function _timestampDifference(uint256 oldTimestamp) internal view returns (uint256) {
     return block.timestamp - oldTimestamp;
+  }
+
+  function _convertToDebtUnits(uint256 value, uint256 decimals) internal pure returns (uint256) {
+    return value / 10**decimals;
   }
 
   // function _computeLatestMultiplier(uint lastMultiplier, uint oldTimestamp) internal view returns(uint) {

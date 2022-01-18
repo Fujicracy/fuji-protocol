@@ -131,7 +131,7 @@ const fixture = async ([wallet]) => {
     console.log("oracle", oracle.address);
     console.log("aave", aave.address);
     console.log("kashi", kashi.address);
-    console.log("wepiggy",wepiggy.address);
+    console.log("wepiggy", wepiggy.address);
   }
 
   // Setp 3: Vaults

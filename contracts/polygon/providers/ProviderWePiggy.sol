@@ -17,14 +17,14 @@ contract HelperFunct {
   }
 
   function _getMappingAddr() internal pure returns (address) {
-    return 0x1Cf24e4eC41DA581bEe223E1affEBB62a5A95484; //Fuji WePiggy Polygon Mapping
+    return 0x1Cf24e4eC41DA581bEe223E1affEBB62a5A95484; // Fuji WePiggy Polygon Mapping
   }
 
   function _getComptrollerAddress() internal pure returns (address) {
-    return 0xFfceAcfD39117030314A07b2C86dA36E51787948; //WePiggy Polygon
+    return 0xFfceAcfD39117030314A07b2C86dA36E51787948; // WePiggy Polygon
   }
 
-  //Compound functions
+  // WePiggy functions
 
   /**
    * @dev Approves vault's assets as collateral for Compound Protocol.
@@ -54,7 +54,7 @@ contract HelperFunct {
 contract ProviderWepiggy is IProvider, HelperFunct {
   using LibUniversalERC20MATIC for IERC20;
 
-  //Provider Core Functions
+  // Provider Core Functions
 
   /**
    * @dev Deposit '_asset'.
@@ -62,17 +62,17 @@ contract ProviderWepiggy is IProvider, HelperFunct {
    * @param _amount: token amount to deposit.
    */
   function deposit(address _asset, uint256 _amount) external payable override {
-    //Get cToken address from mapping
+    // Get cToken address from mapping
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    //Enter and/or ensure collateral market is enacted
+    // Enter and/or ensure collateral market is enacted
     _enterCollatMarket(cTokenAddr);
 
     if (_isNative(_asset)) {
       // Create a reference to the cToken contract
       ICEth cToken = ICEth(cTokenAddr);
 
-      //Compound protocol Mints cTokens, ETH method
+      // Compound protocol Mints cTokens, ETH method
       cToken.mint{ value: _amount }();
     } else {
       // Create reference to the ERC20 contract
@@ -81,10 +81,10 @@ contract ProviderWepiggy is IProvider, HelperFunct {
       // Create a reference to the cToken contract
       ICErc20 cToken = ICErc20(cTokenAddr);
 
-      //Checks, Vault balance of ERC20 to make deposit
+      // Checks, Vault balance of ERC20 to make deposit
       require(erc20token.balanceOf(address(this)) >= _amount, "Not enough Balance");
 
-      //Approve to move ERC20tokens
+      // Approve to move ERC20tokens
       erc20token.univApprove(address(cTokenAddr), _amount);
 
       // Compound Protocol mints cTokens, trhow error if not
@@ -98,13 +98,13 @@ contract ProviderWepiggy is IProvider, HelperFunct {
    * @param _amount: token amount to withdraw.
    */
   function withdraw(address _asset, uint256 _amount) external payable override {
-    //Get cToken address from mapping
+    // Get cToken address from mapping
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     // Create a reference to the corresponding cToken contract
     IGenCToken cToken = IGenCToken(cTokenAddr);
 
-    //Compound Protocol Redeem Process, throw errow if not.
+    // Compound Protocol Redeem Process, throw errow if not.
     require(cToken.redeemUnderlying(_amount) == 0, "Withdraw-failed");
   }
 
@@ -114,16 +114,13 @@ contract ProviderWepiggy is IProvider, HelperFunct {
    * @param _amount: token amount to borrow.
    */
   function borrow(address _asset, uint256 _amount) external payable override {
-    //Get cToken address from mapping
+    // Get cToken address from mapping
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     // Create a reference to the corresponding cToken contract
     IGenCToken cToken = IGenCToken(cTokenAddr);
-
-    //Enter and/or ensure collateral market is enacted
-    //_enterCollatMarket(cTokenAddr);
-
-    //Compound Protocol Borrow Process, throw errow if not.
+ 
+    // Compound Protocol Borrow Process, throw errow if not.
     require(cToken.borrow(_amount) == 0, "borrow-failed");
   }
 
@@ -133,7 +130,7 @@ contract ProviderWepiggy is IProvider, HelperFunct {
    * @param _amount: token amount to payback.
    */
   function payback(address _asset, uint256 _amount) external payable override {
-    //Get cToken address from mapping
+    // Get cToken address from mapping
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     if (_isNative(_asset)) {
@@ -162,7 +159,7 @@ contract ProviderWepiggy is IProvider, HelperFunct {
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    //Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: Compound uses base 1e18
+    // Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: Compound uses base 1e18
     uint256 bRateperBlock = IGenCToken(cTokenAddr).borrowRatePerBlock() * 10**9;
 
     // The approximate number of blocks per year that is assumed by the Compound interest rate model
@@ -177,7 +174,7 @@ contract ProviderWepiggy is IProvider, HelperFunct {
   function getDepositRateFor(address _asset) external view returns (uint256) {
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    //Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: Compound uses base 1e18
+    // Block Rate transformed for common mantissa for Fuji in ray (1e27), Note: Compound uses base 1e18
     uint256 bRateperBlock = IGenCToken(cTokenAddr).supplyRatePerBlock() * 10**9;
 
     // The approximate number of blocks per year that is assumed by the Compound interest rate model

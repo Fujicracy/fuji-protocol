@@ -24,7 +24,10 @@ function testRefinance1(vaults, from, to, amountToDeposit, amountToBorrow, flash
       await this.f[name]
         .connect(this.users[1])
         .depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount });
-      if(DEBUG) {console.log('testRefinance1, Step1')}
+      
+      if (DEBUG) {
+        console.log('testRefinance1, Step1');
+      }
 
       let preVaultDebt = await this.f[name].borrowBalance(this.f[from].address);
       preVaultDebt = formatUnitsToNum(preVaultDebt, debt.decimals);
@@ -35,11 +38,15 @@ function testRefinance1(vaults, from, to, amountToDeposit, amountToBorrow, flash
       await this.f.controller
         .connect(this.users[0])
         .doRefinancing(this.f[name].address, this.f[to].address, flashloanProvider);
-      if(DEBUG) {console.log('testRefinance1, Step2')}
+      if (DEBUG) {
+        console.log('testRefinance1, Step2');
+      }
 
       const activeProvider = await this.f[name].activeProvider();
       expect(activeProvider).to.be.eq(this.f[to].address);
-      if(DEBUG) {console.log('testRefinance1, Step3')}
+      if (DEBUG) {
+        console.log('testRefinance1, Step3');
+      }
 
       let postVaultDebt = await this.f[name].borrowBalance(this.f[to].address);
       postVaultDebt = formatUnitsToNum(postVaultDebt, debt.decimals);
@@ -50,7 +57,9 @@ function testRefinance1(vaults, from, to, amountToDeposit, amountToBorrow, flash
       // the difference is the fee paid to flashloan provider
       // the most expensive are aave flashloans 0.09%
       await expect(preVaultDebt).to.be.closeTo(postVaultDebt, amountToBorrow * (0.0009 * 1.1));
-      if(DEBUG) {console.log('testRefinance1, Step4')}
+      if (DEBUG) {
+        console.log('testRefinance1, Step4');
+      }
       await expect(preVaultCollat).to.be.closeTo(postVaultCollat, 0.001);
     });
   }
@@ -78,7 +87,9 @@ function testRefinance2(vaults, from, to, amountToDeposit, amountToBorrow, flash
         .connect(this.users[1])
         .approve(this.f[name].address, depositAmount);
       await this.f[name].connect(this.users[1]).depositAndBorrow(depositAmount, borrowAmount);
-      if(DEBUG) {console.log('testRefinance2, Step1')}
+      if (DEBUG) {
+        console.log('testRefinance2, Step1');
+      }
 
       let preVaultDebt = await this.f[name].borrowBalance(this.f[from].address);
       preVaultDebt = formatUnitsToNum(preVaultDebt, debt.decimals);
@@ -89,11 +100,15 @@ function testRefinance2(vaults, from, to, amountToDeposit, amountToBorrow, flash
       await this.f.controller
         .connect(this.users[0])
         .doRefinancing(this.f[name].address, this.f[to].address, flashloanProvider);
-      if(DEBUG) {console.log('testRefinance2, Step2')}
+      if (DEBUG) {
+        console.log('testRefinance2, Step2');
+      }
 
       const activeProvider = await this.f[name].activeProvider();
       expect(activeProvider).to.be.eq(this.f[to].address);
-      if(DEBUG) {console.log('testRefinance2, Step3')}
+      if ( DEBUG ) {
+        console.log('testRefinance2, Step3');
+      }
 
       let postVaultDebt = await this.f[name].borrowBalance(this.f[to].address);
       postVaultDebt = formatUnitsToNum(postVaultDebt, debt.decimals);
@@ -102,7 +117,9 @@ function testRefinance2(vaults, from, to, amountToDeposit, amountToBorrow, flash
       postVaultCollat = formatUnitsToNum(postVaultCollat, collateral.decimals);
 
       await expect(preVaultDebt).to.be.closeTo(postVaultDebt, 1.3);
-      if(DEBUG) {console.log('testRefinance2, Step4')}
+      if (DEBUG) {
+        console.log('testRefinance2, Step4');
+      }
       await expect(preVaultCollat).to.be.closeTo(postVaultCollat, 1);
     });
   }
@@ -130,7 +147,9 @@ function testRefinance3(vaults, from, to, amountToDeposit, amountToBorrow, flash
         .connect(this.users[1])
         .approve(this.f[name].address, depositAmount);
       await this.f[name].connect(this.users[1]).depositAndBorrow(depositAmount, borrowAmount);
-      if(DEBUG) {console.log('testRefinance2, Step1')}
+      if (DEBUG) {
+        console.log('testRefinance2, Step1');
+      }
 
       let preVaultDebt = await this.f[name].borrowBalance(this.f[from].address);
       preVaultDebt = formatUnitsToNum(preVaultDebt);
@@ -141,11 +160,15 @@ function testRefinance3(vaults, from, to, amountToDeposit, amountToBorrow, flash
       await this.f.controller
         .connect(this.users[0])
         .doRefinancing(this.f[name].address, this.f[to].address, flashloanProvider);
-      if(DEBUG) {console.log('testRefinance2, Step2')}
+      if (DEBUG) {
+        console.log('testRefinance2, Step2');
+      }
 
       const activeProvider = await this.f[name].activeProvider();
       expect(activeProvider).to.be.eq(this.f[to].address);
-      if(DEBUG) {console.log('testRefinance2, Step3')}
+      if (DEBUG) {
+        console.log('testRefinance2, Step3');
+      }
 
       let postVaultDebt = await this.f[name].borrowBalance(this.f[to].address);
       postVaultDebt = formatUnitsToNum(postVaultDebt);
@@ -154,7 +177,9 @@ function testRefinance3(vaults, from, to, amountToDeposit, amountToBorrow, flash
       postVaultCollat = formatUnitsToNum(postVaultCollat, collateral.decimals);
 
       await expect(preVaultDebt).to.be.closeTo(postVaultDebt, postVaultDebt / 100); // 1% close
-      if(DEBUG) {console.log('testRefinance2, Step4')}
+      if (DEBUG) {
+        console.log('testRefinance2, Step4');
+      }
       await expect(preVaultCollat).to.be.closeTo(postVaultCollat, postVaultCollat / 100); // 1% close
     });
   }

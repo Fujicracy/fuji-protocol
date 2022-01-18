@@ -54,6 +54,12 @@ describe("Core Fuji Instance", function () {
           expect(await this.f.nftbond.validVaults(i)).to.be.equal(this.f[VAULTS[i].name].address);
         }
       });
+
+      it("No permission", async function () {
+        await expect(
+          this.f.nftbond.connect(this.user).setValidVaults([this.f.vaultftmdai.address])
+        ).to.be.revertedWith("Ownable: caller is not the owner");
+      });
     });
 
     describe("User Debt", function () {

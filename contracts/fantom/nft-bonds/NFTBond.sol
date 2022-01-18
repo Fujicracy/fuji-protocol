@@ -7,11 +7,13 @@ pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 
+import "../../abstracts/claimable/Claimable.sol";
 import "../../interfaces/IVault.sol";
 import "../../interfaces/IVaultControl.sol";
 import "../../interfaces/IERC20Extended.sol";
 
-contract NFTBond is ERC1155 {
+
+contract NFTBond is ERC1155, Claimable {
   struct UserData {
     uint64 lastTimestampUpdate;
     uint64 rateOfAccrual;
@@ -108,7 +110,7 @@ contract NFTBond is ERC1155 {
   /**
   * @notice Sets the list of vaults that count towards the game
   */
-  function setValidVaults(address[] memory vaults) external {
+  function setValidVaults(address[] memory vaults) external onlyOwner {
     validVaults = vaults;
   }
 
@@ -162,7 +164,7 @@ contract NFTBond is ERC1155 {
   * @notice sets the prices for the crates
   @ dev indexes: 0 - common, 1 - epic, 2 - legendary
   */
-  function setCratePrices(uint256[3] memory prices) external {
+  function setCratePrices(uint256[3] memory prices) external onlyOwner {
     cratePrices = prices;
   }
 

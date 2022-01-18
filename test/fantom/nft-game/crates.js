@@ -64,6 +64,13 @@ describe("NFT Bond Crate System", function () {
       const prices = [2500, 10000].map((e) => parseUnits(e, this.pointsDecimals));
       await expect(this.f.nftbond.setCratePrices(prices)).to.be.reverted;
     });
+
+    it("Set prices without permission", async function () {
+      const prices = [2500, 10000, 20000].map((e) => parseUnits(e, this.pointsDecimals));
+      await expect(this.f.nftbond.connect(this.user).setCratePrices(prices)).to.be.revertedWith(
+        "Ownable: caller is not the owner"
+      );
+    });
   });
 
   describe("Buying Crates", function () {

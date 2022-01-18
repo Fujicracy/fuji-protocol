@@ -739,7 +739,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
 
     NFTBond bondGame = NFTBond(nftBond);
     if (bondGame.isValidVault(address(this))) {
-      NFTBond(nftBond).checkStateOfPoints(msg.sender, _borrowAmount, false);
+      NFTBond(nftBond).checkStateOfPoints(msg.sender, _borrowAmount, false, _borrowAssetDecimals);
     }
   }
 
@@ -795,7 +795,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
 
     NFTBond bondGame = NFTBond(nftBond);
     if (bondGame.isValidVault(address(this))) {
-      bondGame.checkStateOfPoints(msg.sender, amountToPayback, true);
+      bondGame.checkStateOfPoints(msg.sender, amountToPayback, true, _borrowAssetDecimals);
     }
   }
 }

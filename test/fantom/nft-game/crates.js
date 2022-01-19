@@ -48,28 +48,33 @@ describe("NFT Bond Crate System", function () {
   describe("Crate Prices", function () {
     it("Set crate prices", async function () {
       const prices = [2500, 10000, 20000].map((e) => parseUnits(e, this.pointsDecimals));
-      await this.f.nftbond.setCratePrices(prices);
 
       for (let i = 0; i < prices.length; i++) {
-        expect(await this.f.nftbond.cratePrices(i)).to.be.equal(prices[i]);
+        await this.f.nftbond.setCratePrice(this.crateIds[i], prices[i]);
+        expect(await this.f.nftbond.cratePrices(this.crateIds[i])).to.be.equal(prices[i]);
       }
     });
 
-    it("Set more than 3 prices", async function () {
-      const prices = [2500, 10000, 20000, 30000].map((e) => parseUnits(e, this.pointsDecimals));
-      await expect(this.f.nftbond.setCratePrices(prices)).to.be.reverted;
-    });
+    it("Set invalid id price", async function () {
+      const price = parseUnits(2500, this.pointsDecimals);
+      const invalidId = 9999;
 
-    it("Set less than 3 prices", async function () {
-      const prices = [2500, 10000].map((e) => parseUnits(e, this.pointsDecimals));
-      await expect(this.f.nftbond.setCratePrices(prices)).to.be.reverted;
+      await expect(this.f.nftbond.setCratePrice(invalidId, price)).to.be.revertedWith(
+        "Invalid crate ID"
+      );
     });
 
     it("Set prices without permission", async function () {
-      const prices = [2500, 10000, 20000].map((e) => parseUnits(e, this.pointsDecimals));
-      await expect(this.f.nftbond.connect(this.user).setCratePrices(prices)).to.be.revertedWith(
-        "Ownable: caller is not the owner"
-      );
+      const price = parseUnits(2500, this.pointsDecimals);
+      await expect(
+        this.f.nftbond.connect(this.user).setCratePrice(this.crateIds[0], price)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("Buying crate with no set price", async function () {
+      await expect(
+        this.f.nftbond.connect(this.user).getCrates(this.crateIds[0], 1)
+      ).to.be.revertedWith("Price not set");
     });
   });
 
@@ -84,19 +89,22 @@ describe("NFT Bond Crate System", function () {
       await this.f.nftbond.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
 
       const prices = [2500, 10000, 20000].map((e) => parseUnits(e, this.pointsDecimals));
-      await this.f.nftbond.setCratePrices(prices);
+      for (let i = 0; i < prices.length; i++) {
+        await this.f.nftbond.setCratePrice(this.crateIds[i], prices[i]);
+      }
     });
 
-    it("Invalid rarity", async function () {
-      await expect(this.f.nftbond.connect(this.user).getCrates(9999, 1)).to.be.revertedWith(
-        "Invalid rarity"
+    it("Invalid crate ID", async function () {
+      const invalidId = 9999;
+      await expect(this.f.nftbond.connect(this.user).getCrates(invalidId, 1)).to.be.revertedWith(
+        "Invalid crate ID"
       );
     });
 
     it("Buying crate without points", async function () {
-      await expect(this.f.nftbond.connect(this.user).getCrates(0, 1)).to.be.revertedWith(
-        "Not enough points"
-      );
+      await expect(
+        this.f.nftbond.connect(this.user).getCrates(this.crateIds[0], 1)
+      ).to.be.revertedWith("Not enough points");
     });
 
     it("Successfuly buying crate", async function () {
@@ -114,7 +122,7 @@ describe("NFT Bond Crate System", function () {
       for (let i = 0; i < this.crateIds.length; i++) {
         expect(await this.f.nftbond.balanceOf(this.user.address, this.crateIds[i])).to.be.equal(0);
 
-        await this.f.nftbond.connect(this.user).getCrates(i, amount);
+        await this.f.nftbond.connect(this.user).getCrates(this.crateIds[i], amount);
 
         expect(await this.f.nftbond.balanceOf(this.user.address, this.crateIds[i])).to.be.equal(
           amount
@@ -139,7 +147,7 @@ describe("NFT Bond Crate System", function () {
       let newPointsBalance;
 
       for (let i = 0; i < this.crateIds.length; i++) {
-        await this.f.nftbond.connect(this.user).getCrates(i, amount);
+        await this.f.nftbond.connect(this.user).getCrates(this.crateIds[i], amount);
 
         expect(await this.f.nftbond.balanceOf(this.user.address, this.crateIds[i])).to.be.equal(
           amount

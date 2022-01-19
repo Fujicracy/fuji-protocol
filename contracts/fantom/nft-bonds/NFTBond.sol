@@ -47,7 +47,8 @@ contract NFTBond is ERC1155, Claimable {
   uint256 public constant CRATE_LEGENDARY_ID = 3;
   uint256 public constant POINTS_DECIMALS = 5;
 
-  uint256[3] public cratePrices;
+  // CrateID => crate price
+  mapping(uint256 => uint256) public cratePrices;
 
   address private constant _FTM = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
 
@@ -163,28 +164,28 @@ contract NFTBond is ERC1155, Claimable {
 
   /**
   * @notice sets the prices for the crates
-  @ dev indexes: 0 - common, 1 - epic, 2 - legendary
   */
-  function setCratePrices(uint256[3] memory prices) external onlyOwner {
-    cratePrices = prices;
+  function setCratePrice(uint256 crateId, uint256 price) external onlyOwner {
+    require(crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID, "Invalid crate ID");
+    cratePrices[crateId] = price;
   }
 
   /**
   * @notice Burns user points to mint a new crate
-  * @param rarity: common (0), epic (1), legendary (2)
   */
-  function getCrates(uint256 rarity, uint256 amount) external {
-    require(rarity == 0 || rarity == 1 || rarity == 2, "Invalid rarity");
+  function getCrates(uint256 crateId, uint256 amount) external {
+    require(crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID, "Invalid crate ID");
 
-    uint price = cratePrices[rarity] * amount;
+    uint price = cratePrices[crateId] * amount;
+    require(price > 0, "Price not set");
+
     require(_pointsBalanceOf(msg.sender) >= price, "Not enough points");
 
     _compoundPoints(msg.sender, getUserDebt(msg.sender));
     userdata[msg.sender].accruedPoints -= uint128(price);
 
-    uint id = rarity == 0 ? CRATE_COMMON_ID : rarity == 1 ? CRATE_EPIC_ID : CRATE_LEGENDARY_ID;
-
-    _mint(msg.sender, id, amount, "");
+    _mint(msg.sender, crateId, amount, "");
+    totalSupply[crateId] += amount;
   }
 
   // Internal Functions

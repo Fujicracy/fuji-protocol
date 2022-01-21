@@ -17,6 +17,8 @@ interface IGenCToken is IERC20 {
 
   function borrowRatePerBlock() external view returns (uint256);
 
+  function supplyRatePerBlock() external view returns (uint256);
+
   function balanceOfUnderlying(address owner) external returns (uint256);
 
   function borrowBalanceCurrent(address account) external returns (uint256);

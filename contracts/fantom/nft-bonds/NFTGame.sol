@@ -133,6 +133,10 @@ contract NFTGame is ERC1155, Claimable {
     userdata[user].accruedPoints -= uint128(amount);
   }
 
+  function earnPoints(address user, uint256 amount) external onlyInteractions {
+    userdata[user].accruedPoints += uint128(amount);
+  }
+
   function mint(address user, uint256 id, uint256 amount) external onlyInteractions {
     _mint(user, id, amount, "");
     totalSupply[id] += amount;

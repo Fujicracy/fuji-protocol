@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity 0.8.2;
+pragma solidity ^0.8.2;
 
-contract LibPseudoRandom {
+library LibPseudoRandom {
 
     uint256 private constant decimals = 6;
 

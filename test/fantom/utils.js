@@ -113,8 +113,11 @@ const fixture = async ([wallet]) => {
     Object.values(ASSETS).map((asset) => asset.oracle)
   );
 
-  const NFTBond = await getContractFactory("NFTBond");
-  const nftbond = await NFTBond.deploy([]);
+  const NFTGame = await getContractFactory("NFTGame");
+  const nftgame = await NFTGame.deploy([]);
+
+  const NFTInteractions = await getContractFactory("NFTInteractions");
+  const nftinteractions = await NFTInteractions.deploy([]);
 
   // Step 2: Providers
   const ProviderCream = await getContractFactory("ProviderCream");
@@ -132,7 +135,8 @@ const fixture = async ([wallet]) => {
     console.log("controller", controller.address);
     console.log("f1155", f1155.address);
     console.log("oracle", oracle.address);
-    console.log("nftbondlogic", nftbond.address);
+    console.log("nftgame", nftgame.address);
+    console.log("nftinteractions", nftinteractions.address);
     console.log("cream", cream.address);
     console.log("scream", scream.address);
     console.log("geist", geist.address);
@@ -156,7 +160,7 @@ const fixture = async ([wallet]) => {
 
     await f1155.setPermit(vault.address, true);
     await vault.setFujiERC1155(f1155.address);
-    await vault.setNFTBond(nftbond.address);
+    await vault.setNFTGame(nftgame.address);
     await fujiadmin.allowVault(vault.address, true);
 
     vaults[name] = vault;
@@ -172,6 +176,8 @@ const fixture = async ([wallet]) => {
   await flasher.setFujiAdmin(fujiadmin.address);
   await controller.setFujiAdmin(fujiadmin.address);
   await f1155.setPermit(fliquidator.address, true);
+  await nftgame.setNFTInteractions(nftinteractions.address);
+  await nftinteractions.setNFTGame(nftgame.address);
 
   return {
     ...tokens,
@@ -179,7 +185,8 @@ const fixture = async ([wallet]) => {
     cream,
     scream,
     geist,
-    nftbond,
+    nftgame,
+    nftinteractions,
     oracle,
     fujiadmin,
     fliquidator,

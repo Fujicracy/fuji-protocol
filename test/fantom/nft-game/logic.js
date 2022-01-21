@@ -23,7 +23,7 @@ describe("NFT Bond Logic", function () {
     const loadFixture = createFixtureLoader(this.users, provider);
     this.f = await loadFixture(fixture);
 
-    this.pointsDecimals = await this.f.nftbond.POINTS_DECIMALS();
+    this.pointsDecimals = await this.f.nftgame.POINTS_DECIMALS();
     this.sec = 60 * 60 * 24;
 
     this.evmSnapshot0 = await evmSnapshot();
@@ -41,22 +41,22 @@ describe("NFT Bond Logic", function () {
 
   describe("Valid Vaults", function () {
     it("Set single valid vault", async function () {
-      await expect(this.f.nftbond.validVaults(0)).to.be.reverted;
-      await this.f.nftbond.setValidVaults([this.f.vaultftmdai.address]);
-      expect(await this.f.nftbond.validVaults(0)).to.be.equal(this.f.vaultftmdai.address);
+      await expect(this.f.nftgame.validVaults(0)).to.be.reverted;
+      await this.f.nftgame.setValidVaults([this.f.vaultftmdai.address]);
+      expect(await this.f.nftgame.validVaults(0)).to.be.equal(this.f.vaultftmdai.address);
     });
 
     it("Set multiple valid vaults", async function () {
-      await expect(this.f.nftbond.validVaults(0)).to.be.reverted;
-      await this.f.nftbond.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
+      await expect(this.f.nftgame.validVaults(0)).to.be.reverted;
+      await this.f.nftgame.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
       for (let i = 0; i < VAULTS.length; i++) {
-        expect(await this.f.nftbond.validVaults(i)).to.be.equal(this.f[VAULTS[i].name].address);
+        expect(await this.f.nftgame.validVaults(i)).to.be.equal(this.f[VAULTS[i].name].address);
       }
     });
 
     it("No permission", async function () {
       await expect(
-        this.f.nftbond.connect(this.user).setValidVaults([this.f.vaultftmdai.address])
+        this.f.nftgame.connect(this.user).setValidVaults([this.f.vaultftmdai.address])
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
   });
@@ -68,11 +68,11 @@ describe("NFT Bond Logic", function () {
         const vault = VAULTS[i];
         await this.f[vault.name].setActiveProvider(this.f.geist.address);
       }
-      await this.f.nftbond.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
+      await this.f.nftgame.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
     });
 
     it("No Deposits", async function () {
-      expect(await this.f.nftbond.getUserDebt(this.user.address)).to.be.equal(0);
+      expect(await this.f.nftgame.getUserDebt(this.user.address)).to.be.equal(0);
     });
 
     it("Single Valid Vault Deposit", async function () {
@@ -84,7 +84,7 @@ describe("NFT Bond Logic", function () {
         value: depositAmount,
       });
 
-      expect(await this.f.nftbond.getUserDebt(this.user.address)).to.be.equal(
+      expect(await this.f.nftgame.getUserDebt(this.user.address)).to.be.equal(
         formatUnitsToNum(borrowAmount)
       );
     });
@@ -97,13 +97,13 @@ describe("NFT Bond Logic", function () {
 
       expect(vault).to.not.be.equal(validVault);
 
-      await this.f.nftbond.setValidVaults([validVault.address]);
+      await this.f.nftgame.setValidVaults([validVault.address]);
 
       await vault.connect(this.user).depositAndBorrow(depositAmount, borrowAmount, {
         value: depositAmount,
       });
 
-      expect(await this.f.nftbond.getUserDebt(this.user.address)).to.be.equal(0);
+      expect(await this.f.nftgame.getUserDebt(this.user.address)).to.be.equal(0);
     });
 
     it("Multiple Vaults", async function () {
@@ -120,7 +120,7 @@ describe("NFT Bond Logic", function () {
         borrowSum += formatUnitsToNum(borrowAmounts[i], borrowDecimals[i]);
       }
 
-      expect(await this.f.nftbond.getUserDebt(this.user.address)).to.be.equal(borrowSum);
+      expect(await this.f.nftgame.getUserDebt(this.user.address)).to.be.equal(borrowSum);
     });
 
     it("Interest", async function () {
@@ -139,7 +139,7 @@ describe("NFT Bond Logic", function () {
 
       await timeTravel(99999999);
 
-      expect(await this.f.nftbond.getUserDebt(this.user.address)).to.be.gt(borrowSum);
+      expect(await this.f.nftgame.getUserDebt(this.user.address)).to.be.gt(borrowSum);
     });
   });
 
@@ -150,7 +150,7 @@ describe("NFT Bond Logic", function () {
         const vault = VAULTS[i];
         await this.f[vault.name].setActiveProvider(this.f.geist.address);
       }
-      await this.f.nftbond.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
+      await this.f.nftgame.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
     });
 
     it("Rate of accrual", async function () {
@@ -164,17 +164,17 @@ describe("NFT Bond Logic", function () {
 
       const pps = (formatUnitsToNum(borrowAmount) / this.sec) * 10 ** this.pointsDecimals;
 
-      expect(await this.f.nftbond.computeRateOfAccrual(this.user.address)).to.be.equal(
+      expect(await this.f.nftgame.computeRateOfAccrual(this.user.address)).to.be.equal(
         Math.floor(pps)
       );
     });
 
     it("New user starting points", async function () {
-      expect(await this.f.nftbond.balanceOf(this.user.address, 0)).to.be.equal(0);
+      expect(await this.f.nftgame.balanceOf(this.user.address, 0)).to.be.equal(0);
     });
 
     it("Reverting state of points outside contract", async function () {
-      await expect(this.f.nftbond.checkStateOfPoints(this.user.address, 0, true)).to.be.reverted;
+      await expect(this.f.nftgame.checkStateOfPoints(this.user.address, 0, true)).to.be.reverted;
     });
 
     it("Get points balance after time passed", async function () {
@@ -189,13 +189,13 @@ describe("NFT Bond Logic", function () {
 
       await timeTravel(time);
 
-      const pps = await this.f.nftbond.computeRateOfAccrual(this.user.address);
+      const pps = await this.f.nftgame.computeRateOfAccrual(this.user.address);
       const pointsFromRate = pps.mul(time);
 
-      const newDebt = await this.f.nftbond.getUserDebt(this.user.address);
+      const newDebt = await this.f.nftgame.getUserDebt(this.user.address);
       const pointsFromInterest = ((newDebt - formatUnitsToNum(borrowAmount)) * time) / 2;
 
-      expect(await this.f.nftbond.balanceOf(this.user.address, 0)).to.be.equal(
+      expect(await this.f.nftgame.balanceOf(this.user.address, 0)).to.be.equal(
         pointsFromRate.add(pointsFromInterest)
       );
     });
@@ -217,18 +217,18 @@ describe("NFT Bond Logic", function () {
           value: depositAmount[i],
         });
 
-        recordedDebt = await this.f.nftbond.getUserDebt(this.user.address);
+        recordedDebt = await this.f.nftgame.getUserDebt(this.user.address);
 
         await timeTravel(time);
 
-        pps = await this.f.nftbond.computeRateOfAccrual(this.user.address);
+        pps = await this.f.nftgame.computeRateOfAccrual(this.user.address);
         pointsFromRate = pointsFromRate.add(pps.mul(time));
 
-        newDebt = await this.f.nftbond.getUserDebt(this.user.address);
+        newDebt = await this.f.nftgame.getUserDebt(this.user.address);
         pointsFromInterest += (newDebt.sub(recordedDebt) * time) / 2;
       }
 
-      expect(await this.f.nftbond.balanceOf(this.user.address, 0)).to.be.equal(
+      expect(await this.f.nftgame.balanceOf(this.user.address, 0)).to.be.equal(
         pointsFromRate.add(pointsFromInterest)
       );
     });

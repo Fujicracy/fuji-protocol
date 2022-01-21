@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-/// @title NFT Bond Logic
+/// @title NFT Game 
 /// @author fuji-dao.eth
 /// @notice Contract that handles logic for the NFT Bond game
 
@@ -13,7 +13,7 @@ import "../../interfaces/IVaultControl.sol";
 import "../../interfaces/IERC20Extended.sol";
 
 
-contract NFTBond is ERC1155, Claimable {
+contract NFTGame is ERC1155, Claimable {
   struct UserData {
     uint64 lastTimestampUpdate;
     uint64 rateOfAccrual;
@@ -39,18 +39,15 @@ contract NFTBond is ERC1155, Claimable {
 
   uint256 private constant MINIMUM_DAILY_DEBT_POSITION = 1; //tbd
   uint256 private constant POINT_PER_DEBTUNIT_PER_DAY = 1; //tbd
-  // uint256 private constant MULTIPLIER_RATE = 100000000; // tbd
+
   uint256 private constant CONSTANT_DECIMALS = 8; // Applies to all constants
   uint256 private constant POINTS_ID = 0;
-  uint256 public constant CRATE_COMMON_ID = 1;
-  uint256 public constant CRATE_EPIC_ID = 2;
-  uint256 public constant CRATE_LEGENDARY_ID = 3;
-  uint256 public constant POINTS_DECIMALS = 5;
 
-  // CrateID => crate price
-  mapping(uint256 => uint256) public cratePrices;
+  uint256 public POINTS_DECIMALS = 5;
 
   address private constant _FTM = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+
+  address private nftInteractions;
 
   modifier onlyVault() {
     bool isVault;
@@ -58,6 +55,11 @@ contract NFTBond is ERC1155, Claimable {
       isVault = msg.sender == validVaults[i] ? true : false;
     }
     require(isVault == true, "only valid vault caller!");
+    _;
+  }
+
+  modifier onlyInteractions() {
+    require(msg.sender == nftInteractions);
     _;
   }
 
@@ -107,11 +109,33 @@ contract NFTBond is ERC1155, Claimable {
 
   // State Changing Functions
 
+
+  /**
+  * @notice Sets the address for the NFT Interactions contract
+  */
+  function setNFTInteractions(address _nftInteractions) external onlyOwner {
+    nftInteractions = _nftInteractions;
+  }
+
   /**
   * @notice Sets the list of vaults that count towards the game
   */
   function setValidVaults(address[] memory vaults) external onlyOwner {
     validVaults = vaults;
+  }
+
+  /**
+  * @notice Compounds and burns points
+  */
+  function usePoints(address user, uint256 amount) external onlyInteractions {
+    _compoundPoints(user, getUserDebt(user));
+    require(userdata[user].accruedPoints >= amount, "Not enough points");
+    userdata[user].accruedPoints -= uint128(amount);
+  }
+
+  function mint(address user, uint256 id, uint256 amount) external onlyInteractions {
+    _mint(user, id, amount, "");
+    totalSupply[id] += amount;
   }
 
   /**
@@ -160,32 +184,6 @@ contract NFTBond is ERC1155, Claimable {
   function setMerkleRoot(bytes32 _merkleRoot) external {
     require(_merkleRoot[0] != 0, "empty merkleRoot!");
     merkleRoot = _merkleRoot;
-  }
-
-  /**
-  * @notice sets the prices for the crates
-  */
-  function setCratePrice(uint256 crateId, uint256 price) external onlyOwner {
-    require(crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID, "Invalid crate ID");
-    cratePrices[crateId] = price;
-  }
-
-  /**
-  * @notice Burns user points to mint a new crate
-  */
-  function getCrates(uint256 crateId, uint256 amount) external {
-    require(crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID, "Invalid crate ID");
-
-    uint price = cratePrices[crateId] * amount;
-    require(price > 0, "Price not set");
-
-    require(_pointsBalanceOf(msg.sender) >= price, "Not enough points");
-
-    _compoundPoints(msg.sender, getUserDebt(msg.sender));
-    userdata[msg.sender].accruedPoints -= uint128(price);
-
-    _mint(msg.sender, crateId, amount, "");
-    totalSupply[crateId] += amount;
   }
 
   // Internal Functions

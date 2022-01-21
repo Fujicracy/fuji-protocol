@@ -159,4 +159,64 @@ describe("NFT Bond Crate System", function () {
       }
     });
   });
+
+  describe.only("Opening Crates", function () {
+    before(async function () {
+      await evmRevert(this.evmSnapshot0);
+
+      for (let i = 0; i < VAULTS.length; i += 1) {
+        const vault = VAULTS[i];
+        await this.f[vault.name].setActiveProvider(this.f.geist.address);
+      }
+      await this.f.nftgame.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
+
+      const prices = [2500, 10000, 20000].map((e) => parseUnits(e, this.pointsDecimals));
+      for (let i = 0; i < prices.length; i++) {
+        await this.f.nftinteractions.setCratePrice(this.crateIds[i], prices[i]);
+      }
+
+      const rewards = [
+        [0, 90, 110, 200, 2500],
+        [0, 90, 125, 400, 5000],
+      ];
+      for (let i = 0; i < rewards.length; i++) {
+        await this.f.nftinteractions.setCrateRewards(this.crateIds[i], rewards[i]);
+      }
+    });
+
+    beforeEach(async function () {
+      const vault = this.f.vaultftmdai;
+      const depositAmount = parseUnits(450);
+      const borrowAmount = parseUnits(100);
+      const amount = 2;
+
+      await vault.connect(this.user).depositAndBorrow(depositAmount, borrowAmount, {
+        value: depositAmount,
+      });
+
+      await timeTravel(this.sec * 365);
+
+      for (let i = 0; i < this.crateIds.length; i++) {
+        await this.f.nftinteractions.connect(this.user).getCrates(this.crateIds[i], amount);
+      }
+    });
+
+    it("Invalid crate ID", async function () {
+      const invalidId = 9999;
+      await expect(
+        this.f.nftinteractions.connect(this.user).openCrate(invalidId)
+      ).to.be.revertedWith("Invalid crate ID");
+    });
+
+    it("Rewards not set", async function () {
+      const noRewardsCrate = this.crateIds[2];
+      await expect(
+        this.f.nftinteractions.connect(this.user).openCrate(noRewardsCrate)
+      ).to.be.revertedWith("Rewards not set");
+    });
+
+    it("Successfuly opening a crate", async function () {
+      await this.f.nftinteractions.connect(this.user).openCrate(this.crateIds[0]);
+    });
+  });
 });

@@ -25,9 +25,6 @@ contract NFTInteractions is Claimable {
   mapping(uint256 => uint256[]) crateRewards;
   uint256[] private probabilityIntervals = [500000, 700000, 900000, 950000, 9501000];
 
-  uint private constant REWARDS_DECIMALS = 2;
-
-
   NFTGame private nftGame;
 
   // CrateID => crate price
@@ -91,7 +88,7 @@ contract NFTInteractions is Claimable {
     for (uint256 i = 0; i < probabilityIntervals.length && isCard; i++) {
       if (randomNumber < probabilityIntervals[i]) {
         isCard = false;
-        uint256 points = cratePrices[crateId] * crateRewards[crateId][i] / (10**REWARDS_DECIMALS);
+        uint256 points = crateRewards[crateId][i];
 
         if (points > 0) {
           nftGame.earnPoints(msg.sender, points);

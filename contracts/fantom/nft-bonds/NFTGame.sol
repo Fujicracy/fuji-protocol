@@ -127,14 +127,16 @@ contract NFTGame is ERC1155, Claimable {
   /**
   * @notice Compounds and burns points
   */
-  function usePoints(address user, uint256 amount) external onlyInteractions {
+  function usePoints(address user, uint256 amount) public onlyInteractions {
     _compoundPoints(user, getUserDebt(user));
     require(userdata[user].accruedPoints >= amount, "Not enough points");
     userdata[user].accruedPoints -= uint128(amount);
+    totalSupply[POINTS_ID] -= amount;
   }
 
-  function earnPoints(address user, uint256 amount) external onlyInteractions {
+  function earnPoints(address user, uint256 amount) public onlyInteractions {
     userdata[user].accruedPoints += uint128(amount);
+    totalSupply[POINTS_ID] += amount;
   }
 
   function mint(address user, uint256 id, uint256 amount) external onlyInteractions {
@@ -222,7 +224,7 @@ contract NFTGame is ERC1155, Claimable {
 
     // Change the state
     uint256 points = _computeAccrued(user, debt);
-    userdata[user].accruedPoints += uint128(points);
+    earnPoints(user, points);
     // userdata[user].lastMultiplierValue = uint128(_computeLatestMultiplier(info.lastMultiplierValue, info.lastTimestampUpdate));
     userdata[user].recordedDebtBalance = uint128(debt);
 

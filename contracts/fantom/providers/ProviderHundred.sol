@@ -9,6 +9,7 @@ import "../../interfaces/IVault.sol";
 import "../../interfaces/IWETH.sol";
 import "../../interfaces/IFujiMappings.sol";
 import "../../interfaces/compound/IGenCToken.sol";
+import "../../interfaces/compound/ICEth.sol";
 import "../../interfaces/compound/ICErc20.sol";
 import "../../interfaces/compound/IComptroller.sol";
 import "../libraries/LibUniversalERC20FTM.sol";
@@ -68,32 +69,34 @@ contract ProviderCream is IProvider, HelperFunct {
    * @param _amount: token amount to deposit.
    */
   function deposit(address _asset, uint256 _amount) external payable override {
-    // Get cyToken address from mapping
-    address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+    //Get cToken address from mapping
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    // Enter and/or ensure collateral market is enacted
-    _enterCollatMarket(cyTokenAddr);
+    //Enter and/or ensure collateral market is enacted
+    _enterCollatMarket(cTokenAddr);
 
     if (_isFTM(_asset)) {
-      // Transform ETH to WETH
-      IWETH(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).deposit{ value: _amount }();
-      _asset = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83);
+      // Create a reference to the cToken contract
+      ICEth cToken = ICEth(cTokenAddr);
+
+      //Compound protocol Mints cTokens, ETH method
+      cToken.mint{ value: _amount }();
+    } else {
+      // Create reference to the ERC20 contract
+      IERC20 erc20token = IERC20(_asset);
+
+      // Create a reference to the cToken contract
+      ICErc20 cToken = ICErc20(cTokenAddr);
+
+      //Checks, Vault balance of ERC20 to make deposit
+      require(erc20token.balanceOf(address(this)) >= _amount, "Not enough Balance");
+
+      //Approve to move ERC20tokens
+      erc20token.univApprove(address(cTokenAddr), _amount);
+
+      // Compound Protocol mints cTokens, trhow error if not
+      require(cToken.mint(_amount) == 0, "Deposit-failed");
     }
-
-    // Create reference to the ERC20 contract
-    IERC20 erc20token = IERC20(_asset);
-
-    // Create a reference to the cyToken contract
-    ICErc20 cyToken = ICErc20(cyTokenAddr);
-
-    // Checks, Vault balance of ERC20 to make deposit
-    require(erc20token.balanceOf(address(this)) >= _amount, "Not enough Balance");
-
-    // Approve to move ERC20tokens
-    erc20token.univApprove(address(cyTokenAddr), _amount);
-
-    // Hundred Protocol mints cyTokens, trhow error if not
-    require(cyToken.mint(_amount) == 0, "Deposit-failed");
   }
 
   /**
@@ -102,21 +105,14 @@ contract ProviderCream is IProvider, HelperFunct {
    * @param _amount: token amount to withdraw.
    */
   function withdraw(address _asset, uint256 _amount) external payable override {
-    // Get cyToken address from mapping
-    address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+    //Get cToken address from mapping
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    // Create a reference to the corresponding cyToken contract
-    IGenCToken cyToken = IGenCToken(cyTokenAddr);
+    // Create a reference to the corresponding cToken contract
+    IGenCToken cToken = IGenCToken(cTokenAddr);
 
-    // Hundred Protocol Redeem Process, throw errow if not.
-    require(cyToken.redeemUnderlying(_amount) == 0, "Withdraw-failed");
-
-    if (_isFTM(_asset)) {
-      // Transform WFTM to FTM
-      address unwrapper = _getUnwrapper();
-      IERC20(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).univTransfer(payable(unwrapper), _amount);
-      IUnwrapper(unwrapper).withdraw(_amount);
-    }
+    //Compound Protocol Redeem Process, throw errow if not.
+    require(cToken.redeemUnderlying(_amount) == 0, "Withdraw-failed");
   }
 
   /**
@@ -125,24 +121,17 @@ contract ProviderCream is IProvider, HelperFunct {
    * @param _amount: token amount to borrow.
    */
   function borrow(address _asset, uint256 _amount) external payable override {
-    // Get cyToken address from mapping
-    address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+    //Get cToken address from mapping
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    // Create a reference to the corresponding cyToken contract
-    IGenCToken cyToken = IGenCToken(cyTokenAddr);
+    // Create a reference to the corresponding cToken contract
+    IGenCToken cToken = IGenCToken(cTokenAddr);
 
-    // Enter and/or ensure collateral market is enacted
-    // _enterCollatMarket(cyTokenAddr);
+    //Enter and/or ensure collateral market is enacted
+    //_enterCollatMarket(cTokenAddr);
 
-    // Hundred Protocol Borrow Process, throw errow if not.
-    require(cyToken.borrow(_amount) == 0, "borrow-failed");
-
-    if (_isFTM(_asset)) {
-      // Transform WFTM to FTM
-      address unwrapper = _getUnwrapper();
-      IERC20(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).univTransfer(payable(unwrapper), _amount);
-      IUnwrapper(unwrapper).withdraw(_amount);
-    }
+    //Compound Protocol Borrow Process, throw errow if not.
+    require(cToken.borrow(_amount) == 0, "borrow-failed");
   }
 
   /**
@@ -151,25 +140,26 @@ contract ProviderCream is IProvider, HelperFunct {
    * @param _amount: token amount to payback.
    */
   function payback(address _asset, uint256 _amount) external payable override {
-    // Get cyToken address from mapping
-    address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+    //Get cToken address from mapping
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     if (_isFTM(_asset)) {
-      // Transform FTM to WFTM
-      IWETH(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83).deposit{ value: _amount }();
-      _asset = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83);
+      // Create a reference to the corresponding cToken contract
+      ICEth cToken = ICEth(cTokenAddr);
+
+      cToken.repayBorrow{ value: msg.value }();
+    } else {
+      // Create reference to the ERC20 contract
+      IERC20 erc20token = IERC20(_asset);
+
+      // Create a reference to the corresponding cToken contract
+      ICErc20 cToken = ICErc20(cTokenAddr);
+
+      // Check there is enough balance to pay
+      require(erc20token.balanceOf(address(this)) >= _amount, "Not-enough-token");
+      erc20token.univApprove(address(cTokenAddr), _amount);
+      cToken.repayBorrow(_amount);
     }
-
-    // Create reference to the ERC20 contract
-    IERC20 erc20token = IERC20(_asset);
-
-    // Create a reference to the corresponding cyToken contract
-    ICErc20 cyToken = ICErc20(cyTokenAddr);
-
-    // Check there is enough balance to pay
-    require(erc20token.balanceOf(address(this)) >= _amount, "Not-enough-token");
-    erc20token.univApprove(address(cyTokenAddr), _amount);
-    cyToken.repayBorrow(_amount);
   }
 
   /**
@@ -177,11 +167,11 @@ contract ProviderCream is IProvider, HelperFunct {
    * @param _asset: token address to query the current borrowing rate.
    */
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
-    address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     // Block Rate transformed for common mantissa for Fuji in ray (1e27)
     // Note: Cream uses base 1e18
-    uint256 bRateperBlock = IGenCToken(cyTokenAddr).borrowRatePerBlock() * 10**9;
+    uint256 bRateperBlock = IGenCToken(cTokenAddr).borrowRatePerBlock() * 10**9;
 
     // The approximate number of blocks per year that is assumed by the Cream interest rate model
     // ~60 blocks per min in fantom
@@ -194,9 +184,9 @@ contract ProviderCream is IProvider, HelperFunct {
    * @param _asset: token address to query the balance.
    */
   function getBorrowBalance(address _asset) external view override returns (uint256) {
-    address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    return IGenCToken(cyTokenAddr).borrowBalanceStored(msg.sender);
+    return IGenCToken(cTokenAddr).borrowBalanceStored(msg.sender);
   }
 
   /**
@@ -207,9 +197,9 @@ contract ProviderCream is IProvider, HelperFunct {
    * @param _who address of the account.
    */
   function getBorrowBalanceOf(address _asset, address _who) external override returns (uint256) {
-    address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    return IGenCToken(cyTokenAddr).borrowBalanceCurrent(_who);
+    return IGenCToken(cTokenAddr).borrowBalanceCurrent(_who);
   }
 
   /**
@@ -217,10 +207,10 @@ contract ProviderCream is IProvider, HelperFunct {
    * @param _asset: token address to query the balance.
    */
   function getDepositBalance(address _asset) external view override returns (uint256) {
-    address cyTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
-    uint256 cyTokenBal = IGenCToken(cyTokenAddr).balanceOf(msg.sender);
-    uint256 exRate = IGenCToken(cyTokenAddr).exchangeRateStored();
+    address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
+    uint256 cTokenBal = IGenCToken(cTokenAddr).balanceOf(msg.sender);
+    uint256 exRate = IGenCToken(cTokenAddr).exchangeRateStored();
 
-    return (exRate * cyTokenBal) / 1e18;
+    return (exRate * cTokenBal) / 1e18;
   }
 }

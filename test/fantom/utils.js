@@ -126,6 +126,8 @@ const fixture = async ([wallet]) => {
   const scream = await ProviderScream.deploy([]);
   const ProviderGeist = await getContractFactory("ProviderGeist");
   const geist = await ProviderGeist.deploy([]);
+  const ProviderHundred = await getContractFactory("ProviderHundred");
+  const hundred = await ProviderHundred.deploy([]);
 
   // Log if debug is set true
   if (DEBUG) {
@@ -138,6 +140,7 @@ const fixture = async ([wallet]) => {
     console.log("cream", cream.address);
     console.log("scream", scream.address);
     console.log("geist", geist.address);
+    console.log("hundred", hundred.address);
   }
 
   // Setp 3: Vaults
@@ -159,6 +162,14 @@ const fixture = async ([wallet]) => {
     await f1155.setPermit(vault.address, true);
     await vault.setFujiERC1155(f1155.address);
     await fujiadmin.allowVault(vault.address, true);
+    await vault.setProviders(
+      [
+        cream.address,
+        scream.address,
+        geist.address,
+        hundred.address
+      ]
+    );
 
     vaults[name] = vault;
   }
@@ -182,6 +193,7 @@ const fixture = async ([wallet]) => {
     cream,
     scream,
     geist,
+    hundred,
     oracle,
     fujiadmin,
     fliquidator,

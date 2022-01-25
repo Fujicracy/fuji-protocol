@@ -35,30 +35,30 @@ contract HelperFunct {
 
   /**
    * @dev Approves vault's assets as collateral for Hundred Protocol.
-   * @param _cyTokenAddress: asset type to be approved as collateral.
+   * @param _cTokenAddress: asset type to be approved as collateral.
    */
-  function _enterCollatMarket(address _cyTokenAddress) internal {
+  function _enterCollatMarket(address _cTokenAddress) internal {
     // Create a reference to the corresponding network Comptroller
     IComptroller comptroller = IComptroller(_getComptrollerAddress());
 
-    address[] memory cyTokenMarkets = new address[](1);
-    cyTokenMarkets[0] = _cyTokenAddress;
-    comptroller.enterMarkets(cyTokenMarkets);
+    address[] memory cTokenMarkets = new address[](1);
+    cTokenMarkets[0] = _cTokenAddress;
+    comptroller.enterMarkets(cTokenMarkets);
   }
 
   /**
    * @dev Removes vault's assets as collateral for Hundred Protocol.
-   * @param _cyTokenAddress: asset type to be removed as collateral.
+   * @param _cTokenAddress: asset type to be removed as collateral.
    */
-  function _exitCollatMarket(address _cyTokenAddress) internal {
+  function _exitCollatMarket(address _cTokenAddress) internal {
     // Create a reference to the corresponding network Comptroller
     IComptroller comptroller = IComptroller(_getComptrollerAddress());
 
-    comptroller.exitMarket(_cyTokenAddress);
+    comptroller.exitMarket(_cTokenAddress);
   }
 }
 
-contract ProviderCream is IProvider, HelperFunct {
+contract ProviderHundred is IProvider, HelperFunct {
   using LibUniversalERC20FTM for IERC20;
 
   // Provider Core Functions
@@ -69,17 +69,17 @@ contract ProviderCream is IProvider, HelperFunct {
    * @param _amount: token amount to deposit.
    */
   function deposit(address _asset, uint256 _amount) external payable override {
-    //Get cToken address from mapping
+    // Get cToken address from mapping
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
-    //Enter and/or ensure collateral market is enacted
+    // Enter and/or ensure collateral market is enacted
     _enterCollatMarket(cTokenAddr);
 
     if (_isFTM(_asset)) {
       // Create a reference to the cToken contract
       ICEth cToken = ICEth(cTokenAddr);
 
-      //Compound protocol Mints cTokens, ETH method
+      // Compound protocol Mints cTokens, ETH method
       cToken.mint{ value: _amount }();
     } else {
       // Create reference to the ERC20 contract
@@ -88,10 +88,10 @@ contract ProviderCream is IProvider, HelperFunct {
       // Create a reference to the cToken contract
       ICErc20 cToken = ICErc20(cTokenAddr);
 
-      //Checks, Vault balance of ERC20 to make deposit
+      // Checks, Vault balance of ERC20 to make deposit
       require(erc20token.balanceOf(address(this)) >= _amount, "Not enough Balance");
 
-      //Approve to move ERC20tokens
+      // Approve to move ERC20tokens
       erc20token.univApprove(address(cTokenAddr), _amount);
 
       // Compound Protocol mints cTokens, trhow error if not
@@ -105,7 +105,7 @@ contract ProviderCream is IProvider, HelperFunct {
    * @param _amount: token amount to withdraw.
    */
   function withdraw(address _asset, uint256 _amount) external payable override {
-    //Get cToken address from mapping
+    // Get cToken address from mapping
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     // Create a reference to the corresponding cToken contract
@@ -121,16 +121,13 @@ contract ProviderCream is IProvider, HelperFunct {
    * @param _amount: token amount to borrow.
    */
   function borrow(address _asset, uint256 _amount) external payable override {
-    //Get cToken address from mapping
+    // Get cToken address from mapping
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     // Create a reference to the corresponding cToken contract
     IGenCToken cToken = IGenCToken(cTokenAddr);
 
-    //Enter and/or ensure collateral market is enacted
-    //_enterCollatMarket(cTokenAddr);
-
-    //Compound Protocol Borrow Process, throw errow if not.
+    // Compound Protocol Borrow Process, throw errow if not.
     require(cToken.borrow(_amount) == 0, "borrow-failed");
   }
 
@@ -140,7 +137,7 @@ contract ProviderCream is IProvider, HelperFunct {
    * @param _amount: token amount to payback.
    */
   function payback(address _asset, uint256 _amount) external payable override {
-    //Get cToken address from mapping
+    // Get cToken address from mapping
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
     if (_isFTM(_asset)) {

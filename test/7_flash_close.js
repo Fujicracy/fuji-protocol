@@ -115,7 +115,7 @@ describe("Core Fuji Instance", function () {
         BORROW_STABLE,
         FLASHLOAN.AAVE
       );
-      testFlashClose1([vaultethdai, vaultethusdc], DEPOSIT_ETH, BORROW_STABLE, FLASHLOAN.DYDX);
+      testFlashClose1([vaultethdai, vaultethusdc], DEPOSIT_ETH, BORROW_STABLE, FLASHLOAN.BALANCER);
       testFlashClose1(
         [vaultethdai, vaultethusdc, vaultethusdt],
         DEPOSIT_ETH,
@@ -124,27 +124,27 @@ describe("Core Fuji Instance", function () {
       );
 
       testFlashClose1([vaultethwbtc], DEPOSIT_ETH, BORROW_WBTC, FLASHLOAN.AAVE);
-      //testFlashClose1([vaultethwbtc], DEPOSIT_ETH, BORROW_WBTC, FLASHLOAN.DYDX);
+      testFlashClose1([vaultethwbtc], DEPOSIT_ETH, BORROW_WBTC, FLASHLOAN.BALANCER);
       testFlashClose1([vaultethwbtc], DEPOSIT_ETH, BORROW_WBTC, FLASHLOAN.CREAM);
     });
 
     describe("ERC20 token as collateral, ERC20 as borrow asset.", function () {
       testFlashClose2([vaultdaiwbtc, vaultusdcwbtc], DEPOSIT_STABLE, BORROW_WBTC, FLASHLOAN.AAVE);
-      //testFlashClose2([vaultdaiwbtc, vaultusdcwbtc], DEPOSIT_STABLE, BORROW_WBTC, FLASHLOAN.DYDX);
+      testFlashClose2([vaultdaiwbtc, vaultusdcwbtc], DEPOSIT_STABLE, BORROW_WBTC, FLASHLOAN.BALANCER);
       testFlashClose2([vaultdaiwbtc, vaultusdcwbtc], DEPOSIT_STABLE, BORROW_WBTC, FLASHLOAN.CREAM);
 
       testFlashClose2([vaultwbtcdai, vaultwbtcusdc], DEPOSIT_WBTC, BORROW_STABLE, FLASHLOAN.AAVE);
-      //testFlashClose2([vaultwbtcdai], DEPOSIT_WBTC, BORROW_STABLE, FLASHLOAN.DYDX);
+      testFlashClose2([vaultwbtcdai, vaultwbtcusdc], DEPOSIT_WBTC, BORROW_STABLE, FLASHLOAN.BALANCER);
       testFlashClose2([vaultwbtcdai, vaultwbtcusdc], DEPOSIT_WBTC, BORROW_STABLE, FLASHLOAN.CREAM);
     });
 
     describe("ERC20 token as collateral, native token as borrow asset.", function () {
       testFlashClose3([vaultdaieth, vaultusdceth], DEPOSIT_STABLE, BORROW_ETH, FLASHLOAN.AAVE);
-      testFlashClose3([vaultdaieth, vaultusdceth], DEPOSIT_STABLE, BORROW_ETH, FLASHLOAN.DYDX);
+      testFlashClose3([vaultdaieth, vaultusdceth], DEPOSIT_STABLE, BORROW_ETH, FLASHLOAN.BALANCER);
       testFlashClose3([vaultdaieth, vaultusdceth], DEPOSIT_STABLE, BORROW_ETH, FLASHLOAN.CREAM);
 
       testFlashClose3([vaultwbtceth], DEPOSIT_WBTC, BORROW_ETH, FLASHLOAN.AAVE);
-      //testFlashClose3([vaultwbtceth], DEPOSIT_WBTC, BORROW_ETH, FLASHLOAN.DYDX);
+      testFlashClose3([vaultwbtceth], DEPOSIT_WBTC, BORROW_ETH, FLASHLOAN.BALANCER);
       testFlashClose3([vaultwbtceth], DEPOSIT_WBTC, BORROW_ETH, FLASHLOAN.CREAM);
     });
   });

@@ -33,12 +33,9 @@ contract NFTInteractions is Claimable {
   */
   event CratesOpened(uint256 crateId, uint256 amount);
 
-  uint256 private constant POINTS_ID = 0;
   uint256 public constant CRATE_COMMON_ID = 1;
   uint256 public constant CRATE_EPIC_ID = 2;
   uint256 public constant CRATE_LEGENDARY_ID = 3;
-  uint256 public constant POINTS_DECIMALS = 5;
-
   uint256 public constant NFT_CARD_ID = 4;
 
   // CrateID => crate rewards
@@ -90,9 +87,9 @@ contract NFTInteractions is Claimable {
 
     uint price = cratePrices[crateId] * amount;
     require(price > 0, "Price not set");
-    require(nftGame.balanceOf(msg.sender, POINTS_ID) >= price, "Not enough points");
+    require(nftGame.balanceOf(msg.sender, nftGame.POINTS_ID()) >= price, "Not enough points");
 
-    nftGame.burn(msg.sender, POINTS_ID, price);
+    nftGame.burn(msg.sender, nftGame.POINTS_ID(), price);
 
     nftGame.mint(msg.sender, crateId, amount);
 
@@ -128,7 +125,7 @@ contract NFTInteractions is Claimable {
     }
 
     if (pointsAmount > 0) {
-      nftGame.mint(msg.sender, POINTS_ID, pointsAmount);
+      nftGame.mint(msg.sender, nftGame.POINTS_ID(), pointsAmount);
     }
 
     if (cardsAmount > 0) {

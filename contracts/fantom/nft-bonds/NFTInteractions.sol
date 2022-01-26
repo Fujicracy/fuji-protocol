@@ -13,6 +13,26 @@ import "../libraries/LibPseudoRandom.sol";
 contract NFTInteractions is Claimable {
   using LibPseudoRandom for uint256;
 
+  /**
+  * @dev Changing a crate points price
+  */
+  event CratePriceChanged(uint256 crateId, uint256 price);
+
+  /**
+  * @dev Changing crate rewards
+  */
+  event CrateRewardsChanged(uint256 crateId, uint256[] rewards);
+
+  /**
+  * @dev Acquired crates 
+  */
+  event CratesAcquired(uint256 crateId, uint256 amount);
+
+  /**
+  * @dev Opened crates
+  */
+  event CratesOpened(uint256 crateId, uint256 amount);
+
   uint256 private constant POINTS_ID = 0;
   uint256 public constant CRATE_COMMON_ID = 1;
   uint256 public constant CRATE_EPIC_ID = 2;
@@ -43,6 +63,7 @@ contract NFTInteractions is Claimable {
   function setCratePrice(uint256 crateId, uint256 price) external onlyOwner {
     require(crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID, "Invalid crate ID");
     cratePrices[crateId] = price;
+    emit CratePriceChanged(crateId, price);
   }
 
   /**
@@ -58,6 +79,7 @@ contract NFTInteractions is Claimable {
   */
   function setCrateRewards(uint256 crateId, uint256[] memory rewards) external onlyOwner {
     crateRewards[crateId] = rewards;
+    emit CrateRewardsChanged(crateId, rewards);
   }
 
   /**
@@ -73,6 +95,8 @@ contract NFTInteractions is Claimable {
     nftGame.burn(msg.sender, POINTS_ID, price);
 
     nftGame.mint(msg.sender, crateId, amount);
+
+    emit CratesAcquired(crateId, amount);
   }
 
   /**
@@ -112,5 +136,7 @@ contract NFTInteractions is Claimable {
     }
 
     nftGame.burn(msg.sender, crateId, amount);
+
+    emit CratesOpened(crateId, amount);
   }
 }

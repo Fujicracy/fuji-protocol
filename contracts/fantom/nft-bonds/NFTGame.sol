@@ -14,6 +14,12 @@ import "../../interfaces/IERC20Extended.sol";
 
 
 contract NFTGame is ERC1155, Claimable {
+
+  /**
+  * @dev Changing valid vaults
+  */
+  event ValidVaultsChanged(address[] validVaults);
+
   struct UserData {
     uint64 lastTimestampUpdate;
     uint64 rateOfAccrual;
@@ -122,6 +128,7 @@ contract NFTGame is ERC1155, Claimable {
   */
   function setValidVaults(address[] memory vaults) external onlyOwner {
     validVaults = vaults;
+    emit ValidVaultsChanged(vaults);
   }
 
   function mint(address user, uint256 id, uint256 amount) external onlyInteractions {

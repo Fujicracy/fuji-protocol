@@ -124,24 +124,24 @@ contract NFTGame is ERC1155, Claimable {
     validVaults = vaults;
   }
 
-  /**
-  * @notice Compounds and burns points
-  */
-  function usePoints(address user, uint256 amount) public onlyInteractions {
-    _compoundPoints(user, getUserDebt(user));
-    require(userdata[user].accruedPoints >= amount, "Not enough points");
-    userdata[user].accruedPoints -= uint128(amount);
-    totalSupply[POINTS_ID] -= amount;
-  }
-
-  function earnPoints(address user, uint256 amount) public onlyInteractions {
-    userdata[user].accruedPoints += uint128(amount);
-    totalSupply[POINTS_ID] += amount;
-  }
-
   function mint(address user, uint256 id, uint256 amount) external onlyInteractions {
-    _mint(user, id, amount, "");
+    if (id == POINTS_ID) {
+      userdata[user].accruedPoints += uint128(amount);
+    } else {
+      _mint(user, id, amount, "");
+    }
     totalSupply[id] += amount;
+  }
+
+  function burn(address user, uint256 id, uint256 amount) external onlyInteractions {
+    if (id == POINTS_ID) {
+      _compoundPoints(user, getUserDebt(user));
+      require(userdata[user].accruedPoints >= amount, "Not enough points");
+      userdata[user].accruedPoints -= uint128(amount);
+    } else {
+      _burn(user, id, amount);
+    }
+    totalSupply[id] -= amount;
   }
 
   /**
@@ -193,6 +193,11 @@ contract NFTGame is ERC1155, Claimable {
   }
 
   // Internal Functions
+  //TODO swap this function for the public one with the corresponding permission
+  function _mintPoints(address user, uint256 amount) internal {
+    userdata[user].accruedPoints += uint128(amount);
+    totalSupply[POINTS_ID] += amount;
+  }
 
   /**
   * @dev Returns de balance of accrued points of a user.
@@ -224,11 +229,9 @@ contract NFTGame is ERC1155, Claimable {
 
     // Change the state
     uint256 points = _computeAccrued(user, debt);
-    earnPoints(user, points);
+    _mintPoints(user, points);
     // userdata[user].lastMultiplierValue = uint128(_computeLatestMultiplier(info.lastMultiplierValue, info.lastTimestampUpdate));
     userdata[user].recordedDebtBalance = uint128(debt);
-
-    totalSupply[POINTS_ID] += points;
   }
 
   function _timestampDifference(uint256 oldTimestamp) internal view returns (uint256) {

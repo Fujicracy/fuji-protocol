@@ -160,7 +160,7 @@ describe("NFT Bond Crate System", function () {
     });
   });
 
-  describe("Opening Crates", function () {
+  describe.only("Opening Crates", function () {
     before(async function () {
       await evmRevert(this.evmSnapshot0);
 
@@ -220,6 +220,15 @@ describe("NFT Bond Crate System", function () {
 
     it("Successfuly opening a crate", async function () {
       await this.f.nftinteractions.connect(this.user).openCrate(this.crateIds[0]);
+    });
+
+    it("Crate balance after opnening a crate", async function () {
+      const bal = await this.f.nftgame.balanceOf(this.user.address, this.crateIds[0]);
+      await this.f.nftinteractions.connect(this.user).openCrate(this.crateIds[0]);
+
+      expect(await this.f.nftgame.balanceOf(this.user.address, this.crateIds[0])).to.be.equal(
+        bal.sub(1)
+      );
     });
   });
 });

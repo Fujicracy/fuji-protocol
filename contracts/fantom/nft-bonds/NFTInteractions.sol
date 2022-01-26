@@ -70,7 +70,7 @@ contract NFTInteractions is Claimable {
     require(price > 0, "Price not set");
     require(nftGame.balanceOf(msg.sender, POINTS_ID) >= price, "Not enough points");
 
-    nftGame.usePoints(msg.sender, price);
+    nftGame.burn(msg.sender, POINTS_ID, price);
 
     nftGame.mint(msg.sender, crateId, amount);
   }
@@ -91,7 +91,7 @@ contract NFTInteractions is Claimable {
         uint256 points = crateRewards[crateId][i];
 
         if (points > 0) {
-          nftGame.earnPoints(msg.sender, points);
+          nftGame.mint(msg.sender, POINTS_ID, points);
         }
       }
     }
@@ -100,5 +100,6 @@ contract NFTInteractions is Claimable {
       nftGame.mint(msg.sender, NFT_CARD_ID, 1);
     }
 
+    nftGame.burn(msg.sender, crateId, 1);
   }
 }

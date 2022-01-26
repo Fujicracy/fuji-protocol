@@ -35,7 +35,7 @@
     "node-watch": "^0.7.0",
     "qrcode-terminal": "^0.12.0",
     "ramda": "^0.27.1",
-    "redstone-evm-connector": "^2.0.4"
+    "redstone-evm-connector": "2.1.0"
   },
   "scripts": {
     "fork": "hardhat node --hostname 0.0.0.0",

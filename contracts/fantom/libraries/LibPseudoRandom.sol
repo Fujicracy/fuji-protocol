@@ -12,7 +12,7 @@ library LibPseudoRandom {
    * @return results array of picks.
    */
   function pickRandomNumbers(uint256 amountOfPicks, uint256 entropy)
-    public
+    internal
     view
     returns (uint256[] memory results)
   {

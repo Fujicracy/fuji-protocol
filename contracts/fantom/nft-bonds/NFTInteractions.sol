@@ -12,6 +12,8 @@ import "../libraries/LibPseudoRandom.sol";
 import "./FujiPriceAware.sol";
 
 contract NFTInteractions is FujiPriceAware, Claimable {
+  using LibPseudoRandom for uint256;
+
   /**
    * @dev Changing a crate points price
    */

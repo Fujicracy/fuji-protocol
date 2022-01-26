@@ -103,7 +103,7 @@ contract FujiPriceAware {
       dataTimestamp := calldataload(sub(calldatasize(), 98))
     }
 
-    require(block.timestamp - dataTimestamp < maxDelay, "Data is too old");
+    // require(block.timestamp - dataTimestamp < maxDelay, "Data is too old");
 
     return _readFromCallData(symbols, uint256(dataSize), messageLength);
   }

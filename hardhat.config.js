@@ -24,8 +24,8 @@ const forkUrl =
   network === "fantom"
     ? "https://rpc.ftm.tools/"
     : network === "bsc"
-    ? "https://bsc-dataseed.binance.org/"
-    : mainnetUrl;
+      ? "https://bsc-dataseed.binance.org/"
+      : mainnetUrl;
 
 //
 // Select the network you want to deploy to here:
@@ -130,8 +130,18 @@ module.exports = {
             runs: 1000,
           },
         },
-      },
+      }
     ],
+    overrides: {
+      "contracts/fantom/nft-bonds/FujiPriceAware.sol": {
+        version: "0.8.2",
+        settings: {
+          optimizer: {
+            enabled: false
+          },
+        },
+      },
+    },
   },
   mocha: {
     timeout: 200000,

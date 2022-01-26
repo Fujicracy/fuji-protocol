@@ -218,6 +218,13 @@ describe("NFT Bond Crate System", function () {
       ).to.be.revertedWith("Rewards not set");
     });
 
+    it("Not enough crates", async function () {
+      const amount = 9999;
+      await expect(
+        this.f.nftinteractions.connect(this.user).openCrate(this.crateIds[0], amount)
+      ).to.be.revertedWith("Not enough crates");
+    });
+
     it("Successfuly opening a crate", async function () {
       await this.f.nftinteractions.connect(this.user).openCrate(this.crateIds[0], 1);
     });

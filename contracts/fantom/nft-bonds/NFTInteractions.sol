@@ -80,7 +80,7 @@ contract NFTInteractions is Claimable {
   */
   function openCrate(uint256 crateId, uint256 amount) external {
     require(crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID, "Invalid crate ID");
-    require(nftGame.balanceOf(msg.sender, crateId) > 0, "Not enough crates");
+    require(nftGame.balanceOf(msg.sender, crateId) >= amount, "Not enough crates");
     require(crateRewards[crateId].length == probabilityIntervals.length, "Rewards not set");
 
     uint256 pointsAmount = 0;

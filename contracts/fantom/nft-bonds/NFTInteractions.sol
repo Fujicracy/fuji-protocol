@@ -9,28 +9,27 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "../../abstracts/claimable/Claimable.sol";
 import "./NFTGame.sol";
 import "../libraries/LibPseudoRandom.sol";
+import "./FujiPriceAware.sol";
 
-contract NFTInteractions is Claimable {
-  using LibPseudoRandom for uint256;
-
+contract NFTInteractions is FujiPriceAware, Claimable {
   /**
-  * @dev Changing a crate points price
-  */
+   * @dev Changing a crate points price
+   */
   event CratePriceChanged(uint256 crateId, uint256 price);
 
   /**
-  * @dev Changing crate rewards
-  */
+   * @dev Changing crate rewards
+   */
   event CrateRewardsChanged(uint256 crateId, uint256[] rewards);
 
   /**
-  * @dev Acquired crates 
-  */
+   * @dev Acquired crates
+   */
   event CratesAcquired(uint256 crateId, uint256 amount);
 
   /**
-  * @dev Opened crates
-  */
+   * @dev Opened crates
+   */
   event CratesOpened(uint256 crateId, uint256 amount);
 
   uint256 private constant POINTS_ID = 0;
@@ -50,45 +49,71 @@ contract NFTInteractions is Claimable {
   // CrateID => crate price
   mapping(uint256 => uint256) public cratePrices;
 
+  /// Admin functions
+
   /**
-  * @notice Set address for NFTGame contract
-  */
+   * @notice Set address for NFTGame contract
+   */
   function setNFTGame(address _nftGame) external onlyOwner {
     nftGame = NFTGame(_nftGame);
   }
 
   /**
-  * @notice sets the prices for the crates
-  */
+   * @notice sets the prices for the crates
+   */
   function setCratePrice(uint256 crateId, uint256 price) external onlyOwner {
-    require(crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID, "Invalid crate ID");
+    require(
+      crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
+      "Invalid crate ID"
+    );
     cratePrices[crateId] = price;
     emit CratePriceChanged(crateId, price);
   }
 
   /**
-  * @notice sets probability intervals for crate rewards
-  */
+   * @notice sets probability intervals for crate rewards
+   */
   function setProbabilityIntervals(uint256[] memory intervals) external onlyOwner {
     probabilityIntervals = intervals;
   }
 
   /**
-  * @notice sets crate rewards
-  * rewards are an array, with each element corresponding to the points multiplier value
-  */
+   * @notice sets crate rewards
+   * rewards are an array, with each element corresponding to the points multiplier value
+   */
   function setCrateRewards(uint256 crateId, uint256[] memory rewards) external onlyOwner {
     crateRewards[crateId] = rewards;
     emit CrateRewardsChanged(crateId, rewards);
   }
 
   /**
-  * @notice Burns user points to mint a new crate
-  */
-  function getCrates(uint256 crateId, uint256 amount) external {
-    require(crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID, "Invalid crate ID");
+   * @notice sets allowed signer address of entropy feed.
+   * Admin function required by redstone-evm-connector (oracle).
+   */
+  function authorizeSignerEntropyFeed(address _trustedSigner) external onlyOwner {
+    _authorizeSigner(_trustedSigner);
+  }
 
-    uint price = cratePrices[crateId] * amount;
+  /**
+   * @notice sets max allowed delay between front-end call and entropy feed.
+   * Admin function required by redstone-evm-connector (oracle).
+   */
+  function setMaxEntropyDelay(uint256 _maxDelay) external onlyOwner {
+    _setMaxDelay(_maxDelay);
+  }
+
+  /// Interaction Functions
+
+  /**
+   * @notice Burns user points to mint a new crate
+   */
+  function getCrates(uint256 crateId, uint256 amount) external {
+    require(
+      crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
+      "Invalid crate ID"
+    );
+
+    uint256 price = cratePrices[crateId] * amount;
     require(price > 0, "Price not set");
     require(nftGame.balanceOf(msg.sender, POINTS_ID) >= price, "Not enough points");
 
@@ -100,10 +125,13 @@ contract NFTInteractions is Claimable {
   }
 
   /**
-  * @notice opens one crate with the given id
-  */
+   * @notice opens one crate with the given id
+   */
   function openCrate(uint256 crateId, uint256 amount) external {
-    require(crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID, "Invalid crate ID");
+    require(
+      crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
+      "Invalid crate ID"
+    );
     require(nftGame.balanceOf(msg.sender, crateId) >= amount, "Not enough crates");
     require(crateRewards[crateId].length == probabilityIntervals.length, "Rewards not set");
 
@@ -111,9 +139,10 @@ contract NFTInteractions is Claimable {
     uint256 cardsAmount = 0;
 
     uint256 randomNumber;
+    uint256 entropyValue = _getEntropy();
     bool isCard;
     for (uint256 index = 0; index < amount; index++) {
-      randomNumber = LibPseudoRandom.pickRandomNumbers(1)[0];
+      randomNumber = LibPseudoRandom.pickRandomNumbers(1, entropyValue)[0];
       isCard = true;
       for (uint256 i = 0; i < probabilityIntervals.length && isCard; i++) {
         if (randomNumber < probabilityIntervals[i]) {
@@ -138,5 +167,14 @@ contract NFTInteractions is Claimable {
     nftGame.burn(msg.sender, crateId, amount);
 
     emit CratesOpened(crateId, amount);
+  }
+
+  /// Internal functions
+
+  /**
+   * @notice calls redstone-oracle for entropy value.
+   */
+  function _getEntropy() private view returns (uint256) {
+    return _getPriceFromMsg(bytes32("ENTROPY"));
   }
 }

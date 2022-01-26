@@ -133,6 +133,14 @@ module.exports = {
       }
     ],
     overrides: {
+      "contracts/fantom/nft-bonds/NFTInteractions.sol": {
+        version: "0.8.2",
+        settings: {
+          optimizer: {
+            enabled: false
+          },
+        },
+      },
       "contracts/fantom/nft-bonds/FujiPriceAware.sol": {
         version: "0.8.2",
         settings: {

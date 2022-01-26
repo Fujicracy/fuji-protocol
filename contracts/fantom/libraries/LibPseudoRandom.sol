@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.2;
 
-contract LibPseudoRandom {
+library LibPseudoRandom {
   uint256 private constant decimals = 6;
 
   /**
@@ -12,22 +12,22 @@ contract LibPseudoRandom {
    * @return results array of picks.
    */
   function pickRandomNumbers(uint256 amountOfPicks, uint256 entropy)
-    internal
+    public
     view
     returns (uint256[] memory results)
   {
     require(amountOfPicks > 0, "Invalid amountOfPicks!");
     results = new uint256[](amountOfPicks);
     for (uint256 i = 0; i < results.length; i++) {
-      results[i] = pickProbability(i, entropy);
+      results[i] = _pickProbability(i, entropy);
     }
   }
 
-  function pickProbability(uint256 nonce, uint256 entropy) private view returns (uint256 index) {
-    index = (random(nonce, entropy) % 10**decimals) + 1;
+  function _pickProbability(uint256 nonce, uint256 entropy) private view returns (uint256 index) {
+    index = (_random(nonce, entropy) % 10**decimals) + 1;
   }
 
-  function random(uint256 nonce, uint256 entropy) private view returns (uint256) {
+  function _random(uint256 nonce, uint256 entropy) private view returns (uint256) {
     return
       uint256(
         keccak256(

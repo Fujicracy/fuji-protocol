@@ -207,27 +207,28 @@ describe("NFT Bond Crate System", function () {
     it("Invalid crate ID", async function () {
       const invalidId = 9999;
       await expect(
-        this.f.nftinteractions.connect(this.user).openCrate(invalidId)
+        this.f.nftinteractions.connect(this.user).openCrate(invalidId, 1)
       ).to.be.revertedWith("Invalid crate ID");
     });
 
     it("Rewards not set", async function () {
       const noRewardsCrate = this.crateIds[2];
       await expect(
-        this.f.nftinteractions.connect(this.user).openCrate(noRewardsCrate)
+        this.f.nftinteractions.connect(this.user).openCrate(noRewardsCrate, 1)
       ).to.be.revertedWith("Rewards not set");
     });
 
     it("Successfuly opening a crate", async function () {
-      await this.f.nftinteractions.connect(this.user).openCrate(this.crateIds[0]);
+      await this.f.nftinteractions.connect(this.user).openCrate(this.crateIds[0], 1);
     });
 
-    it("Crate balance after opnening a crate", async function () {
+    it("Crate balance after opnening crates", async function () {
       const bal = await this.f.nftgame.balanceOf(this.user.address, this.crateIds[0]);
-      await this.f.nftinteractions.connect(this.user).openCrate(this.crateIds[0]);
+      const amount = 2;
+      await this.f.nftinteractions.connect(this.user).openCrate(this.crateIds[0], amount);
 
       expect(await this.f.nftgame.balanceOf(this.user.address, this.crateIds[0])).to.be.equal(
-        bal.sub(1)
+        bal.sub(amount)
       );
     });
   });

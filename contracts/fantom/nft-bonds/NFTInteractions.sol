@@ -78,28 +78,39 @@ contract NFTInteractions is Claimable {
   /**
   * @notice opens one crate with the given id
   */
-  function openCrate(uint256 crateId) external {
+  function openCrate(uint256 crateId, uint256 amount) external {
     require(crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID, "Invalid crate ID");
     require(nftGame.balanceOf(msg.sender, crateId) > 0, "Not enough crates");
     require(crateRewards[crateId].length == probabilityIntervals.length, "Rewards not set");
 
-    uint256 randomNumber = LibPseudoRandom.pickRandomNumbers(1)[0];
-    bool isCard = true;
-    for (uint256 i = 0; i < probabilityIntervals.length && isCard; i++) {
-      if (randomNumber < probabilityIntervals[i]) {
-        isCard = false;
-        uint256 points = crateRewards[crateId][i];
+    uint256 pointsAmount = 0;
+    uint256 cardsAmount = 0;
 
-        if (points > 0) {
-          nftGame.mint(msg.sender, POINTS_ID, points);
+    uint256 randomNumber;
+    bool isCard;
+    for (uint256 index = 0; index < amount; index++) {
+      randomNumber = LibPseudoRandom.pickRandomNumbers(1)[0];
+      isCard = true;
+      for (uint256 i = 0; i < probabilityIntervals.length && isCard; i++) {
+        if (randomNumber < probabilityIntervals[i]) {
+          isCard = false;
+          pointsAmount += crateRewards[crateId][i];
         }
+      }
+
+      if (isCard) {
+        cardsAmount++;
       }
     }
 
-    if (isCard) {
-      nftGame.mint(msg.sender, NFT_CARD_ID, 1);
+    if (pointsAmount > 0) {
+      nftGame.mint(msg.sender, POINTS_ID, pointsAmount);
     }
 
-    nftGame.burn(msg.sender, crateId, 1);
+    if (cardsAmount > 0) {
+      nftGame.mint(msg.sender, NFT_CARD_ID, cardsAmount);
+    }
+
+    nftGame.burn(msg.sender, crateId, amount);
   }
 }

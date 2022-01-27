@@ -149,6 +149,14 @@ module.exports = {
           },
         },
       },
+      "contracts/fantom/nft-bonds/mocks/MockRandomTests.sol": {
+        version: "0.8.2",
+        settings: {
+          optimizer: {
+            enabled: false
+          },
+        },
+      },
     },
   },
   mocha: {

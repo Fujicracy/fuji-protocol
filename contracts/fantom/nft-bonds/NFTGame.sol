@@ -12,7 +12,6 @@ import "../../interfaces/IVault.sol";
 import "../../interfaces/IVaultControl.sol";
 import "../../interfaces/IERC20Extended.sol";
 
-
 contract NFTGame is ERC1155, Claimable {
 
   /**
@@ -106,10 +105,7 @@ contract NFTGame is ERC1155, Claimable {
       _compoundPoints(user, isPayback ? debt + balanceChange : debt - balanceChange);
     }
 
-    // Set User parameters
-    userdata[user].lastTimestampUpdate = uint64(block.timestamp);
-    userdata[user].rateOfAccrual = uint64(debt * (10**POINTS_DECIMALS) / SEC);
-    userdata[user].recordedDebtBalance = uint128(debt);
+    _updateUserInfo(user, uint128(debt));
   }
 
   function mint(address user, uint256 id, uint256 amount) external onlyInteractions {
@@ -123,7 +119,9 @@ contract NFTGame is ERC1155, Claimable {
 
   function burn(address user, uint256 id, uint256 amount) external onlyInteractions {
     if (id == POINTS_ID) {
-      _compoundPoints(user, getUserDebt(user));
+      uint256 debt = getUserDebt(user);
+      _compoundPoints(user, debt);
+      _updateUserInfo(user, uint128(debt));
       require(userdata[user].accruedPoints >= amount, "Not enough points");
       userdata[user].accruedPoints -= uint128(amount);
     } else {
@@ -199,10 +197,18 @@ contract NFTGame is ERC1155, Claimable {
 
   // Internal Functions
 
-  //TODO change this function for the public one with the corresponding permission
-  function _mintPoints(address user, uint256 amount) internal {
-    userdata[user].accruedPoints += uint128(amount);
-    totalSupply[POINTS_ID] += amount;
+  /**
+  * @notice Compute user's accrued points since user's 'lastTimestampUpdate'.
+  * @dev Includes points from rate and points from interest
+  */
+  function _computeAccrued(address user, uint256 debt) internal view returns (uint256) {
+    // 1 - compute points from normal rate
+    // 2 - add points by interest
+    UserData memory info = userdata[user];
+    uint256 pointsFromRate = _timestampDifference(info.lastTimestampUpdate) * (info.rateOfAccrual);
+    uint256 pointsFromInterest = (((debt - info.recordedDebtBalance) * _timestampDifference(info.lastTimestampUpdate)) / 2);
+  
+    return pointsFromRate + pointsFromInterest;
   }
 
   /**
@@ -213,28 +219,13 @@ contract NFTGame is ERC1155, Claimable {
   }
 
   /**
-  * @notice Compute user's accrued points since user's 'lastTimestampUpdate'.
-  */
-  function _computeAccrued(address user, uint256 debt) internal view returns (uint256) {
-    UserData memory info = userdata[user];
-    // 1 - compute points from normal rate
-    // 2 - add points by interest
-    return _timestampDifference(info.lastTimestampUpdate) * (info.rateOfAccrual) +
-    (((debt - info.recordedDebtBalance) * _timestampDifference(info.lastTimestampUpdate)) / 2);
-  }
-
-  /**
   * @dev Adds 'computeAccrued()' to recorded 'accruedPoints' in UserData and totalSupply
   * @dev Must update all fields of UserData information.
   */
   function _compoundPoints(address user, uint256 debt) internal {
-    // Read the current state of userdata
-    // UserData memory info = userdata[user];
-
-    // Change the state
     uint256 points = _computeAccrued(user, debt);
+
     _mintPoints(user, points);
-    userdata[user].recordedDebtBalance = uint128(debt);
   }
 
   function _timestampDifference(uint256 oldTimestamp) internal view returns (uint256) {
@@ -245,6 +236,17 @@ contract NFTGame is ERC1155, Claimable {
     return value / 10**decimals;
   }
 
+  //TODO change this function for the public one with the corresponding permission
+  function _mintPoints(address user, uint256 amount) internal {
+    userdata[user].accruedPoints += uint128(amount);
+    totalSupply[POINTS_ID] += amount;
+  }
+
+  function _updateUserInfo(address user, uint128 balance) internal {
+    userdata[user].lastTimestampUpdate = uint64(block.timestamp);
+    userdata[user].recordedDebtBalance = uint128(balance);
+    userdata[user].rateOfAccrual = uint64(balance * (10**POINTS_DECIMALS) / SEC);
+  }
 
   function _beforeTokenTransfer(
     address operator,

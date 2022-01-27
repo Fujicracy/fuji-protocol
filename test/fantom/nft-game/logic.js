@@ -187,20 +187,24 @@ describe("NFT Bond Logic", function () {
         value: depositAmount,
       });
 
-      await timeTravel(time);
-
       const pps = await this.f.nftgame.computeRateOfAccrual(this.user.address);
-      const pointsFromRate = pps.mul(time);
+
+      await timeTravel(time);
+      await this.f.vaultftmdai.updateF1155Balances();
+
+      const pointsFromRate = pps.mul(time).div(10 ** this.pointsDecimals);
 
       const newDebt = await this.f.nftgame.getUserDebt(this.user.address);
-      const pointsFromInterest = ((newDebt - formatUnitsToNum(borrowAmount)) * time) / 2;
-
-      expect(await this.f.nftgame.balanceOf(this.user.address, 0)).to.be.equal(
-        pointsFromRate.add(pointsFromInterest)
+      const pointsFromInterest = Math.round(
+        ((newDebt - formatUnitsToNum(borrowAmount)) * time) / 2 / 10 ** this.pointsDecimals
       );
+
+      expect(
+        (await this.f.nftgame.balanceOf(this.user.address, 0)).div(10 ** this.pointsDecimals)
+      ).to.be.equal(pointsFromRate.add(pointsFromInterest));
     });
 
-    it("Points balance, multiple borrows", async function () {
+    it.only("Points balance, multiple borrows", async function () {
       const vault = this.f.vaultftmdai;
       const depositAmount = [parseUnits(1000), parseUnits(1500)];
       const borrowAmount = [parseUnits(100), parseUnits(150)];
@@ -218,19 +222,22 @@ describe("NFT Bond Logic", function () {
         });
 
         recordedDebt = await this.f.nftgame.getUserDebt(this.user.address);
+        pps = await this.f.nftgame.computeRateOfAccrual(this.user.address);
 
         await timeTravel(time);
+        await this.f.vaultftmdai.updateF1155Balances();
 
-        pps = await this.f.nftgame.computeRateOfAccrual(this.user.address);
-        pointsFromRate = pointsFromRate.add(pps.mul(time));
+        pointsFromRate = pointsFromRate.add(pps.mul(time).div(10 ** this.pointsDecimals));
 
         newDebt = await this.f.nftgame.getUserDebt(this.user.address);
-        pointsFromInterest += (newDebt.sub(recordedDebt) * time) / 2;
+        pointsFromInterest += Math.round(
+          (newDebt.sub(recordedDebt) * time) / 2 / 10 ** this.pointsDecimals
+        );
       }
 
-      expect(await this.f.nftgame.balanceOf(this.user.address, 0)).to.be.equal(
-        pointsFromRate.add(pointsFromInterest)
-      );
+      expect(
+        (await this.f.nftgame.balanceOf(this.user.address, 0)).div(10 ** this.pointsDecimals)
+      ).to.be.equal(pointsFromRate.add(pointsFromInterest));
     });
   });
 });

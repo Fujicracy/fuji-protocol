@@ -189,8 +189,8 @@ describe("NFT Bond Crate System", function () {
 
     beforeEach(async function () {
       const vault = this.f.vaultftmdai;
-      const depositAmount = parseUnits(450);
-      const borrowAmount = parseUnits(100);
+      const depositAmount = parseUnits(5000);
+      const borrowAmount = parseUnits(2000);
       const amount = 2;
 
       await vault.connect(this.user).depositAndBorrow(depositAmount, borrowAmount, {
@@ -198,6 +198,7 @@ describe("NFT Bond Crate System", function () {
       });
 
       await timeTravel(this.sec * 365);
+      await vault.updateF1155Balances();
 
       for (let i = 0; i < this.crateIds.length; i++) {
         await this.f.nftinteractions.connect(this.user).getCrates(this.crateIds[i], amount);

@@ -6,13 +6,13 @@ pragma solidity ^0.8.2;
 /// @notice Contract that handles logic for the NFT Bond game
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
-import "../../abstracts/claimable/Claimable.sol";
 import "../../interfaces/IVault.sol";
 import "../../interfaces/IVaultControl.sol";
 import "../../interfaces/IERC20Extended.sol";
 
-contract NFTGame is ERC1155, Claimable {
+contract NFTGame is ERC1155, AccessControl {
 
   /**
   * @dev Changing valid vaults
@@ -50,7 +50,9 @@ contract NFTGame is ERC1155, Claimable {
 
   address[] public validVaults;
 
-  address private nftInteractions;
+  // Roles
+  bytes32 public constant GAME_ADMIN = keccak256("GAME_ADMIN");
+  bytes32 public constant GAME_INTERACTOR = keccak256("GAME_INTERACTOR");
 
   modifier onlyVault() {
     bool isVault;
@@ -61,26 +63,17 @@ contract NFTGame is ERC1155, Claimable {
     _;
   }
 
-  modifier onlyInteractions() {
-    require(msg.sender == nftInteractions);
-    _;
+  constructor(string memory uri_) ERC1155(uri_) {
+    _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }
-
-  constructor(string memory uri_) ERC1155(uri_) {}
 
   // State Changing Functions
 
   /**
-  * @notice Sets the address for the NFT Interactions contract
-  */
-  function setNFTInteractions(address _nftInteractions) external onlyOwner {
-    nftInteractions = _nftInteractions;
-  }
-
-  /**
   * @notice Sets the list of vaults that count towards the game
   */
-  function setValidVaults(address[] memory vaults) external onlyOwner {
+  function setValidVaults(address[] memory vaults) external {
+    require(hasRole(GAME_ADMIN, msg.sender), "No permission");
     validVaults = vaults;
     emit ValidVaultsChanged(vaults);
   }
@@ -108,7 +101,9 @@ contract NFTGame is ERC1155, Claimable {
     _updateUserInfo(user, uint128(debt));
   }
 
-  function mint(address user, uint256 id, uint256 amount) external onlyInteractions {
+  function mint(address user, uint256 id, uint256 amount) external {
+    require(hasRole(GAME_INTERACTOR, msg.sender), "No permission");
+
     if (id == POINTS_ID) {
       userdata[user].accruedPoints += uint128(amount);
     } else {
@@ -117,7 +112,9 @@ contract NFTGame is ERC1155, Claimable {
     totalSupply[id] += amount;
   }
 
-  function burn(address user, uint256 id, uint256 amount) external onlyInteractions {
+  function burn(address user, uint256 id, uint256 amount) external {
+    require(hasRole(GAME_INTERACTOR, msg.sender), "No permission");
+
     if (id == POINTS_ID) {
       uint256 debt = getUserDebt(user);
       _compoundPoints(user, debt);
@@ -135,7 +132,8 @@ contract NFTGame is ERC1155, Claimable {
   */
   function claimBonusPoints() public {}
 
-  function setMerkleRoot(bytes32 _merkleRoot) external onlyOwner {
+  function setMerkleRoot(bytes32 _merkleRoot) external {
+    require(hasRole(GAME_ADMIN, msg.sender), "No permission");
     require(_merkleRoot[0] != 0, "empty merkleRoot!");
     merkleRoot = _merkleRoot;
   }
@@ -193,6 +191,10 @@ contract NFTGame is ERC1155, Claimable {
       totalDebt += _convertToDebtUnits(IVault(validVaults[i]).userDebtBalance(user), decimals);
     }
     return totalDebt;
+  }
+
+  function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {
+    return super.supportsInterface(interfaceId);
   }
 
   // Internal Functions

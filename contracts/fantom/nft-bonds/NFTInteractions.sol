@@ -46,6 +46,10 @@ contract NFTInteractions {
   // CrateID => crate price
   mapping(uint256 => uint256) public cratePrices;
 
+  constructor(address _nftGame) {
+    nftGame = NFTGame(_nftGame);
+  }
+
   /**
   * @notice Set address for NFTGame contract
   */

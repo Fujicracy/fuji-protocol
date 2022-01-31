@@ -68,4 +68,30 @@ describe("NFT Bond Logic", function () {
       );
     });
   });
+
+  describe("NFT Interactions", function () {
+    it("Set NFT Game", async function () {
+      await expect(
+        this.f.nftinteractions.connect(this.user).setNFTGame(this.f.nftgame.address)
+      ).to.be.revertedWith("No permission");
+    });
+
+    it("Set crate prices", async function () {
+      await expect(
+        this.f.nftinteractions.connect(this.user).setCratePrice(0, 0)
+      ).to.be.revertedWith("No permission");
+    });
+
+    it("Set probability intervals", async function () {
+      await expect(
+        this.f.nftinteractions.connect(this.user).setProbabilityIntervals([])
+      ).to.be.revertedWith("No permission");
+    });
+
+    it("Set crate rewards", async function () {
+      await expect(
+        this.f.nftinteractions.connect(this.user).setCrateRewards(0, [])
+      ).to.be.revertedWith("No permission");
+    });
+  });
 });

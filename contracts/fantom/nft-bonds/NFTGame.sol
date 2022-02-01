@@ -5,14 +5,15 @@ pragma solidity ^0.8.2;
 /// @author fuji-dao.eth
 /// @notice Contract that handles logic for the NFT Bond game
 
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "../../interfaces/IVault.sol";
 import "../../interfaces/IVaultControl.sol";
 import "../../interfaces/IERC20Extended.sol";
 
-contract NFTGame is ERC1155, AccessControl {
+contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable {
 
   /**
   * @dev Changing valid vaults
@@ -30,13 +31,20 @@ contract NFTGame is ERC1155, AccessControl {
 
   uint256 constant SEC = 86400;
 
-  uint256 private constant MINIMUM_DAILY_DEBT_POSITION = 1; //tbd
-  uint256 private constant POINT_PER_DEBTUNIT_PER_DAY = 1; //tbd
+  // uint256 private constant MINIMUM_DAILY_DEBT_POSITION = 1;
+  // uint256 private constant POINT_PER_DEBTUNIT_PER_DAY = 1; 
 
   uint256 public constant POINTS_ID = 0;
   uint256 public constant POINTS_DECIMALS = 5;
 
   address private constant _FTM = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+
+
+  // Roles
+
+  bytes32 public constant GAME_ADMIN = keccak256("GAME_ADMIN");
+  bytes32 public constant GAME_INTERACTOR = keccak256("GAME_INTERACTOR");
+
 
   // Sate Variables
 
@@ -50,10 +58,6 @@ contract NFTGame is ERC1155, AccessControl {
 
   address[] public validVaults;
 
-  // Roles
-  bytes32 public constant GAME_ADMIN = keccak256("GAME_ADMIN");
-  bytes32 public constant GAME_INTERACTOR = keccak256("GAME_INTERACTOR");
-
   modifier onlyVault() {
     bool isVault;
     for (uint256 i = 0; i < validVaults.length && !isVault; i++) {
@@ -63,7 +67,12 @@ contract NFTGame is ERC1155, AccessControl {
     _;
   }
 
-  constructor(string memory uri_) ERC1155(uri_) {
+  function __NFTGame_init(string memory uri_) internal initializer {
+    __ERC1155_init(uri_);
+    __AccessControl_init();
+  }
+
+  function __NFTGame_init_unchained() internal initializer {
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }
 

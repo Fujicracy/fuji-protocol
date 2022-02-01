@@ -5,11 +5,12 @@ pragma solidity ^0.8.2;
 /// @author fuji-dao.eth
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "./NFTGame.sol";
 import "../libraries/LibPseudoRandom.sol";
 
-contract NFTInteractions {
+contract NFTInteractions is Initializable{
   using LibPseudoRandom for uint256;
 
   /**
@@ -39,15 +40,16 @@ contract NFTInteractions {
 
   // CrateID => crate rewards
   mapping(uint256 => uint256[]) crateRewards;
-  uint256[] private probabilityIntervals = [500000, 700000, 900000, 950000, 9501000];
+  uint256[] private probabilityIntervals;
 
   NFTGame private nftGame;
 
   // CrateID => crate price
   mapping(uint256 => uint256) public cratePrices;
 
-  constructor(address _nftGame) {
+  function intialize(address _nftGame) public initializer {
     nftGame = NFTGame(_nftGame);
+    probabilityIntervals = [500000, 700000, 900000, 950000, 9501000];
   }
 
   /**

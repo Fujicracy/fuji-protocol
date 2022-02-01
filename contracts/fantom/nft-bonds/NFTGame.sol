@@ -67,13 +67,12 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     _;
   }
 
-  function __NFTGame_init(string memory uri_) internal initializer {
-    __ERC1155_init(uri_);
+  function initialize() external initializer {
+    __ERC1155_init("");
     __AccessControl_init();
-  }
-
-  function __NFTGame_init_unchained() internal initializer {
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    _setupRole(GAME_ADMIN, msg.sender);
+    _setupRole(GAME_INTERACTOR, msg.sender);
   }
 
   // State Changing Functions
@@ -202,7 +201,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     return totalDebt;
   }
 
-  function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, AccessControl) returns (bool) {
+  function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155Upgradeable, AccessControlUpgradeable) returns (bool) {
     return super.supportsInterface(interfaceId);
   }
 

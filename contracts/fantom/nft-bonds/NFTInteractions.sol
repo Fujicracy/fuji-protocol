@@ -47,7 +47,7 @@ contract NFTInteractions is Initializable{
   // CrateID => crate price
   mapping(uint256 => uint256) public cratePrices;
 
-  function intialize(address _nftGame) public initializer {
+  function initialize(address _nftGame) external initializer {
     nftGame = NFTGame(_nftGame);
     probabilityIntervals = [500000, 700000, 900000, 950000, 9501000];
   }

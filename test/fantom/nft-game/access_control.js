@@ -51,13 +51,13 @@ describe("NFT Bond Logic", function () {
 
     it("Mint", async function () {
       await expect(
-        this.f.nftgame.connect(this.admin).mint(this.user.address, 0, 1)
+        this.f.nftgame.connect(this.user).mint(this.user.address, 0, 1)
       ).to.be.revertedWith("No permission");
     });
 
     it("Burn", async function () {
       await expect(
-        this.f.nftgame.connect(this.admin).burn(this.user.address, 0, 1)
+        this.f.nftgame.connect(this.user).burn(this.user.address, 0, 1)
       ).to.be.revertedWith("No permission");
     });
 

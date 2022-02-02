@@ -12,6 +12,7 @@ import "../../interfaces/compound/IGenCToken.sol";
 import "../../interfaces/compound/ICEth.sol";
 import "../../interfaces/compound/ICErc20.sol";
 import "../../interfaces/compound/IComptroller.sol";
+import "../../interfaces/compound/IProxyReceiver.sol";
 import "../libraries/LibUniversalERC20FTM.sol";
 
 contract HelperFunct {
@@ -29,6 +30,10 @@ contract HelperFunct {
 
   function _getUnwrapper() internal pure returns (address) {
     return 0xee94A39D185329d8c46dEA726E01F91641E57346;
+  }
+
+  function _getProxyReceiver() internal pure returns (address) {
+    return 0x0A666645b6429eB1A5e04a4831092F7b907C2606;
   }
 
   // Fantom Hundred functions
@@ -111,8 +116,18 @@ contract ProviderHundred is IProvider, HelperFunct {
     // Create a reference to the corresponding cToken contract
     IGenCToken cToken = IGenCToken(cTokenAddr);
 
-    //Compound Protocol Redeem Process, throw errow if not.
-    require(cToken.redeemUnderlying(_amount) == 0, "Withdraw-failed");
+    if (_isFTM(_asset)) {
+      // use a proxy receiver because Hundred uses "to.transfer(amount)"
+      // which runs out of gas whit proxy contracts
+      uint256 exRate = cToken.exchangeRateStored();
+      uint256 scaledAmount = _amount * 1e18 / exRate;
+
+      address receiverAddr = _getProxyReceiver();
+      cToken.transfer(receiverAddr, scaledAmount);
+      IProxyReceiver(receiverAddr).withdraw(_amount, cToken);
+    } else {
+      require(cToken.redeemUnderlying(_amount) == 0, "Withdraw-failed");
+    }
   }
 
   /**

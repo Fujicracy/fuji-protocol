@@ -36,7 +36,8 @@ contract NFTInteractions is Claimable {
   uint256 public constant CRATE_COMMON_ID = 1;
   uint256 public constant CRATE_EPIC_ID = 2;
   uint256 public constant CRATE_LEGENDARY_ID = 3;
-  uint256 public constant NFT_CARD_ID = 4;
+  uint256 public constant NFT_CARD_ID_START = 4;
+  uint256 public constant NFT_CARD_ID_END = 11;
 
   // CrateID => crate rewards
   mapping(uint256 => uint256[]) crateRewards;
@@ -105,33 +106,50 @@ contract NFTInteractions is Claimable {
     require(crateRewards[crateId].length == probabilityIntervals.length, "Rewards not set");
 
     uint256 pointsAmount = 0;
-    uint256 cardsAmount = 0;
+    uint256[NFT_CARD_ID_END - NFT_CARD_ID_START + 1] memory cardsAmount;
 
-    uint256 randomNumber;
+    uint256[] memory randomNumbers = LibPseudoRandom.pickRandomNumbers(amount);
     bool isCard;
-    for (uint256 index = 0; index < amount; index++) {
-      randomNumber = LibPseudoRandom.pickRandomNumbers(1)[0];
+
+    // iterate all crates to open
+    for (uint256 j = 0; j < amount; j++) {
       isCard = true;
+      // iterate propability intervals to see the reward for a specific crate
       for (uint256 i = 0; i < probabilityIntervals.length && isCard; i++) {
-        if (randomNumber < probabilityIntervals[i]) {
+        if (randomNumbers[j] < probabilityIntervals[i]) {
           isCard = false;
           pointsAmount += crateRewards[crateId][i];
         }
       }
 
+      // if the reward is a card determine the card id
       if (isCard) {
-        cardsAmount++;
+        uint256 step = 1000000 / NFT_CARD_ID_END - NFT_CARD_ID_START + 1;
+        uint256 randomNum = LibPseudoRandom.pickRandomNumbers(1)[0];
+        uint256 randomId = NFT_CARD_ID_START;
+        for (uint256 i = step; i <= 1000000; i += step) {
+          if (randomNum <= i) {
+            break;
+          }
+          randomId++;
+        }
+        cardsAmount[randomId]++;
       }
     }
 
+    // mint points
     if (pointsAmount > 0) {
       nftGame.mint(msg.sender, nftGame.POINTS_ID(), pointsAmount);
     }
 
-    if (cardsAmount > 0) {
-      nftGame.mint(msg.sender, NFT_CARD_ID, cardsAmount);
+    // mint cards
+    for (uint256 i = 0; i < cardsAmount.length; i++) {
+      if (cardsAmount[i] > 0) {
+        nftGame.mint(msg.sender, i + NFT_CARD_ID_START, cardsAmount[i]);
+      }
     }
 
+    // burn opened crates
     nftGame.burn(msg.sender, crateId, amount);
 
     emit CratesOpened(crateId, amount);

@@ -27,8 +27,6 @@ const getDeployments = (name) => {
 };
 
 const updateDeployments = async (name, contractName, address) => {
-  const deployer = (await ethers.getSigners())[0];
-
   let deployData;
   if (fs.existsSync(deploymentsPath)) {
     deployData = JSON.parse(fs.readFileSync(deploymentsPath).toString());
@@ -39,7 +37,6 @@ const updateDeployments = async (name, contractName, address) => {
   const contractArtifacts = await artifacts.readArtifact(contractName);
   deployData[name] = {
     address,
-    deployer: deployer.address,
     abi: contractArtifacts.abi,
     bytecode: contractArtifacts.bytecode,
   };
@@ -51,17 +48,16 @@ const getContractAddress = (name) => {
   return getDeployments(name).address;
 }
 
-const redeployIf = async (name, contractName, shouldRedeploy, deployContract, args = []) => {
-  const deployer = (await ethers.getSigners())[0];
-
+const redeployIf = async (name, contractName, deployContract, args = []) => {
   const currentDeployment = getDeployments(name);
   const contractArtifacts = await artifacts.readArtifact(contractName);
+  const addr = currentDeployment.address ?? "0x0000000000000000000000000000000000000000";
+  const checkExistance = await ethers.provider.getCode(addr);
 
   if (
+    checkExistance !== '0x' &&
     currentDeployment.bytecode === contractArtifacts.bytecode &&
-    JSON.stringify(currentDeployment.abi) === JSON.stringify(contractArtifacts.abi) &&
-    currentDeployment.deployer === deployer.address &&
-    !(await shouldRedeploy())
+    JSON.stringify(currentDeployment.abi) === JSON.stringify(contractArtifacts.abi)
   ) {
     console.log(name + ": Skipping...");
     return currentDeployment.address;

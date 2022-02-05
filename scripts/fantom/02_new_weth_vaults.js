@@ -19,6 +19,32 @@ const deployContracts = async () => {
     ASSETS.DAI.address,
   ]);
 
+  const vaultwethusdc = await deployVault("VaultWETHUSDC", [
+    fujiadmin,
+    oracle,
+    ASSETS.WETH.address,
+    ASSETS.USDC.address,
+  ]);
+
+  await updateFujiERC1155(f1155, [vaultwethdai, vaultwethusdc]);
+
+  const geist = getContractAddress("ProviderGeist");
+  const cream = getContractAddress("ProviderCream");
+  const scream = getContractAddress("ProviderScream");
+
+  // Vault Set-up
+  await updateVault("VaultWETHDAI", vaultwethdai, {
+    providers: [geist, cream, scream],
+    fujiadmin,
+    f1155,
+  });
+
+  await updateVault("VaultWETHUSDC", vaultwethusdc, {
+    providers: [geist, cream, scream],
+    fujiadmin,
+    f1155,
+  });
+
   console.log("Finished!");
 };
 

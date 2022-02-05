@@ -25,6 +25,8 @@ const forkUrl =
     ? "https://rpc.ftm.tools/"
     : network === "bsc"
     ? "https://bsc-dataseed.binance.org/"
+    : network === "polygon"
+    ? `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_ID}`
     : mainnetUrl;
 
 //
@@ -101,12 +103,9 @@ module.exports = {
         mnemonic: mnemonic(),
       },
     },
-    matic: {
-      url: "https://rpc-mainnet.maticvigil.com/",
-      gasPrice: 1000000000,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
+    polygon: {
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_ID}`,
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : { mnemonic: mnemonic() },
     },
   },
   etherscan: {

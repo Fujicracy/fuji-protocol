@@ -70,8 +70,8 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   uint256 public remainingProtocolFee;
 
   /**
-  * @dev Throws if caller is not the 'owner' or the '_controller' address stored in {FujiAdmin}
-  */
+   * @dev Throws if caller is not the 'owner' or the '_controller' address stored in {FujiAdmin}
+   */
   modifier isAuthorized() {
     require(
       msg.sender == owner() || msg.sender == _fujiAdmin.getController(),
@@ -81,41 +81,41 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   }
 
   /**
-  * @dev Throws if caller is not the '_flasher' address stored in {FujiAdmin}
-  */
+   * @dev Throws if caller is not the '_flasher' address stored in {FujiAdmin}
+   */
   modifier onlyFlash() {
     require(msg.sender == _fujiAdmin.getFlasher(), Errors.VL_NOT_AUTHORIZED);
     _;
   }
 
   /**
-  * @dev Throws if caller is not the '_fliquidator' address stored in {FujiAdmin}
-  */
+   * @dev Throws if caller is not the '_fliquidator' address stored in {FujiAdmin}
+   */
   modifier onlyFliquidator() {
     require(msg.sender == _fujiAdmin.getFliquidator(), Errors.VL_NOT_AUTHORIZED);
     _;
   }
 
   /**
-  * @dev Initializes the contract by setting:
-  * - Type of collateral and borrow asset of this vault.
-  * - Addresses for fujiAdmin, _oracle.
-  */
+   * @dev Initializes the contract by setting:
+   * - Type of collateral and borrow asset of this vault.
+   * - Addresses for fujiAdmin, _oracle.
+   */
   function initialize(
     address _fujiadmin,
     address _oracle,
     address _collateralAsset,
     address _borrowAsset
   ) external initializer {
-
     require(
       _fujiadmin != address(0) &&
-      _oracle != address(0) &&
-      _collateralAsset != address(0) &&
-      _borrowAsset != address(0),
-      Errors.VL_ZERO_ADDR);
+        _oracle != address(0) &&
+        _collateralAsset != address(0) &&
+        _borrowAsset != address(0),
+      Errors.VL_ZERO_ADDR
+    );
 
-    __Ownable_init();
+    __Claimable_init();
     __Pausable_init();
     __ReentrancyGuard_init();
 
@@ -289,7 +289,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   ) external payable override onlyFlash whenNotPaused {
     // Check '_newProvider' is a valid provider
     bool validProvider;
-    for (uint i = 0; i < providers.length; i++) {
+    for (uint256 i = 0; i < providers.length; i++) {
       if (_newProvider == providers[i]) {
         validProvider = true;
       }
@@ -442,7 +442,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
    * Emits a {ProvidersChanged} event.
    */
   function setProviders(address[] calldata _providers) external isAuthorized {
-    for(uint i = 0; i < _providers.length; i++) {
+    for (uint256 i = 0; i < _providers.length; i++) {
       require(_providers[i] != address(0), Errors.VL_ZERO_ADDR);
     }
     providers = _providers;
@@ -594,13 +594,13 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   }
 
   /**
-  * @dev Withdraws all the collected Fuji fees in this vault.
-  * NOTE: Fuji fee is charged to all users
-  * as a service for the loan cost optimization.
-  * It is a percentage (defined in 'protocolFee') on top of the users 'debtPrincipal'.
-  * Requirements:
-  * - Must send all fees amount collected to the Fuji treasury.
-  */
+   * @dev Withdraws all the collected Fuji fees in this vault.
+   * NOTE: Fuji fee is charged to all users
+   * as a service for the loan cost optimization.
+   * It is a percentage (defined in 'protocolFee') on top of the users 'debtPrincipal'.
+   * Requirements:
+   * - Must send all fees amount collected to the Fuji treasury.
+   */
   function withdrawProtocolFee() external nonReentrant {
     IERC20Upgradeable(vAssets.borrowAsset).univTransfer(
       payable(IFujiAdmin(_fujiAdmin).getTreasury()),
@@ -613,10 +613,10 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   // Internal Functions
 
   /**
-  * @dev Returns de amount of accrued of Fuji fee by user.
-  * @param _user: user to whom Fuji fee will be computed.
-  * @param _debtPrincipal: current user's debt.
-  */
+   * @dev Returns de amount of accrued of Fuji fee by user.
+   * @param _user: user to whom Fuji fee will be computed.
+   * @param _debtPrincipal: current user's debt.
+   */
   function _userProtocolFee(address _user, uint256 _debtPrincipal) internal view returns (uint256) {
     return
       (_debtPrincipal * (block.timestamp - _userFeeTimestamps[_user]) * protocolFee.a) /
@@ -625,9 +625,9 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   }
 
   /**
-  * @dev Internal function handling logic for {deposit} without 'updateState' call
-  * See {deposit}
-  */
+   * @dev Internal function handling logic for {deposit} without 'updateState' call
+   * See {deposit}
+   */
   function _internalDeposit(uint256 _collateralAmount) internal {
     if (vAssets.collateralAsset == FTM) {
       require(msg.value == _collateralAmount && _collateralAmount != 0, Errors.VL_AMOUNT_ERROR);
@@ -650,9 +650,9 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   }
 
   /**
-  * @dev Internal function handling logic for {withdraw} without 'updateState' call
-  * See {withdraw}
-  */
+   * @dev Internal function handling logic for {withdraw} without 'updateState' call
+   * See {withdraw}
+   */
   function _internalWithdraw(int256 _withdrawAmount) internal {
     // Get User Collateral in this Vault
     uint256 providedCollateral = IFujiERC1155(fujiERC1155).balanceOf(
@@ -692,9 +692,9 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   }
 
   /**
-  * @dev Internal function handling logic for {borrow} without 'updateState' call
-  * See {borrow}
-  */
+   * @dev Internal function handling logic for {borrow} without 'updateState' call
+   * See {borrow}
+   */
   function _internalBorrow(uint256 _borrowAmount) internal {
     uint256 providedCollateral = IFujiERC1155(fujiERC1155).balanceOf(
       msg.sender,
@@ -744,9 +744,9 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   }
 
   /**
-  * @dev Internal function handling logic for {payback} without 'updateState' call
-  * See {payback}
-  */
+   * @dev Internal function handling logic for {payback} without 'updateState' call
+   * See {payback}
+   */
   function _internalPayback(int256 _repayAmount) internal {
     uint256 debtBalance = IFujiERC1155(fujiERC1155).balanceOf(msg.sender, vAssets.borrowID);
     uint256 userFee = _userProtocolFee(msg.sender, debtBalance);

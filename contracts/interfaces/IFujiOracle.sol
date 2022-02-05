@@ -3,12 +3,11 @@
 pragma solidity ^0.8.0;
 
 interface IFujiOracle {
-
   // FujiOracle Events
 
   /**
-  * @dev Log a change in price feed address for asset address
-  */
+   * @dev Log a change in price feed address for asset address
+   */
   event AssetPriceFeedChanged(address asset, address newPriceFeedAddress);
 
   function getPriceOf(

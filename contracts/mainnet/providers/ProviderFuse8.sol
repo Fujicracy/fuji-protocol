@@ -14,6 +14,7 @@ contract HelperFunct {
   function _isETH(address token) internal pure returns (bool) {
     return (token == address(0) || token == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE));
   }
+
   function _getComptrollerAddress() internal pure returns (address) {
     return 0xc54172e34046c1653d1920d40333Dd358c7a1aF4;
   }

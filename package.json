@@ -45,6 +45,7 @@
     "deploy:mainnet": "hardhat run scripts/mainnet/00_initial_deploy.js",
     "deploy:mainnet:fuse": "hardhat run scripts/mainnet/01_deploy_fuse.js",
     "deploy:fantom": "hardhat run scripts/fantom/00_initial_deploy.js",
+    "deploy:fantom:game": "yarn deploy:fantom && hardhat run scripts/fantom/01_new_wbtc_vault.js && hardhat run scripts/fantom/02_new_weth_vaults.js && hardhat run scripts/fantom/05_nft_game.js",
     "publish:core": "hardhat publish",
     "publish:fuse": "hardhat publish --market fuse",
     "sync": "hardhat sync",

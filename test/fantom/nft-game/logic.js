@@ -53,12 +53,6 @@ describe("NFT Bond Logic", function () {
         expect(await this.f.nftgame.validVaults(i)).to.be.equal(this.f[VAULTS[i].name].address);
       }
     });
-
-    it("No permission", async function () {
-      await expect(
-        this.f.nftgame.connect(this.user).setValidVaults([this.f.vaultftmdai.address])
-      ).to.be.revertedWith("Ownable: caller is not the owner");
-    });
   });
 
   describe("User Debt", function () {
@@ -124,22 +118,21 @@ describe("NFT Bond Logic", function () {
     });
 
     it("Interest", async function () {
-      const vaults = [this.f.vaultftmdai, this.f.vaultftmusdc];
-      const depositAmounts = [parseUnits(5000), parseUnits(4000)];
-      const borrowAmounts = [parseUnits(1500), parseUnits(1000, 6)];
-      const borrowDecimals = [18, 6];
+      const vault = this.f.vaultftmdai;
+      const depositAmount = parseUnits(5000);
+      const borrowAmount = parseUnits(1500);
+      const time = 60 * 60 * 24 * 365; // 1 year
 
-      let borrowSum = 0;
-      for (let i = 0; i < vaults.length; i++) {
-        await vaults[i].connect(this.user).depositAndBorrow(depositAmounts[i], borrowAmounts[i], {
-          value: depositAmounts[i],
-        });
-        borrowSum += formatUnitsToNum(borrowAmounts[i], borrowDecimals[i]);
-      }
+      await vault.connect(this.user).depositAndBorrow(depositAmount, borrowAmount, {
+        value: depositAmount,
+      });
 
-      await timeTravel(99999999);
+      await timeTravel(time);
+      await vault.updateF1155Balances();
 
-      expect(await this.f.nftgame.getUserDebt(this.user.address)).to.be.gt(borrowSum);
+      expect(await this.f.nftgame.getUserDebt(this.user.address)).to.be.gt(
+        formatUnitsToNum(borrowAmount)
+      );
     });
   });
 
@@ -173,10 +166,6 @@ describe("NFT Bond Logic", function () {
       expect(await this.f.nftgame.balanceOf(this.user.address, 0)).to.be.equal(0);
     });
 
-    it("Reverting state of points outside contract", async function () {
-      await expect(this.f.nftgame.checkStateOfPoints(this.user.address, 0, true)).to.be.reverted;
-    });
-
     it("Get points balance after time passed", async function () {
       const vault = this.f.vaultftmdai;
       const depositAmount = parseUnits(2500);
@@ -187,13 +176,15 @@ describe("NFT Bond Logic", function () {
         value: depositAmount,
       });
 
-      await timeTravel(time);
-
       const pps = await this.f.nftgame.computeRateOfAccrual(this.user.address);
+
+      await timeTravel(time);
+      await vault.updateF1155Balances();
+
       const pointsFromRate = pps.mul(time);
 
       const newDebt = await this.f.nftgame.getUserDebt(this.user.address);
-      const pointsFromInterest = ((newDebt - formatUnitsToNum(borrowAmount)) * time) / 2;
+      const pointsFromInterest = newDebt.sub(formatUnitsToNum(borrowAmount)).mul(time).div(2);
 
       expect(await this.f.nftgame.balanceOf(this.user.address, 0)).to.be.equal(
         pointsFromRate.add(pointsFromInterest)
@@ -209,7 +200,7 @@ describe("NFT Bond Logic", function () {
       let pps;
       let pointsFromRate = BigNumber.from(0);
       let newDebt;
-      let pointsFromInterest = 0;
+      let pointsFromInterest = BigNumber.from(0);
       let recordedDebt;
 
       for (let i = 0; i < borrowAmount.length; i++) {
@@ -218,15 +209,62 @@ describe("NFT Bond Logic", function () {
         });
 
         recordedDebt = await this.f.nftgame.getUserDebt(this.user.address);
+        pps = await this.f.nftgame.computeRateOfAccrual(this.user.address);
 
         await timeTravel(time);
+        await vault.updateF1155Balances();
 
-        pps = await this.f.nftgame.computeRateOfAccrual(this.user.address);
         pointsFromRate = pointsFromRate.add(pps.mul(time));
 
         newDebt = await this.f.nftgame.getUserDebt(this.user.address);
-        pointsFromInterest += (newDebt.sub(recordedDebt) * time) / 2;
+        pointsFromInterest = pointsFromInterest.add(newDebt.sub(recordedDebt).mul(time).div(2));
       }
+
+      expect(await this.f.nftgame.balanceOf(this.user.address, 0)).to.be.equal(
+        pointsFromRate.add(pointsFromInterest)
+      );
+    });
+
+    it("Points balance, borrow and payback", async function () {
+      const vault = this.f.vaultftmdai;
+      const borrowAsset = "dai";
+      const depositAmount = parseUnits(2500);
+      const borrowAmount = parseUnits(250);
+      const paybackAmount = parseUnits(100);
+      const time = 60 * 60 * 24 * 365; // 1 year
+
+      await vault.connect(this.user).depositAndBorrow(depositAmount, borrowAmount, {
+        value: depositAmount,
+      });
+
+      let pps = await this.f.nftgame.computeRateOfAccrual(this.user.address);
+
+      await timeTravel(time);
+      await this.f.vaultftmdai.updateF1155Balances();
+
+      let pointsFromRate = pps.mul(time);
+
+      let newDebt = await this.f.nftgame.getUserDebt(this.user.address);
+      let pointsFromInterest = newDebt.sub(formatUnitsToNum(borrowAmount)).mul(time).div(2);
+
+      await this.f[borrowAsset].connect(this.user).approve(vault.address, paybackAmount);
+
+      await vault.connect(this.user).payback(paybackAmount, {
+        value: paybackAmount,
+      });
+
+      pps = await this.f.nftgame.computeRateOfAccrual(this.user.address);
+
+      await timeTravel(time);
+      await vault.updateF1155Balances();
+
+      pointsFromRate = pointsFromRate.add(pps.mul(time));
+
+      newDebt = await this.f.nftgame.getUserDebt(this.user.address);
+      pointsFromInterest = newDebt
+        .sub(BigNumber.from(formatUnitsToNum(borrowAmount)).sub(formatUnitsToNum(paybackAmount)))
+        .mul(time)
+        .div(2);
 
       expect(await this.f.nftgame.balanceOf(this.user.address, 0)).to.be.equal(
         pointsFromRate.add(pointsFromInterest)

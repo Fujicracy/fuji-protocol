@@ -47,8 +47,8 @@ contract Fliquidator is Claimable, ReentrancyGuard {
   IUniswapV2Router02 public swapper;
 
   /**
-  * @dev Log when a user is liquidated
-  */
+   * @dev Log when a user is liquidated
+   */
   event Liquidate(
     address indexed userAddr,
     address indexed vault,
@@ -56,58 +56,54 @@ contract Fliquidator is Claimable, ReentrancyGuard {
     address liquidator
   );
   /**
-  * @dev Log when a user FlashClose its position
-  */
+   * @dev Log when a user FlashClose its position
+   */
   event FlashClose(address indexed userAddr, address indexed vault, uint256 amount);
   /**
-  * @dev Log a change in fuji admin address
-  */
+   * @dev Log a change in fuji admin address
+   */
   event FujiAdminChanged(address newFujiAdmin);
   /**
-  * @dev Log a change in the factor values
-  */
-  event FactorChanged(
-    bytes32 typehash,
-    uint64 newFactorA,
-    uint64 newFactorB
-  );
+   * @dev Log a change in the factor values
+   */
+  event FactorChanged(bytes32 typehash, uint64 newFactorA, uint64 newFactorB);
 
   /**
-  * @dev Log a change in the oracle address
-  */
+   * @dev Log a change in the oracle address
+   */
   event OracleChanged(address newOracle);
   /**
-  * @dev Log change of swapper address
-  */
+   * @dev Log change of swapper address
+   */
   event SwapperChanged(address newSwapper);
 
   /**
-  * @dev Throws if caller is not 'owner'.
-  */
+   * @dev Throws if caller is not 'owner'.
+   */
   modifier isAuthorized() {
     require(msg.sender == owner(), Errors.VL_NOT_AUTHORIZED);
     _;
   }
 
   /**
-  * @dev Throws if caller is not '_flasher' address in {FujiAdmin}.
-  */
+   * @dev Throws if caller is not '_flasher' address in {FujiAdmin}.
+   */
   modifier onlyFlash() {
     require(msg.sender == _fujiAdmin.getFlasher(), Errors.VL_NOT_AUTHORIZED);
     _;
   }
 
   /**
-  * @dev Throws if address passed is not a recognized vault.
-  */
+   * @dev Throws if address passed is not a recognized vault.
+   */
   modifier isValidVault(address _vaultAddr) {
     require(_fujiAdmin.validVault(_vaultAddr), "Invalid vault!");
     _;
   }
 
   /**
-  * @dev Sets the flash close fee factor.
-  */
+   * @dev Sets the flash close fee factor.
+   */
   constructor() {
     // 0.01
     flashCloseF.a = 1;
@@ -657,11 +653,7 @@ contract Fliquidator is Claimable, ReentrancyGuard {
   function setFlashCloseFee(uint64 _newFactorA, uint64 _newFactorB) external isAuthorized {
     flashCloseF.a = _newFactorA;
     flashCloseF.b = _newFactorB;
-    emit FactorChanged(
-      keccak256(abi.encode("flashCloseF")),
-      _newFactorA,
-      _newFactorB
-    );
+    emit FactorChanged(keccak256(abi.encode("flashCloseF")), _newFactorA, _newFactorB);
   }
 
   /**

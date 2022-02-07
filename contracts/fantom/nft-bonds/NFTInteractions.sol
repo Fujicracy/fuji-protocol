@@ -5,13 +5,13 @@ pragma solidity ^0.8.2;
 /// @author fuji-dao.eth
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import "../../abstracts/claimable/Claimable.sol";
 import "./NFTGame.sol";
 import "../libraries/LibPseudoRandom.sol";
 import "./FujiPriceAware.sol";
 
-contract NFTInteractions is FujiPriceAware, Claimable {
+contract NFTInteractions is FujiPriceAware, Initializable {
   using LibPseudoRandom for uint256;
 
   /**
@@ -34,56 +34,62 @@ contract NFTInteractions is FujiPriceAware, Claimable {
    */
   event CratesOpened(uint256 crateId, uint256 amount);
 
-  uint256 private constant POINTS_ID = 0;
   uint256 public constant CRATE_COMMON_ID = 1;
   uint256 public constant CRATE_EPIC_ID = 2;
   uint256 public constant CRATE_LEGENDARY_ID = 3;
-  uint256 public constant POINTS_DECIMALS = 5;
-
   uint256 public constant NFT_CARD_ID = 4;
 
   // CrateID => crate rewards
   mapping(uint256 => uint256[]) crateRewards;
-  uint256[] private probabilityIntervals = [500000, 700000, 900000, 950000, 9501000];
+  uint256[] private probabilityIntervals;
 
   NFTGame private nftGame;
 
   // CrateID => crate price
   mapping(uint256 => uint256) public cratePrices;
 
-  /// Admin functions
+  function initialize(address _nftGame) external initializer {
+    nftGame = NFTGame(_nftGame);
+    probabilityIntervals = [500000, 700000, 900000, 950000, 9501000];
+  }
+
+  // Admin functions
 
   /**
-   * @notice Set address for NFTGame contract
-   */
-  function setNFTGame(address _nftGame) external onlyOwner {
+  * @notice Set address for NFTGame contract
+  */
+  function setNFTGame(address _nftGame) external {
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
     nftGame = NFTGame(_nftGame);
   }
 
   /**
-   * @notice sets the prices for the crates
-   */
-  function setCratePrice(uint256 crateId, uint256 price) external onlyOwner {
-    require(
-      crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
-      "Invalid crate ID"
-    );
+
+  * @notice sets the prices for the crates
+  */
+  function setCratePrice(uint256 crateId, uint256 price) external {
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
+    require(crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID, "Invalid crate ID");
     cratePrices[crateId] = price;
     emit CratePriceChanged(crateId, price);
   }
 
   /**
-   * @notice sets probability intervals for crate rewards
-   */
-  function setProbabilityIntervals(uint256[] memory intervals) external onlyOwner {
+
+  * @notice sets probability intervals for crate rewards
+  */
+  function setProbabilityIntervals(uint256[] memory intervals) external {
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
     probabilityIntervals = intervals;
   }
 
   /**
-   * @notice sets crate rewards
-   * rewards are an array, with each element corresponding to the points multiplier value
-   */
-  function setCrateRewards(uint256 crateId, uint256[] memory rewards) external onlyOwner {
+
+  * @notice sets crate rewards
+  * rewards are an array, with each element corresponding to the points multiplier value
+  */
+  function setCrateRewards(uint256 crateId, uint256[] memory rewards) external {
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
     crateRewards[crateId] = rewards;
     emit CrateRewardsChanged(crateId, rewards);
   }
@@ -117,9 +123,9 @@ contract NFTInteractions is FujiPriceAware, Claimable {
 
     uint256 price = cratePrices[crateId] * amount;
     require(price > 0, "Price not set");
-    require(nftGame.balanceOf(msg.sender, POINTS_ID) >= price, "Not enough points");
+    require(nftGame.balanceOf(msg.sender, nftGame.POINTS_ID()) >= price, "Not enough points");
 
-    nftGame.burn(msg.sender, POINTS_ID, price);
+    nftGame.burn(msg.sender, nftGame.POINTS_ID(), price);
 
     nftGame.mint(msg.sender, crateId, amount);
 
@@ -159,7 +165,7 @@ contract NFTInteractions is FujiPriceAware, Claimable {
     }
 
     if (pointsAmount > 0) {
-      nftGame.mint(msg.sender, POINTS_ID, pointsAmount);
+      nftGame.mint(msg.sender, nftGame.POINTS_ID(), pointsAmount);
     }
 
     if (cardsAmount > 0) {

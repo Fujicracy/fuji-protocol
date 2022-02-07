@@ -5,15 +5,15 @@ pragma solidity ^0.8.2;
 /// @author fuji-dao.eth
 /// @notice Contract that handles logic for the NFT Bond game
 
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import "../../abstracts/claimable/Claimable.sol";
 import "../../interfaces/IVault.sol";
 import "../../interfaces/IVaultControl.sol";
 import "../../interfaces/IERC20Extended.sol";
 
-
-contract NFTGame is ERC1155, Claimable {
+contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable {
 
   /**
   * @dev Changing valid vaults
@@ -24,16 +24,31 @@ contract NFTGame is ERC1155, Claimable {
     uint64 lastTimestampUpdate;
     uint64 rateOfAccrual;
     uint128 accruedPoints;
-    // uint128 lastMultiplierValue;
     uint128 recordedDebtBalance;
   }
 
+  // Constants
+
   uint256 constant SEC = 86400;
+
+  // uint256 private constant MINIMUM_DAILY_DEBT_POSITION = 1;
+  // uint256 private constant POINT_PER_DEBTUNIT_PER_DAY = 1; 
+
+  uint256 public constant POINTS_ID = 0;
+  uint256 public constant POINTS_DECIMALS = 5;
+
+  address private constant _FTM = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+
+
+  // Roles
+
+  bytes32 public constant GAME_ADMIN = keccak256("GAME_ADMIN");
+  bytes32 public constant GAME_INTERACTOR = keccak256("GAME_INTERACTOR");
+
 
   // Sate Variables
 
   uint64 public gameLaunchTimestamp;
-
   bytes32 public merkleRoot;
 
   mapping(address => UserData) public userdata;
@@ -42,18 +57,6 @@ contract NFTGame is ERC1155, Claimable {
   mapping(uint256 => uint256) public totalSupply;
 
   address[] public validVaults;
-
-  uint256 private constant MINIMUM_DAILY_DEBT_POSITION = 1; //tbd
-  uint256 private constant POINT_PER_DEBTUNIT_PER_DAY = 1; //tbd
-
-  uint256 private constant CONSTANT_DECIMALS = 8; // Applies to all constants
-  uint256 private constant POINTS_ID = 0;
-
-  uint256 public POINTS_DECIMALS = 5;
-
-  address private constant _FTM = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
-
-  address private nftInteractions;
 
   modifier onlyVault() {
     bool isVault;
@@ -64,14 +67,99 @@ contract NFTGame is ERC1155, Claimable {
     _;
   }
 
-  modifier onlyInteractions() {
-    require(msg.sender == nftInteractions);
-    _;
+  function initialize() external initializer {
+    __ERC1155_init("");
+    __AccessControl_init();
+    _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    _setupRole(GAME_ADMIN, msg.sender);
+    _setupRole(GAME_INTERACTOR, msg.sender);
   }
 
-  constructor(string memory uri_) ERC1155(uri_) {}
+  // State Changing Functions
+
+  /**
+  * @notice Sets the list of vaults that count towards the game
+  */
+  function setValidVaults(address[] memory vaults) external {
+    require(hasRole(GAME_ADMIN, msg.sender), "No permission");
+    validVaults = vaults;
+    emit ValidVaultsChanged(vaults);
+  }
+
+  /**
+  * @notice Compute user's total debt in Fuji in all vaults of this chain.
+  * @dev Called whenever a user performs a 'borrow()' or 'payback()' call on {FujiVault} contract
+  * @dev Must consider all fuji active vaults, and different decimals.
+  */
+  function checkStateOfPoints(
+    address user,
+    uint256 balanceChange,
+    bool isPayback,
+    uint256 decimals
+  ) external onlyVault {
+    UserData memory info = userdata[user];
+    uint256 debt = getUserDebt(user);
+
+    if (info.rateOfAccrual != 0) {
+      // ongoing user, ongoing game
+      balanceChange = _convertToDebtUnits(balanceChange, decimals);
+      _compoundPoints(user, isPayback ? debt + balanceChange : debt - balanceChange);
+    }
+
+    _updateUserInfo(user, uint128(debt));
+  }
+
+  function mint(address user, uint256 id, uint256 amount) external {
+    require(hasRole(GAME_INTERACTOR, msg.sender), "No permission");
+
+    if (id == POINTS_ID) {
+      userdata[user].accruedPoints += uint128(amount);
+    } else {
+      _mint(user, id, amount, "");
+    }
+    totalSupply[id] += amount;
+  }
+
+  function burn(address user, uint256 id, uint256 amount) external {
+    require(hasRole(GAME_INTERACTOR, msg.sender), "No permission");
+
+    if (id == POINTS_ID) {
+      uint256 debt = getUserDebt(user);
+      _compoundPoints(user, debt);
+      _updateUserInfo(user, uint128(debt));
+      require(userdata[user].accruedPoints >= amount, "Not enough points");
+      userdata[user].accruedPoints -= uint128(amount);
+    } else {
+      _burn(user, id, amount);
+    }
+    totalSupply[id] -= amount;
+  }
+
+  /**
+  * @notice Claims bonus points given to user before 'gameLaunchTimestamp'.
+  */
+  function claimBonusPoints() public {}
+
+  function setMerkleRoot(bytes32 _merkleRoot) external {
+    require(hasRole(GAME_ADMIN, msg.sender), "No permission");
+    require(_merkleRoot[0] != 0, "empty merkleRoot!");
+    merkleRoot = _merkleRoot;
+  }
+
 
   // View Functions
+
+  /**
+  * @notice Checks if a given vault is a valid vault
+  */
+  function isValidVault(address vault) external view returns (bool){
+    for (uint256 i = 0; i < validVaults.length; i++) {
+      if (validVaults[i] == vault) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   /**
   * @notice Returns the balance of token Id.
@@ -113,97 +201,24 @@ contract NFTGame is ERC1155, Claimable {
     return totalDebt;
   }
 
-  // State Changing Functions
-
-
-  /**
-  * @notice Sets the address for the NFT Interactions contract
-  */
-  function setNFTInteractions(address _nftInteractions) external onlyOwner {
-    nftInteractions = _nftInteractions;
-  }
-
-  /**
-  * @notice Sets the list of vaults that count towards the game
-  */
-  function setValidVaults(address[] memory vaults) external onlyOwner {
-    validVaults = vaults;
-    emit ValidVaultsChanged(vaults);
-  }
-
-  function mint(address user, uint256 id, uint256 amount) external onlyInteractions {
-    if (id == POINTS_ID) {
-      userdata[user].accruedPoints += uint128(amount);
-    } else {
-      _mint(user, id, amount, "");
-    }
-    totalSupply[id] += amount;
-  }
-
-  function burn(address user, uint256 id, uint256 amount) external onlyInteractions {
-    if (id == POINTS_ID) {
-      _compoundPoints(user, getUserDebt(user));
-      require(userdata[user].accruedPoints >= amount, "Not enough points");
-      userdata[user].accruedPoints -= uint128(amount);
-    } else {
-      _burn(user, id, amount);
-    }
-    totalSupply[id] -= amount;
-  }
-
-  /**
-  * @notice Checks if a given vault is a valid vault
-  */
-  function isValidVault(address vault) external view returns (bool){
-    for (uint256 i = 0; i < validVaults.length; i++) {
-      if (validVaults[i] == vault) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
-  * @notice Compute user's total debt in Fuji in all vaults of this chain.
-  * @dev Called whenever a user performs a 'borrow()' or 'payback()' call on {FujiVault} contract
-  * @dev Must consider all fuji active vaults, and different decimals.
-  */
-  function checkStateOfPoints(
-    address user,
-    uint256 balanceChange,
-    bool isPayback,
-    uint256 decimals
-  ) external onlyVault {
-    UserData memory info = userdata[user];
-    uint256 debt = getUserDebt(user);
-
-    if (info.rateOfAccrual != 0) {
-      // ongoing user, ongoing game
-      balanceChange = _convertToDebtUnits(balanceChange, decimals);
-      _compoundPoints(user, isPayback ? debt + balanceChange : debt - balanceChange);
-    }
-
-    // Set User parameters
-    userdata[user].lastTimestampUpdate = uint64(block.timestamp);
-    userdata[user].rateOfAccrual = uint64(debt * (10**POINTS_DECIMALS) / SEC);
-    userdata[user].recordedDebtBalance = uint128(debt);
-  }
-
-  /**
-  * @notice Claims bonus points given to user before 'gameLaunchTimestamp'.
-  */
-  function claimBonusPoints() public {}
-
-  function setMerkleRoot(bytes32 _merkleRoot) external {
-    require(_merkleRoot[0] != 0, "empty merkleRoot!");
-    merkleRoot = _merkleRoot;
+  function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155Upgradeable, AccessControlUpgradeable) returns (bool) {
+    return super.supportsInterface(interfaceId);
   }
 
   // Internal Functions
-  //TODO swap this function for the public one with the corresponding permission
-  function _mintPoints(address user, uint256 amount) internal {
-    userdata[user].accruedPoints += uint128(amount);
-    totalSupply[POINTS_ID] += amount;
+
+  /**
+  * @notice Compute user's accrued points since user's 'lastTimestampUpdate'.
+  * @dev Includes points from rate and points from interest
+  */
+  function _computeAccrued(address user, uint256 debt) internal view returns (uint256) {
+    // 1 - compute points from normal rate
+    // 2 - add points by interest
+    UserData memory info = userdata[user];
+    uint256 pointsFromRate = _timestampDifference(info.lastTimestampUpdate) * (info.rateOfAccrual);
+    uint256 pointsFromInterest = (((debt - info.recordedDebtBalance) * _timestampDifference(info.lastTimestampUpdate)) / 2);
+  
+    return pointsFromRate + pointsFromInterest;
   }
 
   /**
@@ -214,31 +229,13 @@ contract NFTGame is ERC1155, Claimable {
   }
 
   /**
-  * @notice Compute user's accrued points since user's 'lastTimestampUpdate'.
-  */
-  function _computeAccrued(address user, uint256 debt) internal view returns (uint256) {
-    UserData memory info = userdata[user];
-    // 1 - compute points from normal rate
-    // 2 - add points by interest
-    // 3 - multiply all by multiplier
-    return _timestampDifference(info.lastTimestampUpdate) * (info.rateOfAccrual) +
-    (((debt - info.recordedDebtBalance) * _timestampDifference(info.lastTimestampUpdate)) / 2); // *
-    // _computeLatestMultiplier(info.lastMultiplierValue, info.lastTimestampUpdate);
-  }
-
-  /**
   * @dev Adds 'computeAccrued()' to recorded 'accruedPoints' in UserData and totalSupply
   * @dev Must update all fields of UserData information.
   */
   function _compoundPoints(address user, uint256 debt) internal {
-    // Read the current state of userdata
-    // UserData memory info = userdata[user];
-
-    // Change the state
     uint256 points = _computeAccrued(user, debt);
+
     _mintPoints(user, points);
-    // userdata[user].lastMultiplierValue = uint128(_computeLatestMultiplier(info.lastMultiplierValue, info.lastTimestampUpdate));
-    userdata[user].recordedDebtBalance = uint128(debt);
   }
 
   function _timestampDifference(uint256 oldTimestamp) internal view returns (uint256) {
@@ -249,9 +246,17 @@ contract NFTGame is ERC1155, Claimable {
     return value / 10**decimals;
   }
 
-  // function _computeLatestMultiplier(uint lastMultiplier, uint oldTimestamp) internal view returns(uint) {
-  //     return lastMultiplier * MULTIPLIER_RATE ** (_timestampDifference(oldTimestamp)) / 10^(CONSTANT_DECIMALS);
-  // }
+  //TODO change this function for the public one with the corresponding permission
+  function _mintPoints(address user, uint256 amount) internal {
+    userdata[user].accruedPoints += uint128(amount);
+    totalSupply[POINTS_ID] += amount;
+  }
+
+  function _updateUserInfo(address user, uint128 balance) internal {
+    userdata[user].lastTimestampUpdate = uint64(block.timestamp);
+    userdata[user].recordedDebtBalance = uint128(balance);
+    userdata[user].rateOfAccrual = uint64(balance * (10**POINTS_DECIMALS) / SEC);
+  }
 
   function _beforeTokenTransfer(
     address operator,

@@ -1,7 +1,6 @@
 const chalk = require("chalk");
-const { deployVault } = require("../tasks/deployVault");
-const { updateFujiERC1155 } = require("../tasks/updateFujiERC1155");
-const { updateVault } = require("../tasks/updateVault");
+const { deployVaultHarvester } = require("../tasks/deployVaultHarvester");
+const { updateFujiAdmin } = require("../tasks/updateFujiAdmin");
 const { setDeploymentsPath, network, getContractAddress } = require("../utils");
 const { ASSETS } = require("./consts");
 
@@ -9,15 +8,9 @@ const deployContracts = async () => {
   console.log("\n\n 📡 Deploying...\n");
 
   const fujiadmin = getContractAddress("FujiAdmin");
-  const oracle = getContractAddress("FujiOracle");
-  const f1155 = getContractAddress("FujiERC1155");
+  const vaultharvester = await deployVaultHarvester();
 
-  const vaultwethdai = await deployVault("VaultWETHDAI", [
-    fujiadmin,
-    oracle,
-    ASSETS.WETH.address,
-    ASSETS.DAI.address,
-  ]);
+  await updateFujiAdmin(fujiadmin, { vaultharvester });
 
   console.log("Finished!");
 };

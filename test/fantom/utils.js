@@ -112,6 +112,12 @@ const fixture = async ([wallet]) => {
   const Flasher = await getContractFactory("FlasherFTM");
   const flasher = await Flasher.deploy([]);
 
+  const Harvester = await getContractFactory("VaultHarvesterFTM");
+  const harvester = await Harvester.deploy([]);
+
+  const FujiSwapper = await getContractFactory("SwapperFTM");
+  const fujiSwapper = await FujiSwapper.deploy([]);
+
   const Controller = await getContractFactory("Controller");
   const controller = await Controller.deploy([]);
 
@@ -125,10 +131,10 @@ const fixture = async ([wallet]) => {
   );
 
   const NFTGame = await getContractFactory("NFTGame");
-  const nftgame = await NFTGame.deploy([]);
+  const nftgame = await upgrades.deployProxy(NFTGame, []);
 
   const NFTInteractions = await getContractFactory("NFTInteractions");
-  const nftinteractions = await NFTInteractions.deploy([]);
+  const nftinteractions = await upgrades.deployProxy(NFTInteractions, [nftgame.address]);
 
   const wrappednftinteractions = WrapperBuilder
     .wrapLite(nftinteractions)
@@ -143,6 +149,8 @@ const fixture = async ([wallet]) => {
   const scream = await ProviderScream.deploy([]);
   const ProviderGeist = await getContractFactory("ProviderGeist");
   const geist = await ProviderGeist.deploy([]);
+  const ProviderHundred = await getContractFactory("ProviderHundred");
+  const hundred = await ProviderHundred.deploy([]);
 
   // Log if debug is set true
   if (DEBUG) {
@@ -157,6 +165,7 @@ const fixture = async ([wallet]) => {
     console.log("cream", cream.address);
     console.log("scream", scream.address);
     console.log("geist", geist.address);
+    console.log("hundred", hundred.address);
   }
 
   // Setp 3: Vaults
@@ -179,12 +188,22 @@ const fixture = async ([wallet]) => {
     await vault.setFujiERC1155(f1155.address);
     await vault.setNFTGame(nftgame.address);
     await fujiadmin.allowVault(vault.address, true);
+    await vault.setProviders(
+      [
+        cream.address,
+        scream.address,
+        geist.address,
+        hundred.address
+      ]
+    );
 
     vaults[name] = vault;
   }
 
   // Step 4: Setup
   await fujiadmin.setFlasher(flasher.address);
+  await fujiadmin.setSwapper(fujiSwapper.address);
+  await fujiadmin.setVaultHarvester(harvester.address);
   await fujiadmin.setFliquidator(fliquidator.address);
   await fujiadmin.setTreasury(TREASURY_ADDR);
   await fujiadmin.setController(controller.address);
@@ -193,8 +212,8 @@ const fixture = async ([wallet]) => {
   await flasher.setFujiAdmin(fujiadmin.address);
   await controller.setFujiAdmin(fujiadmin.address);
   await f1155.setPermit(fliquidator.address, true);
-  await nftgame.setNFTInteractions(nftinteractions.address);
-  await nftinteractions.setNFTGame(nftgame.address);
+  await nftgame.grantRole(nftgame.GAME_ADMIN(), nftgame.signer.address);
+  await nftgame.grantRole(nftgame.GAME_INTERACTOR(), nftinteractions.address);
 
   return {
     ...tokens,
@@ -202,6 +221,7 @@ const fixture = async ([wallet]) => {
     cream,
     scream,
     geist,
+    hundred,
     nftgame,
     nftinteractions,
     oracle,

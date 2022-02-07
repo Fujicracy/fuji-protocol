@@ -22,7 +22,8 @@ interface ISoloMargin {
     uint256 value;
   }
 
-  function operate(Account.Info[] calldata _accounts, Actions.ActionArgs[] calldata _actions) external;
+  function operate(Account.Info[] calldata _accounts, Actions.ActionArgs[] calldata _actions)
+    external;
 
   function getAccountWei(Account.Info calldata _account, uint256 _marketId)
     external

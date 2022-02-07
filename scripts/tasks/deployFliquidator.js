@@ -4,7 +4,7 @@ const deployFliquidator = async () => {
   const name = network === "fantom" ? "FliquidatorFTM" : "Fliquidator";
   const contractName = network === "fantom" ? "FliquidatorFTM" : "Fliquidator";
 
-  const deployed = await redeployIf(name, contractName, () => false, deploy);
+  const deployed = await redeployIf(name, contractName, deploy);
   return deployed;
 };
 

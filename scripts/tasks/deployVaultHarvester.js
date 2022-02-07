@@ -4,7 +4,7 @@ const deployVaultHarvester = async () => {
   const name = network === "fantom" ? "VaultHarvesterFTM" : "VaultHarvester";
   const contractName = network === "fantom" ? "VaultHarvesterFTM" : "VaultHarvester";
 
-  const deployed = await redeployIf(name, contractName, () => false, deploy);
+  const deployed = await redeployIf(name, contractName, deploy);
   return deployed;
 };
 

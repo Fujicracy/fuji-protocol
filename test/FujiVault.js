@@ -14,12 +14,17 @@ const {
 
 const { getContractAt } = ethers;
 
-// testing deposits in ETH
-// in Compound-like providers (Compound, IronBank)
+/**
+ * Performs deposit test in native token.
+ * Provider should have Compound-like compatible smartcontracts interfaces.
+ * @param {string} mapperAddr - Address of the deployed instance FujiMapping.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amount - Etherjs compatible BigNumber.
+ */
 function testDeposit1(mapperAddr, vaults, amount) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
-    it(`deposit ${amount} ETH as collateral, check ${vault.name} balance`, async function () {
+    it(`deposit ${amount} Native Token as collateral, check ${vault.name} balance`, async function () {
       const fujimapper = await getContractAt("FujiMapping", mapperAddr);
       const vAssets = await this.f[vault.name].vAssets();
       const cTokenAddr = await fujimapper.addressMapping(vAssets.collateralAsset);
@@ -47,12 +52,17 @@ function testDeposit1(mapperAddr, vaults, amount) {
   }
 }
 
-// testing deposits in ETH
-// in Aave
+/**
+ * Performs deposit test in native token.
+ * Provider should have Aave-like compatible smartcontracts interfaces.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amount - Etherjs compatible BigNumber.
+ * @param {string} aeth - Address of aToken type contract for native asset.
+ */
 function testDeposit1a(vaults, amount, aeth) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
-    it(`deposit ${amount} ETH as collateral, check ${vault.name} balance`, async function () {
+    it(`deposit ${amount} Native Token as collateral, check ${vault.name} balance`, async function () {
       const aWETH = await getContractAt("IERC20", aeth);
 
       const depositAmount = parseUnits(amount);
@@ -71,8 +81,14 @@ function testDeposit1a(vaults, amount, aeth) {
   }
 }
 
-// testing deposits in ETH
-// in dydx
+
+/**
+ * DEPRECATED
+ * Performs deposit test in native token.
+ * Provider should have Dydx compatible smartcontracts interfaces.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amount - Etherjs compatible BigNumber.
+ */
 function testDeposit1b(vaults, amount) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
@@ -93,8 +109,13 @@ function testDeposit1b(vaults, amount) {
   }
 }
 
-// testing deposits in ERC20
-// in Compound-like providers (Compound, IronBank)
+/**
+ * Performs deposit test in ERC20 token.
+ * Provider should have Compound-like compatible smartcontracts interfaces.
+ * @param {string} mapperAddr - Address of the deployed instance FujiMapping.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amount - Etherjs compatible BigNumber.
+ */
 function testDeposit2(mapperAddr, vaults, amount) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
@@ -131,8 +152,13 @@ function testDeposit2(mapperAddr, vaults, amount) {
   }
 }
 
-// testing deposits in ERC20
-// in Aave
+/**
+ * Performs deposit test in ERC20 token.
+ * Provider should have Aave-like compatible smartcontracts interfaces.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amount - Etherjs compatible BigNumber.
+ * @param {array} assets - Array of objects defining vault assets. See core-utils.js.
+ */
 function testDeposit2a(vaults, amount, assets = ASSETS) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
@@ -160,10 +186,16 @@ function testDeposit2a(vaults, amount, assets = ASSETS) {
   }
 }
 
+/**
+ * Performs borrow test of an ERC20 token, after depositing native token.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amountToDeposit - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ * @param {array} amountToBorrow - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ */
 function testBorrow1(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
-    it(`borrow ${amountToBorrow} ERC20 -> ${debt.nameUp} after depositing ${amountToDeposit} ETH as collateral`, async function () {
+    it(`borrow ${amountToBorrow} ERC20 -> ${debt.nameUp} after depositing ${amountToDeposit} Native Token as collateral`, async function () {
       const depositAmount = parseUnits(amountToDeposit);
       const negdepositAmount = parseUnits(-amountToDeposit);
       const borrowAmount = parseUnits(amountToBorrow, debt.decimals);
@@ -194,6 +226,12 @@ function testBorrow1(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
+/**
+ * Performs borrow test of an ERC20 token, after depositing ERC20 token.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amountToDeposit - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ * @param {array} amountToBorrow - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ */
 function testBorrow2(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
@@ -229,10 +267,61 @@ function testBorrow2(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
+/**
+ * Performs borrow test of an ERC20 token, after depositing ERC20 token.
+ * Test is only applicable to Kashi-type smartcontracts (from Sushi platform).
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amountToDeposit - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ * @param {array} amountToBorrow - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ */
+function testBorrow2k(vaults, amountToDeposit, amountToBorrow) {
+  for (let i = 0; i < vaults.length; i += 1) {
+    const { name, collateral, debt } = vaults[i];
+    it(`borrow ${amountToBorrow} ERC20 -> ${debt.nameUp} after depositing ${amountToDeposit} ERC20 -> ${collateral.nameUp} as collateral`, async function () {
+      const depositAmount = parseUnits(amountToDeposit, collateral.decimals);
+      const negdepositAmount = parseUnits(-amountToDeposit, collateral.decimals);
+      const borrowAmount = parseUnits(amountToBorrow, debt.decimals);
+      const { collateralID, borrowID } = await this.f[name].vAssets();
+
+      await this.f[collateral.name]
+        .connect(this.user1)
+        .approve(this.f[name].address, depositAmount);
+      await checkTokenChange(
+        this.f[name].connect(this.user1).deposit(depositAmount),
+        this.f[collateral.name],
+        this.user1.address,
+        negdepositAmount
+      );
+      await expect(await this.f.f1155.balanceOf(this.user1.address, collateralID)).to.be.equal(
+        depositAmount
+      );
+
+      const balanceBefore = await this.f[debt.name].balanceOf(this.user1.address);
+
+      await this.f[name].connect(this.user1).borrow(borrowAmount);
+
+      const balanceAfter = await this.f[debt.name].balanceOf(this.user1.address);
+
+      expect(balanceAfter.sub(balanceBefore)).to.closeTo(borrowAmount, 1);
+
+      await expect(await this.f.f1155.balanceOf(this.user1.address, borrowID)).to.be.closeTo(
+        borrowAmount,
+        1
+      );
+    });
+  }
+}
+
+/**
+ * Performs borrow test of native token, after depositing ERC20 token.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amountToDeposit - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ * @param {array} amountToBorrow - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ */
 function testBorrow3(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
-    it(`borrow ${amountToBorrow} ETH after depositing ${amountToDeposit} ERC20 -> ${collateral.nameUp} as collateral`, async function () {
+    it(`borrow ${amountToBorrow} Native after depositing ${amountToDeposit} ERC20 -> ${collateral.nameUp} as collateral`, async function () {
       const depositAmount = parseUnits(amountToDeposit, collateral.decimals);
       const negdepositAmount = parseUnits(-amountToDeposit, collateral.decimals);
       const borrowAmount = parseUnits(amountToBorrow);
@@ -265,10 +354,16 @@ function testBorrow3(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
+/**
+ * Performs withdrawal test of native token as collateral, after payback of borrowed ERC20 token.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amountToDeposit - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ * @param {array} amountToBorrow - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ */
 function testPaybackAndWithdraw1(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
-    it(`payback ${amountToBorrow} ERC20 -> ${debt.nameUp} and withdraw ${amountToDeposit} ETH`, async function () {
+    it(`payback ${amountToBorrow} ERC20 -> ${debt.nameUp} and withdraw ${amountToDeposit} Native`, async function () {
       const depositAmount = parseUnits(amountToDeposit);
       const borrowAmount = parseUnits(amountToBorrow, debt.decimals);
       const one = parseUnits(1, debt.decimals);
@@ -296,17 +391,24 @@ function testPaybackAndWithdraw1(vaults, amountToDeposit, amountToBorrow) {
         await expect(await this.f.f1155.balanceOf(this.users[x].address, borrowID)).to.be.lt(one);
       }
 
+      const oneCol = parseUnits(1, collateral.decimals);
       for (let x = 1; x < 4; x += 1) {
         await this.f[name].connect(this.users[x]).withdraw(-1);
         await timeTravel(60);
         await expect(await this.f.f1155.balanceOf(this.users[x].address, collateralID)).to.be.lt(
-          1e15
+          oneCol
         );
       }
     });
   }
 }
 
+/**
+ * Performs withdrawal test of ERC20 token as collateral, after payback of borrowed ERC20 token.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amountToDeposit - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ * @param {array} amountToBorrow - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ */
 function testPaybackAndWithdraw2(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
@@ -355,6 +457,71 @@ function testPaybackAndWithdraw2(vaults, amountToDeposit, amountToBorrow) {
   }
 }
 
+/**
+ * Performs withdrawal test of ERC20 token as collateral, after payback of borrowed ERC20 token.
+ * Test is only applicable to Kashi-type smartcontracts (from Sushi platform).
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amountToDeposit - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ * @param {array} amountToBorrow - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ */
+function testPaybackAndWithdraw2k(vaults, amountToDeposit, amountToBorrow) {
+  for (let i = 0; i < vaults.length; i += 1) {
+    const { name, collateral, debt } = vaults[i];
+    it(`payback ${amountToBorrow} ERC20 -> ${debt.nameUp} and withdraw ${amountToDeposit} ERC20 -> ${collateral.nameUp}`, async function () {
+      const depositAmount = parseUnits(amountToDeposit, collateral.decimals);
+      const borrowAmount = parseUnits(amountToBorrow, debt.decimals);
+      const { collateralID, borrowID } = await this.f[name].vAssets();
+      // boostrap vault
+      await this.f[collateral.name]
+        .connect(this.users[0])
+        .approve(this.f[name].address, depositAmount);
+      await this.f[name].connect(this.users[0]).deposit(depositAmount);
+
+      const borrowedAmount = {};
+      for (let x = 1; x < 4; x += 1) {
+        await this.f[collateral.name]
+          .connect(this.users[x])
+          .approve(this.f[name].address, depositAmount);
+        await this.f[name].connect(this.users[x]).depositAndBorrow(depositAmount, borrowAmount);
+
+        borrowedAmount[x] = await this.f.f1155.balanceOf(this.users[x].address, borrowID);
+      }
+
+      const oneDebt = parseUnits(1, debt.decimals);
+      for (let x = 1; x < 4; x += 1) {
+        await this.f[debt.name]
+          .connect(this.users[x])
+          .approve(this.f[name].address, borrowedAmount[x]);
+        await timeTravel(60);
+        await checkTokenChange(
+          this.f[name].connect(this.users[x]).payback(borrowedAmount[x]),
+          this.f[debt.name],
+          this.users[x].address,
+          ethers.BigNumber.from("0").sub(borrowedAmount[x])
+        );
+        await expect(await this.f.f1155.balanceOf(this.users[x].address, borrowID)).to.be.lt(
+          oneDebt
+        );
+      }
+
+      const oneCol = parseUnits(1, collateral.decimals);
+      for (let x = 1; x < 4; x += 1) {
+        await this.f[name].connect(this.users[x]).withdraw(-1);
+        await timeTravel(60);
+        await expect(await this.f.f1155.balanceOf(this.users[x].address, collateralID)).to.be.lt(
+          oneCol
+        );
+      }
+    });
+  }
+}
+
+/**
+ * Performs withdrawal test of ERC20 token as collateral, after payback of borrowed native token.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amountToDeposit - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ * @param {array} amountToBorrow - Etherjs compatible BigNumber; should be of consistent units across all vaults passed.
+ */
 function testPaybackAndWithdraw3(vaults, amountToDeposit, amountToBorrow) {
   for (let i = 0; i < vaults.length; i += 1) {
     const { name, collateral, debt } = vaults[i];
@@ -410,8 +577,10 @@ module.exports = {
   testDeposit2a,
   testBorrow1,
   testBorrow2,
+  testBorrow2k,
   testBorrow3,
   testPaybackAndWithdraw1,
   testPaybackAndWithdraw2,
+  testPaybackAndWithdraw2k,
   testPaybackAndWithdraw3,
 };

@@ -12,30 +12,35 @@ const deployContracts = async () => {
   const oracle = getContractAddress("FujiOracle");
   const f1155 = getContractAddress("FujiERC1155");
 
-  const vaultwbtcdai = await deployVault("VaultWBTCDAI", [
+  const vaultwethdai = await deployVault("VaultWETHDAI", [
     fujiadmin,
     oracle,
-    ASSETS.WBTC.address,
+    ASSETS.WETH.address,
     ASSETS.DAI.address,
   ]);
-  const vaultwbtcusdc = await deployVault("VaultWBTCUSDC", [
+
+  const vaultwethusdc = await deployVault("VaultWETHUSDC", [
     fujiadmin,
     oracle,
-    ASSETS.WBTC.address,
+    ASSETS.WETH.address,
     ASSETS.USDC.address,
   ]);
 
-   //General Plug-ins and Set-up Transactions
-  await updateFujiERC1155(f1155, [vaultwbtcdai, vaultwbtcusdc]);
+  await updateFujiERC1155(f1155, [vaultwethdai, vaultwethusdc]);
+
+  const geist = getContractAddress("ProviderGeist");
+  const cream = getContractAddress("ProviderCream");
+  const scream = getContractAddress("ProviderScream");
 
   // Vault Set-up
-  await updateVault("VaultWBTCDAI", vaultwbtcdai, {
-    providers: [cream, scream],
+  await updateVault("VaultWETHDAI", vaultwethdai, {
+    providers: [geist, cream, scream],
     fujiadmin,
     f1155,
   });
-  await updateVault("VaultWBTCUSDC", vaultwbtcusdc, {
-    providers: [cream, scream],
+
+  await updateVault("VaultWETHUSDC", vaultwethusdc, {
+    providers: [geist, cream, scream],
     fujiadmin,
     f1155,
   });

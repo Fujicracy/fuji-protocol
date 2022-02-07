@@ -21,16 +21,16 @@ abstract contract F1155Manager is ClaimableUpgradeable {
   // F1155 Events
 
   /**
-  * @dev Log a change in address mint-burn permission
-  */
+   * @dev Log a change in address mint-burn permission
+   */
   event PermitChanged(address vaultAddress, bool newPermit);
 
   // Controls for Mint-Burn Operations
   mapping(address => bool) public addrPermit;
 
   /**
-  * @dev Throws if called by an account that is not permitted to mint and burn.
-  */
+   * @dev Throws if called by an account that is not permitted to mint and burn.
+   */
   modifier onlyPermit() {
     require(addrPermit[_msgSender()] || msg.sender == owner(), Errors.VL_NOT_AUTHORIZED);
     _;

@@ -1,14 +1,20 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.2;
+pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract FujiPriceAware {
+contract FujiPriceAware is Initializable {
   using ECDSA for bytes32;
 
-  uint256 public maxDelay = 3 * 60;
+  uint256 public maxDelay;
   address private trustedSigner;
+
+
+  function initialize() public initializer {
+    maxDelay = 3 * 60;
+  }
 
   function getTrustedSigner() public view virtual returns (address) {
     return trustedSigner;

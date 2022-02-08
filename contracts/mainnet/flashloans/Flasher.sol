@@ -17,6 +17,8 @@ import "../../interfaces/aave/IAaveLendingPool.sol";
 import "../../interfaces/cream/IERC3156FlashLender.sol";
 import "../../interfaces/cream/ICFlashloanReceiver.sol";
 import "../../interfaces/cream/ICrComptroller.sol";
+import "../../interfaces/balancer/IBalancerVault.sol";
+import "../../interfaces/balancer/IFlashLoanRecipient.sol";
 import "../libraries/LibUniversalERC20.sol";
 import "../../libraries/FlashLoans.sol";
 import "../../libraries/Errors.sol";
@@ -26,7 +28,15 @@ import "../../libraries/Errors.sol";
  * the specific logic of all active flash loan providers used by Fuji protocol.
  */
 
-contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloanReceiver, ICallee, Claimable {
+contract Flasher is
+  IFlasher,
+  DyDxFlashloanBase,
+  IFlashLoanReceiver,
+  ICFlashloanReceiver,
+  IFlashLoanRecipient,
+  ICallee,
+  Claimable
+{
   using LibUniversalERC20 for IERC20;
 
   IFujiAdmin private _fujiAdmin;
@@ -41,12 +51,15 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
   address private immutable _cyFlashloanLender = 0x1a21Ab52d1Ca1312232a72f4cf4389361A479829;
   address private immutable _cyComptroller = 0xAB1c342C7bf5Ec5F02ADEA1c2270670bCa144CbB;
 
+  // Balancer
+  address private immutable _balancerVault = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
+
   // need to be payable because of the conversion ETH <> WETH
   receive() external payable {}
 
   /**
-  * @dev Throws if caller is not 'owner'.
-  */
+   * @dev Throws if caller is not 'owner'.
+   */
   modifier isAuthorized() {
     require(
       msg.sender == _fujiAdmin.getController() ||
@@ -72,13 +85,19 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
    * @param info: struct information for flashLoan
    * @param _flashnum: integer identifier of flashloan provider
    */
-  function initiateFlashloan(FlashLoan.Info calldata info, uint8 _flashnum) external isAuthorized override {
+  function initiateFlashloan(FlashLoan.Info calldata info, uint8 _flashnum)
+    external
+    override
+    isAuthorized
+  {
     if (_flashnum == 0) {
       _initiateAaveFlashLoan(info);
     } else if (_flashnum == 1) {
       _initiateDyDxFlashLoan(info);
     } else if (_flashnum == 2) {
       _initiateCreamFlashLoan(info);
+    } else if (_flashnum == 3) {
+      _initiateBalancerFlashLoan(info);
     } else {
       revert(Errors.VL_INVALID_FLASH_NUMBER);
     }
@@ -221,7 +240,12 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
     bytes memory params = abi.encode(info);
 
     // Initialize Instance of IronBank LendingContract
-    IERC3156FlashLender(_cyFlashloanLender).flashLoan(ICFlashloanReceiver(address(this)), token, info.amount, params);
+    IERC3156FlashLender(_cyFlashloanLender).flashLoan(
+      ICFlashloanReceiver(address(this)),
+      token,
+      info.amount,
+      params
+    );
   }
 
   /**
@@ -263,6 +287,63 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
 
     return keccak256("ERC3156FlashBorrowerInterface.onFlashLoan");
   }
+  
+  // ===================== Balancer FlashLoan ===================================
+  
+  /**
+   * @dev Initiates a Balancer flashloan.
+   * @param info: data to be passed between functions executing flashloan logic
+   */
+  function _initiateBalancerFlashLoan(FlashLoan.Info calldata info) internal {
+    //Initialize Instance of Balancer Vault
+    IBalancerVault balVault = IBalancerVault(_balancerVault);
+
+    //Passing arguments to construct Balancer flashloan -limited to 1 asset type for now.
+    IFlashLoanRecipient receiverAddress = IFlashLoanRecipient(address(this));
+    IERC20[] memory assets = new IERC20[](1);
+    assets[0] = IERC20(address(info.asset == _ETH ? _WETH : info.asset));
+    uint256[] memory amounts = new uint256[](1);
+    amounts[0] = info.amount;
+
+    //Balancer Flashloan initiated.
+    balVault.flashLoan(receiverAddress, assets, amounts, abi.encode(info));
+  }
+
+  /**
+   * @dev Executes Balancer Flashloan, this operation is required
+   * and called by Balancer flashloan when sending loaned amount
+   */
+  function receiveFlashLoan(
+    IERC20[] memory tokens,
+    uint256[] memory amounts,
+    uint256[] memory feeAmounts,
+    bytes memory userData
+  ) external override {
+    require(msg.sender == _balancerVault, Errors.VL_NOT_AUTHORIZED);
+
+    FlashLoan.Info memory info = abi.decode(userData, (FlashLoan.Info));
+
+    uint256 _value;
+    if (info.asset == _ETH) {
+      // Convert WETH to ETH and assign amount to be set as msg.value
+      _convertWethToEth(amounts[0]);
+      _value = info.amount;
+    } else {
+      // Transfer to Vault the flashloan Amount
+      // _value is 0
+      tokens[0].univTransfer(payable(info.vault), amounts[0]);
+    }
+
+    _executeAction(info, amounts[0], feeAmounts[0], _value);
+
+    // Repay flashloan
+    _repay(
+      info.asset == _ETH,
+      address(tokens[0]),
+      amounts[0] + feeAmounts[0],
+      _balancerVault
+    );
+  }
 
   function _executeAction(
     FlashLoan.Info memory _info,
@@ -302,6 +383,20 @@ contract Flasher is IFlasher, DyDxFlashloanBase, IFlashLoanReceiver, ICFlashloan
       IERC20(_WETH).univApprove(payable(_spender), _amount);
     } else {
       IERC20(_asset).univApprove(payable(_spender), _amount);
+    }
+  }
+
+  function _repay(
+    bool _isETH,
+    address _asset,
+    uint256 _amount,
+    address _spender
+  ) internal {
+    if (_isETH) {
+      _convertEthToWeth(_amount);
+      IERC20(_WETH).univTransfer(payable(_spender), _amount);
+    } else {
+      IERC20(_asset).univTransfer(payable(_spender), _amount);
     }
   }
 

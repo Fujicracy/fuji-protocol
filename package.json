@@ -34,7 +34,8 @@
     "hardhat-gas-reporter": "1.0.4",
     "node-watch": "^0.7.0",
     "qrcode-terminal": "^0.12.0",
-    "ramda": "^0.27.1"
+    "ramda": "^0.27.1",
+    "redstone-evm-connector": "2.1.0"
   },
   "scripts": {
     "fork": "hardhat node --hostname 0.0.0.0",
@@ -45,6 +46,7 @@
     "deploy:mainnet": "hardhat run scripts/mainnet/00_initial_deploy.js",
     "deploy:mainnet:fuse": "hardhat run scripts/mainnet/01_deploy_fuse.js",
     "deploy:fantom": "hardhat run scripts/fantom/00_initial_deploy.js",
+    "deploy:fantom:game": "yarn deploy:fantom && hardhat run scripts/fantom/01_new_wbtc_vault.js && hardhat run scripts/fantom/02_new_weth_vaults.js && hardhat run scripts/fantom/05_nft_game.js",
     "publish:core": "hardhat publish",
     "publish:fuse": "hardhat publish --market fuse",
     "sync": "hardhat sync",
@@ -53,8 +55,8 @@
     "format": "echo 1",
     "lint:sol": "solhint -f table contracts/**/*.sol",
     "lint:js": "eslint -f table test/*.js",
-    "format:sol": "prettier --write contracts/*.sol contracts/**/*.sol",
-    "format:js": "prettier --write test/*.js",
+    "format:sol": "prettier --write contracts/*",
+    "format:js": "prettier --write test/*",
     "accounts": "hardhat accounts",
     "balance": "hardhat balance",
     "send": "hardhat send",

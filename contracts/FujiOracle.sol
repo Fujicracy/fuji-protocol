@@ -15,8 +15,8 @@ contract FujiOracle is IFujiOracle, Claimable {
   mapping(address => address) public usdPriceFeeds;
 
   /**
-  * @dev Initializes the contract setting '_priceFeeds' addresses for '_assets'
-  */
+   * @dev Initializes the contract setting '_priceFeeds' addresses for '_assets'
+   */
   constructor(address[] memory _assets, address[] memory _priceFeeds) Claimable() {
     require(_assets.length == _priceFeeds.length, Errors.ORACLE_INVALID_LENGTH);
     for (uint256 i = 0; i < _assets.length; i++) {

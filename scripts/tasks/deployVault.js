@@ -3,7 +3,7 @@ const { deployProxy, redeployIf, network } = require("../utils");
 const deployVault = async (name, args) => {
   const contractName = network === "fantom" ? "FujiVaultFTM" : "FujiVault";
 
-  const deployed = await redeployIf(name, contractName, () => false, deployProxy, args);
+  const deployed = await redeployIf(name, contractName, deployProxy, args);
 
   // Call initialize function of the implementation contract if it's not already called.
   // This is a precaution measure to make sure a malicious actor won't take control

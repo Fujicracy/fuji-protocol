@@ -18,34 +18,32 @@ import "./libraries/Errors.sol";
  */
 
 contract Controller is Claimable {
-
   // Controller Events
 
   /**
-  * @dev Log a change in fuji admin address
-  */
+   * @dev Log a change in fuji admin address
+   */
   event FujiAdminChanged(address newFujiAdmin);
   /**
-  * @dev Log a change in executor permission
-  */
+   * @dev Log a change in executor permission
+   */
   event ExecutorPermitChanged(address executorAddress, bool newPermit);
-
 
   IFujiAdmin private _fujiAdmin;
 
   mapping(address => bool) public isExecutor;
 
   /**
-  * @dev Throws if address passed is not a recognized vault.
-  */
+   * @dev Throws if address passed is not a recognized vault.
+   */
   modifier isValidVault(address _vaultAddr) {
     require(_fujiAdmin.validVault(_vaultAddr), "Invalid vault!");
     _;
   }
 
   /**
-  * @dev Throws if caller passed is not owner or approved executor.
-  */
+   * @dev Throws if caller passed is not owner or approved executor.
+   */
   modifier onlyOwnerOrExecutor() {
     require(msg.sender == owner() || isExecutor[msg.sender], "Not executor!");
     _;
@@ -75,14 +73,22 @@ contract Controller is Claimable {
     address _newProvider,
     uint8 _flashNum
   ) external isValidVault(_vaultAddr) onlyOwnerOrExecutor {
-
     IVault vault = IVault(_vaultAddr);
 
     // Validate _newProvider is not equal to vault's activeProvider
-    require(
-      vault.activeProvider() != _newProvider,
-      Errors.RF_INVALID_NEW_ACTIVEPROVIDER
-    );
+    require(vault.activeProvider() != _newProvider, Errors.RF_INVALID_NEW_ACTIVEPROVIDER);
+
+    address[] memory providers = vault.getProviders();
+    // Check '_newProvider' is a valid provider
+    bool validProvider;
+    for (uint i = 0; i < providers.length && !validProvider; i++) {
+      if (_newProvider == providers[i]) {
+        validProvider = true;
+      }
+    }
+    if (!validProvider) {
+      revert(Errors.VL_INVALID_NEW_PROVIDER);
+    }
 
     IVaultControl.VaultAssets memory vAssets = IVaultControl(_vaultAddr).vAssets();
     vault.updateF1155Balances();

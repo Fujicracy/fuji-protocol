@@ -11,7 +11,6 @@ import "./libraries/Errors.sol";
  */
 
 contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
-
   address private _flasher;
   address private _fliquidator;
   address payable private _ftreasury;
@@ -23,8 +22,8 @@ contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
   address private _swapper;
 
   /**
-  * @dev Initializes the contract setting the deployer as the initial owner.
-  */
+   * @dev Initializes the contract setting the deployer as the initial owner.
+   */
   function initialize() external initializer {
     __Ownable_init();
   }

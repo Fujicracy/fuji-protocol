@@ -53,12 +53,6 @@ describe("NFT Bond Logic", function () {
         expect(await this.f.nftgame.validVaults(i)).to.be.equal(this.f[VAULTS[i].name].address);
       }
     });
-
-    it("No permission", async function () {
-      await expect(
-        this.f.nftgame.connect(this.user).setValidVaults([this.f.vaultftmdai.address])
-      ).to.be.revertedWith("Ownable: caller is not the owner");
-    });
   });
 
   describe("User Debt", function () {
@@ -170,10 +164,6 @@ describe("NFT Bond Logic", function () {
 
     it("New user starting points", async function () {
       expect(await this.f.nftgame.balanceOf(this.user.address, 0)).to.be.equal(0);
-    });
-
-    it("Reverting state of points outside contract", async function () {
-      await expect(this.f.nftgame.checkStateOfPoints(this.user.address, 0, true)).to.be.reverted;
     });
 
     it("Get points balance after time passed", async function () {

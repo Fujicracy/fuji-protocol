@@ -39,7 +39,7 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   function initialize() external initializer {
     __ERC165_init();
     __Context_init();
-    __Climable_init();
+    __Claimable_init();
   }
 
   /**

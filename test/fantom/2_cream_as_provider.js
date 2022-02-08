@@ -57,13 +57,13 @@ const {
   vaultwbtcweth,
 } = vaults;
 
-const [DEPOSIT_STABLE, DEPOSIT_FTM, DEPOSIT_WETH, DEPOSIT_WBTC] = [800, 400, 0.22, 0.014];
+const [DEPOSIT_STABLE, DEPOSIT_FTM, DEPOSIT_WETH, DEPOSIT_WBTC] = [800, 400, 0.25, 0.015];
 
 const [BORROW_STABLE, BORROW_FTM, BORROW_WETH, BORROW_WBTC] = [
-  DEPOSIT_STABLE / 2,
-  DEPOSIT_FTM / 2,
-  DEPOSIT_WETH / 2,
-  DEPOSIT_WBTC / 2,
+  DEPOSIT_STABLE / 4,
+  DEPOSIT_FTM / 4,
+  DEPOSIT_WETH / 4,
+  DEPOSIT_WBTC / 4,
 ];
 
 describe("Fantom Fuji Instance", function () {

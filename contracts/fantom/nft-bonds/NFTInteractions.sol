@@ -5,12 +5,13 @@ pragma solidity ^0.8.2;
 /// @author fuji-dao.eth
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "./NFTGame.sol";
 import "../libraries/LibPseudoRandom.sol";
 import "./FujiPriceAware.sol";
 
-contract NFTInteractions is FujiPriceAware {
+contract NFTInteractions is FujiPriceAware, Initializable {
   using LibPseudoRandom for uint256;
 
   /**
@@ -48,7 +49,7 @@ contract NFTInteractions is FujiPriceAware {
   mapping(uint256 => uint256) public cratePrices;
 
   function initialize(address _nftGame) external initializer {
-    FujiPriceAware.initialize();
+    maxDelay = 3 * 60;
     nftGame = NFTGame(_nftGame);
     probabilityIntervals = [500000, 700000, 900000, 950000, 9501000];
   }

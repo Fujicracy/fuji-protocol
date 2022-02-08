@@ -3,18 +3,13 @@
 pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract FujiPriceAware is Initializable {
+contract FujiPriceAware {
   using ECDSA for bytes32;
 
   uint256 public maxDelay;
   address private trustedSigner;
 
-
-  function initialize() public initializer {
-    maxDelay = 3 * 60;
-  }
 
   function getTrustedSigner() public view virtual returns (address) {
     return trustedSigner;

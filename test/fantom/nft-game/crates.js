@@ -196,6 +196,9 @@ describe("NFT Bond Crate System", function () {
       await timeTravel(this.sec * 365);
       await vault.updateF1155Balances();
 
+      //Redstone checks for time delay and compares timestamps. We need to increment max delay because of time traveling
+      await this.f.nftinteractions.connect(this.owner).setMaxEntropyDelay(60 * 60 * 24 * 365 * 2);
+
       for (let i = 0; i < this.crateIds.length; i++) {
         await this.f.nftinteractions.connect(this.user).getCrates(this.crateIds[i], amount);
       }

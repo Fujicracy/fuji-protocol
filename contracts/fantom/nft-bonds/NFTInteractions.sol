@@ -169,7 +169,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
       // if the reward is a card determine the card id
       if (isCard) {
         uint256 step = 1000000 / (NFT_CARD_ID_END - NFT_CARD_ID_START + 1);
-        uint256 randomNum = LibPseudoRandom.pickRandomNumbers(1)[0];
+        uint256 randomNum = LibPseudoRandom.pickRandomNumbers(1, entropyValue + 1)[0];
         uint256 randomId = 0;
         for (uint256 i = step; i <= randomNum; i += step) {
           randomId++;

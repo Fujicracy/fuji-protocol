@@ -98,7 +98,8 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * @notice sets allowed signer address of entropy feed.
    * Admin function required by redstone-evm-connector (oracle).
    */
-  function authorizeSignerEntropyFeed(address _trustedSigner) external onlyOwner {
+  function authorizeSignerEntropyFeed(address _trustedSigner) external {
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
     _authorizeSigner(_trustedSigner);
   }
 
@@ -106,7 +107,8 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * @notice sets max allowed delay between front-end call and entropy feed.
    * Admin function required by redstone-evm-connector (oracle).
    */
-  function setMaxEntropyDelay(uint256 _maxDelay) external onlyOwner {
+  function setMaxEntropyDelay(uint256 _maxDelay) external {
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
     _setMaxDelay(_maxDelay);
   }
 

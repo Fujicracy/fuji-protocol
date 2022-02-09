@@ -131,7 +131,7 @@ const fixture = async ([wallet]) => {
   );
 
   const NFTGame = await getContractFactory("NFTGame");
-  const nftgame = await upgrades.deployProxy(NFTGame, []);
+  const nftgame = await upgrades.deployProxy(NFTGame, [[1, 2, 3, 4]]);
 
   const NFTInteractions = await getContractFactory("NFTInteractions");
   const nftinteractions = await upgrades.deployProxy(NFTInteractions, [nftgame.address]);

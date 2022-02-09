@@ -737,10 +737,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
 
     emit Borrow(msg.sender, vAssets.borrowAsset, _borrowAmount);
 
-    NFTGame game = NFTGame(nftGame);
-    if (game.isValidVault(address(this))) {
-      game.checkStateOfPoints(msg.sender, _borrowAmount, false, _borrowAssetDecimals);
-    }
+    _stateOfPoints(_borrowAmount, false);
   }
 
   /**
@@ -793,9 +790,13 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
 
     emit Payback(msg.sender, vAssets.borrowAsset, debtBalance);
 
+    _stateOfPoints(amountToPayback, true);
+  }
+  
+  function _stateOfPoints(uint256 _amount, bool _isPayback) internal {
     NFTGame game = NFTGame(nftGame);
-    if (game.isValidVault(address(this))) {
-      game.checkStateOfPoints(msg.sender, amountToPayback, true, _borrowAssetDecimals);
+    if (block.timestamp < game.gamePhases(1) && game.isValidVault(address(this))) {
+      game.checkStateOfPoints(msg.sender, _amount, _isPayback, _borrowAssetDecimals);
     }
   }
 }

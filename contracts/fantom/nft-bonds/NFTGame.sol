@@ -60,7 +60,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   
 
   // Timestamps for each game phase
-  uint256[4] gamePhases;
+  uint256[4] public gamePhases;
 
   modifier onlyVault() {
     bool isVault;
@@ -109,6 +109,9 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   ) external onlyVault {
     UserData memory info = userdata[user];
     uint256 debt = getUserDebt(user);
+
+    // Only during accumulation
+    require(block.timestamp < gamePhases[1]);
 
     if (info.rateOfAccrual != 0) {
       // ongoing user, ongoing game

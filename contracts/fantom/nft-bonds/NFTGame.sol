@@ -57,6 +57,10 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   mapping(uint256 => uint256) public totalSupply;
 
   address[] public validVaults;
+  
+
+  // Timestamps for each game phase
+  uint256[4] gamePhases;
 
   modifier onlyVault() {
     bool isVault;
@@ -67,12 +71,13 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     _;
   }
 
-  function initialize() external initializer {
+  function initialize(uint256[4] memory phases) external initializer {
     __ERC1155_init("");
     __AccessControl_init();
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     _setupRole(GAME_ADMIN, msg.sender);
     _setupRole(GAME_INTERACTOR, msg.sender);
+    gamePhases = phases;
   }
 
   // State Changing Functions
@@ -84,6 +89,11 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     require(hasRole(GAME_ADMIN, msg.sender), "No permission");
     validVaults = vaults;
     emit ValidVaultsChanged(vaults);
+  }
+
+  function setGamePhases(uint256[4] memory newPhases) external {
+    require(hasRole(GAME_ADMIN, msg.sender), "No permission");
+    gamePhases = newPhases;
   }
 
   /**

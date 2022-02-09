@@ -795,7 +795,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   
   function _stateOfPoints(uint256 _amount, bool _isPayback) internal {
     NFTGame game = NFTGame(nftGame);
-    if (block.timestamp < game.gamePhases(1) && game.isValidVault(address(this))) {
+    if (block.timestamp < game.gamePhases(1) && block.timestamp >= game.gamePhases(0) && game.isValidVault(address(this))) {
       game.checkStateOfPoints(msg.sender, _amount, _isPayback, _borrowAssetDecimals);
     }
   }

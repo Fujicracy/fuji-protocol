@@ -111,7 +111,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     uint256 debt = getUserDebt(user);
 
     // Only during accumulation
-    require(block.timestamp < gamePhases[1]);
+    require(block.timestamp < gamePhases[1] && block.timestamp >= gamePhases[0]);
 
     if (info.rateOfAccrual != 0) {
       // ongoing user, ongoing game
@@ -124,9 +124,11 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
   function mint(address user, uint256 id, uint256 amount) external {
     require(hasRole(GAME_INTERACTOR, msg.sender), "No permission");
+    // accumulation and trading
+    require(block.timestamp < gamePhases[2] && block.timestamp >= gamePhases[0]);
 
     if (id == POINTS_ID) {
-      userdata[user].accruedPoints += uint128(amount);
+      _mintPoints(user, amount);
     } else {
       _mint(user, id, amount, "");
     }
@@ -135,6 +137,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
   function burn(address user, uint256 id, uint256 amount) external {
     require(hasRole(GAME_INTERACTOR, msg.sender), "No permission");
+    // accumulation, trading and bonding
+    require(block.timestamp < gamePhases[2] && block.timestamp >= gamePhases[0]);
 
     if (id == POINTS_ID) {
       uint256 debt = getUserDebt(user);

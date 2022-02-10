@@ -57,30 +57,31 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   mapping(uint256 => uint256) public totalSupply;
 
   address[] public validVaults;
-  
 
   // Timestamps for each game phase
-  uint256[4] public gamePhases;
+    // 0 = start game launch
+    // 1 = end of accumulation
+    // 2 = end of trade and lock
+    // 3 = end of bond
+  uint256[3] public gamePhaseTimestamps;
 
   modifier onlyVault() {
-    bool isVault;
-    for (uint256 i = 0; i < validVaults.length && !isVault; i++) {
-      isVault = msg.sender == validVaults[i] ? true : false;
-    }
-    require(isVault == true, "only valid vault caller!");
+    require(isValidVault(msg.sender), "only valid vault caller!");
     _;
   }
 
-  function initialize(uint256[4] memory phases) external initializer {
+  function initialize(uint256[3] memory phases) external initializer {
     __ERC1155_init("");
     __AccessControl_init();
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     _setupRole(GAME_ADMIN, msg.sender);
     _setupRole(GAME_INTERACTOR, msg.sender);
-    gamePhases = phases;
+    gamePhaseTimestamps = phases;
   }
 
-  // State Changing Functions
+  /// State Changing Functions
+
+  // Admin functions
 
   /**
   * @notice Sets the list of vaults that count towards the game
@@ -91,10 +92,12 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     emit ValidVaultsChanged(vaults);
   }
 
-  function setGamePhases(uint256[4] memory newPhases) external {
+  function setGamePhases(uint256[3] memory newPhasesTimestamps) external {
     require(hasRole(GAME_ADMIN, msg.sender), "No permission");
-    gamePhases = newPhases;
+    gamePhaseTimestamps = newPhasesTimestamps;
   }
+
+  // Game control functions
 
   /**
   * @notice Compute user's total debt in Fuji in all vaults of this chain.
@@ -107,25 +110,27 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     bool isPayback,
     uint256 decimals
   ) external onlyVault {
-    UserData memory info = userdata[user];
-    uint256 debt = getUserDebt(user);
 
-    // Only during accumulation
-    require(block.timestamp < gamePhases[1] && block.timestamp >= gamePhases[0]);
-
-    if (info.rateOfAccrual != 0) {
-      // ongoing user, ongoing game
+    uint256 phase = _whatPhase();
+    // Only once accumulation has begun
+    if (phase > 0) {
+      // Reads state of debt as per last 'borrow()' or 'payback()' call
+      uint256 debt = getUserDebt(user);
       balanceChange = _convertToDebtUnits(balanceChange, decimals);
-      _compoundPoints(user, isPayback ? debt + balanceChange : debt - balanceChange);
-    }
 
-    _updateUserInfo(user, uint128(debt));
+      if (userdata[user].rateOfAccrual != 0) {
+        // Compound points from previous state, considering current 'borrow()' or 'payback()' amount change.
+        _compoundPoints(user, isPayback ? debt + balanceChange : debt - balanceChange, phase);
+      }
+      _updateUserInfo(user, uint128(debt), phase);
+    } 
   }
 
   function mint(address user, uint256 id, uint256 amount) external {
     require(hasRole(GAME_INTERACTOR, msg.sender), "No permission");
     // accumulation and trading
-    require(block.timestamp < gamePhases[2] && block.timestamp >= gamePhases[0]);
+    uint256 phase = _whatPhase();
+    require(phase >= 1 && phase < 3);
 
     if (id == POINTS_ID) {
       _mintPoints(user, amount);
@@ -138,12 +143,13 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   function burn(address user, uint256 id, uint256 amount) external {
     require(hasRole(GAME_INTERACTOR, msg.sender), "No permission");
     // accumulation, trading and bonding
-    require(block.timestamp < gamePhases[2] && block.timestamp >= gamePhases[0]);
+    uint256 phase = _whatPhase();
+    require(phase >= 1);
 
     if (id == POINTS_ID) {
       uint256 debt = getUserDebt(user);
-      _compoundPoints(user, debt);
-      _updateUserInfo(user, uint128(debt));
+      _compoundPoints(user, debt, phase);
+      _updateUserInfo(user, uint128(debt), phase);
       require(userdata[user].accruedPoints >= amount, "Not enough points");
       userdata[user].accruedPoints -= uint128(amount);
     } else {
@@ -169,7 +175,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   /**
   * @notice Checks if a given vault is a valid vault
   */
-  function isValidVault(address vault) external view returns (bool){
+  function isValidVault(address vault) public view returns (bool){
     for (uint256 i = 0; i < validVaults.length; i++) {
       if (validVaults[i] == vault) {
         return true;
@@ -185,7 +191,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   function balanceOf(address user, uint256 id) public view override returns (uint256) {
     // To query points balance, id == 0
     if (id == POINTS_ID) {
-      return _pointsBalanceOf(user);
+      return _pointsBalanceOf(user, _whatPhase());
     } else {
       // Otherwise check ERC1155
       return super.balanceOf(user, id);
@@ -225,38 +231,64 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   // Internal Functions
 
   /**
-  * @notice Compute user's accrued points since user's 'lastTimestampUpdate'.
-  * @dev Includes points from rate and points from interest
+  * @notice Returns a value that helps identify appropriate game logic according to game phase.
   */
-  function _computeAccrued(address user, uint256 debt) internal view returns (uint256) {
-    // 1 - compute points from normal rate
-    // 2 - add points by interest
+  function _whatPhase() internal view returns (uint256 phase) {
+    phase = block.timestamp;
+    if(phase < gamePhaseTimestamps[0]) {
+      phase = 0; // Pre-game
+    } else if (phase >= gamePhaseTimestamps[0] && phase < gamePhaseTimestamps[1]) {
+      phase = 1; // Accumulation
+    } else if (phase >= gamePhaseTimestamps[1] && phase < gamePhaseTimestamps[2]) {
+      phase = 2; // Trade and lock
+    } else {
+      phase = 3; // Bonding
+    }
+  }
+
+  /**
+  * @notice Compute user's accrued points since user's 'lastTimestampUpdate' or at the end of accumulation phase.
+  * @dev Includes points earned from debt balance and points from earned by debt accrued interest.
+  */
+  function _computeAccrued(address user, uint256 debt, uint256 phase) internal view returns (uint256) {
     UserData memory info = userdata[user];
-    uint256 pointsFromRate = _timestampDifference(info.lastTimestampUpdate) * (info.rateOfAccrual);
-    uint256 pointsFromInterest = (((debt - info.recordedDebtBalance) * _timestampDifference(info.lastTimestampUpdate)) / 2);
-  
+    uint256 timeStampDiff = 0;
+    uint256 estimateInterestEarned = 0; 
+
+    if (phase == 1) {
+      timeStampDiff = _timestampDifference(block.timestamp, info.lastTimestampUpdate);
+      estimateInterestEarned = debt - info.recordedDebtBalance;
+    } else if (phase > 1 && info.recordedDebtBalance > 0 ) {
+      timeStampDiff = _timestampDifference(gamePhaseTimestamps[1], info.lastTimestampUpdate);
+      estimateInterestEarned = timeStampDiff == 0 ? 0 : debt - info.recordedDebtBalance;
+    }
+    
+    uint256 pointsFromRate = timeStampDiff * (info.rateOfAccrual);
+    // Points from interest are an estimate within 99% accuracy in 90 day range.
+    uint256 pointsFromInterest = estimateInterestEarned * (timeStampDiff + 1 days) / 2;
+
     return pointsFromRate + pointsFromInterest;
   }
 
   /**
   * @dev Returns de balance of accrued points of a user.
   */
-  function _pointsBalanceOf(address user) internal view returns (uint256) {
-    return userdata[user].accruedPoints + _computeAccrued(user, getUserDebt(user));
+  function _pointsBalanceOf(address user, uint256 phase) internal view returns (uint256) {
+    return userdata[user].accruedPoints + _computeAccrued(user, getUserDebt(user), phase);
   }
 
   /**
   * @dev Adds 'computeAccrued()' to recorded 'accruedPoints' in UserData and totalSupply
   * @dev Must update all fields of UserData information.
   */
-  function _compoundPoints(address user, uint256 debt) internal {
-    uint256 points = _computeAccrued(user, debt);
+  function _compoundPoints(address user, uint256 debt, uint256 phase) internal {
+    uint256 points = _computeAccrued(user, debt, phase);
 
     _mintPoints(user, points);
   }
 
-  function _timestampDifference(uint256 oldTimestamp) internal view returns (uint256) {
-    return block.timestamp - oldTimestamp;
+  function _timestampDifference(uint256 newTimestamp, uint256 oldTimestamp) internal pure returns (uint256) {
+    return newTimestamp - oldTimestamp;
   }
 
   function _convertToDebtUnits(uint256 value, uint256 decimals) internal pure returns (uint256) {
@@ -269,10 +301,21 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     totalSupply[POINTS_ID] += amount;
   }
 
-  function _updateUserInfo(address user, uint128 balance) internal {
-    userdata[user].lastTimestampUpdate = uint64(block.timestamp);
-    userdata[user].recordedDebtBalance = uint128(balance);
-    userdata[user].rateOfAccrual = uint64(balance * (10**POINTS_DECIMALS) / SEC);
+  function _updateUserInfo(address user, uint128 balance, uint256 phase) internal {
+    if (phase == 1) {
+      userdata[user].lastTimestampUpdate = uint64(block.timestamp);
+      userdata[user].recordedDebtBalance = uint128(balance);
+      userdata[user].rateOfAccrual = uint64(balance * (10**POINTS_DECIMALS) / SEC);
+    } else if (
+      phase > 1 &&
+      userdata[user].lastTimestampUpdate > 0 &&
+      userdata[user].lastTimestampUpdate != uint64(gamePhaseTimestamps[1])
+    ) {
+      // Update user data for no more accruing.
+      userdata[user].lastTimestampUpdate = uint64(gamePhaseTimestamps[1]);
+      userdata[user].rateOfAccrual = 0; 
+      userdata[user].recordedDebtBalance = 0;
+    }
   }
 
   function _beforeTokenTransfer(

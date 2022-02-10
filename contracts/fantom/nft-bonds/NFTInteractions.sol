@@ -122,7 +122,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    */
   function getCrates(uint256 crateId, uint256 amount) external {
     // accumulation and trading
-    require(block.timestamp < nftGame.gamePhases(2) && block.timestamp >= nftGame.gamePhases(0));
+    require(block.timestamp < nftGame.gamePhaseTimestamps(2) && block.timestamp >= nftGame.gamePhaseTimestamps(0));
 
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
@@ -145,7 +145,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    */
   function openCrate(uint256 crateId, uint256 amount) external {
     // accumulation and trading
-    require(block.timestamp < nftGame.gamePhases(2) && block.timestamp >= nftGame.gamePhases(0));
+    require(block.timestamp < nftGame.gamePhaseTimestamps(2) && block.timestamp >= nftGame.gamePhaseTimestamps(0));
 
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,

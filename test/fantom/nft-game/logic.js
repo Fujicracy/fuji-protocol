@@ -170,7 +170,8 @@ describe("NFT Bond Logic", function () {
       const vault = this.f.vaultftmdai;
       const depositAmount = parseUnits(2500);
       const borrowAmount = parseUnits(250);
-      const time = 60 * 60 * 24 * 365; // 1 year
+      const time = 60 * 60 * 24 * 365; // 1 year in seconds
+      const daySeconds = 60 * 60 * 24; // 1 day in seconds
 
       await vault.connect(this.user).depositAndBorrow(depositAmount, borrowAmount, {
         value: depositAmount,
@@ -184,8 +185,8 @@ describe("NFT Bond Logic", function () {
       const pointsFromRate = pps.mul(time);
 
       const newDebt = await this.f.nftgame.getUserDebt(this.user.address);
-      const pointsFromInterest = newDebt.sub(formatUnitsToNum(borrowAmount)).mul(time).div(2);
-
+      const pointsFromInterest = newDebt.sub(formatUnitsToNum(borrowAmount)).mul(time + daySeconds).div(2);
+      
       expect(await this.f.nftgame.balanceOf(this.user.address, 0)).to.be.equal(
         pointsFromRate.add(pointsFromInterest)
       );
@@ -196,6 +197,7 @@ describe("NFT Bond Logic", function () {
       const depositAmount = [parseUnits(1000), parseUnits(1500)];
       const borrowAmount = [parseUnits(100), parseUnits(150)];
       const time = 60 * 60 * 24 * 365; // 1 year
+      const daySeconds = 60 * 60 * 24; // 1 day in seconds
 
       let pps;
       let pointsFromRate = BigNumber.from(0);
@@ -232,6 +234,7 @@ describe("NFT Bond Logic", function () {
       const borrowAmount = parseUnits(250);
       const paybackAmount = parseUnits(100);
       const time = 60 * 60 * 24 * 365; // 1 year
+      const daySeconds = 60 * 60 * 24; // 1 day in seconds
 
       await vault.connect(this.user).depositAndBorrow(depositAmount, borrowAmount, {
         value: depositAmount,
@@ -245,7 +248,7 @@ describe("NFT Bond Logic", function () {
       let pointsFromRate = pps.mul(time);
 
       let newDebt = await this.f.nftgame.getUserDebt(this.user.address);
-      let pointsFromInterest = newDebt.sub(formatUnitsToNum(borrowAmount)).mul(time).div(2);
+      let pointsFromInterest = newDebt.sub(formatUnitsToNum(borrowAmount)).mul(time + daySeconds).div(2);
 
       await this.f[borrowAsset].connect(this.user).approve(vault.address, paybackAmount);
 
@@ -263,7 +266,7 @@ describe("NFT Bond Logic", function () {
       newDebt = await this.f.nftgame.getUserDebt(this.user.address);
       pointsFromInterest = newDebt
         .sub(BigNumber.from(formatUnitsToNum(borrowAmount)).sub(formatUnitsToNum(paybackAmount)))
-        .mul(time)
+        .mul(time + daySeconds)
         .div(2);
 
       expect(await this.f.nftgame.balanceOf(this.user.address, 0)).to.be.equal(

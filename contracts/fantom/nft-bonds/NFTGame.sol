@@ -233,7 +233,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   /**
   * @notice Returns a value that helps identify appropriate game logic according to game phase.
   */
-  function _whatPhase() internal view returns (uint256 phase) {
+  function whatPhase() public view returns (uint256 phase) {
     phase = block.timestamp;
     if(phase < gamePhaseTimestamps[0]) {
       phase = 0; // Pre-game

@@ -20,6 +20,11 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   event CratePriceChanged(uint256 crateId, uint256 price);
 
   /**
+   * @dev Changing a card boost
+   */
+  event CardBoostChanged(uint256 cardId, uint256 boost);
+
+  /**
    * @dev Changing crate rewards
    */
   event CrateRewardsChanged(uint256 crateId, uint256[] rewards);
@@ -33,6 +38,11 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * @dev Opened crates
    */
   event CratesOpened(uint256 crateId, uint256 amount);
+
+  /**
+   * @dev Final score locked
+   */
+  event LockedScore(address user, uint256 amount);
 
   uint256 public constant CRATE_COMMON_ID = 1;
   uint256 public constant CRATE_EPIC_ID = 2;
@@ -49,6 +59,9 @@ contract NFTInteractions is FujiPriceAware, Initializable {
 
   // CrateID => crate price
   mapping(uint256 => uint256) public cratePrices;
+
+  // CardID => boost: where boost is a base 100 number.
+  mapping(uint256 => uint256) public cardBoost;
 
   function initialize(address _nftGame) external initializer {
     maxDelay = 3 * 60;
@@ -67,7 +80,6 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   }
 
   /**
-
   * @notice sets the prices for the crates
   */
   function setCratePrice(uint256 crateId, uint256 price) external {
@@ -78,7 +90,6 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   }
 
   /**
-
   * @notice sets probability intervals for crate rewards
   */
   function setProbabilityIntervals(uint256[] memory intervals) external {
@@ -87,7 +98,6 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   }
 
   /**
-
   * @notice sets crate rewards
   * rewards are an array, with each element corresponding to the points multiplier value
   */
@@ -95,6 +105,17 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
     crateRewards[crateId] = rewards;
     emit CrateRewardsChanged(crateId, rewards);
+  }
+
+  /**
+  * @notice sets card boost rewards
+  * @dev boost is a base 100 number. In example, boost = 115, 15% boost. 1.15 for computation. 
+  */
+  function setCardBoost(uint256 cardId, uint256 boost) external {
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
+    require(boost >= 100, "boost not > 100!");
+    cardBoost[cardId] = boost;
+    emit CardBoostChanged(cardId, boost);
   }
 
   /**
@@ -121,8 +142,9 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * @notice Burns user points to mint a new crate
    */
   function getCrates(uint256 crateId, uint256 amount) external {
-    // accumulation and trading
-    require(block.timestamp < nftGame.gamePhaseTimestamps(2) && block.timestamp >= nftGame.gamePhaseTimestamps(0));
+    // accumulation and trading only
+    uint256 phase = nftGame.whatPhase();
+    require(phase > 0 && phase < 3, "wrong game phase!");
 
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
@@ -144,8 +166,9 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * @notice opens one crate with the given id
    */
   function openCrate(uint256 crateId, uint256 amount) external {
-    // accumulation and trading
-    require(block.timestamp < nftGame.gamePhaseTimestamps(2) && block.timestamp >= nftGame.gamePhaseTimestamps(0));
+    // accumulation and trading only
+    uint256 phase = nftGame.whatPhase();
+    require(phase > 0 && phase < 3, "wrong game phase!");
 
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
@@ -200,6 +223,21 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     nftGame.burn(msg.sender, crateId, amount);
 
     emit CratesOpened(crateId, amount);
+  }
+
+  function lockFinalScore() extrnal {
+    // trading-phase only
+    uint256 phase = nftGame.whatPhase();
+    require(phase > 1 && phase < 3, "wrong game phase!");
+
+  }
+
+
+
+  /// Read-only functions
+
+  function computeBoost(address user) public view returns(uint256) {
+
   }
 
   /// Internal functions

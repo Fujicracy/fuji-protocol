@@ -228,16 +228,27 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   function lockFinalScore() extrnal {
     // trading-phase only
     uint256 phase = nftGame.whatPhase();
-    require(phase > 1 && phase < 3, "wrong game phase!");
+    require(phase >= 2, "wrong game phase to lock");
+    uint256 boostNumber = computeBoost(msg.sender);
+    nftGame.userLock(msg.sender, boostNumber);
+
+    // Emit event
+
 
   }
 
-
-
   /// Read-only functions
 
-  function computeBoost(address user) public view returns(uint256) {
-
+  /**
+   * @notice Returns the totalBoost of user according to cards in possesion.
+   * @dev Value is 100 based. In example; 150 is +50% or 1.5 in decimal
+   */
+  function computeBoost(address user) public view returns(uint256 totalBoost) {
+    for (uint256 index = NFT_CARD_ID_START; index <=  NFT_CARD_ID_END; index++) {
+      if (nftGame.balanceOf(user, index) > 0) {
+        totalBoost += cardBoost[index];
+      } 
+    }
   }
 
   /// Internal functions

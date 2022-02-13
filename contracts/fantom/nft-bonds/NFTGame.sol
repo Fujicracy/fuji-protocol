@@ -25,6 +25,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     uint64 rateOfAccrual;
     uint128 accruedPoints;
     uint128 recordedDebtBalance;
+    uint256 lockedNFTId;
   }
 
   // Constants
@@ -63,14 +64,14 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     // 1 = end of accumulation
     // 2 = end of trade and lock
     // 3 = end of bond
-  uint256[3] public gamePhaseTimestamps;
+  uint256[4] public gamePhaseTimestamps;
 
   modifier onlyVault() {
     require(isValidVault(msg.sender), "only valid vault caller!");
     _;
   }
 
-  function initialize(uint256[3] memory phases) external initializer {
+  function initialize(uint256[4] memory phases) external initializer {
     __ERC1155_init("");
     __AccessControl_init();
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -111,7 +112,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     uint256 decimals
   ) external onlyVault {
 
-    uint256 phase = _whatPhase();
+    uint256 phase = whatPhase();
     // Only once accumulation has begun
     if (phase > 0) {
       // Reads state of debt as per last 'borrow()' or 'payback()' call
@@ -126,10 +127,40 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     } 
   }
 
+  function userLock(address user, uint256 boostNumber) external {
+    require(hasRole(GAME_INTERACTOR, msg.sender), "No permission");
+    require(userdata[user].lockedNFTId == 0, "user laready locked!");
+
+    uint256 phase = whatPhase();
+    uint256 debt = getUserDebt(user);
+
+    // If user was accumulating points, need to do final compounding
+    if (userdata[user].rateOfAccrual != 0) {
+      _compoundPoints(user, debt, phase);
+    }
+
+    // Set all accrue parameters to zero
+    _updateUserInfo(user, uint128(debt), phase);
+
+    // Compute and assign final score
+    uint256 finalScore = userdata[user].accruedPoints * boostNumber / 100;
+
+    userdata[user].accruedPoints = uint128(finalScore);
+    userdata[user].lockedNFTId = uint256(
+      keccak256(
+        abi.encodePacked(user, finalScore)
+    ));
+
+    // Mint the lockedNFT for user
+    _mint(user, userdata[user].lockedNFTId, 1, "");
+
+    //TODO Burn the crates and cards remaining for user
+  }
+
   function mint(address user, uint256 id, uint256 amount) external {
     require(hasRole(GAME_INTERACTOR, msg.sender), "No permission");
     // accumulation and trading
-    uint256 phase = _whatPhase();
+    uint256 phase = whatPhase();
     require(phase >= 1 && phase < 3);
 
     if (id == POINTS_ID) {
@@ -143,7 +174,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   function burn(address user, uint256 id, uint256 amount) external {
     require(hasRole(GAME_INTERACTOR, msg.sender), "No permission");
     // accumulation, trading and bonding
-    uint256 phase = _whatPhase();
+    uint256 phase = whatPhase();
     require(phase >= 1);
 
     if (id == POINTS_ID) {
@@ -191,7 +222,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   function balanceOf(address user, uint256 id) public view override returns (uint256) {
     // To query points balance, id == 0
     if (id == POINTS_ID) {
-      return _pointsBalanceOf(user, _whatPhase());
+      return _pointsBalanceOf(user, whatPhase());
     } else {
       // Otherwise check ERC1155
       return super.balanceOf(user, id);
@@ -318,6 +349,14 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     }
   }
 
+  function _isCrateOrCardId(uint256[] memory ids) internal pure returns(bool isSpecialID) {
+    for (uint256 index = 0; index < ids.length; index++) {
+      if( ids[index] <= 11 ) {
+        isSpecialID = true;
+      }
+    }
+  }
+
   function _beforeTokenTransfer(
     address operator,
     address from,
@@ -325,12 +364,14 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     uint256[] memory ids,
     uint256[] memory amounts,
     bytes memory data
-  ) internal pure override {
+  ) internal view override {
     operator;
     from;
     to;
-    ids;
     amounts;
     data;
+    if ( whatPhase() == 3) {
+      require(!_isCrateOrCardId(ids), "gamePhase: Id not transferible");
+    }
   }
 }

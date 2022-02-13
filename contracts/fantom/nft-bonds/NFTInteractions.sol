@@ -234,7 +234,6 @@ contract NFTInteractions is FujiPriceAware, Initializable {
 
     // Emit event
 
-
   }
 
   /// Read-only functions

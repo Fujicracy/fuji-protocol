@@ -13,6 +13,8 @@ import "../../interfaces/IVault.sol";
 import "../../interfaces/IVaultControl.sol";
 import "../../interfaces/IERC20Extended.sol";
 
+import "hardhat/console.sol";
+
 contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable {
 
   /**
@@ -113,6 +115,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   ) external onlyVault {
 
     uint256 phase = whatPhase();
+    console.log("isPayback", isPayback, "phase", phase);
     // Only once accumulation has begun
     if (phase > 0) {
       // Reads state of debt as per last 'borrow()' or 'payback()' call
@@ -272,6 +275,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   */
   function whatPhase() public view returns (uint256 phase) {
     phase = block.timestamp;
+    console.log("block.timestamp", phase);
     if(phase < gamePhaseTimestamps[0]) {
       phase = 0; // Pre-game
     } else if (phase >= gamePhaseTimestamps[0] && phase < gamePhaseTimestamps[1]) {
@@ -290,19 +294,22 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   function _computeAccrued(address user, uint256 debt, uint256 phase) internal view returns (uint256) {
     UserData memory info = userdata[user];
     uint256 timeStampDiff = 0;
-    uint256 estimateInterestEarned = 0; 
+    uint256 estimateInterestEarned = 0;
 
-    if (phase == 1) {
+    if (phase == 1 && info.lastTimestampUpdate != 0 ) {
       timeStampDiff = _timestampDifference(block.timestamp, info.lastTimestampUpdate);
       estimateInterestEarned = debt - info.recordedDebtBalance;
+      console.log("_computeAccrued",timeStampDiff,estimateInterestEarned);
     } else if (phase > 1 && info.recordedDebtBalance > 0 ) {
       timeStampDiff = _timestampDifference(gamePhaseTimestamps[1], info.lastTimestampUpdate);
       estimateInterestEarned = timeStampDiff == 0 ? 0 : debt - info.recordedDebtBalance;
+      console.log("_computeAccrued",timeStampDiff,estimateInterestEarned);
     }
     
     uint256 pointsFromRate = timeStampDiff * (info.rateOfAccrual);
     // Points from interest are an estimate within 99% accuracy in 90 day range.
     uint256 pointsFromInterest = estimateInterestEarned * (timeStampDiff + 1 days) / 2;
+    console.log("pointsFromRate",pointsFromRate,"pointsFromInterest",pointsFromInterest);
 
     return pointsFromRate + pointsFromInterest;
   }
@@ -311,6 +318,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   * @dev Returns de balance of accrued points of a user.
   */
   function _pointsBalanceOf(address user, uint256 phase) internal view returns (uint256) {
+    console.log("_pointsBalanceOf","accruedPoints",userdata[user].accruedPoints);
     return userdata[user].accruedPoints + _computeAccrued(user, getUserDebt(user), phase);
   }
 
@@ -334,6 +342,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
   //TODO change this function for the public one with the corresponding permission
   function _mintPoints(address user, uint256 amount) internal {
+    console.log("userdata[user].accruedPoints", userdata[user].accruedPoints);
     userdata[user].accruedPoints += uint128(amount);
     totalSupply[POINTS_ID] += amount;
   }

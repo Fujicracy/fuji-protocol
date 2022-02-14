@@ -1,12 +1,17 @@
 const chalk = require("chalk");
+const ora = require("ora");
+
 const { deployVault } = require("../tasks/deployVault");
 const { updateFujiERC1155 } = require("../tasks/updateFujiERC1155");
 const { updateVault } = require("../tasks/updateVault");
 const { setDeploymentsPath, network, getContractAddress } = require("../utils");
 const { ASSETS } = require("./consts");
 
+global.progress = ora();
+
 const deployContracts = async () => {
-  console.log("\n\n 📡 Deploying...\n");
+  progress.text = "📡 Deploying...";
+  progress.start();
 
   const fujiadmin = getContractAddress("FujiAdmin");
   const oracle = getContractAddress("FujiOracle");
@@ -32,7 +37,8 @@ const deployContracts = async () => {
     f1155,
   });
 
-  console.log("Finished!");
+  progress.succeed(__filename.split("/").pop());
+  // console.log("Finished!");
 };
 
 const main = async () => {

@@ -3,12 +3,17 @@ const { deployProvider } = require("../tasks/deployProvider");
 const { setDeploymentsPath, network, getContractAddress } = require("../utils");
 const { ASSETS } = require("./consts");
 
+global.progress = ora();
+
 const deployContracts = async () => {
-  console.log("\n\n 📡 Deploying...\n");
+  progress.text = "📡 Deploying...";
+  progress.start();
+  // console.log("\n\n 📡 Deploying...\n");
 
   const hundred = await deployProvider("ProviderHundred");
 
-  console.log("Finished!");
+  // console.log("Finished!");
+  progress.succeed(__filename.split("/").pop());
 };
 
 const main = async () => {

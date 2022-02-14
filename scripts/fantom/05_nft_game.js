@@ -1,6 +1,9 @@
 const chalk = require("chalk");
+const ora = require("ora");
 const { ethers } = require("hardhat");
 const { setDeploymentsPath, network, getContractAddress, deployProxy } = require("../utils");
+
+global.progress = ora();
 
 const getVaultsAddrs = () => {
   const vaultftmdai = getContractAddress("VaultFTMDAI");
@@ -13,13 +16,17 @@ const getVaultsAddrs = () => {
 };
 
 const deployContracts = async () => {
-  console.log("\n\n 📡 Deploying...\n");
+  progress.text = "📡 Deploying...";
+  progress.start();
+  // console.log("\n\n 📡 Deploying...\n");
 
-  console.log("NFTGame: Deploying...");
+  progress.text = "NFTGame: Deploying...";
   const nftgame = await deployProxy("NFTGame", "NFTGame", []);
-  console.log("NFTGame: Deployed at", nftgame.address);
+  progress.text = "NFTGame: Deployed at " + nftgame.address;
 
-  const nftinteractions = await deployProxy("NFTInteractions", "NFTInteractions", [nftgame.address]);
+  const nftinteractions = await deployProxy("NFTInteractions", "NFTInteractions", [
+    nftgame.address,
+  ]);
 
   await nftgame.grantRole(nftgame.GAME_ADMIN(), nftgame.signer.address);
   await nftgame.grantRole(nftgame.GAME_INTERACTOR(), nftinteractions.address);
@@ -34,7 +41,7 @@ const deployContracts = async () => {
 
   await nftgame.setValidVaults(vaults);
 
-  console.log("Finished!");
+  progress.succeed(__filename.split("/").pop());
 };
 
 const main = async () => {

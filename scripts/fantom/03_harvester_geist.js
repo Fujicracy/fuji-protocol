@@ -1,18 +1,25 @@
 const chalk = require("chalk");
+const ora = require("ora");
 const { deployVaultHarvester } = require("../tasks/deployVaultHarvester");
 const { updateFujiAdmin } = require("../tasks/updateFujiAdmin");
 const { setDeploymentsPath, network, getContractAddress } = require("../utils");
 const { ASSETS } = require("./consts");
 
+global.progress = ora().start();
+global.progressPrefix = __filename.split("/").pop()
+global.console.log = (...args) => {
+  progress.text = `${progressPrefix}: ${args.join(" ")}`;
+}
+
 const deployContracts = async () => {
-  console.log("\n\n 📡 Deploying...\n");
+  console.log("📡 Deploying...");
 
   const fujiadmin = getContractAddress("FujiAdmin");
   const vaultharvester = await deployVaultHarvester();
 
   await updateFujiAdmin(fujiadmin, { vaultharvester });
 
-  console.log("Finished!");
+  progress.succeed(progressPrefix);
 };
 
 const main = async () => {

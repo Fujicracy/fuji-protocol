@@ -1,4 +1,5 @@
 const chalk = require("chalk");
+const ora = require("ora");
 const { deployController } = require("../tasks/deployController");
 const { deployFlasher } = require("../tasks/deployFlasher");
 const { deployFliquidator } = require("../tasks/deployFliquidator");
@@ -18,8 +19,14 @@ const { updateVault } = require("../tasks/updateVault");
 const { setDeploymentsPath, network } = require("../utils");
 const { ASSETS, SPOOKY_ROUTER_ADDR } = require("./consts");
 
+global.progress = ora().start();
+global.progressPrefix = __filename.split("/").pop()
+global.console.log = (...args) => {
+  progress.text = `${progressPrefix}: ${args.join(" ")}`;
+}
+
 const deployContracts = async () => {
-  console.log("\n\n 📡 Deploying...\n");
+  console.log("📡 Deploying...");
 
   const treasury = "0x40578F7902304e0e34d7069Fb487ee57F841342e";
   // Functional Contracts
@@ -85,7 +92,7 @@ const deployContracts = async () => {
     f1155,
   });
 
-  console.log("Finished!");
+  progress.succeed(progressPrefix);
 };
 
 const main = async () => {

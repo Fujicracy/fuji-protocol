@@ -1,0 +1,150 @@
+const { ethers, upgrades } = require("hardhat");
+
+const { getContractAt, getContractFactory } = ethers;
+
+const { WrapperBuilder } = require("redstone-evm-connector");
+
+const SPOOKY_ROUTER_ADDR = "0xF491e7B69E4244ad4002BC14e878a34207E38c29";
+const TREASURY_ADDR = "0xb98d4D4e205afF4d4755E9Df19BD0B8BD4e0f148"; // Deployer
+
+const DEBUG = false;
+
+const ASSETS = {
+  FTM: {
+    name: "ftm",
+    nameUp: "FTM",
+    address: "0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF", // fantom
+    oracle: "0xf4766552D15AE4d256Ad41B6cf2933482B0680dc",
+    aToken: "0x39B3bd37208CBaDE74D0fcBDBb12D606295b430a",
+    decimals: 18,
+  },
+  DAI: {
+    name: "dai",
+    nameUp: "DAI",
+    address: "0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E", // fantom
+    oracle: "0x91d5DEFAFfE2854C7D02F50c80FA1fdc8A721e52",
+    aToken: "0x07E6332dD090D287d3489245038daF987955DCFB",
+    decimals: 18,
+  }
+};
+
+// iterate through all ASSETS and create pairs
+const getVaults = () => {
+  const assets = Object.values(ASSETS);
+  const vaults = [];
+  assets.forEach((collateral, i1) => {
+    assets.forEach((debt, i2) => {
+      if (i1 !== i2) {
+        vaults.push({
+          name: `vault${collateral.name}${debt.name}`,
+          collateral,
+          debt,
+        });
+      }
+    });
+  });
+  return vaults;
+};
+
+/**
+ * Quick fixture provides testing system for only one vault (ftm-dai) and minimum functionality for nft-game testing.
+ * Only scream provider is available. 
+ */
+const quickFixture = async ([wallet]) => {
+  // Step 0: Common
+  const tokens = {};
+  for (const asset in ASSETS) {
+    tokens[`${ASSETS[asset].name}`] = await getContractAt("IERC20", ASSETS[asset].address);
+  }
+  const swapper = await getContractAt("IUniswapV2Router02", SPOOKY_ROUTER_ADDR);
+
+  // Step 1: Base Contracts
+  const FujiAdmin = await getContractFactory("FujiAdmin");
+  const fujiadmin = await upgrades.deployProxy(FujiAdmin, []);
+
+  const F1155 = await getContractFactory("FujiERC1155");
+  const f1155 = await upgrades.deployProxy(F1155, []);
+
+  const FujiOracle = await getContractFactory("FujiOracle");
+  const oracle = await FujiOracle.deploy(
+    Object.values(ASSETS).map((asset) => asset.address),
+    Object.values(ASSETS).map((asset) => asset.oracle)
+  );
+
+  const NFTGame = await getContractFactory("NFTGame");
+  const nftgame = await upgrades.deployProxy(NFTGame, [[1, 2, 3, 4]]);
+
+  const NFTInteractions = await getContractFactory("NFTInteractions");
+  const nftinteractions = await upgrades.deployProxy(NFTInteractions, [nftgame.address]);
+
+  const wrappednftinteractions = WrapperBuilder
+    .wrapLite(nftinteractions)
+    .usingPriceFeed("redstone", { asset: "ENTROPY" });
+
+  await wrappednftinteractions.authorizeSignerEntropyFeed("0x0C39486f770B26F5527BBBf942726537986Cd7eb");
+
+  // Step 2: Providers
+  const ProviderScream = await getContractFactory("ProviderScream");
+  const scream = await ProviderScream.deploy([]);
+
+  // Log if debug is set true
+  if (DEBUG) {
+    console.log("fujiadmin", fujiadmin.address);
+    console.log("f1155", f1155.address);
+    console.log("oracle", oracle.address);
+    console.log("nftgame", nftgame.address);
+    console.log("nftinteractions", nftinteractions.address);
+    console.log("scream", scream.address);
+  }
+
+  // Setp 3: Vaults
+  const FujiVaultFTM = await getContractFactory("FujiVaultFTM");
+  // deploy a vault for each entry in ASSETS
+  const vaults = {};
+  for (const { name, collateral, debt } of getVaults()) {
+    const vault = await upgrades.deployProxy(FujiVaultFTM, [
+      fujiadmin.address,
+      oracle.address,
+      collateral.address,
+      debt.address,
+    ]);
+
+    if (DEBUG) {
+      console.log(name, vault.address);
+    }
+
+    await f1155.setPermit(vault.address, true);
+    await vault.setFujiERC1155(f1155.address);
+    await vault.setNFTGame(nftgame.address);
+    await fujiadmin.allowVault(vault.address, true);
+    await vault.setProviders(
+      [
+        scream.address,
+      ]
+    );
+
+    vaults[name] = vault;
+  }
+
+  // Step 4: Setup
+  await fujiadmin.setTreasury(TREASURY_ADDR);
+  await nftgame.grantRole(nftgame.GAME_ADMIN(), nftgame.signer.address);
+  await nftgame.grantRole(nftgame.GAME_INTERACTOR(), nftinteractions.address);
+
+  return {
+    ...tokens,
+    ...vaults,
+    scream,
+    nftgame,
+    nftinteractions,
+    oracle,
+    fujiadmin,
+    f1155
+  };
+};
+
+module.exports = {
+  quickFixture,
+  ASSETS,
+  VAULTS: getVaults(),
+};

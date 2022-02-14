@@ -93,7 +93,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     emit ValidVaultsChanged(vaults);
   }
 
-  function setGamePhases(uint256[3] memory newPhasesTimestamps) external {
+  function setGamePhases(uint256[4] memory newPhasesTimestamps) external {
     require(hasRole(GAME_ADMIN, msg.sender), "No permission");
     gamePhaseTimestamps = newPhasesTimestamps;
   }
@@ -127,7 +127,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     } 
   }
 
-  function userLock(address user, uint256 boostNumber) external {
+  function userLock(address user, uint256 boostNumber) external returns(uint256 lockedNFTId) {
     require(hasRole(GAME_INTERACTOR, msg.sender), "No permission");
     require(userdata[user].lockedNFTId == 0, "user laready locked!");
 
@@ -146,13 +146,14 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     uint256 finalScore = userdata[user].accruedPoints * boostNumber / 100;
 
     userdata[user].accruedPoints = uint128(finalScore);
-    userdata[user].lockedNFTId = uint256(
+    lockedNFTId = uint256(
       keccak256(
         abi.encodePacked(user, finalScore)
     ));
+    userdata[user].lockedNFTId = lockedNFTId;
 
     // Mint the lockedNFT for user
-    _mint(user, userdata[user].lockedNFTId, 1, "");
+    _mint(user, lockedNFTId, 1, "");
 
     // Burn the crates and cards remaining for user
     uint256 balance;

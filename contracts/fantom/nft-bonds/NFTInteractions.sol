@@ -42,7 +42,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   /**
    * @dev Final score locked
    */
-  event LockedScore(address user, uint256 amount);
+  event LockedScore(address user);
 
   uint256 public constant CRATE_COMMON_ID = 1;
   uint256 public constant CRATE_EPIC_ID = 2;
@@ -225,7 +225,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     emit CratesOpened(crateId, amount);
   }
 
-  function lockFinalScore() extrnal {
+  function lockFinalScore() external {
     // trading-phase only
     uint256 phase = nftGame.whatPhase();
     require(phase >= 2, "wrong game phase to lock");
@@ -233,7 +233,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     nftGame.userLock(msg.sender, boostNumber);
 
     // Emit event
-
+    LockedScore(msg.sender);
   }
 
   /// Read-only functions

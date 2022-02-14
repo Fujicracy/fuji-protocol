@@ -154,7 +154,12 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     // Mint the lockedNFT for user
     _mint(user, userdata[user].lockedNFTId, 1, "");
 
-    //TODO Burn the crates and cards remaining for user
+    // Burn the crates and cards remaining for user
+    uint256 balance;
+    for (uint256 index = 1; index <= 11; index++) {
+      balance = balanceOf(user, index);
+      _burn(user, index, balance);
+    }
   }
 
   function mint(address user, uint256 id, uint256 amount) external {

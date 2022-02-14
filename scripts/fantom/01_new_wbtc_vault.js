@@ -7,8 +7,8 @@ const { updateVault } = require("../tasks/updateVault");
 const { setDeploymentsPath, network, getContractAddress } = require("../utils");
 const { ASSETS } = require("./consts");
 
-global.progress = ora().start();
 global.progressPrefix = __filename.split("/").pop()
+global.progress = ora().start(progressPrefix + ": Starting...");
 global.console.log = (...args) => {
   progress.text = `${progressPrefix}: ${args.join(" ")}`;
 }

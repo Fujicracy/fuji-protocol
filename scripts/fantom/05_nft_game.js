@@ -3,8 +3,8 @@ const ora = require("ora");
 const { ethers } = require("hardhat");
 const { setDeploymentsPath, network, getContractAddress, deployProxy } = require("../utils");
 
-global.progress = ora().start();
 global.progressPrefix = __filename.split("/").pop()
+global.progress = ora().start(progressPrefix + ": Starting...");
 global.console.log = (...args) => {
   progress.text = `${progressPrefix}: ${args.join(" ")}`;
 }

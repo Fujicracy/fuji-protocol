@@ -7,11 +7,14 @@ const { updateVault } = require("../tasks/updateVault");
 const { setDeploymentsPath, network, getContractAddress } = require("../utils");
 const { ASSETS } = require("./consts");
 
-global.progress = ora();
+global.progressPrefix = __filename.split("/").pop()
+global.progress = ora().start(progressPrefix + ": Starting...");
+global.console.log = (...args) => {
+  progress.text = `${progressPrefix}: ${args.join(" ")}`;
+}
 
 const deployContracts = async () => {
-  progress.text = "📡 Deploying...";
-  progress.start();
+  console.log("📡 Deploying...");
 
   const fujiadmin = getContractAddress("FujiAdmin");
   const oracle = getContractAddress("FujiOracle");
@@ -37,8 +40,7 @@ const deployContracts = async () => {
     f1155,
   });
 
-  progress.succeed(__filename.split("/").pop());
-  // console.log("Finished!");
+  progress.succeed(progressPrefix);
 };
 
 const main = async () => {

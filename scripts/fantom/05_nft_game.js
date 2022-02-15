@@ -3,7 +3,11 @@ const ora = require("ora");
 const { ethers } = require("hardhat");
 const { setDeploymentsPath, network, getContractAddress, deployProxy } = require("../utils");
 
-global.progress = ora();
+global.progressPrefix = __filename.split("/").pop()
+global.progress = ora().start(progressPrefix + ": Starting...");
+global.console.log = (...args) => {
+  progress.text = `${progressPrefix}: ${args.join(" ")}`;
+}
 
 const getVaultsAddrs = () => {
   const vaultftmdai = getContractAddress("VaultFTMDAI");
@@ -16,13 +20,10 @@ const getVaultsAddrs = () => {
 };
 
 const deployContracts = async () => {
-  progress.text = "📡 Deploying...";
-  progress.start();
-  // console.log("\n\n 📡 Deploying...\n");
+  console.log("📡 Deploying...");
 
-  progress.text = "NFTGame: Deploying...";
   const nftgame = await deployProxy("NFTGame", "NFTGame", []);
-  progress.text = "NFTGame: Deployed at " + nftgame.address;
+  console.log("Deployed at " + nftgame.address);
 
   const nftinteractions = await deployProxy("NFTInteractions", "NFTInteractions", [
     nftgame.address,
@@ -41,7 +42,7 @@ const deployContracts = async () => {
 
   await nftgame.setValidVaults(vaults);
 
-  progress.succeed(__filename.split("/").pop());
+  progress.succeed(progressPrefix);
 };
 
 const main = async () => {

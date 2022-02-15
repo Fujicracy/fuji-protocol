@@ -1,19 +1,21 @@
 const chalk = require("chalk");
+const ora = require("ora");
 const { deployProvider } = require("../tasks/deployProvider");
 const { setDeploymentsPath, network, getContractAddress } = require("../utils");
 const { ASSETS } = require("./consts");
 
-global.progress = ora();
+global.progressPrefix = __filename.split("/").pop()
+global.progress = ora().start(progressPrefix + ": Starting...");
+global.console.log = (...args) => {
+  progress.text = `${progressPrefix}: ${args.join(" ")}`;
+}
 
 const deployContracts = async () => {
-  progress.text = "📡 Deploying...";
-  progress.start();
-  // console.log("\n\n 📡 Deploying...\n");
+  console.log("📡 Deploying...");
 
   const hundred = await deployProvider("ProviderHundred");
 
-  // console.log("Finished!");
-  progress.succeed(__filename.split("/").pop());
+  progress.succeed(progressPrefix);
 };
 
 const main = async () => {

@@ -5,20 +5,21 @@ const { updateFujiAdmin } = require("../tasks/updateFujiAdmin");
 const { setDeploymentsPath, network, getContractAddress } = require("../utils");
 const { ASSETS } = require("./consts");
 
-global.progress = ora();
+global.progressPrefix = __filename.split("/").pop()
+global.progress = ora().start(progressPrefix + ": Starting...");
+global.console.log = (...args) => {
+  progress.text = `${progressPrefix}: ${args.join(" ")}`;
+}
 
 const deployContracts = async () => {
-  progress.text = "📡 Deploying...";
-  progress.start();
-  // console.log("\n\n 📡 Deploying...\n");
+  console.log("📡 Deploying...");
 
   const fujiadmin = getContractAddress("FujiAdmin");
   const vaultharvester = await deployVaultHarvester();
 
   await updateFujiAdmin(fujiadmin, { vaultharvester });
 
-  // console.log("Finished!");
-  progress.succeed(__filename.split("/").pop());
+  progress.succeed(progressPrefix);
 };
 
 const main = async () => {

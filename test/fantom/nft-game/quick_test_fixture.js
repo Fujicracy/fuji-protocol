@@ -1,6 +1,6 @@
 const { ethers, upgrades } = require("hardhat");
 
-const { getContractAt, getContractFactory } = ethers;
+const { getContractAt, getContractFactory, provider } = ethers;
 
 const { WrapperBuilder } = require("redstone-evm-connector");
 
@@ -28,6 +28,10 @@ const ASSETS = {
   }
 };
 
+const {
+  parseUnits
+} = require("../../helpers");
+
 // iterate through all ASSETS and create pairs
 const getVaults = () => {
   const assets = Object.values(ASSETS);
@@ -47,8 +51,11 @@ const getVaults = () => {
 };
 
 /**
- * Quick fixture provides testing system for only one vault (ftm-dai) and minimum functionality for nft-game testing.
- * Only scream provider is available. 
+ * Quick fixture provides a minimal testing setup for nft-game testing.
+ * Only 'vaultftmdai' is available.
+ * Only scream provider is available.
+ * Crate prices are artificially low.
+ * Crate rewards are simplified.
  */
 const quickFixture = async ([wallet]) => {
   // Step 0: Common
@@ -122,14 +129,59 @@ const quickFixture = async ([wallet]) => {
         scream.address,
       ]
     );
+    await vault.setActiveProvider(scream.address);
 
     vaults[name] = vault;
   }
 
-  // Step 4: Setup
+  // Step 4: General Setup
   await fujiadmin.setTreasury(TREASURY_ADDR);
+
+  // Step 5: Specific Game Set-up
   await nftgame.grantRole(nftgame.GAME_ADMIN(), nftgame.signer.address);
   await nftgame.grantRole(nftgame.GAME_INTERACTOR(), nftinteractions.address);
+
+  // Only one vault for quick testing
+  await nftgame.setValidVaults([vaults['vaultftmdai'].address]);
+
+  const now = (await provider.getBlock("latest")).timestamp;
+  const week = 60 * 60 * 24 * 7;
+  const phases = [
+    now + week,
+    now + 2 * week,
+    now + 3 * week,
+    now + 4 *week
+  ];
+
+  await nftgame.setGamePhases(phases);
+
+  const crateIds = [
+    await nftinteractions.CRATE_COMMON_ID(),
+    await nftinteractions.CRATE_EPIC_ID(),
+    await nftinteractions.CRATE_LEGENDARY_ID(),
+  ];
+
+  const pointsDecimals = await nftgame.POINTS_DECIMALS();
+
+  // Simplified low crate prices just for testing
+  const prices = [2, 4, 8].map((e) => parseUnits(e, pointsDecimals));
+
+  for (let i = 0; i < prices.length; i++) {
+    await nftinteractions.setCratePrice(crateIds[i], prices[i]);
+  }
+
+  // Simplified reward factors just for testing
+  const rewardfactors = [
+    [0, 0, 1, 2, 25],
+    [0, 0, 1, 4, 50],
+  ];
+
+  for (let i = 0; i < rewardfactors.length; i++) {
+    await nftinteractions.setCrateRewards(
+      crateIds[i],
+      rewardfactors[i].map((e) => e * prices[i])
+    );
+  }
 
   return {
     ...tokens,

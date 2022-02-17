@@ -183,6 +183,11 @@ const quickFixture = async ([wallet]) => {
     );
   }
 
+  const cardIds = [
+    await nftinteractions.NFT_CARD_ID_START(),
+    await nftinteractions.NFT_CARD_ID_END()
+  ];
+
   return {
     ...tokens,
     ...vaults,
@@ -191,7 +196,9 @@ const quickFixture = async ([wallet]) => {
     nftinteractions,
     oracle,
     fujiadmin,
-    f1155
+    f1155,
+    crateIds,
+    cardIds
   };
 };
 

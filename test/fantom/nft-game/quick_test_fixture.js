@@ -197,6 +197,7 @@ const quickFixture = async ([wallet]) => {
     oracle,
     fujiadmin,
     f1155,
+    now,
     crateIds,
     cardIds
   };

@@ -371,8 +371,16 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
   function _isCrateOrCardId(uint256[] memory ids) internal pure returns(bool isSpecialID) {
     for (uint256 index = 0; index < ids.length; index++) {
-      if( ids[index] <= 11 ) {
+      if( ids[index] > 0 || ids[index] <= 11 ) {
         isSpecialID = true;
+      }
+    }
+  }
+
+  function _isPointsId(uint256[] memory ids) internal pure returns(bool isPointsID) {
+    for (uint256 index = 0; index < ids.length; index++) {
+      if( ids[index] == 0 ) {
+        isPointsID = true;
       }
     }
   }
@@ -390,6 +398,9 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     to;
     amounts;
     data;
+    if (_isPointsId(ids)) {
+      revert("Game points not transferable");
+    }
     if ( whatPhase() == 3) {
       require(!_isCrateOrCardId(ids), "gamePhase: Id not transferible");
     }

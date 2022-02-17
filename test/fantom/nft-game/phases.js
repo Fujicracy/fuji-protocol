@@ -15,10 +15,12 @@ const {
   formatUnitsToNum,
   evmSnapshot,
   evmRevert,
+  evmSetNextBlockTimestamp,
   timeTravel,
 } = require("../../helpers");
 
 const FULL_FIXTURE = false;
+const DEBUG = true;
 
 if (FULL_FIXTURE) {
   const { ASSETS, VAULTS } = require("../utils");
@@ -29,7 +31,8 @@ if (FULL_FIXTURE) {
 // ACTIONS TO TEST FOR EACH PHASE
 // Points Accumulation | Crate Buying | Crate Opening | Locking | Crate Trading | NFT Card Trading
 
-describe("NFT Bond Logic", function () {
+describe("NFT Bond Phase Tests", function () {
+  console.log("\t"+"NOTE: all test are required to run in series.");
   before(async function () {
     this.users = await ethers.getSigners();
 
@@ -58,6 +61,9 @@ describe("NFT Bond Logic", function () {
   describe("Before Game Start", function () {
 
     it("Should return 0, when calling nftGame.whatPhase()", async function() {
+      if (DEBUG) {
+        console.log("\t"+"timestamp-0", (await provider.getBlock("latest")).timestamp);
+      }
       await expect(await this.f.nftgame.whatPhase()).to.eq(0);
     });
 
@@ -65,7 +71,7 @@ describe("NFT Bond Logic", function () {
       const vault = this.f.vaultftmdai;
       const depositAmount = parseUnits(2500);
       const borrowAmount = parseUnits(250);
-      const time = 60 * 60 * 24 * 5; // 5 days
+      const time = 60 * 60 * 24 * 6; // 6 days
 
       await vault.connect(this.user).depositAndBorrow(depositAmount, borrowAmount, {
         value: depositAmount,
@@ -95,11 +101,14 @@ describe("NFT Bond Logic", function () {
   describe("After Accumulation Phase start", function () {
 
     before(async function() {
-      const time = 60 * 60 * 24 * 3; // 3 more days since last time travel
+      const time = 60 * 60 * 24 * 2; // 2 days fater last time travel
       await timeTravel(time);
     });
 
     it("Should return 1, when calling nftGame.whatPhase()", async function() {
+      if (DEBUG) {
+        console.log("\t"+"timestamp-1", (await provider.getBlock("latest")).timestamp);
+      }
       await expect(await this.f.nftgame.whatPhase()).to.eq(1);
     });
 
@@ -115,7 +124,7 @@ describe("NFT Bond Logic", function () {
       const borrowAmount = parseUnits(250);
 
       await vault.connect(this.user).borrow(borrowAmount);
-      const time = 60 * 60 * 24 * 2; // 2 more days since last time travel
+      const time = 60 * 60 * 24 * 4; // 4 more days since last time travel
       await timeTravel(time);
 
       // Force minting debt to pretend interest accrued
@@ -126,11 +135,10 @@ describe("NFT Bond Logic", function () {
     });
 
     it("Should allow to buy crates", async function () {
-
       const cratesIdsArray = this.f.crateIds;
       for (let index = 0; index < cratesIdsArray.length; index++) {
-        await this.f.nftinteractions.connect(this.user).mintCrates(cratesIdsArray[index], 2);
-        await expect(await this.f.nftgame.balanceOf(this.user.address, cratesIdsArray[index])).to.eq(2);
+        await this.f.nftinteractions.connect(this.user).mintCrates(cratesIdsArray[index], 3);
+        await expect(await this.f.nftgame.balanceOf(this.user.address, cratesIdsArray[index])).to.eq(3);
       }
     });
 
@@ -139,10 +147,10 @@ describe("NFT Bond Logic", function () {
         this.user.address,
         this.otherUser.address,
         this.f.crateIds[0],
-        1,
+        2,
         []
       );
-      await expect(await this.f.nftgame.balanceOf(this.otherUser.address, this.f.crateIds[0])).to.eq(1);
+      await expect(await this.f.nftgame.balanceOf(this.otherUser.address, this.f.crateIds[0])).to.eq(2);
     });
 
     it("Should allow to open crates", async function () {
@@ -150,7 +158,7 @@ describe("NFT Bond Logic", function () {
         .wrapLite(this.f.nftinteractions.connect(this.otherUser))
         .usingPriceFeed("redstone", { asset: "ENTROPY" });
       await wrappednftinteractions.openCrate(this.f.crateIds[0], 1);
-      await expect(await this.f.nftgame.balanceOf(this.otherUser.address, this.f.crateIds[0])).to.eq(0);
+      await expect(await this.f.nftgame.balanceOf(this.otherUser.address, this.f.crateIds[0])).to.eq(1);
     });
 
     it("Should be able to hold and transfer cards", async function () {
@@ -158,17 +166,17 @@ describe("NFT Bond Logic", function () {
       await this.f.nftgame.mint(
         this.user.address,
         this.f.cardIds[0],
-        1
+        2
       );
-      await expect(await this.f.nftgame.balanceOf(this.user.address, this.f.cardIds[0])).to.eq(1);
+      await expect(await this.f.nftgame.balanceOf(this.user.address, this.f.cardIds[0])).to.eq(2);
       await this.f.nftgame.connect(this.user).safeTransferFrom(
         this.user.address,
         this.otherUser.address,
         this.f.cardIds[0],
-        1,
+        2,
         []
       );
-      await expect(await this.f.nftgame.balanceOf(this.otherUser.address, this.f.cardIds[0])).to.be.gt(0);
+      await expect(await this.f.nftgame.balanceOf(this.otherUser.address, this.f.cardIds[0])).to.be.gte(2);
     });
 
     it("Should revert if try to call 'lockFinalScore'", async function () {
@@ -178,11 +186,14 @@ describe("NFT Bond Logic", function () {
 
   describe("After Trading Phase starts",function () {
     before(async function() {
-      const time = 60 * 60 * 24 * 5; // 5 more days since last time travel
+      const time = 60 * 60 * 24 * 3; // 3 days after the last times travel
       await timeTravel(time);
     });
 
     it("Should return 2, when calling nftGame.whatPhase()", async function() {
+      if (DEBUG) {
+        console.log("\t"+"timestamp-2", (await provider.getBlock("latest")).timestamp);
+      }
       await expect(await this.f.nftgame.whatPhase()).to.eq(2);
     });
 
@@ -191,7 +202,7 @@ describe("NFT Bond Logic", function () {
       const vault = this.f.vaultftmdai;
       const borrowAmount = parseUnits(250);
       await vault.connect(this.user).borrow(borrowAmount);
-      const time = 60 * 60 * 24 * 2; // 2 more days since last time travel
+      const time = 60 * 60 * 24 * 4; // 4 more days since last time travel
       await timeTravel(time);
 
       // Force minting debt to pretend interest accrued
@@ -216,7 +227,7 @@ describe("NFT Bond Logic", function () {
         1,
         []
       );
-      await expect(await this.f.nftgame.balanceOf(this.otherUser.address, this.f.crateIds[0])).to.eq(1);
+      await expect(await this.f.nftgame.balanceOf(this.otherUser.address, this.f.crateIds[0])).to.eq(2);
     });
 
     it("Should allow to open crates", async function () {
@@ -224,11 +235,11 @@ describe("NFT Bond Logic", function () {
         .wrapLite(this.f.nftinteractions.connect(this.otherUser))
         .usingPriceFeed("redstone", { asset: "ENTROPY" });
       await wrappednftinteractions.openCrate(this.f.crateIds[0], 1);
-      await expect(await this.f.nftgame.balanceOf(this.otherUser.address, this.f.crateIds[0])).to.eq(0);
+      await expect(await this.f.nftgame.balanceOf(this.otherUser.address, this.f.crateIds[0])).to.eq(1);
     });
 
     it("Should be able to hold and transfer cards", async function () {
-      await expect(await this.f.nftgame.balanceOf(this.otherUser.address, this.f.cardIds[0])).to.eq(1);
+      await expect(await this.f.nftgame.balanceOf(this.otherUser.address, this.f.cardIds[0])).to.be.gte(1);
       await this.f.nftgame.connect(this.otherUser).safeTransferFrom(
         this.otherUser.address,
         this.user.address,
@@ -236,7 +247,7 @@ describe("NFT Bond Logic", function () {
         1,
         []
       );
-      await expect(await this.f.nftgame.balanceOf(this.user.address, this.f.cardIds[0])).to.be.gt(0);
+      await expect(await this.f.nftgame.balanceOf(this.user.address, this.f.cardIds[0])).to.be.gte(1);
     });
 
     it("Should lock user final FinalScore", async function () {
@@ -248,8 +259,75 @@ describe("NFT Bond Logic", function () {
       for (let index = 0; index < crateIdsArray.length; index++) {
         await expect(await this.f.nftgame.balanceOf(this.user.address, crateIdsArray[index])).to.eq(0);  
       }
+      await expect(await this.f.nftgame.balanceOf(this.user.address, this.f.cardIds[0])).to.eq(0);
+      await expect(await this.f.nftgame.balanceOf(this.user.address, this.f.cardIds[1])).to.eq(0);
     });
-      
+  });
+
+  describe("After Bonding Phase starts", function() {
+    before(async function() {
+      const time = 60 * 60 * 24 * 3; // 3 days after last time travel
+      await timeTravel(time);
+    });
+
+    it("Should return 3, when calling nftGame.whatPhase()", async function() {
+      if (DEBUG) {
+        console.log("\t"+"timestamp-3", (await provider.getBlock("latest")).timestamp);
+      }
+      await expect(await this.f.nftgame.whatPhase()).to.eq(3);
+    });
+
+    it("Should not accumulate more points", async function() {
+      const userPointsInitial = await this.f.nftgame.balanceOf(this.user.address, 0);
+      const vault = this.f.vaultftmdai;
+      const borrowAmount = parseUnits(250);
+      await vault.connect(this.user).borrow(borrowAmount);
+      const time = 60 * 60 * 24 * 4; // 4 more days since last time travel
+      await timeTravel(time);
+
+      // Force minting debt to pretend interest accrued
+      await this.f.f1155.mint(this.user.address, 1, parseUnits(5));
+      await vault.updateF1155Balances();
+
+      const userPointsFwd = await this.f.nftgame.balanceOf(this.user.address, 0);
+      await expect(userPointsInitial).to.eq(userPointsFwd);
+    });
+
+    it("Should revert if ulocked user tries to buy crates", async function () {
+      await expect(this.f.nftinteractions.connect(this.user).mintCrates(this.f.crateIds[0], 1))
+      .to.be.revertedWith("wrong game phase!");
+    });
+
+    it("Should revert if unlocked user tries to transfer crates", async function () {
+      await expect(await this.f.nftgame.balanceOf(this.otherUser.address, this.f.crateIds[0])).to.be.gt(0);
+      await expect(
+        this.f.nftgame.connect(this.otherUser).safeTransferFrom(
+          this.otherUser.address,
+          this.user.address,
+          this.f.crateIds[0],
+          1,
+          []
+        )
+      ).to.be.revertedWith("gamePhase: Id not transferible");
+    });
+
+    it("Should revert if admin tries to force mint cards", async function () {
+      await expect(this.f.nftgame.mint(this.user.address, this.f.cardIds[0], 1))
+      .to.be.revertedWith("gamePhase: Id not transferible");
+    });
+
+    it("Should revert if unlocked user tries to transfer cards", async function () {
+      await expect(await this.f.nftgame.balanceOf(this.otherUser.address, this.f.cardIds[0])).to.be.gt(0);
+      await expect(
+        this.f.nftgame.connect(this.otherUser).safeTransferFrom(
+          this.otherUser.address,
+          this.user.address,
+          this.f.cardIds[0],
+          1,
+          []
+        )
+      ).to.be.revertedWith("gamePhase: Id not transferible");
+    });
 
   });
 });

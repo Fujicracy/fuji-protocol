@@ -136,7 +136,7 @@ describe("NFT Bond Logic", function () {
     });
   });
 
-  describe("Point System", function () {
+  describe.only("Point System", function () {
     before(async function () {
       await evmRevert(this.evmSnapshot0);
       for (let i = 0; i < VAULTS.length; i += 1) {

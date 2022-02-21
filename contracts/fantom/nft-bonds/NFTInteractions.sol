@@ -75,7 +75,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   * @notice Set address for NFTGame contract
   */
   function setNFTGame(address _nftGame) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
     nftGame = NFTGame(_nftGame);
   }
 
@@ -83,8 +83,8 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   * @notice sets the prices for the crates
   */
   function setCratePrice(uint256 crateId, uint256 price) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
-    require(crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID, "Invalid crate ID");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID, "Invalid crate ID!");
     cratePrices[crateId] = price;
     emit CratePriceChanged(crateId, price);
   }
@@ -93,7 +93,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   * @notice sets probability intervals for crate rewards
   */
   function setProbabilityIntervals(uint256[] memory intervals) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
     probabilityIntervals = intervals;
   }
 
@@ -102,7 +102,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   * rewards are an array, with each element corresponding to the points multiplier value
   */
   function setCrateRewards(uint256 crateId, uint256[] memory rewards) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
     crateRewards[crateId] = rewards;
     emit CrateRewardsChanged(crateId, rewards);
   }
@@ -112,8 +112,8 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   * @dev boost is a base 100 number. In example, boost = 115, 15% boost. 1.15 for computation. 
   */
   function setCardBoost(uint256 cardId, uint256 boost) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
-    require(boost >= 100, "boost not > 100!");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(boost >= 100, "Boost not > 100!");
     cardBoost[cardId] = boost;
     emit CardBoostChanged(cardId, boost);
   }
@@ -123,7 +123,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * Admin function required by redstone-evm-connector (oracle).
    */
   function authorizeSignerEntropyFeed(address _trustedSigner) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
     _authorizeSigner(_trustedSigner);
   }
 
@@ -132,7 +132,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * Admin function required by redstone-evm-connector (oracle).
    */
   function setMaxEntropyDelay(uint256 _maxDelay) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
     _setMaxDelay(_maxDelay);
   }
 
@@ -148,12 +148,12 @@ contract NFTInteractions is FujiPriceAware, Initializable {
 
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
-      "Invalid crate ID"
+      "Invalid crate ID!"
     );
 
     uint256 price = cratePrices[crateId] * amount;
     require(price > 0, "Price not set");
-    require(nftGame.balanceOf(msg.sender, nftGame.POINTS_ID()) >= price, "Not enough points");
+    require(nftGame.balanceOf(msg.sender, nftGame.POINTS_ID()) >= price, "Not enough points!");
 
     nftGame.burn(msg.sender, nftGame.POINTS_ID(), price);
 
@@ -172,10 +172,10 @@ contract NFTInteractions is FujiPriceAware, Initializable {
 
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
-      "Invalid crate ID"
+      "Invalid crate ID!"
     );
-    require(nftGame.balanceOf(msg.sender, crateId) >= amount, "Not enough crates");
-    require(crateRewards[crateId].length == probabilityIntervals.length, "Rewards not set");
+    require(nftGame.balanceOf(msg.sender, crateId) >= amount, "Not enough crates!");
+    require(crateRewards[crateId].length == probabilityIntervals.length, "Rewards not set!");
 
     uint256 pointsAmount = 0;
     uint256[NFT_CARD_ID_END - NFT_CARD_ID_START + 1] memory cardsAmount;

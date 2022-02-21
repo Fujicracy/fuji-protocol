@@ -69,7 +69,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   uint256[4] public gamePhaseTimestamps;
 
   modifier onlyVault() {
-    require(isValidVault(msg.sender), "only valid vault caller!");
+    require(isValidVault(msg.sender), "Not valid vault!");
     _;
   }
 
@@ -90,13 +90,13 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   * @notice Sets the list of vaults that count towards the game
   */
   function setValidVaults(address[] memory vaults) external {
-    require(hasRole(GAME_ADMIN, msg.sender), "No permission");
+    require(hasRole(GAME_ADMIN, msg.sender), "No permission!");
     validVaults = vaults;
     emit ValidVaultsChanged(vaults);
   }
 
   function setGamePhases(uint256[4] memory newPhasesTimestamps) external {
-    require(hasRole(GAME_ADMIN, msg.sender), "No permission");
+    require(hasRole(GAME_ADMIN, msg.sender), "No permission!");
     gamePhaseTimestamps = newPhasesTimestamps;
   }
 
@@ -120,10 +120,10 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     if (phase > 0) {
       // Reads state of debt as per last 'borrow()' or 'payback()' call
       uint256 debt = getUserDebt(user);
-      balanceChange = _convertToDebtUnits(balanceChange, decimals);
 
       if (userdata[user].rateOfAccrual != 0) {
         // Compound points from previous state, considering current 'borrow()' or 'payback()' amount change.
+        balanceChange = _convertToDebtUnits(balanceChange, decimals);
         _compoundPoints(user, isPayback ? debt + balanceChange : debt - balanceChange, phase);
       }
       _updateUserInfo(user, uint128(debt), phase);
@@ -131,8 +131,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   function userLock(address user, uint256 boostNumber) external returns(uint256 lockedNFTId) {
-    require(hasRole(GAME_INTERACTOR, msg.sender), "No permission");
-    require(userdata[user].lockedNFTId == 0, "user already locked!");
+    require(hasRole(GAME_INTERACTOR, msg.sender), "No permission!");
+    require(userdata[user].lockedNFTId == 0, "User already locked!");
 
     uint256 phase = getPhase();
     uint256 debt = getUserDebt(user);
@@ -167,10 +167,10 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   function mint(address user, uint256 id, uint256 amount) external {
-    require(hasRole(GAME_INTERACTOR, msg.sender), "No permission");
+    require(hasRole(GAME_INTERACTOR, msg.sender), "No permission!");
     // accumulation and trading
     uint256 phase = getPhase();
-    require(phase >= 1, "wrong game phase!");
+    require(phase >= 1, "Wrong game phase!");
 
     if (id == POINTS_ID) {
       _mintPoints(user, amount);
@@ -181,16 +181,16 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   function burn(address user, uint256 id, uint256 amount) external {
-    require(hasRole(GAME_INTERACTOR, msg.sender), "No permission");
+    require(hasRole(GAME_INTERACTOR, msg.sender), "No permission!");
     // accumulation, trading and bonding
     uint256 phase = getPhase();
-    require(phase >= 1, "wrong game phase!");
+    require(phase >= 1, "Wrong game phase!");
 
     if (id == POINTS_ID) {
       uint256 debt = getUserDebt(user);
       _compoundPoints(user, debt, phase);
       _updateUserInfo(user, uint128(debt), phase);
-      require(userdata[user].accruedPoints >= amount, "Not enough points");
+      require(userdata[user].accruedPoints >= amount, "Not enough points!");
       userdata[user].accruedPoints -= uint128(amount);
     } else {
       _burn(user, id, amount);
@@ -204,8 +204,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   function claimBonusPoints() public {}
 
   function setMerkleRoot(bytes32 _merkleRoot) external {
-    require(hasRole(GAME_ADMIN, msg.sender), "No permission");
-    require(_merkleRoot[0] != 0, "empty merkleRoot!");
+    require(hasRole(GAME_ADMIN, msg.sender), "No permission!");
+    require(_merkleRoot[0] != 0, "Empty merkleRoot!");
     merkleRoot = _merkleRoot;
   }
 
@@ -399,10 +399,10 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     amounts;
     data;
     if (_isPointsId(ids)) {
-      revert("Game points not transferable");
+      revert("Game points not transferable!");
     }
     if ( getPhase() == 3) {
-      require(!_isCrateOrCardId(ids), "gamePhase: Id not transferible");
+      require(!_isCrateOrCardId(ids), "GamePhase: Id not transferable!");
     }
   }
 }

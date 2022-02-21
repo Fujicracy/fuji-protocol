@@ -114,7 +114,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     uint256 decimals
   ) external onlyVault {
 
-    uint256 phase = whatPhase();
+    uint256 phase = getPhase();
     console.log("isPayback", isPayback, "phase", phase);
     // Only once accumulation has begun
     if (phase > 0) {
@@ -134,7 +134,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     require(hasRole(GAME_INTERACTOR, msg.sender), "No permission");
     require(userdata[user].lockedNFTId == 0, "user already locked!");
 
-    uint256 phase = whatPhase();
+    uint256 phase = getPhase();
     uint256 debt = getUserDebt(user);
 
     // If user was accumulating points, need to do final compounding
@@ -169,7 +169,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   function mint(address user, uint256 id, uint256 amount) external {
     require(hasRole(GAME_INTERACTOR, msg.sender), "No permission");
     // accumulation and trading
-    uint256 phase = whatPhase();
+    uint256 phase = getPhase();
     require(phase >= 1, "wrong game phase!");
 
     if (id == POINTS_ID) {
@@ -183,7 +183,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   function burn(address user, uint256 id, uint256 amount) external {
     require(hasRole(GAME_INTERACTOR, msg.sender), "No permission");
     // accumulation, trading and bonding
-    uint256 phase = whatPhase();
+    uint256 phase = getPhase();
     require(phase >= 1, "wrong game phase!");
 
     if (id == POINTS_ID) {
@@ -231,7 +231,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   function balanceOf(address user, uint256 id) public view override returns (uint256) {
     // To query points balance, id == 0
     if (id == POINTS_ID) {
-      return _pointsBalanceOf(user, whatPhase());
+      return _pointsBalanceOf(user, getPhase());
     } else {
       // Otherwise check ERC1155
       return super.balanceOf(user, id);
@@ -273,9 +273,9 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   /**
   * @notice Returns a value that helps identify appropriate game logic according to game phase.
   */
-  function whatPhase() public view returns (uint256 phase) {
+  function getPhase() public view returns (uint256 phase) {
     phase = block.timestamp;
-    console.log("whatphase() block.timestamp", phase);
+    console.log("getPhase() block.timestamp", phase);
     if(phase < gamePhaseTimestamps[0]) {
       phase = 0; // Pre-game
     } else if (phase >= gamePhaseTimestamps[0] && phase < gamePhaseTimestamps[1]) {
@@ -401,7 +401,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     if (_isPointsId(ids)) {
       revert("Game points not transferable");
     }
-    if ( whatPhase() == 3) {
+    if ( getPhase() == 3) {
       require(!_isCrateOrCardId(ids), "gamePhase: Id not transferible");
     }
   }

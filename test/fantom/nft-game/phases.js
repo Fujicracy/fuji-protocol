@@ -60,11 +60,11 @@ describe("NFT Bond Phase Tests", function () {
 
   describe("Before Game Start", function () {
 
-    it("Should return 0, when calling nftGame.whatPhase()", async function() {
+    it("Should return 0, when calling nftGame.getPhase()", async function() {
       if (DEBUG) {
         console.log("\t"+"timestamp-0", (await provider.getBlock("latest")).timestamp);
       }
-      await expect(await this.f.nftgame.whatPhase()).to.eq(0);
+      await expect(await this.f.nftgame.getPhase()).to.eq(0);
     });
 
     it("No Points Accumulation", async function () {
@@ -105,11 +105,11 @@ describe("NFT Bond Phase Tests", function () {
       await timeTravel(time);
     });
 
-    it("Should return 1, when calling nftGame.whatPhase()", async function() {
+    it("Should return 1, when calling nftGame.getPhase()", async function() {
       if (DEBUG) {
         console.log("\t"+"timestamp-1", (await provider.getBlock("latest")).timestamp);
       }
-      await expect(await this.f.nftgame.whatPhase()).to.eq(1);
+      await expect(await this.f.nftgame.getPhase()).to.eq(1);
     });
 
     it("Should return zero, when calling nftgame.balanceOf()", async function () {
@@ -190,11 +190,11 @@ describe("NFT Bond Phase Tests", function () {
       await timeTravel(time);
     });
 
-    it("Should return 2, when calling nftGame.whatPhase()", async function() {
+    it("Should return 2, when calling nftGame.getPhase()", async function() {
       if (DEBUG) {
         console.log("\t"+"timestamp-2", (await provider.getBlock("latest")).timestamp);
       }
-      await expect(await this.f.nftgame.whatPhase()).to.eq(2);
+      await expect(await this.f.nftgame.getPhase()).to.eq(2);
     });
 
     it("Should not accumulate more points", async function() {
@@ -270,11 +270,11 @@ describe("NFT Bond Phase Tests", function () {
       await timeTravel(time);
     });
 
-    it("Should return 3, when calling nftGame.whatPhase()", async function() {
+    it("Should return 3, when calling nftGame.getPhase()", async function() {
       if (DEBUG) {
         console.log("\t"+"timestamp-3", (await provider.getBlock("latest")).timestamp);
       }
-      await expect(await this.f.nftgame.whatPhase()).to.eq(3);
+      await expect(await this.f.nftgame.getPhase()).to.eq(3);
     });
 
     it("Should not accumulate more points", async function() {

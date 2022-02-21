@@ -143,7 +143,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    */
   function mintCrates(uint256 crateId, uint256 amount) external {
     // accumulation and trading only
-    uint256 phase = nftGame.whatPhase();
+    uint256 phase = nftGame.getPhase();
     require(phase > 0 && phase < 3, "wrong game phase!");
 
     require(
@@ -167,7 +167,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    */
   function openCrate(uint256 crateId, uint256 amount) external {
     // accumulation and trading only
-    uint256 phase = nftGame.whatPhase();
+    uint256 phase = nftGame.getPhase();
     require(phase > 0 && phase < 3, "wrong game phase!");
 
     require(
@@ -227,7 +227,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
 
   function lockFinalScore() external {
     // trading-phase only
-    uint256 phase = nftGame.whatPhase();
+    uint256 phase = nftGame.getPhase();
     require(phase >= 2, "wrong game phase!");
     uint256 boostNumber = computeBoost(msg.sender);
     uint256 lockedNFTId = nftGame.userLock(msg.sender, boostNumber);

@@ -251,16 +251,30 @@ describe("NFT Bond Phase Tests", function () {
     });
 
     it("Should lock user final FinalScore", async function () {
+      const cardIdsArray = this.f.cardIds;
+      const cardPreLockBalance = [];
+      for (let index = 0; index < cardIdsArray.length; index++) {
+        cardPreLockBalance.push(await this.f.nftgame.balanceOf(this.user.address, cardIdsArray[index]));
+      }
+
       await this.f.nftinteractions.connect(this.user).lockFinalScore();
       const userData = await this.f.nftgame.userdata(this.user.address);
       const lockNFTId = userData.lockedNFTID;
       await expect(lockNFTId).to.be.gt(0);
+
       const crateIdsArray = this.f.crateIds;
       for (let index = 0; index < crateIdsArray.length; index++) {
         await expect(await this.f.nftgame.balanceOf(this.user.address, crateIdsArray[index])).to.eq(0);  
       }
-      await expect(await this.f.nftgame.balanceOf(this.user.address, this.f.cardIds[0])).to.eq(0);
-      await expect(await this.f.nftgame.balanceOf(this.user.address, this.f.cardIds[1])).to.eq(0);
+      let tempBalance;
+      for (let index = 0; index < cardIdsArray.length; index++) {
+        tempBalance = cardPreLockBalance[index];
+        if (tempBalance > 0) {
+          tempBalance = tempBalance.sub(1); // Burned during the 'lockFinalScore()'
+        }
+        await expect(await this.f.nftgame.balanceOf(this.user.address, cardIdsArray[index]))
+        .to.eq(tempBalance);  
+      }
     });
   });
 

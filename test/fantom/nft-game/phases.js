@@ -85,16 +85,16 @@ describe("NFT Bond Phase Tests", function () {
 
     it("Should revert if trying to buy crates", async function () {
       await expect(this.f.nftinteractions.connect(this.user).mintCrates(this.f.crateIds[0], 1))
-      .to.be.revertedWith("wrong game phase!");
+      .to.be.revertedWith("Wrong game phase!");
     });
 
     it("Should revert if force mint cards", async function () {
       await expect(this.f.nftgame.mint(this.user.address, this.f.cardIds[0], 1))
-      .to.be.revertedWith("wrong game phase!");
+      .to.be.revertedWith("Wrong game phase!");
     });
 
     it("Should revert if try to call 'lockFinalScore'", async function () {
-      await expect(this.f.nftinteractions.connect(this.user).lockFinalScore()).to.be.revertedWith("wrong game phase!");
+      await expect(this.f.nftinteractions.connect(this.user).lockFinalScore()).to.be.revertedWith("Wrong game phase!");
     });
   });
 
@@ -180,7 +180,7 @@ describe("NFT Bond Phase Tests", function () {
     });
 
     it("Should revert if try to call 'lockFinalScore'", async function () {
-      await expect(this.f.nftinteractions.connect(this.user).lockFinalScore()).to.be.revertedWith("wrong game phase!");
+      await expect(this.f.nftinteractions.connect(this.user).lockFinalScore()).to.be.revertedWith("Wrong game phase!");
     });
   });
 
@@ -253,7 +253,7 @@ describe("NFT Bond Phase Tests", function () {
     it("Should lock user final FinalScore", async function () {
       await this.f.nftinteractions.connect(this.user).lockFinalScore();
       const userData = await this.f.nftgame.userdata(this.user.address);
-      const lockNFTId = userData.lockedNFTId;
+      const lockNFTId = userData.lockedNFTID;
       await expect(lockNFTId).to.be.gt(0);
       const crateIdsArray = this.f.crateIds;
       for (let index = 0; index < crateIdsArray.length; index++) {
@@ -295,7 +295,7 @@ describe("NFT Bond Phase Tests", function () {
 
     it("Should revert if ulocked user tries to buy crates", async function () {
       await expect(this.f.nftinteractions.connect(this.user).mintCrates(this.f.crateIds[0], 1))
-      .to.be.revertedWith("wrong game phase!");
+      .to.be.revertedWith("Wrong game phase!");
     });
 
     it("Should revert if unlocked user tries to transfer crates", async function () {
@@ -308,12 +308,12 @@ describe("NFT Bond Phase Tests", function () {
           1,
           []
         )
-      ).to.be.revertedWith("gamePhase: Id not transferible");
+      ).to.be.revertedWith("GamePhase: Id not transferable");
     });
 
     it("Should revert if admin tries to force mint cards", async function () {
       await expect(this.f.nftgame.mint(this.user.address, this.f.cardIds[0], 1))
-      .to.be.revertedWith("gamePhase: Id not transferible");
+      .to.be.revertedWith("GamePhase: Id not transferable");
     });
 
     it("Should revert if unlocked user tries to transfer cards", async function () {
@@ -326,7 +326,7 @@ describe("NFT Bond Phase Tests", function () {
           1,
           []
         )
-      ).to.be.revertedWith("gamePhase: Id not transferible");
+      ).to.be.revertedWith("GamePhase: Id not transferable");
     });
 
   });

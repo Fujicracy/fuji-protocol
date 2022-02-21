@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-/// @title NFT Game 
+/// @title NFT Game
 /// @author fuji-dao.eth
 /// @notice Contract that handles logic for the NFT Bond game
 
@@ -16,18 +16,22 @@ import "../../interfaces/IERC20Extended.sol";
 import "hardhat/console.sol";
 
 contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable {
+  /**
+   * @dev Changing valid vaults
+   */
+  event ValidVaultsChanged(address[] validVaults);
 
   /**
-  * @dev Changing valid vaults
-  */
-  event ValidVaultsChanged(address[] validVaults);
+   * @dev Changing a amount of cards
+   */
+  event CardAmountChanged(uint256 newAmount);
 
   struct UserData {
     uint64 lastTimestampUpdate;
     uint64 rateOfAccrual;
     uint128 accruedPoints;
     uint128 recordedDebtBalance;
-    uint256 lockedNFTId;
+    uint256 lockedNFTID;
   }
 
   // Constants
@@ -35,24 +39,22 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   uint256 constant SEC = 86400;
 
   // uint256 private constant MINIMUM_DAILY_DEBT_POSITION = 1;
-  // uint256 private constant POINT_PER_DEBTUNIT_PER_DAY = 1; 
+  // uint256 private constant POINT_PER_DEBTUNIT_PER_DAY = 1;
 
   uint256 public constant POINTS_ID = 0;
   uint256 public constant POINTS_DECIMALS = 5;
 
   address private constant _FTM = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
 
-
   // Roles
 
   bytes32 public constant GAME_ADMIN = keccak256("GAME_ADMIN");
   bytes32 public constant GAME_INTERACTOR = keccak256("GAME_INTERACTOR");
 
-
   // Sate Variables
 
-  uint64 public gameLaunchTimestamp;
   bytes32 public merkleRoot;
+  uint256 public nftCardsAmount;
 
   mapping(address => UserData) public userdata;
 
@@ -62,10 +64,10 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   address[] public validVaults;
 
   // Timestamps for each game phase
-    // 0 = start game launch
-    // 1 = end of accumulation
-    // 2 = end of trade and lock
-    // 3 = end of bond
+  // 0 = start game launch
+  // 1 = end of accumulation
+  // 2 = end of trade and lock
+  // 3 = end of bond
   uint256[4] public gamePhaseTimestamps;
 
   modifier onlyVault() {
@@ -80,6 +82,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     _setupRole(GAME_ADMIN, msg.sender);
     _setupRole(GAME_INTERACTOR, msg.sender);
     gamePhaseTimestamps = phases;
+    nftCardsAmount = 8;
   }
 
   /// State Changing Functions
@@ -87,8 +90,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   // Admin functions
 
   /**
-  * @notice Sets the list of vaults that count towards the game
-  */
+   * @notice Sets the list of vaults that count towards the game
+   */
   function setValidVaults(address[] memory vaults) external {
     require(hasRole(GAME_ADMIN, msg.sender), "No permission!");
     validVaults = vaults;
@@ -100,20 +103,29 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     gamePhaseTimestamps = newPhasesTimestamps;
   }
 
+  /**
+   * @notice sets card amount in game.
+   */
+  function setnftCardsAmount(uint256 newnftCardsAmount) external {
+    require(hasRole(GAME_ADMIN, msg.sender), "No permission!");
+    require(newnftCardsAmount > nftCardsAmount, "Wrong value!");
+    nftCardsAmount = newnftCardsAmount;
+    emit CardAmountChanged(newnftCardsAmount);
+  }
+
   // Game control functions
 
   /**
-  * @notice Compute user's total debt in Fuji in all vaults of this chain.
-  * @dev Called whenever a user performs a 'borrow()' or 'payback()' call on {FujiVault} contract
-  * @dev Must consider all fuji active vaults, and different decimals.
-  */
+   * @notice Compute user's total debt in Fuji in all vaults of this chain.
+   * @dev Called whenever a user performs a 'borrow()' or 'payback()' call on {FujiVault} contract
+   * @dev Must consider all fuji active vaults, and different decimals.
+   */
   function checkStateOfPoints(
     address user,
     uint256 balanceChange,
     bool isPayback,
     uint256 decimals
   ) external onlyVault {
-
     uint256 phase = getPhase();
     console.log("isPayback", isPayback, "phase", phase);
     // Only once accumulation has begun
@@ -127,12 +139,12 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
         _compoundPoints(user, isPayback ? debt + balanceChange : debt - balanceChange, phase);
       }
       _updateUserInfo(user, uint128(debt), phase);
-    } 
+    }
   }
 
-  function userLock(address user, uint256 boostNumber) external returns(uint256 lockedNFTId) {
+  function userLock(address user, uint256 boostNumber) external returns (uint256 lockedNFTID) {
     require(hasRole(GAME_INTERACTOR, msg.sender), "No permission!");
-    require(userdata[user].lockedNFTId == 0, "User already locked!");
+    require(userdata[user].lockedNFTID == 0, "User already locked!");
 
     uint256 phase = getPhase();
     uint256 debt = getUserDebt(user);
@@ -146,27 +158,28 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     _updateUserInfo(user, uint128(debt), phase);
 
     // Compute and assign final score
-    uint256 finalScore = userdata[user].accruedPoints * boostNumber / 100;
+    uint256 finalScore = (userdata[user].accruedPoints * boostNumber) / 100;
 
     userdata[user].accruedPoints = uint128(finalScore);
-    lockedNFTId = uint256(
-      keccak256(
-        abi.encodePacked(user, finalScore)
-    ));
-    userdata[user].lockedNFTId = lockedNFTId;
+    lockedNFTID = uint256(keccak256(abi.encodePacked(user, finalScore)));
+    userdata[user].lockedNFTID = lockedNFTID;
 
     // Mint the lockedNFT for user
-    _mint(user, lockedNFTId, 1, "");
+    _mint(user, lockedNFTID, 1, "");
 
     // Burn the crates and cards remaining for user
     uint256 balance;
-    for (uint256 index = 1; index <= 11; index++) {
+    for (uint256 index = 1; index < 4 + nftCardsAmount; index++) {
       balance = balanceOf(user, index);
       _burn(user, index, balance);
     }
   }
 
-  function mint(address user, uint256 id, uint256 amount) external {
+  function mint(
+    address user,
+    uint256 id,
+    uint256 amount
+  ) external {
     require(hasRole(GAME_INTERACTOR, msg.sender), "No permission!");
     // accumulation and trading
     uint256 phase = getPhase();
@@ -180,7 +193,11 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     totalSupply[id] += amount;
   }
 
-  function burn(address user, uint256 id, uint256 amount) external {
+  function burn(
+    address user,
+    uint256 id,
+    uint256 amount
+  ) external {
     require(hasRole(GAME_INTERACTOR, msg.sender), "No permission!");
     // accumulation, trading and bonding
     uint256 phase = getPhase();
@@ -199,8 +216,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   /**
-  * @notice Claims bonus points given to user before 'gameLaunchTimestamp'.
-  */
+   * @notice Claims bonus points given to user before 'gameLaunchTimestamp'.
+   */
   function claimBonusPoints() public {}
 
   function setMerkleRoot(bytes32 _merkleRoot) external {
@@ -209,13 +226,12 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     merkleRoot = _merkleRoot;
   }
 
-
   // View Functions
 
   /**
-  * @notice Checks if a given vault is a valid vault
-  */
-  function isValidVault(address vault) public view returns (bool){
+   * @notice Checks if a given vault is a valid vault
+   */
+  function isValidVault(address vault) public view returns (bool) {
     for (uint256 i = 0; i < validVaults.length; i++) {
       if (validVaults[i] == vault) {
         return true;
@@ -225,9 +241,9 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   /**
-  * @notice Returns the balance of token Id.
-  * @dev If id == 0, refers to point score system, else is calls ERC1155 NFT balance.
-  */
+   * @notice Returns the balance of token Id.
+   * @dev If id == 0, refers to point score system, else is calls ERC1155 NFT balance.
+   */
   function balanceOf(address user, uint256 id) public view override returns (uint256) {
     // To query points balance, id == 0
     if (id == POINTS_ID) {
@@ -239,18 +255,18 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   /**
-  * @notice Compute user's rate of point accrual.
-  * @dev Unit should be points per second.
-  */
+   * @notice Compute user's rate of point accrual.
+   * @dev Unit should be points per second.
+   */
   function computeRateOfAccrual(address user) public view returns (uint256) {
-    return getUserDebt(user) * (10**POINTS_DECIMALS) / SEC;
+    return (getUserDebt(user) * (10**POINTS_DECIMALS)) / SEC;
   }
 
   /**
-  * @notice Compute user's (floored) total debt in Fuji in all vaults of this chain.
-  * @dev Must consider all fuji's active vaults, and different decimals.
-  * @dev This function floors decimals to the nearest integer amount of debt. Example 1.78784 usdc = 1 unit of debt
-  */
+   * @notice Compute user's (floored) total debt in Fuji in all vaults of this chain.
+   * @dev Must consider all fuji's active vaults, and different decimals.
+   * @dev This function floors decimals to the nearest integer amount of debt. Example 1.78784 usdc = 1 unit of debt
+   */
   function getUserDebt(address user) public view returns (uint256) {
     uint256 totalDebt = 0;
 
@@ -264,19 +280,25 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     return totalDebt;
   }
 
-  function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155Upgradeable, AccessControlUpgradeable) returns (bool) {
+  function supportsInterface(bytes4 interfaceId)
+    public
+    view
+    virtual
+    override(ERC1155Upgradeable, AccessControlUpgradeable)
+    returns (bool)
+  {
     return super.supportsInterface(interfaceId);
   }
 
   // Internal Functions
 
   /**
-  * @notice Returns a value that helps identify appropriate game logic according to game phase.
-  */
+   * @notice Returns a value that helps identify appropriate game logic according to game phase.
+   */
   function getPhase() public view returns (uint256 phase) {
     phase = block.timestamp;
     console.log("getPhase() block.timestamp", phase);
-    if(phase < gamePhaseTimestamps[0]) {
+    if (phase < gamePhaseTimestamps[0]) {
       phase = 0; // Pre-game
     } else if (phase >= gamePhaseTimestamps[0] && phase < gamePhaseTimestamps[1]) {
       phase = 1; // Accumulation
@@ -288,57 +310,68 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   /**
-  * @notice Compute user's accrued points since user's 'lastTimestampUpdate' or at the end of accumulation phase.
-  * @dev Includes points earned from debt balance and points from earned by debt accrued interest.
-  */
-  function _computeAccrued(address user, uint256 debt, uint256 phase) internal view returns (uint256) {
+   * @notice Compute user's accrued points since user's 'lastTimestampUpdate' or at the end of accumulation phase.
+   * @dev Includes points earned from debt balance and points from earned by debt accrued interest.
+   */
+  function _computeAccrued(
+    address user,
+    uint256 debt,
+    uint256 phase
+  ) internal view returns (uint256) {
     UserData memory info = userdata[user];
-    uint256 timeStampDiff = 0;
-    uint256 estimateInterestEarned = 0;
+    uint256 timeStampDiff;
+    uint256 estimateInterestEarned;
     console.log("_computeAccrued");
 
-    if (phase == 1 && info.lastTimestampUpdate != 0 ) {
+    if (phase == 1 && info.lastTimestampUpdate != 0) {
       timeStampDiff = _timestampDifference(block.timestamp, info.lastTimestampUpdate);
       estimateInterestEarned = debt - info.recordedDebtBalance;
       console.log("timestampDiff", timeStampDiff);
       console.log("debt", debt, "info.recordedDebtBalance", info.recordedDebtBalance);
       console.log("estimateInterestEarned", estimateInterestEarned);
-    } else if (phase > 1 && info.recordedDebtBalance > 0 ) {
+    } else if (phase > 1 && info.recordedDebtBalance > 0) {
       timeStampDiff = _timestampDifference(gamePhaseTimestamps[1], info.lastTimestampUpdate);
       estimateInterestEarned = timeStampDiff == 0 ? 0 : debt - info.recordedDebtBalance;
       console.log("timestampDiff", timeStampDiff);
       console.log("debt", debt, "info.recordedDebtBalance", info.recordedDebtBalance);
       console.log("estimateInterestEarned", estimateInterestEarned);
     }
-    
+
     uint256 pointsFromRate = timeStampDiff * (info.rateOfAccrual);
     // Points from interest are an estimate within 99% accuracy in 90 day range.
-    uint256 pointsFromInterest = estimateInterestEarned * (timeStampDiff + 1 days) / 2;
-    console.log("pointsFromRate",pointsFromRate,"pointsFromInterest",pointsFromInterest);
+    uint256 pointsFromInterest = (estimateInterestEarned * (timeStampDiff + 1 days)) / 2;
+    console.log("pointsFromRate", pointsFromRate, "pointsFromInterest", pointsFromInterest);
 
     return pointsFromRate + pointsFromInterest;
   }
 
   /**
-  * @dev Returns de balance of accrued points of a user.
-  */
+   * @dev Returns de balance of accrued points of a user.
+   */
   function _pointsBalanceOf(address user, uint256 phase) internal view returns (uint256) {
-    console.log("_pointsBalanceOf","accruedPoints",userdata[user].accruedPoints);
+    console.log("_pointsBalanceOf", "accruedPoints", userdata[user].accruedPoints);
     uint256 debt = phase >= 2 ? userdata[user].recordedDebtBalance : getUserDebt(user);
     return userdata[user].accruedPoints + _computeAccrued(user, debt, phase);
   }
 
   /**
-  * @dev Adds 'computeAccrued()' to recorded 'accruedPoints' in UserData and totalSupply
-  * @dev Must update all fields of UserData information.
-  */
-  function _compoundPoints(address user, uint256 debt, uint256 phase) internal {
+   * @dev Adds 'computeAccrued()' to recorded 'accruedPoints' in UserData and totalSupply
+   * @dev Must update all fields of UserData information.
+   */
+  function _compoundPoints(
+    address user,
+    uint256 debt,
+    uint256 phase
+  ) internal {
     uint256 points = _computeAccrued(user, debt, phase);
-
     _mintPoints(user, points);
   }
 
-  function _timestampDifference(uint256 newTimestamp, uint256 oldTimestamp) internal pure returns (uint256) {
+  function _timestampDifference(uint256 newTimestamp, uint256 oldTimestamp)
+    internal
+    pure
+    returns (uint256)
+  {
     return newTimestamp - oldTimestamp;
   }
 
@@ -352,11 +385,15 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     totalSupply[POINTS_ID] += amount;
   }
 
-  function _updateUserInfo(address user, uint128 balance, uint256 phase) internal {
+  function _updateUserInfo(
+    address user,
+    uint128 balance,
+    uint256 phase
+  ) internal {
     if (phase == 1) {
       userdata[user].lastTimestampUpdate = uint64(block.timestamp);
       userdata[user].recordedDebtBalance = uint128(balance);
-      userdata[user].rateOfAccrual = uint64(balance * (10**POINTS_DECIMALS) / SEC);
+      userdata[user].rateOfAccrual = uint64((balance * (10**POINTS_DECIMALS)) / SEC);
     } else if (
       phase > 1 &&
       userdata[user].lastTimestampUpdate > 0 &&
@@ -364,22 +401,22 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     ) {
       // Update user data for no more accruing.
       userdata[user].lastTimestampUpdate = uint64(gamePhaseTimestamps[1]);
-      userdata[user].rateOfAccrual = 0; 
+      userdata[user].rateOfAccrual = 0;
       userdata[user].recordedDebtBalance = 0;
     }
   }
 
-  function _isCrateOrCardId(uint256[] memory ids) internal pure returns(bool isSpecialID) {
+  function _isCrateOrCardId(uint256[] memory ids) internal view returns (bool isSpecialID) {
     for (uint256 index = 0; index < ids.length; index++) {
-      if( ids[index] > 0 || ids[index] <= 11 ) {
+      if (ids[index] > 0 || ids[index] <= 4 + nftCardsAmount) {
         isSpecialID = true;
       }
     }
   }
 
-  function _isPointsId(uint256[] memory ids) internal pure returns(bool isPointsID) {
+  function _isPointsId(uint256[] memory ids) internal pure returns (bool isPointsID) {
     for (uint256 index = 0; index < ids.length; index++) {
-      if( ids[index] == 0 ) {
+      if (ids[index] == 0) {
         isPointsID = true;
       }
     }
@@ -401,7 +438,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     if (_isPointsId(ids)) {
       revert("Game points not transferable!");
     }
-    if ( getPhase() == 3) {
+    if (getPhase() == 3) {
       require(!_isCrateOrCardId(ids), "GamePhase: Id not transferable!");
     }
   }

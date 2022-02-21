@@ -183,9 +183,12 @@ const quickFixture = async ([wallet]) => {
     );
   }
 
+  const firstID = await nftinteractions.NFT_CARD_ID_START();
+  const totalCards = await nftgame.nftCardsAmount();
+
   const cardIds = [
-    await nftinteractions.NFT_CARD_ID_START(),
-    await nftinteractions.NFT_CARD_ID_END()
+    firstID,
+    firstID.add(totalCards).sub(1)
   ];
 
   return {

@@ -48,7 +48,6 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   uint256 public constant CRATE_EPIC_ID = 2;
   uint256 public constant CRATE_LEGENDARY_ID = 3;
   uint256 public constant NFT_CARD_ID_START = 4;
-  uint256 public constant NFT_CARD_ID_END = 11;
 
   // CrateID => crate rewards
   mapping(uint256 => uint256[]) crateRewards;
@@ -144,7 +143,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   function mintCrates(uint256 crateId, uint256 amount) external {
     // accumulation and trading only
     uint256 phase = nftGame.getPhase();
-    require(phase > 0 && phase < 3, "wrong game phase!");
+    require(phase > 0 && phase < 3, "Wrong game phase!");
 
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
@@ -168,7 +167,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   function openCrate(uint256 crateId, uint256 amount) external {
     // accumulation and trading only
     uint256 phase = nftGame.getPhase();
-    require(phase > 0 && phase < 3, "wrong game phase!");
+    require(phase > 0 && phase < 3, "Wrong game phase!");
 
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
@@ -178,7 +177,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     require(crateRewards[crateId].length == probabilityIntervals.length, "Rewards not set!");
 
     uint256 pointsAmount = 0;
-    uint256[NFT_CARD_ID_END - NFT_CARD_ID_START + 1] memory cardsAmount;
+    uint256[] memory cardsAmount = new uint256[](nftGame.nftCardsAmount());
 
     uint256 entropyValue = _getEntropy();
     uint256[] memory randomNumbers = LibPseudoRandom.pickRandomNumbers(amount, entropyValue);
@@ -197,7 +196,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
 
       // if the reward is a card determine the card id
       if (isCard) {
-        uint256 step = 1000000 / (NFT_CARD_ID_END - NFT_CARD_ID_START + 1);
+        uint256 step = 1000000 / (nftGame.nftCardsAmount());
         uint256 randomNum = LibPseudoRandom.pickRandomNumbers(1, entropyValue + 1)[0];
         uint256 randomId = 0;
         for (uint256 i = step; i <= randomNum; i += step) {
@@ -228,7 +227,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   function lockFinalScore() external {
     // trading-phase only
     uint256 phase = nftGame.getPhase();
-    require(phase >= 2, "wrong game phase!");
+    require(phase >= 2, "Wrong game phase!");
     uint256 boostNumber = computeBoost(msg.sender);
     uint256 lockedNFTId = nftGame.userLock(msg.sender, boostNumber);
 
@@ -243,7 +242,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * @dev Value is 100 based. In example; 150 is +50% or 1.5 in decimal
    */
   function computeBoost(address user) public view returns(uint256 totalBoost) {
-    for (uint256 index = NFT_CARD_ID_START; index <=  NFT_CARD_ID_END; index++) {
+    for (uint256 index = NFT_CARD_ID_START; index <  NFT_CARD_ID_START + nftGame.nftCardsAmount(); index++) {
       if (nftGame.balanceOf(user, index) > 0) {
         totalBoost += cardBoost[index];
       } 

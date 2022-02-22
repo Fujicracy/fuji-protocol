@@ -98,6 +98,11 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
   function setGamePhases(uint256[4] memory newPhasesTimestamps) external {
     require(hasRole(GAME_ADMIN, msg.sender), "No permission!");
+    uint256 temp =newPhasesTimestamps[0];
+    for (uint256 index = 1; index < newPhasesTimestamps.length; index++) {
+      require(newPhasesTimestamps[index] > temp, "Wrong game phases values!");
+      temp = newPhasesTimestamps[index];
+    }
     gamePhaseTimestamps = newPhasesTimestamps;
   }
 

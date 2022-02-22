@@ -61,7 +61,7 @@ const deployContracts = async () => {
   const pointsDecimals = await nftgame.POINTS_DECIMALS();
 
   // Simplified low crate prices just for testing
-  const prices = [2, 4, 8].map((e) => parseUnits(e, pointsDecimals));
+  const prices = [2, 4, 8].map((e) => ethers.utils.parseUnits(e.toString(), pointsDecimals));
 
   for (let i = 0; i < prices.length; i++) {
     await nftinteractions.setCratePrice(crateIds[i], prices[i]);

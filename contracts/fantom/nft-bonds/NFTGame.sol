@@ -8,6 +8,7 @@ pragma solidity ^0.8.2;
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 import "../../interfaces/IVault.sol";
 import "../../interfaces/IVaultControl.sol";
@@ -55,6 +56,9 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   uint256 public nftCardsAmount;
 
   mapping(address => UserData) public userdata;
+
+  // Address => isClaimed
+  mapping(address => bool) public isClaimed;
 
   // TokenID =>  supply amount
   mapping(uint256 => uint256) public totalSupply;
@@ -226,9 +230,20 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   /**
-   * @notice Claims bonus points given to user before 'gameLaunchTimestamp'.
-   */
-  function claimBonusPoints() public {}
+  * @notice Claims bonus points given to user before 'gameLaunchTimestamp'.
+  */
+  function claimBonusPoints(uint256 pointsToClaim, bytes32[] calldata proof) public {
+    require(!isClaimed[msg.sender], "Points already claimed!");
+    require(_verify(_leaf(msg.sender, pointsToClaim), proof), "Invalid merkle proof");
+
+    // Update state of user (msg.sender)
+    isClaimed[msg.sender] = true;
+    uint256 debt = getUserDebt(msg.sender);
+    _updateUserInfo(msg.sender, uint128(debt));
+    
+    // Mint points
+    _mintPoints(msg.sender, pointsToClaim);
+  }
 
   function setMerkleRoot(bytes32 _merkleRoot) external {
     require(hasRole(GAME_ADMIN, msg.sender), "No permission!");
@@ -441,5 +456,19 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     if (getPhase() == 3) {
       require(!_isCrateOrCardId(ids), "GamePhase: Id not transferable!");
     }
+  }
+
+  /**
+   * @notice hashes using keccak256 the leaf inputs.
+   */
+  function _leaf(address account, uint256 points) internal pure returns (bytes32 hashedLeaf){
+    hashedLeaf = keccak256(abi.encode(account, points));
+  }
+
+  /**
+   * @notice hashes using keccak256 the leaf inputs.
+   */
+  function _verify(bytes32 leaf, bytes32[] memory proof) internal view returns (bool){
+    return MerkleProof.verify(proof, merkleRoot, leaf);
   }
 }

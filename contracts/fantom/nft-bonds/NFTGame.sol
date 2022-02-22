@@ -79,7 +79,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     _setupRole(GAME_ADMIN, msg.sender);
     _setupRole(GAME_INTERACTOR, msg.sender);
-    gamePhaseTimestamps = phases;
+    setGamePhases(phases);
     nftCardsAmount = 8;
   }
 
@@ -96,7 +96,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     emit ValidVaultsChanged(vaults);
   }
 
-  function setGamePhases(uint256[4] memory newPhasesTimestamps) external {
+  function setGamePhases(uint256[4] memory newPhasesTimestamps) public {
     require(hasRole(GAME_ADMIN, msg.sender), "No permission!");
     uint256 temp =newPhasesTimestamps[0];
     for (uint256 index = 1; index < newPhasesTimestamps.length; index++) {

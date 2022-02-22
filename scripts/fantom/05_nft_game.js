@@ -1,6 +1,7 @@
 const chalk = require("chalk");
 const ora = require("ora");
 const { ethers } = require("hardhat");
+const { provider } = ethers;
 const { setDeploymentsPath, network, getContractAddress, deployProxy } = require("../utils");
 
 global.progressPrefix = __filename.split("/").pop()
@@ -41,6 +42,42 @@ const deployContracts = async () => {
   }
 
   await nftgame.setValidVaults(vaults);
+
+  const now = (await provider.getBlock("latest")).timestamp;
+  const week = 60 * 60 * 24 * 7;
+  const phases = [
+    now,
+    now + 1 * week,
+    now + 2 * week,
+    now + 3 *week
+  ];
+
+  const crateIds = [
+    await nftinteractions.CRATE_COMMON_ID(),
+    await nftinteractions.CRATE_EPIC_ID(),
+    await nftinteractions.CRATE_LEGENDARY_ID(),
+  ];
+
+  const pointsDecimals = await nftgame.POINTS_DECIMALS();
+
+  // Simplified low crate prices just for testing
+  const prices = [2, 4, 8].map((e) => parseUnits(e, pointsDecimals));
+
+  for (let i = 0; i < prices.length; i++) {
+    await nftinteractions.setCratePrice(crateIds[i], prices[i]);
+  }
+
+  const rewardfactors = [
+    [0, 0, 1, 2, 25],
+    [0, 0, 1, 4, 50],
+  ];
+
+  for (let i = 0; i < rewardfactors.length; i++) {
+    await nftinteractions.setCrateRewards(
+      crateIds[i],
+      rewardfactors[i].map((e) => e * prices[i])
+    );
+  }
 
   progress.succeed(progressPrefix);
 };

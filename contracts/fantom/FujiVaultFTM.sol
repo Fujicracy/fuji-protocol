@@ -57,8 +57,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
   IFujiAdmin private _fujiAdmin;
   address public override fujiERC1155;
   IFujiOracle public oracle;
-  address public nftGame;
-
+  
   string public name;
 
   uint8 internal _collateralAssetDecimals;
@@ -68,6 +67,8 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
 
   mapping(address => uint256) internal _userFeeTimestamps; // to be used for protocol fee calculation
   uint256 public remainingProtocolFee;
+
+  address public nftGame;
 
   /**
    * @dev Throws if caller is not the 'owner' or the '_controller' address stored in {FujiAdmin}
@@ -737,10 +738,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
 
     emit Borrow(msg.sender, vAssets.borrowAsset, _borrowAmount);
 
-    NFTGame game = NFTGame(nftGame);
-    if (game.isValidVault(address(this))) {
-      game.checkStateOfPoints(msg.sender, _borrowAmount, false, _borrowAssetDecimals);
-    }
+    _afterDebtActionCallback(_borrowAmount, false);
   }
 
   /**
@@ -793,9 +791,17 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
 
     emit Payback(msg.sender, vAssets.borrowAsset, debtBalance);
 
+    _afterDebtActionCallback(amountToPayback, true);
+  }
+
+  /**
+   * @dev Internal hook function after a 'borrow()' or 'payback()' call.
+   * Used to plug functionality. 
+   */
+  function _afterDebtActionCallback(uint256 _amount, bool _isPayback) internal {
     NFTGame game = NFTGame(nftGame);
-    if (game.isValidVault(address(this))) {
-      game.checkStateOfPoints(msg.sender, amountToPayback, true, _borrowAssetDecimals);
+    if (block.timestamp < game.gamePhaseTimestamps(1) && block.timestamp >= game.gamePhaseTimestamps(0) && game.isValidVault(address(this))) {
+      game.checkStateOfPoints(msg.sender, _amount, _isPayback, _borrowAssetDecimals);
     }
   }
 }

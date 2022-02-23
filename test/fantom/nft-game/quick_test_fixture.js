@@ -1,7 +1,6 @@
 const { ethers, upgrades } = require("hardhat");
-const { expect } = require("chai");
 
-const { getContractAt, getContractFactory } = ethers;
+const { getContractAt, getContractFactory, provider } = ethers;
 
 const { WrapperBuilder } = require("redstone-evm-connector");
 
@@ -26,40 +25,12 @@ const ASSETS = {
     oracle: "0x91d5DEFAFfE2854C7D02F50c80FA1fdc8A721e52",
     aToken: "0x07E6332dD090D287d3489245038daF987955DCFB",
     decimals: 18,
-  },
-  USDC: {
-    name: "usdc",
-    nameUp: "USDC",
-    address: "0x04068DA6C83AFCFA0e13ba15A6696662335D5B75", // fantom
-    oracle: "0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c",
-    aToken: "0xe578C856933D8e1082740bf7661e379Aa2A30b26",
-    decimals: 6,
-  },
-  WFTM: {
-    name: "wftm",
-    nameUp: "WFTM",
-    address: "0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83", // fantom
-    oracle: "0xf4766552D15AE4d256Ad41B6cf2933482B0680dc",
-    aToken: "0x39B3bd37208CBaDE74D0fcBDBb12D606295b430a",
-    decimals: 18,
-  },
-  WETH: {
-    name: "weth",
-    nameUp: "WETH",
-    address: "0x74b23882a30290451A17c44f4F05243b6b58C76d", // fantom
-    oracle: "0x11DdD3d147E5b83D01cee7070027092397d63658",
-    aToken: "0x25c130B2624CF12A4Ea30143eF50c5D68cEFA22f",
-    decimals: 18,
-  },
-  WBTC: {
-    name: "wbtc",
-    nameUp: "WBTC",
-    address: "0x321162Cd933E2Be498Cd2267a90534A804051b11", // fantom
-    oracle: "0x8e94C22142F4A64b99022ccDd994f4e9EC86E4B4",
-    aToken: "0x38aCa5484B8603373Acc6961Ecd57a6a594510A3",
-    decimals: 8,
-  },
+  }
 };
+
+const {
+  parseUnits
+} = require("../../helpers");
 
 // iterate through all ASSETS and create pairs
 const getVaults = () => {
@@ -79,47 +50,24 @@ const getVaults = () => {
   return vaults;
 };
 
-// console.log(getVaults());
-
-const syncTime = async function () {
-  const now = Math.ceil(new Date().getTime() / 1000);
-  try {
-    await ethers.provider.send('evm_setNextBlockTimestamp', [now]);
-  } catch (error) {
-    //Skipping time sync - block is ahead of current time
-  }
-};
-
-const fixture = async ([wallet]) => {
+/**
+ * Quick fixture provides a minimal testing setup for nft-game testing.
+ * Only 'vaultftmdai' is available.
+ * Only scream provider is available.
+ * Crate prices are artificially low.
+ * Crate rewards are simplified.
+ */
+const quickFixture = async ([wallet]) => {
   // Step 0: Common
   const tokens = {};
   for (const asset in ASSETS) {
     tokens[`${ASSETS[asset].name}`] = await getContractAt("IERC20", ASSETS[asset].address);
   }
   const swapper = await getContractAt("IUniswapV2Router02", SPOOKY_ROUTER_ADDR);
-  const ftmWrapper = await getContractAt(
-    "contracts/interfaces/IWETH.sol:IWETH",
-    ASSETS.WFTM.address
-  );
 
   // Step 1: Base Contracts
   const FujiAdmin = await getContractFactory("FujiAdmin");
   const fujiadmin = await upgrades.deployProxy(FujiAdmin, []);
-
-  const Fliquidator = await getContractFactory("FliquidatorFTM");
-  const fliquidator = await Fliquidator.deploy([]);
-
-  const Flasher = await getContractFactory("FlasherFTM");
-  const flasher = await Flasher.deploy([]);
-
-  const Harvester = await getContractFactory("VaultHarvesterFTM");
-  const harvester = await Harvester.deploy([]);
-
-  const FujiSwapper = await getContractFactory("SwapperFTM");
-  const fujiSwapper = await FujiSwapper.deploy([]);
-
-  const Controller = await getContractFactory("Controller");
-  const controller = await Controller.deploy([]);
 
   const F1155 = await getContractFactory("FujiERC1155");
   const f1155 = await upgrades.deployProxy(F1155, []);
@@ -143,29 +91,17 @@ const fixture = async ([wallet]) => {
   await wrappednftinteractions.authorizeSignerEntropyFeed("0x0C39486f770B26F5527BBBf942726537986Cd7eb");
 
   // Step 2: Providers
-  const ProviderCream = await getContractFactory("ProviderCream");
-  const cream = await ProviderCream.deploy([]);
   const ProviderScream = await getContractFactory("ProviderScream");
   const scream = await ProviderScream.deploy([]);
-  const ProviderGeist = await getContractFactory("ProviderGeist");
-  const geist = await ProviderGeist.deploy([]);
-  const ProviderHundred = await getContractFactory("ProviderHundred");
-  const hundred = await ProviderHundred.deploy([]);
 
   // Log if debug is set true
   if (DEBUG) {
     console.log("fujiadmin", fujiadmin.address);
-    console.log("fliquidator", fliquidator.address);
-    console.log("flasher", flasher.address);
-    console.log("controller", controller.address);
     console.log("f1155", f1155.address);
     console.log("oracle", oracle.address);
     console.log("nftgame", nftgame.address);
     console.log("nftinteractions", nftinteractions.address);
-    console.log("cream", cream.address);
     console.log("scream", scream.address);
-    console.log("geist", geist.address);
-    console.log("hundred", hundred.address);
   }
 
   // Setp 3: Vaults
@@ -190,54 +126,88 @@ const fixture = async ([wallet]) => {
     await fujiadmin.allowVault(vault.address, true);
     await vault.setProviders(
       [
-        cream.address,
         scream.address,
-        geist.address,
-        hundred.address
       ]
     );
+    await vault.setActiveProvider(scream.address);
 
     vaults[name] = vault;
   }
 
-  // Step 4: Setup
-  await fujiadmin.setFlasher(flasher.address);
-  await fujiadmin.setSwapper(fujiSwapper.address);
-  await fujiadmin.setVaultHarvester(harvester.address);
-  await fujiadmin.setFliquidator(fliquidator.address);
+  // Step 4: General Setup
   await fujiadmin.setTreasury(TREASURY_ADDR);
-  await fujiadmin.setController(controller.address);
-  await fliquidator.setFujiAdmin(fujiadmin.address);
-  await fliquidator.setSwapper(SPOOKY_ROUTER_ADDR);
-  await flasher.setFujiAdmin(fujiadmin.address);
-  await controller.setFujiAdmin(fujiadmin.address);
-  await f1155.setPermit(fliquidator.address, true);
+
+  // Step 5: Specific Game Set-up
   await nftgame.grantRole(nftgame.GAME_ADMIN(), nftgame.signer.address);
   await nftgame.grantRole(nftgame.GAME_INTERACTOR(), nftinteractions.address);
+
+  // Only one vault for quick testing
+  await nftgame.setValidVaults([vaults['vaultftmdai'].address]);
+
+  const now = (await provider.getBlock("latest")).timestamp;
+  const week = 60 * 60 * 24 * 7;
+  const phases = [
+    now + week,
+    now + 2 * week,
+    now + 3 * week,
+    now + 4 *week
+  ];
+
+  await nftgame.setGamePhases(phases);
+
+  const crateIds = [
+    await nftinteractions.CRATE_COMMON_ID(),
+    await nftinteractions.CRATE_EPIC_ID(),
+    await nftinteractions.CRATE_LEGENDARY_ID(),
+  ];
+
+  const pointsDecimals = await nftgame.POINTS_DECIMALS();
+
+  // Simplified low crate prices just for testing
+  const prices = [2, 4, 8].map((e) => parseUnits(e, pointsDecimals));
+
+  for (let i = 0; i < prices.length; i++) {
+    await nftinteractions.setCratePrice(crateIds[i], prices[i]);
+  }
+
+  // Simplified reward factors just for testing
+  const rewardfactors = [
+    [0, 0, 1, 2, 25],
+    [0, 0, 1, 4, 50],
+  ];
+
+  for (let i = 0; i < rewardfactors.length; i++) {
+    await nftinteractions.setCrateRewards(
+      crateIds[i],
+      rewardfactors[i].map((e) => e * prices[i])
+    );
+  }
+
+  const firstID = await nftinteractions.NFT_CARD_ID_START();
+  const totalCards = await nftgame.nftCardsAmount();
+
+  const cardIds = [
+    firstID,
+    firstID.add(totalCards).sub(1)
+  ];
 
   return {
     ...tokens,
     ...vaults,
-    cream,
     scream,
-    geist,
-    hundred,
     nftgame,
     nftinteractions,
     oracle,
     fujiadmin,
-    fliquidator,
-    flasher,
-    controller,
     f1155,
-    swapper,
-    ftmWrapper,
+    now,
+    crateIds,
+    cardIds
   };
 };
 
 module.exports = {
-  syncTime,
-  fixture,
+  quickFixture,
   ASSETS,
   VAULTS: getVaults(),
 };

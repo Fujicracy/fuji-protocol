@@ -33,6 +33,7 @@ const toBN = (amount) => ethers.BigNumber.from(`${amount}`);
 
 const evmSnapshot = async () => ethers.provider.send("evm_snapshot", []);
 const evmRevert = async (id) => ethers.provider.send("evm_revert", [id]);
+const evmSetNextBlockTimestamp = async (timestamp) => ethers.provider.send("evm_setNextBlockTimestamp", [timestamp]);
 
 const FLASHLOAN = {
   AAVE: 0,
@@ -76,6 +77,7 @@ module.exports = {
   toBN,
   evmSnapshot,
   evmRevert,
+  evmSetNextBlockTimestamp,
   checkEthChange,
   checkTokenChange,
   FLASHLOAN,

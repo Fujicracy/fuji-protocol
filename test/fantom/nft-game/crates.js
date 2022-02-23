@@ -69,7 +69,7 @@ describe("NFT Bond Crate System", function () {
 
     it("Buying crate with no set price", async function () {
       await expect(
-        this.f.nftinteractions.connect(this.user).getCrates(this.crateIds[0], 1)
+        this.f.nftinteractions.connect(this.user).mintCrates(this.crateIds[0], 1)
       ).to.be.revertedWith("Price not set");
     });
   });
@@ -93,13 +93,13 @@ describe("NFT Bond Crate System", function () {
     it("Invalid crate ID", async function () {
       const invalidId = 9999;
       await expect(
-        this.f.nftinteractions.connect(this.user).getCrates(invalidId, 1)
+        this.f.nftinteractions.connect(this.user).mintCrates(invalidId, 1)
       ).to.be.revertedWith("Invalid crate ID");
     });
 
     it("Buying crate without points", async function () {
       await expect(
-        this.f.nftinteractions.connect(this.user).getCrates(this.crateIds[0], 1)
+        this.f.nftinteractions.connect(this.user).mintCrates(this.crateIds[0], 1)
       ).to.be.revertedWith("Not enough points");
     });
 
@@ -118,7 +118,7 @@ describe("NFT Bond Crate System", function () {
       for (let i = 0; i < this.crateIds.length; i++) {
         expect(await this.f.nftgame.balanceOf(this.user.address, this.crateIds[i])).to.be.equal(0);
 
-        await this.f.nftinteractions.connect(this.user).getCrates(this.crateIds[i], amount);
+        await this.f.nftinteractions.connect(this.user).mintCrates(this.crateIds[i], amount);
 
         expect(await this.f.nftgame.balanceOf(this.user.address, this.crateIds[i])).to.be.equal(
           amount
@@ -143,7 +143,7 @@ describe("NFT Bond Crate System", function () {
       let newPointsBalance;
 
       for (let i = 0; i < this.crateIds.length; i++) {
-        await this.f.nftinteractions.connect(this.user).getCrates(this.crateIds[i], amount);
+        await this.f.nftinteractions.connect(this.user).mintCrates(this.crateIds[i], amount);
 
         expect(await this.f.nftgame.balanceOf(this.user.address, this.crateIds[i])).to.be.equal(
           amount
@@ -200,7 +200,7 @@ describe("NFT Bond Crate System", function () {
       await this.f.nftinteractions.connect(this.owner).setMaxEntropyDelay(60 * 60 * 24 * 365 * 2);
 
       for (let i = 0; i < this.crateIds.length; i++) {
-        await this.f.nftinteractions.connect(this.user).getCrates(this.crateIds[i], amount);
+        await this.f.nftinteractions.connect(this.user).mintCrates(this.crateIds[i], amount);
       }
     });
 

@@ -43,6 +43,12 @@ describe("NFT Bond Logic", function () {
       );
     });
 
+    it("Set game phases", async function () {
+      await expect(
+        this.f.nftgame.connect(this.user).setGamePhases([0, 1, 2, 3])
+      ).to.be.revertedWith("No permission");
+    });
+
     it("Reverting state of points outside contract", async function () {
       await expect(
         this.f.nftgame.connect(this.admin).checkStateOfPoints(this.user.address, 0, true)

@@ -20,6 +20,11 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   event CratePriceChanged(uint256 crateId, uint256 price);
 
   /**
+   * @dev Changing a card boost
+   */
+  event CardBoostChanged(uint256 cardId, uint256 boost);
+
+  /**
    * @dev Changing crate rewards
    */
   event CrateRewardsChanged(uint256 crateId, uint256[] rewards);
@@ -34,21 +39,28 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    */
   event CratesOpened(uint256 crateId, uint256 amount);
 
+  /**
+   * @dev Final score locked
+   */
+  event LockedScore(address indexed user, uint256 lockedNFTId);
+
   uint256 public constant CRATE_COMMON_ID = 1;
   uint256 public constant CRATE_EPIC_ID = 2;
   uint256 public constant CRATE_LEGENDARY_ID = 3;
   uint256 public constant NFT_CARD_ID_START = 4;
-  uint256 public constant NFT_CARD_ID_END = 11;
 
   // CrateID => crate rewards
   mapping(uint256 => uint256[]) crateRewards;
-  
+
   uint256[] private probabilityIntervals;
 
   NFTGame private nftGame;
 
   // CrateID => crate price
   mapping(uint256 => uint256) public cratePrices;
+
+  // CardID => boost: where boost is a base 100 number.
+  mapping(uint256 => uint256) public cardBoost;
 
   function initialize(address _nftGame) external initializer {
     maxDelay = 3 * 60;
@@ -59,42 +71,53 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   // Admin functions
 
   /**
-  * @notice Set address for NFTGame contract
-  */
+   * @notice Set address for NFTGame contract
+   */
   function setNFTGame(address _nftGame) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
     nftGame = NFTGame(_nftGame);
   }
 
   /**
-
-  * @notice sets the prices for the crates
-  */
+   * @notice sets the prices for the crates
+   */
   function setCratePrice(uint256 crateId, uint256 price) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
-    require(crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID, "Invalid crate ID");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(
+      crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
+      "Invalid crate ID!"
+    );
     cratePrices[crateId] = price;
     emit CratePriceChanged(crateId, price);
   }
 
   /**
-
-  * @notice sets probability intervals for crate rewards
-  */
+   * @notice sets probability intervals for crate rewards
+   */
   function setProbabilityIntervals(uint256[] memory intervals) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
     probabilityIntervals = intervals;
   }
 
   /**
-
-  * @notice sets crate rewards
-  * rewards are an array, with each element corresponding to the points multiplier value
-  */
+   * @notice sets crate rewards
+   * rewards are an array, with each element corresponding to the points multiplier value
+   */
   function setCrateRewards(uint256 crateId, uint256[] memory rewards) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
     crateRewards[crateId] = rewards;
     emit CrateRewardsChanged(crateId, rewards);
+  }
+
+  /**
+   * @notice sets card boost rewards
+   * @dev boost is a base 100 number. In example, boost = 115, 15% boost. 1.15 for computation.
+   */
+  function setCardBoost(uint256 cardId, uint256 boost) external {
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(boost >= 100, "Boost not > 100!");
+    cardBoost[cardId] = boost;
+    emit CardBoostChanged(cardId, boost);
   }
 
   /**
@@ -102,7 +125,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * Admin function required by redstone-evm-connector (oracle).
    */
   function authorizeSignerEntropyFeed(address _trustedSigner) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
     _authorizeSigner(_trustedSigner);
   }
 
@@ -111,7 +134,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * Admin function required by redstone-evm-connector (oracle).
    */
   function setMaxEntropyDelay(uint256 _maxDelay) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
     _setMaxDelay(_maxDelay);
   }
 
@@ -120,15 +143,20 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   /**
    * @notice Burns user points to mint a new crate
    */
-  function getCrates(uint256 crateId, uint256 amount) external {
+  function mintCrates(uint256 crateId, uint256 amount) external {
+    // accumulation and trading only
+    uint256 phase = nftGame.getPhase();
+    require(phase > 0 && phase < 3, "Wrong game phase!");
+    require(!_isLocked(msg.sender), "User already locked!");
+
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
-      "Invalid crate ID"
+      "Invalid crate ID!"
     );
 
     uint256 price = cratePrices[crateId] * amount;
     require(price > 0, "Price not set");
-    require(nftGame.balanceOf(msg.sender, nftGame.POINTS_ID()) >= price, "Not enough points");
+    require(nftGame.balanceOf(msg.sender, nftGame.POINTS_ID()) >= price, "Not enough points!");
 
     nftGame.burn(msg.sender, nftGame.POINTS_ID(), price);
 
@@ -141,15 +169,20 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * @notice opens one crate with the given id
    */
   function openCrate(uint256 crateId, uint256 amount) external {
+    // accumulation and trading only
+    uint256 phase = nftGame.getPhase();
+    require(phase > 0 && phase < 3, "Wrong game phase!");
+    require(!_isLocked(msg.sender), "User already locked!");
+
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
-      "Invalid crate ID"
+      "Invalid crate ID!"
     );
-    require(nftGame.balanceOf(msg.sender, crateId) >= amount, "Not enough crates");
-    require(crateRewards[crateId].length == probabilityIntervals.length, "Rewards not set");
+    require(nftGame.balanceOf(msg.sender, crateId) >= amount, "Not enough crates!");
+    require(crateRewards[crateId].length == probabilityIntervals.length, "Rewards not set!");
 
     uint256 pointsAmount = 0;
-    uint256[NFT_CARD_ID_END - NFT_CARD_ID_START + 1] memory cardsAmount;
+    uint256[] memory cardsAmount = new uint256[](nftGame.nftCardsAmount());
 
     uint256 entropyValue = _getEntropy();
     uint256[] memory randomNumbers = LibPseudoRandom.pickRandomNumbers(amount, entropyValue);
@@ -168,7 +201,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
 
       // if the reward is a card determine the card id
       if (isCard) {
-        uint256 step = 1000000 / (NFT_CARD_ID_END - NFT_CARD_ID_START + 1);
+        uint256 step = 1000000 / nftGame.nftCardsAmount();
         uint256 randomNum = LibPseudoRandom.pickRandomNumbers(1, entropyValue + 1)[0];
         uint256 randomId = 0;
         for (uint256 i = step; i <= randomNum; i += step) {
@@ -196,7 +229,46 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     emit CratesOpened(crateId, amount);
   }
 
+  function lockFinalScore() external {
+    // trading-phase only
+    uint256 phase = nftGame.getPhase();
+    require(phase >= 2, "Wrong game phase!");
+    uint256 boostNumber = computeBoost(msg.sender);
+    uint256 lockedNFTId = nftGame.userLock(msg.sender, boostNumber);
+
+    // Emit locking event
+    LockedScore(msg.sender, lockedNFTId);
+  }
+
+  /// Read-only functions
+
+  /**
+   * @notice Returns the totalBoost of user according to cards in possesion.
+   * @dev Value is 100 based. In example; 150 is +50% or 1.5 in decimal
+   */
+  function computeBoost(address user) public view returns (uint256 totalBoost) {
+    for (
+      uint256 index = NFT_CARD_ID_START;
+      index < NFT_CARD_ID_START + nftGame.nftCardsAmount();
+      index++
+    ) {
+      if (nftGame.balanceOf(user, index) > 0) {
+        totalBoost += cardBoost[index];
+      }
+    }
+  }
+
   /// Internal functions
+
+  /**
+   * @notice returns true if user is already locked.
+   */
+  function _isLocked(address user) internal view returns (bool locked) {
+    (,,,,uint256 lockedID) = nftGame.userdata(user);
+    if (lockedID != 0) {
+      locked = true;
+    }
+  }
 
   /**
    * @notice calls redstone-oracle for entropy value.

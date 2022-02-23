@@ -247,6 +247,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * @dev Value is 100 based. In example; 150 is +50% or 1.5 in decimal
    */
   function computeBoost(address user) public view returns (uint256 totalBoost) {
+    totalBoost = 100;
     for (
       uint256 index = NFT_CARD_ID_START;
       index < NFT_CARD_ID_START + nftGame.nftCardsAmount();

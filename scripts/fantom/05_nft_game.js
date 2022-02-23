@@ -4,11 +4,11 @@ const { ethers } = require("hardhat");
 const { provider } = ethers;
 const { setDeploymentsPath, network, getContractAddress, deployProxy } = require("../utils");
 
-global.progressPrefix = __filename.split("/").pop()
+global.progressPrefix = __filename.split("/").pop();
 global.progress = ora().start(progressPrefix + ": Starting...");
 global.console.log = (...args) => {
   progress.text = `${progressPrefix}: ${args.join(" ")}`;
-}
+};
 
 const getVaultsAddrs = () => {
   const vaultftmdai = getContractAddress("VaultFTMDAI");
@@ -23,7 +23,11 @@ const getVaultsAddrs = () => {
 const deployContracts = async () => {
   console.log("📡 Deploying...");
 
-  const nftgame = await deployProxy("NFTGame", "NFTGame", []);
+  const now = (await provider.getBlock("latest")).timestamp;
+  const week = 60 * 60 * 24 * 7;
+  const phases = [now, now + 1 * week, now + 2 * week, now + 3 * week];
+
+  const nftgame = await deployProxy("NFTGame", "NFTGame", [phases]);
   console.log("Deployed at " + nftgame.address);
 
   const nftinteractions = await deployProxy("NFTInteractions", "NFTInteractions", [
@@ -42,15 +46,6 @@ const deployContracts = async () => {
   }
 
   await nftgame.setValidVaults(vaults);
-
-  const now = (await provider.getBlock("latest")).timestamp;
-  const week = 60 * 60 * 24 * 7;
-  const phases = [
-    now,
-    now + 1 * week,
-    now + 2 * week,
-    now + 3 *week
-  ];
 
   const crateIds = [
     await nftinteractions.CRATE_COMMON_ID(),

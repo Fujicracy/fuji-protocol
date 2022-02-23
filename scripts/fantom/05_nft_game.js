@@ -1,6 +1,14 @@
 const chalk = require("chalk");
+const ora = require("ora");
 const { ethers } = require("hardhat");
+const { provider } = ethers;
 const { setDeploymentsPath, network, getContractAddress, deployProxy } = require("../utils");
+
+global.progressPrefix = __filename.split("/").pop()
+global.progress = ora().start(progressPrefix + ": Starting...");
+global.console.log = (...args) => {
+  progress.text = `${progressPrefix}: ${args.join(" ")}`;
+}
 
 const getVaultsAddrs = () => {
   const vaultftmdai = getContractAddress("VaultFTMDAI");
@@ -15,9 +23,17 @@ const getVaultsAddrs = () => {
 const deployContracts = async () => {
   console.log("\n\n 📡 Deploying...\n");
 
-  console.log("NFTGame: Deploying...");
-  const nftgame = await deployProxy("NFTGame", "NFTGame", []);
-  console.log("NFTGame: Deployed at", nftgame.address);
+  const now = (await provider.getBlock("latest")).timestamp;
+  const week = 60 * 60 * 24 * 7;
+  const phases = [
+    now,
+    now + 1 * week,
+    now + 2 * week,
+    now + 3 * week
+  ];
+
+  const nftgame = await deployProxy("NFTGame", "NFTGame", [phases]);
+  console.log("Deployed at " + nftgame.address);
 
   const nftinteractions = await deployProxy("NFTInteractions", "NFTInteractions", [nftgame.address]);
 
@@ -34,7 +50,34 @@ const deployContracts = async () => {
 
   await nftgame.setValidVaults(vaults);
 
-  console.log("Finished!");
+  const crateIds = [
+    await nftinteractions.CRATE_COMMON_ID(),
+    await nftinteractions.CRATE_EPIC_ID(),
+    await nftinteractions.CRATE_LEGENDARY_ID(),
+  ];
+
+  const pointsDecimals = await nftgame.POINTS_DECIMALS();
+
+  // Simplified low crate prices just for testing
+  const prices = [2, 4, 8].map((e) => ethers.utils.parseUnits(e.toString(), pointsDecimals));
+
+  for (let i = 0; i < prices.length; i++) {
+    await nftinteractions.setCratePrice(crateIds[i], prices[i]);
+  }
+
+  const rewardfactors = [
+    [0, 0, 1, 2, 25],
+    [0, 0, 1, 4, 50],
+  ];
+
+  for (let i = 0; i < rewardfactors.length; i++) {
+    await nftinteractions.setCrateRewards(
+      crateIds[i],
+      rewardfactors[i].map((e) => e * prices[i])
+    );
+  }
+
+  progress.succeed(progressPrefix);
 };
 
 const main = async () => {

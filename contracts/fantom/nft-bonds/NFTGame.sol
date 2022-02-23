@@ -239,7 +239,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     // Update state of user (msg.sender)
     isClaimed[msg.sender] = true;
     uint256 debt = getUserDebt(msg.sender);
-    _updateUserInfo(msg.sender, uint128(debt));
+    uint256 phase = getPhase();
+    _updateUserInfo(msg.sender, uint128(debt), phase);
     
     // Mint points
     _mintPoints(msg.sender, pointsToClaim);

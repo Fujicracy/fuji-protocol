@@ -4,6 +4,8 @@ const { ethers } = require("hardhat");
 const { provider } = ethers;
 const { setDeploymentsPath, network, getContractAddress, deployProxy } = require("../utils");
 
+const { WrapperBuilder } = require("redstone-evm-connector");
+
 global.progressPrefix = __filename.split("/").pop();
 global.progress = ora().start(progressPrefix + ": Starting...");
 global.console.log = (...args) => {
@@ -33,6 +35,12 @@ const deployContracts = async () => {
   const nftinteractions = await deployProxy("NFTInteractions", "NFTInteractions", [
     nftgame.address,
   ]);
+
+  const wrappednftinteractions = WrapperBuilder
+    .wrapLite(nftinteractions)
+    .usingPriceFeed("redstone", { asset: "ENTROPY" });
+
+  await wrappednftinteractions.authorizeSignerEntropyFeed("0x0C39486f770B26F5527BBBf942726537986Cd7eb");
 
   await nftgame.grantRole(nftgame.GAME_ADMIN(), nftgame.signer.address);
   await nftgame.grantRole(nftgame.GAME_INTERACTOR(), nftinteractions.address);

@@ -21,10 +21,12 @@ async function initTestWallet() {
   const tx = await creditTestWallet(amount);
   console.log(`Sent ${ethers.utils.formatEther(tx.value)} tokens to ${tx.to}`);
 
-  console.log("Borrowing w/ user account...");
-  const event = await depositAndBorrow(String(amount - 1));
-  console.log(`Borrowed ${ethers.utils.formatEther(event.value)} tokens`);
+  // console.log("Borrowing w/ user account...");
+  // const event = await depositAndBorrow(String(amount - 1));
+  // console.log(`Borrowed ${ethers.utils.formatEther(event.value)} tokens`);
 
+  console.log("Crediting user w/ meter points...");
+  await creditMeterPoints(20000000);
   console.log("Forwarding time...");
   const seconds = 60 * 60 * 24 * 7;
   await ethers.provider.send("evm_increaseTime", [seconds]);
@@ -59,6 +61,15 @@ async function depositAndBorrow(amount) {
   return vaultFTMDAI
     .connect(userWallet)
     .depositAndBorrow(depositAmount, borrowAmount, { value: depositAmount });
+}
+
+async function creditMeterPoints(amount) {
+  const userWallet = new ethers.Wallet(process.env.TEST_WALLET_PRIVATE_KEY, provider);
+
+  const nftGameAddress = getContractAddress("NFTGame");
+  const nftgame = await ethers.getContractAt("NFTGame", nftGameAddress);
+
+  await nftgame.mint(userWallet.address, 0, amount);
 }
 
 main().catch((error) => {

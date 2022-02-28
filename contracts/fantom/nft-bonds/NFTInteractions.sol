@@ -10,6 +10,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./NFTGame.sol";
 import "../libraries/LibPseudoRandom.sol";
 import "./FujiPriceAware.sol";
+import "./PreTokenBonds.sol";
 
 contract NFTInteractions is FujiPriceAware, Initializable {
   using LibPseudoRandom for uint256;
@@ -44,6 +45,16 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    */
   event LockedScore(address indexed user, uint256 lockedNFTId);
 
+  /**
+   * @dev NFTGame contract address changed
+   */
+  event NFTGameChanged(address newAddress);
+
+  /**
+   * @dev PreTokenBonds contract address changed
+   */
+  event PreTokenBondsChanged(address newAddress);
+
   uint256 public constant CRATE_COMMON_ID = 1;
   uint256 public constant CRATE_EPIC_ID = 2;
   uint256 public constant CRATE_LEGENDARY_ID = 3;
@@ -55,6 +66,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   uint256[] private probabilityIntervals;
 
   NFTGame private nftGame;
+  PreTokenBonds private preTokenBonds;
 
   // CrateID => crate price
   mapping(uint256 => uint256) public cratePrices;
@@ -76,6 +88,13 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   function setNFTGame(address _nftGame) external {
     require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
     nftGame = NFTGame(_nftGame);
+    emit NFTGameChanged(_nftGame);
+  }
+
+  function setPreTokenBonds(address _preTokenBodns) external {
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    preTokenBonds = PreTokenBonds(_preTokenBodns);
+    emit PreTokenBondsChanged(_preTokenBonds);
   }
 
   /**
@@ -139,6 +158,17 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   }
 
   /// Interaction Functions
+  
+  /**
+   * @notice mints new bonds
+   * @param vestingType: the vesting group (based on time) associated with the bond 
+   * @param amount: number of bonds to be minted
+  */
+  function mintBonds(uint vestingType, uint amount) external {
+    // Check gamephase
+    // check if msg.sender is locked
+    
+  }
 
   /**
    * @notice Burns user points to mint a new crate

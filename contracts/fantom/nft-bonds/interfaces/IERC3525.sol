@@ -1,13 +1,14 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 /**
  * @title ERC-3525 Semi-Fungible Token Standard
  * @dev See https://eips.ethereum.org/EIPS/eip-3525
  * Note: the ERC-165 identifier for this interface is 0x1487d183.
  */
-interface IERC3525 is ERC721 {
+interface IERC3525 is IERC721 {
 
     /**
      * @dev This emits when partial units of a token are transferred to another.
@@ -64,7 +65,7 @@ interface IERC3525 is ERC721 {
      * @dev Find the number of decimals a token uses for units - e.g. 6, means the user representation of the units of a token can be calculated by dividing it by 1,000,000.
      * @return The number of decimals for units of a token
      */
-    function unitDecimals() external view return (uint8);
+    function unitDecimals() external view returns (uint8);
     /**
      * @dev Enumerate all tokens of a slot.
      * @param _slot The slot of which to enumerate tokens

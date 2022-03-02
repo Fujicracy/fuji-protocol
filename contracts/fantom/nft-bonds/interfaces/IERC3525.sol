@@ -1,11 +1,13 @@
-pragma solidity 0.8.4;
+pragma solidity ^0.8.2;
+
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 /**
  * @title ERC-3525 Semi-Fungible Token Standard
  * @dev See https://eips.ethereum.org/EIPS/eip-3525
  * Note: the ERC-165 identifier for this interface is 0x1487d183.
  */
-interface IERC3525 /* is ERC-721 */{
+interface IERC3525 is ERC721 {
 
     /**
      * @dev This emits when partial units of a token are transferred to another.

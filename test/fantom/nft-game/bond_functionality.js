@@ -31,6 +31,14 @@ if (FULL_FIXTURE) {
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const amountOfCratesToBuy = 10;
 
+/// ERC3525 Glossary
+
+// A 'slot' is a container-type. In FujiBonds: a 'slot' is a specific vesting schedule.
+// A token Id is a unique container. In FujiBonds: a token Id is a specific bond.
+// All token Ids with the same slot are compatible. They have the same vesting schedule.
+// Units of a token Id are the entitled future Fuji tokens.
+
+
 describe("Bond Functionality", function () {
   before(async function () {
     this.users = await ethers.getSigners();
@@ -121,22 +129,6 @@ describe("Bond Functionality", function () {
     it("Succesfully remove `operator` and reverts when trying transfer", async function () {
     
     });
-
-    it("", async function () {
-    
-    });
-
-    it("", async function () {
-    
-    });
-
-    it("", async function () {
-    
-    });
-
-    it("", async function () {
-    
-    });
   });
 
   describe("Basic Bond ERC3525 Functionality", function () {
@@ -145,13 +137,84 @@ describe("Bond Functionality", function () {
       evmRevert(this.evmSnapshot0);
     });
 
-    it("", async function () {
+    it("Returns a 'slot' value for each token Id", async function () {
+      // Find the slot of a tokenID 'slotOf(uint256 _tokenId)'
     
     });
 
-    it("", async function () {
+    it("Returns a value for the supply of a 'slot'", async function () {
+      // Count all # of tokens holding the same slot. 'supplyOfSlot(uint256 _slot)'
     
     });
+
+    it("Returns decimals of the units of a token Id ", async function () {
+      // Number of decimals a token uses for units 'unitDecimals()'
+    
+    });
+
+    it("Returns token Id when calling slot and index", async function () {
+      // The id for the `_index`th token in the token list of the slot 'tokenOfSlotByIndex(uint256 _slot, uint256 _index)'
+    
+    });
+
+    it("Should return zero units when token Id is called before token allocation to bonds", async function () {
+      // The amount of units of `_tokenId` 'unitsInToken(uint256 _tokenId)'
+    
+    });
+
+    it("Should return value units when called after token allocation to bonds", async function () {
+      // The amount of units of `_tokenId` 'unitsInToken(uint256 _tokenId)'
+    
+    });
+
+    it("Should approve and transfer succesfully 'units' of token Id to another token Id of the same slot", async function () {
+      // approve(address _to, uint256 _tokenId, uint256 _units), allowance(uint256 _tokenId, address _spender)
+    
+    });
+
+    it("Should split token Id by units and share the same slot", async function () {
+      // Split a token into several by separating its units and assigning each portion to a new created token.
+    });
+
+    it("Should merge token Ids of the same slot", async function () {
+      // Merge several tokens into one by merging their units into a target token before burning them.
+    
+    });
+
+    it("Should transfer 'units' of token Id to new token Id", async function () {
+      // transferFrom(address _from, address _to, uint256 _tokenId, uint256 _units)
+    
+    });
+
+    it("Should transfer 'units' of token Id to another token Id of the same slot", async function () {
+      // transferFrom(address _from, address _to, uint256 _tokenId, uint256 _targetTokenId, uint256 _units) external;
+    
+    });
+
+  });
+
+  describe("Fuji Bond Specific Functionality", function () {
+
+    after(async function () {
+      evmRevert(this.evmSnapshot0);
+    });
+
+    it("Should return a value for price of mining a token ID", async function () {
+    
+    });
+
+    it("Should return value for the vesting time for different 'slots'", async function () {
+    
+    });
+
+    it("Should allow to mint a token ID with zero units before end of bond phase", async function () {
+    
+    });
+
+    it("Should revert if try to mint a token Id after bond phase", async function () {
+    
+    });
+
 
   });
 

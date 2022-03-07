@@ -36,7 +36,7 @@
     "ora": "5.4.1",
     "qrcode-terminal": "^0.12.0",
     "ramda": "^0.27.1",
-    "redstone-evm-connector": "2.1.0"
+    "redstone-evm-connector": "2.1.7"
   },
   "scripts": {
     "fork": "hardhat node --hostname 0.0.0.0",

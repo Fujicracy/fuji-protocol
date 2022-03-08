@@ -74,6 +74,7 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver, ICFlashloanRecei
     override
     isAuthorized
   {
+    require(_paramsHash == "", "_paramsHash should be empty!");
     _paramsHash = keccak256(abi.encode(info));
     if (_flashnum == 0) {
       _initiateGeistFlashLoan(info);
@@ -128,7 +129,6 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver, ICFlashloanRecei
     );
 
     FlashLoan.Info memory info = abi.decode(params, (FlashLoan.Info));
-    require( _paramsHash == keccak256(abi.encode(info)), "False entry point!");
 
     uint256 _value;
     if (info.asset == _FTM) {
@@ -145,8 +145,6 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver, ICFlashloanRecei
 
     //Approve geistLP to spend to repay flashloan
     _approveBeforeRepay(info.asset == _FTM, assets[0], amounts[0] + premiums[0], _geistLendingPool);
-
-    _paramsHash = "";
 
     return true;
   }
@@ -188,7 +186,6 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver, ICFlashloanRecei
     require(msg.sender == crToken && address(this) == sender, Errors.VL_NOT_AUTHORIZED);
     require(IERC20(underlying).balanceOf(address(this)) >= amount, Errors.VL_FLASHLOAN_FAILED);
     FlashLoan.Info memory info = abi.decode(params, (FlashLoan.Info));
-    require( _paramsHash == keccak256(abi.encode(info)), "False entry point!");
     uint256 _value;
     if (info.asset == _FTM) {
       // Convert WFTM to FTM and assign amount to be set as msg.value
@@ -206,8 +203,6 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver, ICFlashloanRecei
     // Transfer flashloan + fee back to crToken Lending Contract
     IERC20(underlying).univApprove(payable(crToken), amount + fee);
 
-    _paramsHash = "";
-
     return keccak256("ERC3156FlashBorrowerInterface.onFlashLoan");
   }
 
@@ -223,6 +218,7 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver, ICFlashloanRecei
     uint256 _fee,
     uint256 _value
   ) internal {
+    require( _paramsHash == keccak256(abi.encode(_info)), "False entry point!");
     if (_info.callType == FlashLoan.CallType.Switch) {
       IVault(_info.vault).executeSwitch{ value: _value }(_info.newProvider, _amount, _fee);
     } else if (_info.callType == FlashLoan.CallType.Close) {
@@ -242,6 +238,7 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver, ICFlashloanRecei
         _fee
       );
     }
+    _paramsHash = "";
   }
 
   function _approveBeforeRepay(

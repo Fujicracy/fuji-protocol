@@ -212,7 +212,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     }
 
     // mint points
-    if (rewards[nftGame.POINTS_ID()]) {
+    if (rewards[nftGame.POINTS_ID()] > 0) {
       nftGame.mint(msg.sender, nftGame.POINTS_ID(), rewards[nftGame.POINTS_ID()]);
     }
 

@@ -37,7 +37,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   /**
    * @dev Opened crates
    */
-  event CratesOpened(uint256 crateId, uint256 amount, uint256[] cards, uint256 points);
+  event CratesOpened(uint256 crateId, uint256 amount, uint256[] ids);
 
   /**
    * @dev Final score locked
@@ -181,8 +181,8 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     require(nftGame.balanceOf(msg.sender, crateId) >= amount, "Not enough crates!");
     require(crateRewards[crateId].length == probabilityIntervals.length, "Rewards not set!");
 
-    uint256 pointsAmount = 0;
-    uint256[] memory cardsAmount = new uint256[](nftGame.nftCardsAmount());
+    // Points + Crates + Cards
+    uint256[] memory rewards = new uint256[](1 + 3 + nftGame.nftCardsAmount());
 
     uint256 entropyValue = _getEntropy();
     uint256[] memory randomNumbers = LibPseudoRandom.pickRandomNumbers(amount, entropyValue);
@@ -195,7 +195,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
       for (uint256 i = 0; i < probabilityIntervals.length && isCard; i++) {
         if (randomNumbers[j] <= probabilityIntervals[i]) {
           isCard = false;
-          pointsAmount += crateRewards[crateId][i];
+          rewards[nftGame.POINTS_ID()] += crateRewards[crateId][i];
         }
       }
 
@@ -203,30 +203,30 @@ contract NFTInteractions is FujiPriceAware, Initializable {
       if (isCard) {
         uint256 step = 1000000 / nftGame.nftCardsAmount();
         uint256 randomNum = LibPseudoRandom.pickRandomNumbers(1, entropyValue + 1)[0];
-        uint256 randomId = 0;
+        uint256 randomId = NFT_CARD_ID_START;
         for (uint256 i = step; i <= randomNum; i += step) {
           randomId++;
         }
-        cardsAmount[randomId]++;
+        rewards[randomId]++;
       }
     }
 
     // mint points
-    if (pointsAmount > 0) {
-      nftGame.mint(msg.sender, nftGame.POINTS_ID(), pointsAmount);
+    if (rewards[nftGame.POINTS_ID()]) {
+      nftGame.mint(msg.sender, nftGame.POINTS_ID(), rewards[nftGame.POINTS_ID()]);
     }
 
     // mint cards
-    for (uint256 i = 0; i < cardsAmount.length; i++) {
-      if (cardsAmount[i] > 0) {
-        nftGame.mint(msg.sender, i + NFT_CARD_ID_START, cardsAmount[i]);
+    for (uint256 i = NFT_CARD_ID_START; i <= NFT_CARD_ID_START + nftGame.nftCardsAmount(); i++) {
+      if (rewards[i] > 0) {
+        nftGame.mint(msg.sender, i + NFT_CARD_ID_START, rewards[i]);
       }
     }
 
     // burn opened crates
     nftGame.burn(msg.sender, crateId, amount);
 
-    emit CratesOpened(crateId, amount, cardsAmount, pointsAmount);
+    emit CratesOpened(crateId, amount, rewards);
   }
 
   function lockFinalScore() external {

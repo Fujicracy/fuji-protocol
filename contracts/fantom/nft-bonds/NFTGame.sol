@@ -431,7 +431,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   function _isPointsId(uint256[] memory ids) internal pure returns (bool isPointsID) {
-    for (uint256 index = 0; index < ids.length; index++) {
+    for (uint256 index = 0; index < ids.length && !isPointsID; index++) {
       if (ids[index] == 0) {
         isPointsID = true;
       }

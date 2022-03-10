@@ -65,6 +65,14 @@ contract PreTokenBonds is VoucherCore {
     IERC20(underlying).transferFrom(msg.sender, address(this), _amount);
   }
 
+  function claim(address user, uint256 _slot, uint256 _units) external {
+    require(nftGame.hasRole(nftGame.GAME_INTERACTOR(), msg.sender), "No permission!");
+    require (nftGame.getPhase() == 3, "Wrong game phase");
+
+    //burn units
+    IERC20(underlying).transfer(user, tokensPerUnit(_slot) * _units);
+  }
+
   function tokensPerUnit(uint256 _slot) public {
     uint256[] slots = [3, 6, 12];
     uint256 totalUnits = 0;

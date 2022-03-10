@@ -34,7 +34,8 @@ contract PreTokenBonds is VoucherCore {
   /**
    * @notice Function to be called from Interactions contract, after burning the points
    */
-  function mint() {
+  function mint(address _user, uint256 _slot, uint256 _units) external {
     require(nftGame.hasRole(nftGame.GAME_INTERACTOR(), msg.sender), "No permission!");
+    _mint(_user, _slot, _units);
   }
 }

@@ -4,7 +4,7 @@ pragma solidity ^0.8.2;
 
 import "@solv/v2-solidity-utils/contracts/access/AdminControl.sol";
 import "@solv/v2-solidity-utils/contracts/misc/Constants.sol";
-import "@solv/v2-vnft-core/contracts/VNFTCoreV2.sol";
+import "./VNFTCoreV2.sol";
 
 abstract contract VoucherCore is VNFTCoreV2, AdminControl {
     /// @dev tokenId => slot

@@ -43,7 +43,7 @@ contract PreTokenBonds is VoucherCore {
   /**
    * @notice Set address for underlying Fuji ERC-20
    */
-  function setNFTGame(address _underlying) external {
+  function setUnderlying(address _underlying) external {
     require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
     underlying = _underlying;
     emit UnderlyingChanged(_underlying);
@@ -63,5 +63,16 @@ contract PreTokenBonds is VoucherCore {
   function deposit(uint256 _amount) external {
     require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
     IERC20(underlying).transferFrom(msg.sender, address(this), _amount);
+  }
+
+  function tokensPerUnit(uint256 _slot) public {
+    uint256[] slots = [3, 6, 12];
+    uint256 totalUnits = 0;
+    for (uint256 i = 0; i < slots.length; i++) {
+      totalUnits += unitsInSlot(slots[i]);
+    }
+
+    uint256 multiplier = _slot == 3 ? 1 : _slot == 6 ? 2 : 4;
+    return (IERC20(underlying).balanceOf(address(this)) / totalUnits) * multiplier;
   }
 }

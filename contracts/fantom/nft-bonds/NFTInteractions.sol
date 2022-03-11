@@ -165,9 +165,14 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * @param amount: number of bonds to be minted
   */
   function mintBonds(uint vestingType, uint amount) external {
-    // Check gamephase
-    // check if msg.sender is locked
-    
+    require(nftGame.getPhase() == 3,"Wrong game phase");
+    require(_isLocked(msg.sender), "User not locked");
+
+    uint256 price = amount * preTokenBonds.bondPrice();
+    require(nftGame.balanceOf(msg.sender, nftGame.POINTS_ID()) >= price, "Not enough points");
+
+    nftGame.burn(msg.sender, nftGame.POINTS_ID(), price);
+    preTokenBonds.mint(msg.sender, vestingType, amount);
   }
 
   /**

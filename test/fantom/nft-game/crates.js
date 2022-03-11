@@ -16,6 +16,18 @@ const {
   timeTravel,
 } = require("../../helpers");
 
+/**
+ * @note Returns the etherjs contract according to oracle choice in NFTInteractions contract.
+ * @param interactionContract Etherjs contract object representing 'NFTInteractions.sol'.
+ * @param wallet Ethersjs wallet object.
+ */
+ const gameEntropySelector = async function (interactionContract, wallet) {
+  const bool = await interactionContract.isRedstoneOracleOn();
+  const contract = !bool ? interactionContract.connect(wallet) : WrapperBuilder.wrapLite(interactionContract.connect(wallet))
+    .usingPriceFeed("redstone", { asset: "ENTROPY" });
+  return contract;
+}
+
 describe("NFT Bond Crate System", function () {
   before(async function () {
     this.users = await ethers.getSigners();
@@ -206,48 +218,43 @@ describe("NFT Bond Crate System", function () {
 
     it("Invalid crate ID", async function () {
       const invalidId = 9999;
-      const localcontract = this.f.nftinteractions.connect(this.user);
-      const localwrapped = WrapperBuilder.wrapLite(localcontract).usingPriceFeed("redstone", { asset: "ENTROPY" });
+      const localcontract = gameEntropySelector(this.f.nftinteractions, this.user);
       await syncTime();
       await expect(
-        localwrapped.openCrate(invalidId, 1)
+        localcontract.openCrate(invalidId, 1)
       ).to.be.revertedWith("Invalid crate ID");
     });
 
     it("Rewards not set", async function () {
       const noRewardsCrate = this.crateIds[2];
-      const localcontract = this.f.nftinteractions.connect(this.user);
-      const localwrapped = WrapperBuilder.wrapLite(localcontract).usingPriceFeed("redstone", { asset: "ENTROPY" });
+      const localcontract = gameEntropySelector(this.f.nftinteractions, this.user);
       await syncTime();
       await expect(
-        localwrapped.openCrate(noRewardsCrate, 1)
+        localcontract.openCrate(noRewardsCrate, 1)
       ).to.be.revertedWith("Rewards not set");
     });
 
     it("Not enough crates", async function () {
       const amount = 9999;
-      const localcontract = this.f.nftinteractions.connect(this.user);
-      const localwrapped = WrapperBuilder.wrapLite(localcontract).usingPriceFeed("redstone", { asset: "ENTROPY" });
+      const localcontract = gameEntropySelector(this.f.nftinteractions, this.user);
       await syncTime();
       await expect(
-        localwrapped.openCrate(this.crateIds[0], amount)
+        localcontract.openCrate(this.crateIds[0], amount)
       ).to.be.revertedWith("Not enough crates");
     });
 
     it("Successfuly opening a crate", async function () {
-      const localcontract = this.f.nftinteractions.connect(this.user);
-      const localwrapped = WrapperBuilder.wrapLite(localcontract).usingPriceFeed("redstone", { asset: "ENTROPY" });
+      const localcontract = gameEntropySelector(this.f.nftinteractions, this.user);
       await syncTime();
-      await localwrapped.openCrate(this.crateIds[0], 1);
+      await localcontract.openCrate(this.crateIds[0], 1);
     });
 
     it("Crate balance after opnening crates", async function () {
       const bal = await this.f.nftgame.balanceOf(this.user.address, this.crateIds[0]);
       const amount = 2;
-      const localcontract = this.f.nftinteractions.connect(this.user);
-      const localwrapped = WrapperBuilder.wrapLite(localcontract).usingPriceFeed("redstone", { asset: "ENTROPY" });
+      const localcontract = gameEntropySelector(this.f.nftinteractions, this.user);
       await syncTime();
-      await localwrapped.openCrate(this.crateIds[0], amount);
+      await localcontract.openCrate(this.crateIds[0], amount);
 
       expect(await this.f.nftgame.balanceOf(this.user.address, this.crateIds[0])).to.be.equal(
         bal.sub(amount)

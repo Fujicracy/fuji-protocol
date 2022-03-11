@@ -68,6 +68,7 @@ const deployContracts = async () => {
   const rewardfactors = [
     [0, 0, 1, 2, 25],
     [0, 0, 1, 4, 50],
+    [0, 0, 1, 8, 100],
   ];
 
   for (let i = 0; i < rewardfactors.length; i++) {

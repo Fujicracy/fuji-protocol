@@ -9,7 +9,9 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "./NFTGame.sol";
 import "../libraries/LibPseudoRandom.sol";
+import "../../libraries/Errors.sol";
 import "./FujiPriceAware.sol";
+import "../../interfaces/chainlink/AggregatorV3Interface.sol";
 
 contract NFTInteractions is FujiPriceAware, Initializable {
   using LibPseudoRandom for uint256;
@@ -48,6 +50,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   uint256 public constant CRATE_EPIC_ID = 2;
   uint256 public constant CRATE_LEGENDARY_ID = 3;
   uint256 public constant NFT_CARD_ID_START = 4;
+  bool public isRedstoneOracleOn;
 
   // CrateID => crate rewards
   mapping(uint256 => uint256[]) crateRewards;
@@ -63,6 +66,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   mapping(uint256 => uint256) public cardBoost;
 
   function initialize(address _nftGame) external initializer {
+    isRedstoneOracleOn = true;
     maxDelay = 3 * 60;
     nftGame = NFTGame(_nftGame);
     probabilityIntervals = [500000, 700000, 900000, 950000, 950100];
@@ -74,7 +78,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * @notice Set address for NFTGame contract
    */
   function setNFTGame(address _nftGame) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
     nftGame = NFTGame(_nftGame);
   }
 
@@ -82,7 +86,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * @notice sets the prices for the crates
    */
   function setCratePrice(uint256 crateId, uint256 price) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
       "Invalid crate ID!"
@@ -95,7 +99,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * @notice sets probability intervals for crate rewards
    */
   function setProbabilityIntervals(uint256[] memory intervals) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
     probabilityIntervals = intervals;
   }
 
@@ -104,7 +108,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * rewards are an array, with each element corresponding to the points multiplier value
    */
   function setCrateRewards(uint256 crateId, uint256[] memory rewards) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
     crateRewards[crateId] = rewards;
     emit CrateRewardsChanged(crateId, rewards);
   }
@@ -114,7 +118,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * @dev boost is a base 100 number. In example, boost = 115, 15% boost. 1.15 for computation.
    */
   function setCardBoost(uint256 cardId, uint256 boost) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
     require(boost >= 100, "Boost not > 100!");
     cardBoost[cardId] = boost;
     emit CardBoostChanged(cardId, boost);
@@ -125,7 +129,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * Admin function required by redstone-evm-connector (oracle).
    */
   function authorizeSignerEntropyFeed(address _trustedSigner) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
     _authorizeSigner(_trustedSigner);
   }
 
@@ -134,8 +138,17 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * Admin function required by redstone-evm-connector (oracle).
    */
   function setMaxEntropyDelay(uint256 _maxDelay) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
     _setMaxDelay(_maxDelay);
+  }
+
+  /**
+   * @notice Toggle between oracles for entropy.
+   * switch(1) = redstone, switch(0) = chainlink
+   */
+  function setIsRedstoneOracleOn(bool switch_) external {
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
+    isRedstoneOracleOn = switch_;
   }
 
   /// Interaction Functions
@@ -184,7 +197,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     // Points + Crates + Cards
     uint256[] memory rewards = new uint256[](1 + 3 + nftGame.nftCardsAmount());
 
-    uint256 entropyValue = _getEntropy();
+    uint256 entropyValue = isRedstoneOracleOn ? _getRedstoneEntropy(): _getChainlinkEntropy();
     uint256[] memory randomNumbers = LibPseudoRandom.pickRandomNumbers(amount, entropyValue);
     bool isCard;
 
@@ -274,7 +287,16 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   /**
    * @notice calls redstone-oracle for entropy value.
    */
-  function _getEntropy() private view returns (uint256) {
+  function _getRedstoneEntropy() private view returns (uint256) {
     return _getPriceFromMsg(bytes32("ENTROPY"));
+  }
+
+  /**
+   * @notice calls chainlink-oracle for entropy value.
+   */
+  function _getChainlinkEntropy() private view returns (uint256) {
+    (,int numA,,,) = AggregatorV3Interface(0xf4766552D15AE4d256Ad41B6cf2933482B0680dc).latestRoundData();
+    (,int numB,,,) = AggregatorV3Interface(0x11DdD3d147E5b83D01cee7070027092397d63658).latestRoundData();
+    return uint256(numA * numB);
   }
 }

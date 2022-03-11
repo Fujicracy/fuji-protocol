@@ -219,7 +219,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     // mint cards
     for (uint256 i = NFT_CARD_ID_START; i < NFT_CARD_ID_START + nftGame.nftCardsAmount(); i++) {
       if (rewards[i] > 0) {
-        nftGame.mint(msg.sender, i + NFT_CARD_ID_START, rewards[i]);
+        nftGame.mint(msg.sender, i, rewards[i]);
       }
     }
 
@@ -247,6 +247,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * @dev Value is 100 based. In example; 150 is +50% or 1.5 in decimal
    */
   function computeBoost(address user) public view returns (uint256 totalBoost) {
+    totalBoost = 100;
     for (
       uint256 index = NFT_CARD_ID_START;
       index < NFT_CARD_ID_START + nftGame.nftCardsAmount();
@@ -264,7 +265,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * @notice returns true if user is already locked.
    */
   function _isLocked(address user) internal view returns (bool locked) {
-    (,,,,uint256 lockedID) = nftGame.userdata(user);
+    (, , , , uint256 lockedID) = nftGame.userdata(user);
     if (lockedID != 0) {
       locked = true;
     }

@@ -17,9 +17,16 @@ contract PreTokenBonds is VoucherCore {
    */
   event UnderlyingChanged(address newAddress);
 
+  /**
+   * @dev Bond times changed
+   */
+  event BondTimesChanges(uint256[] newBondTimes);
+
   NFTGame private nftGame;
 
   address public underlying;
+
+  uint256[] public bondTimes;
 
   function _initialize(
       string memory _name,
@@ -29,6 +36,7 @@ contract PreTokenBonds is VoucherCore {
   ) internal override {
     VoucherCore._initialize(_name, _symbol, _unitDecimals);
     nftGame = NFTGame(_nftGame);
+    bondTimes = [3, 6, 12];
   }
 
   /**
@@ -48,13 +56,22 @@ contract PreTokenBonds is VoucherCore {
     underlying = _underlying;
     emit UnderlyingChanged(_underlying);
   }
+  
+  /**
+   * @notice Set bond times
+   */
+  function setBondTimes(uint256[] memory _bondTimes) external {
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    bondTimes = _bondTimes;
+    emit BondTimesChanges(_bondTimes);
+  }
 
   /**
    * @notice Function to be called from Interactions contract, after burning the points
    */
-  function mint(address _user, uint256 _slot, uint256 _units) external {
+  function mint(address _user, uint256 _type, uint256 _units) external {
     require(nftGame.hasRole(nftGame.GAME_INTERACTOR(), msg.sender), "No permission!");
-    _mint(_user, _slot, _units);
+    _mint(_user, bondTimes[_type], _units);
   }
 
   /**
@@ -66,24 +83,24 @@ contract PreTokenBonds is VoucherCore {
     IERC20(underlying).transferFrom(msg.sender, address(this), _amount);
   }
 
-  function claim(address user, uint256 _slot, uint256 _units) external {
+  function claim(address user, uint256 _type, uint256 _units) external {
     require(nftGame.hasRole(nftGame.GAME_INTERACTOR(), msg.sender), "No permission!");
     require(underlying != address(0), "Underlying not set");
     require (nftGame.getPhase() == 3, "Wrong game phase");
 
     //TODO burn units
 
-    IERC20(underlying).transfer(user, tokensPerUnit(_slot) * _units);
+    IERC20(underlying).transfer(user, tokensPerUnit(_type) * _units);
   }
 
-  function tokensPerUnit(uint256 _slot) public {
-    uint256[] slots = [3, 6, 12];
+  function tokensPerUnit(uint256 _type) public {
     uint256 totalUnits = 0;
-    for (uint256 i = 0; i < slots.length; i++) {
-      totalUnits += unitsInSlot(slots[i]);
+    for (uint256 i = 0; i < bondTimes.length; i++) {
+      totalUnits += unitsInSlot(bondTimes[i]);
     }
 
-    uint256 multiplier = _slot == 3 ? 1 : _slot == 6 ? 2 : 4;
+    uint256 slot = bondTimes[_type];
+    uint256 multiplier = slot == 3 ? 1 : slot == 6 ? 2 : 4;
     return (IERC20(underlying).balanceOf(address(this)) / totalUnits) * multiplier;
   }
 }

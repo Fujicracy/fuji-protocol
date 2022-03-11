@@ -22,11 +22,18 @@ contract PreTokenBonds is VoucherCore {
    */
   event BondTimesChanges(uint256[] newBondTimes);
 
+  /**
+   * @dev Bond price changed
+   */
+  event BondPriceChanges(uint256 newBondPrice);
+
   NFTGame private nftGame;
 
   address public underlying;
 
   uint256[] public bondTimes;
+
+  uint256 public bondPrice;
 
   function _initialize(
       string memory _name,
@@ -37,6 +44,7 @@ contract PreTokenBonds is VoucherCore {
     VoucherCore._initialize(_name, _symbol, _unitDecimals);
     nftGame = NFTGame(_nftGame);
     bondTimes = [3, 6, 12];
+    bondPrice = 10000;
   }
 
   /**
@@ -67,6 +75,15 @@ contract PreTokenBonds is VoucherCore {
   }
 
   /**
+   * @notice Set bond price
+   */
+  function setBondTimes(uint256 _bondPrice) external {
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    bondPrice = _bondPrice;
+    emit BondPriceChanges(_bondPrice);
+  }
+
+  /**
    * @notice Function to be called from Interactions contract, after burning the points
    */
   function mint(address _user, uint256 _type, uint256 _units) external {
@@ -84,9 +101,9 @@ contract PreTokenBonds is VoucherCore {
   }
 
   function claim(address user, uint256 _type, uint256 _units) external {
-    require(nftGame.hasRole(nftGame.GAME_INTERACTOR(), msg.sender), "No permission!");
     require(underlying != address(0), "Underlying not set");
-    require (nftGame.getPhase() == 3, "Wrong game phase");
+    //TODO check date (create new phase?)
+    //TODO check units
 
     //TODO burn units
 

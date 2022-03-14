@@ -47,6 +47,8 @@ describe("Randomness Unit Tests", function () {
 
   before(async function () {
 
+    await syncTime();
+
     MockRandomTests = await ethers.getContractFactory("MockRandomTests");
     mockrandom = await MockRandomTests.deploy([]);
     await mockrandom.setMaxEntropyDelay(3*60);

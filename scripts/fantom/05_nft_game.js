@@ -44,6 +44,10 @@ const deployContracts = async () => {
 
   await nftinteractions.setMaxEntropyDelay(60 * 60 * 24 * 365 * 2); // Only for testing
 
+  for (let i = 4; i < 12; i += 1) {
+    await nftinteractions.setCardBoost(i, 105);
+  }
+
   await nftgame.grantRole(nftgame.GAME_ADMIN(), nftgame.signer.address);
   await nftgame.grantRole(nftgame.GAME_INTERACTOR(), nftinteractions.address);
 

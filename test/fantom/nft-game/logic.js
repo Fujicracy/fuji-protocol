@@ -188,12 +188,12 @@ describe("NFT Bond Logic", function () {
       await timeTravel(time);
       await vault.updateF1155Balances();
 
-      const pointsFromRate = pps.mul(time);
+      const pointsFromRate = pps.mul(time + 2);
 
       const newDebt = await this.f.nftgame.getUserDebt(this.user.address);
       const pointsFromInterest = newDebt
         .sub(formatUnitsToNum(borrowAmount))
-        .mul(time + daySeconds)
+        .mul(time + 2 + daySeconds)
         .div(2);
 
       expect(await this.f.nftgame.balanceOf(this.user.address, 0)).to.be.equal(

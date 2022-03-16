@@ -14,6 +14,13 @@ const ASSETS = {
     oracle: "0xa24de01df22b63d23Ebc1882a5E3d4ec0d907bFB",
     decimals: 6,
   },
+  DAI: {
+    name: "dai",
+    nameUp: "DAI",
+    address: "",
+    oracle: "",
+    decimals: 18,
+  },
 };
 
 const DEX_ROUTER_ADDR = "0x0000000000000000000000000000000000000000";

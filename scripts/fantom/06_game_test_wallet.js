@@ -27,11 +27,16 @@ async function initTestWallet() {
 
   console.log("Crediting user w/ meter points...");
   await creditMeterPoints(20000000);
-  console.log("Forwarding time...");
-  const seconds = 60 * 60 * 24 * 7;
-  await ethers.provider.send("evm_increaseTime", [seconds]);
-  await ethers.provider.send("evm_mine");
-  console.log(`Forwarded time ${seconds} (${seconds / 60 / 60 / 24} days) later`);
+  console.log("Crediting user w/ legendary crates...");
+  await creditLegendaryCrates(20);
+  console.log("Crediting user w/ NFT tokenId 6 ...");
+  await creditNFT(2, 6);
+
+  //console.log("Forwarding time...");
+  //const seconds = 60 * 60 * 24 * 7;
+  //await ethers.provider.send("evm_increaseTime", [seconds]);
+  //await ethers.provider.send("evm_mine");
+  //console.log(`Forwarded time ${seconds} (${seconds / 60 / 60 / 24} days) later`);
 }
 
 async function creditTestWallet(amount) {
@@ -70,6 +75,24 @@ async function creditMeterPoints(amount) {
   const nftgame = await ethers.getContractAt("NFTGame", nftGameAddress);
 
   await nftgame.mint(userWallet.address, 0, amount);
+}
+
+async function creditLegendaryCrates(amount) {
+  const userWallet = new ethers.Wallet(process.env.TEST_WALLET_PRIVATE_KEY, provider);
+
+  const nftGameAddress = getContractAddress("NFTGame");
+  const nftgame = await ethers.getContractAt("NFTGame", nftGameAddress);
+
+  await nftgame.mint(userWallet.address, 3, amount);
+}
+
+async function creditNFT(amount, id) {
+  const userWallet = new ethers.Wallet(process.env.TEST_WALLET_PRIVATE_KEY, provider);
+
+  const nftGameAddress = getContractAddress("NFTGame");
+  const nftgame = await ethers.getContractAt("NFTGame", nftGameAddress);
+
+  await nftgame.mint(userWallet.address, id, amount);
 }
 
 main().catch((error) => {

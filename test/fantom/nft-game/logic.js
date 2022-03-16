@@ -136,7 +136,7 @@ describe("NFT Bond Logic", function () {
     });
   });
 
-  describe.only("Point System", function () {
+  describe("Point System", function () {
     before(async function () {
       await evmRevert(this.evmSnapshot0);
       for (let i = 0; i < VAULTS.length; i += 1) {
@@ -144,6 +144,12 @@ describe("NFT Bond Logic", function () {
         await this.f[vault.name].setActiveProvider(this.f.geist.address);
       }
       await this.f.nftgame.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
+
+      const now = (await provider.getBlock("latest")).timestamp;
+      const week = 60 * 60 * 24 * 7;
+      const phases = [now, now + 100 * week, now + 200 * week, now + 300 * week];
+
+      await this.f.nftgame.setGamePhases(phases);
     });
 
     it("Rate of accrual", async function () {
@@ -166,7 +172,7 @@ describe("NFT Bond Logic", function () {
       expect(await this.f.nftgame.balanceOf(this.user.address, 0)).to.be.equal(0);
     });
 
-    it("Get points balance after time passed", async function () {
+    it.only("Get points balance after time passed", async function () {
       const vault = this.f.vaultftmdai;
       const depositAmount = parseUnits(2500);
       const borrowAmount = parseUnits(250);
@@ -185,8 +191,11 @@ describe("NFT Bond Logic", function () {
       const pointsFromRate = pps.mul(time);
 
       const newDebt = await this.f.nftgame.getUserDebt(this.user.address);
-      const pointsFromInterest = newDebt.sub(formatUnitsToNum(borrowAmount)).mul(time + daySeconds).div(2);
-      
+      const pointsFromInterest = newDebt
+        .sub(formatUnitsToNum(borrowAmount))
+        .mul(time + daySeconds)
+        .div(2);
+
       expect(await this.f.nftgame.balanceOf(this.user.address, 0)).to.be.equal(
         pointsFromRate.add(pointsFromInterest)
       );
@@ -248,7 +257,10 @@ describe("NFT Bond Logic", function () {
       let pointsFromRate = pps.mul(time);
 
       let newDebt = await this.f.nftgame.getUserDebt(this.user.address);
-      let pointsFromInterest = newDebt.sub(formatUnitsToNum(borrowAmount)).mul(time + daySeconds).div(2);
+      let pointsFromInterest = newDebt
+        .sub(formatUnitsToNum(borrowAmount))
+        .mul(time + daySeconds)
+        .div(2);
 
       await this.f[borrowAsset].connect(this.user).approve(vault.address, paybackAmount);
 

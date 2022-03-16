@@ -85,6 +85,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     _setupRole(GAME_INTERACTOR, msg.sender);
     setGamePhases(phases);
     nftCardsAmount = 8;
+    gamePhaseTimestamps = [block.timestamp, block.timestamp + 7 days,
+    block.timestamp + 14 days, block.timestamp + 21 days];
   }
 
   /// State Changing Functions

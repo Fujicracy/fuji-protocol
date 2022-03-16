@@ -179,7 +179,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   }
 
   /**
-   * @notice opens one crate with the given id
+   * @notice opens crates with the given id
    */
   function openCrate(uint256 crateId, uint256 amount) external {
     // accumulation and trading only

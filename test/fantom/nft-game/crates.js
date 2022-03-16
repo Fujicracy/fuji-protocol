@@ -4,9 +4,9 @@ const { createFixtureLoader } = require("ethereum-waffle");
 
 const { BigNumber, provider } = ethers;
 
-const { fixture, ASSETS, VAULTS, syncTime } = require("../utils");
-
 const { WrapperBuilder } = require("redstone-evm-connector");
+
+const { fixture, ASSETS, VAULTS, syncTime } = require("../utils");
 
 const {
   parseUnits,
@@ -21,12 +21,15 @@ const {
  * @param interactionContract Etherjs contract object representing 'NFTInteractions.sol'.
  * @param wallet Ethersjs wallet object.
  */
- const gameEntropySelector = async function (interactionContract, wallet) {
+const gameEntropySelector = async function (interactionContract, wallet) {
   const bool = await interactionContract.isRedstoneOracleOn();
-  const contract = !bool ? interactionContract.connect(wallet) : WrapperBuilder.wrapLite(interactionContract.connect(wallet))
-    .usingPriceFeed("redstone", { asset: "ENTROPY" });
+  const contract = !bool
+    ? interactionContract.connect(wallet)
+    : WrapperBuilder.wrapLite(interactionContract.connect(wallet)).usingPriceFeed("redstone", {
+        asset: "ENTROPY",
+      });
   return contract;
-}
+};
 
 describe("NFT Bond Crate System", function () {
   before(async function () {
@@ -95,6 +98,12 @@ describe("NFT Bond Crate System", function () {
         await this.f[vault.name].setActiveProvider(this.f.geist.address);
       }
       await this.f.nftgame.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
+
+      const now = (await provider.getBlock("latest")).timestamp;
+      const week = 60 * 60 * 24 * 7;
+      const phases = [now, now + 100 * week, now + 200 * week, now + 300 * week];
+
+      await this.f.nftgame.setGamePhases(phases);
 
       const prices = [2500, 10000, 20000].map((e) => parseUnits(e, this.pointsDecimals));
       for (let i = 0; i < prices.length; i++) {
@@ -178,6 +187,12 @@ describe("NFT Bond Crate System", function () {
       }
       await this.f.nftgame.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
 
+      const now = (await provider.getBlock("latest")).timestamp;
+      const week = 60 * 60 * 24 * 7;
+      const phases = [now, now + 100 * week, now + 200 * week, now + 300 * week];
+
+      await this.f.nftgame.setGamePhases(phases);
+
       const prices = [2500, 10000, 20000].map((e) => parseUnits(e, this.pointsDecimals));
       for (let i = 0; i < prices.length; i++) {
         await this.f.nftinteractions.setCratePrice(this.crateIds[i], prices[i]);
@@ -208,7 +223,7 @@ describe("NFT Bond Crate System", function () {
       await timeTravel(this.sec * 365);
       await vault.updateF1155Balances();
 
-      //Redstone checks for time delay and compares timestamps. We need to increment max delay because of time traveling
+      // Redstone checks for time delay and compares timestamps. We need to increment max delay because of time traveling
       await this.f.nftinteractions.connect(this.owner).setMaxEntropyDelay(60 * 60 * 24 * 365 * 2);
 
       for (let i = 0; i < this.crateIds.length; i++) {
@@ -218,33 +233,31 @@ describe("NFT Bond Crate System", function () {
 
     it("Invalid crate ID", async function () {
       const invalidId = 9999;
-      const localcontract = gameEntropySelector(this.f.nftinteractions, this.user);
+      const localcontract = await gameEntropySelector(this.f.nftinteractions, this.user);
       await syncTime();
-      await expect(
-        localcontract.openCrate(invalidId, 1)
-      ).to.be.revertedWith("Invalid crate ID");
+      await expect(localcontract.openCrate(invalidId, 1)).to.be.revertedWith("Invalid crate ID");
     });
 
     it("Rewards not set", async function () {
       const noRewardsCrate = this.crateIds[2];
-      const localcontract = gameEntropySelector(this.f.nftinteractions, this.user);
+      const localcontract = await gameEntropySelector(this.f.nftinteractions, this.user);
       await syncTime();
-      await expect(
-        localcontract.openCrate(noRewardsCrate, 1)
-      ).to.be.revertedWith("Rewards not set");
+      await expect(localcontract.openCrate(noRewardsCrate, 1)).to.be.revertedWith(
+        "Rewards not set"
+      );
     });
 
     it("Not enough crates", async function () {
       const amount = 9999;
-      const localcontract = gameEntropySelector(this.f.nftinteractions, this.user);
+      const localcontract = await gameEntropySelector(this.f.nftinteractions, this.user);
       await syncTime();
-      await expect(
-        localcontract.openCrate(this.crateIds[0], amount)
-      ).to.be.revertedWith("Not enough crates");
+      await expect(localcontract.openCrate(this.crateIds[0], amount)).to.be.revertedWith(
+        "Not enough crates"
+      );
     });
 
     it("Successfuly opening a crate", async function () {
-      const localcontract = gameEntropySelector(this.f.nftinteractions, this.user);
+      const localcontract = await gameEntropySelector(this.f.nftinteractions, this.user);
       await syncTime();
       await localcontract.openCrate(this.crateIds[0], 1);
     });
@@ -252,7 +265,7 @@ describe("NFT Bond Crate System", function () {
     it("Crate balance after opnening crates", async function () {
       const bal = await this.f.nftgame.balanceOf(this.user.address, this.crateIds[0]);
       const amount = 2;
-      const localcontract = gameEntropySelector(this.f.nftinteractions, this.user);
+      const localcontract = await gameEntropySelector(this.f.nftinteractions, this.user);
       await syncTime();
       await localcontract.openCrate(this.crateIds[0], amount);
 

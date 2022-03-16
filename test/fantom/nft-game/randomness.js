@@ -4,7 +4,7 @@ const { WrapperBuilder } = require("redstone-evm-connector");
 
 const { syncTime } = require("../utils");
 
-const DEBUG = true;
+const DEBUG = false;
 
 const RANDOM_LIBRARY_LOWER_LIMIT = ethers.BigNumber.from("0");;
 const RANDOM_LIBRARY_UPPER_LIMIT = ethers.BigNumber.from("1000001");
@@ -47,8 +47,11 @@ describe("Randomness Unit Tests", function () {
 
   before(async function () {
 
+    await syncTime();
+
     MockRandomTests = await ethers.getContractFactory("MockRandomTests");
     mockrandom = await MockRandomTests.deploy([]);
+    await mockrandom.setMaxEntropyDelay(3*60);
     wrappedmockrandom = WrapperBuilder
       .wrapLite(mockrandom)
       .usingPriceFeed("redstone", { asset: "ENTROPY" });
@@ -98,7 +101,7 @@ describe("Randomness Unit Tests", function () {
 
   });
 
-  it.only("Should demonstrate all values have close-to-equal chance of outcome", async function () {
+  it("Should demonstrate all values have close-to-equal chance of outcome", async function () {
     const requestAmountOfNumbers = 5000;
     const numberOfDesiredRanges = 10;
 

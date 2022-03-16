@@ -13,6 +13,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "../../interfaces/IVault.sol";
 import "../../interfaces/IVaultControl.sol";
 import "../../interfaces/IERC20Extended.sol";
+import "../../libraries/Errors.sol";
 
 contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable {
   /**
@@ -85,6 +86,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     _setupRole(GAME_INTERACTOR, msg.sender);
     setGamePhases(phases);
     nftCardsAmount = 8;
+    gamePhaseTimestamps = [block.timestamp, block.timestamp + 7 days,
+    block.timestamp + 14 days, block.timestamp + 21 days];
   }
 
   /// State Changing Functions
@@ -95,13 +98,13 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
    * @notice Sets the list of vaults that count towards the game
    */
   function setValidVaults(address[] memory vaults) external {
-    require(hasRole(GAME_ADMIN, msg.sender), "No permission!");
+    require(hasRole(GAME_ADMIN, msg.sender), Errors.VL_NOT_AUTHORIZED);
     validVaults = vaults;
     emit ValidVaultsChanged(vaults);
   }
 
   function setGamePhases(uint256[4] memory newPhasesTimestamps) public {
-    require(hasRole(GAME_ADMIN, msg.sender), "No permission!");
+    require(hasRole(GAME_ADMIN, msg.sender), Errors.VL_NOT_AUTHORIZED);
     uint256 temp =newPhasesTimestamps[0];
     for (uint256 index = 1; index < newPhasesTimestamps.length; index++) {
       require(newPhasesTimestamps[index] > temp, "Wrong game phases values!");
@@ -114,7 +117,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
    * @notice sets card amount in game.
    */
   function setnftCardsAmount(uint256 newnftCardsAmount) external {
-    require(hasRole(GAME_ADMIN, msg.sender), "No permission!");
+    require(hasRole(GAME_ADMIN, msg.sender), Errors.VL_NOT_AUTHORIZED);
     require(newnftCardsAmount > nftCardsAmount, "Wrong value!");
     nftCardsAmount = newnftCardsAmount;
     emit CardAmountChanged(newnftCardsAmount);
@@ -149,7 +152,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   function userLock(address user, uint256 boostNumber) external returns (uint256 lockedNFTID) {
-    require(hasRole(GAME_INTERACTOR, msg.sender), "No permission!");
+    require(hasRole(GAME_INTERACTOR, msg.sender), Errors.VL_NOT_AUTHORIZED);
     require(userdata[user].lockedNFTID == 0, "User already locked!");
 
     uint256 phase = getPhase();
@@ -194,7 +197,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     uint256 id,
     uint256 amount
   ) external {
-    require(hasRole(GAME_INTERACTOR, msg.sender), "No permission!");
+    require(hasRole(GAME_INTERACTOR, msg.sender), Errors.VL_NOT_AUTHORIZED);
     // accumulation and trading
     uint256 phase = getPhase();
     require(phase >= 1, "Wrong game phase!");
@@ -212,7 +215,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     uint256 id,
     uint256 amount
   ) external {
-    require(hasRole(GAME_INTERACTOR, msg.sender), "No permission!");
+    require(hasRole(GAME_INTERACTOR, msg.sender), Errors.VL_NOT_AUTHORIZED);
     // accumulation, trading and bonding
     uint256 phase = getPhase();
     require(phase >= 1, "Wrong game phase!");
@@ -247,7 +250,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   function setMerkleRoot(bytes32 _merkleRoot) external {
-    require(hasRole(GAME_ADMIN, msg.sender), "No permission!");
+    require(hasRole(GAME_ADMIN, msg.sender), Errors.VL_NOT_AUTHORIZED);
     require(_merkleRoot[0] != 0, "Empty merkleRoot!");
     merkleRoot = _merkleRoot;
   }

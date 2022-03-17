@@ -16,8 +16,11 @@ import "../../interfaces/chainlink/AggregatorV3Interface.sol";
 contract NFTInteractions is FujiPriceAware, Initializable {
   using LibPseudoRandom for uint256;
 
+  /**
+   * @dev Reward for opening a crate, 'tokenId' corresponds to ERC1155 ids
+   */
   struct Reward {
-    uint256 id;
+    uint256 tokenId;
     uint256 amount;
   }
 
@@ -200,8 +203,8 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     require(crateRewards[crateId].length == probabilityIntervals.length, "Rewards not set!");
 
     // Points + Crates + Cards
-    Reward[] memory rewardsByCrate = new Reward[](amount);
-    uint256[] memory totalRewards = new uint256[](1 + 3 + nftGame.nftCardsAmount());
+    Reward[] memory rewardByCrate = new Reward[](amount);
+    uint256[] memory aggregatedRewards = new uint256[](1 + 3 + nftGame.nftCardsAmount());
 
     uint256 entropyValue = isRedstoneOracleOn ? _getRedstoneEntropy(): _getChainlinkEntropy();
     uint256[] memory randomNumbers = LibPseudoRandom.pickRandomNumbers(amount, entropyValue);
@@ -214,8 +217,8 @@ contract NFTInteractions is FujiPriceAware, Initializable {
       for (uint256 i = 0; i < probabilityIntervals.length && isCard; i++) {
         if (randomNumbers[j] <= probabilityIntervals[i]) {
           isCard = false;
-          totalRewards[nftGame.POINTS_ID()] += crateRewards[crateId][i];
-          rewardsByCrate[j].amount = crateRewards[crateId][i];
+          aggregatedRewards[nftGame.POINTS_ID()] += crateRewards[crateId][i];
+          rewardByCrate[j].amount = crateRewards[crateId][i];
         }
       }
 
@@ -227,28 +230,28 @@ contract NFTInteractions is FujiPriceAware, Initializable {
         for (uint256 i = step; i <= randomNum; i += step) {
           randomId++;
         }
-        totalRewards[randomId]++;
-        rewardsByCrate[j].id = randomId;
-        rewardsByCrate[j].amount = 1;
+        aggregatedRewards[randomId]++;
+        rewardByCrate[j].tokenId = randomId;
+        rewardByCrate[j].amount = 1;
       }
     }
 
     // mint points
-    if (totalRewards[nftGame.POINTS_ID()] > 0) {
-      nftGame.mint(msg.sender, nftGame.POINTS_ID(), totalRewards[nftGame.POINTS_ID()]);
+    if (aggregatedRewards[nftGame.POINTS_ID()] > 0) {
+      nftGame.mint(msg.sender, nftGame.POINTS_ID(), aggregatedRewards[nftGame.POINTS_ID()]);
     }
 
     // mint cards
     for (uint256 i = NFT_CARD_ID_START; i < NFT_CARD_ID_START + nftGame.nftCardsAmount(); i++) {
-      if (totalRewards[i] > 0) {
-        nftGame.mint(msg.sender, i, totalRewards[i]);
+      if (aggregatedRewards[i] > 0) {
+        nftGame.mint(msg.sender, i, aggregatedRewards[i]);
       }
     }
 
     // burn opened crates
     nftGame.burn(msg.sender, crateId, amount);
 
-    emit CratesOpened(msg.sender, crateId, amount, rewardsByCrate);
+    emit CratesOpened(msg.sender, crateId, amount, rewardByCrate);
   }
 
   function lockFinalScore() external {

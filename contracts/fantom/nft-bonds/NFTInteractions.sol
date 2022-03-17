@@ -17,6 +17,14 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   using LibPseudoRandom for uint256;
 
   /**
+   * @dev Reward for opening a crate, 'tokenId' corresponds to ERC1155 ids
+   */
+  struct Reward {
+    uint256 tokenId;
+    uint256 amount;
+  }
+
+  /**
    * @dev Changing a crate points price
    */
   event CratePriceChanged(uint256 crateId, uint256 price);
@@ -39,7 +47,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   /**
    * @dev Opened crates
    */
-  event CratesOpened(address user, uint256 crateId, uint256 amount, uint256[] rewards);
+  event CratesOpened(address user, uint256 crateId, Reward[] rewards);
 
   /**
    * @dev Final score locked
@@ -195,7 +203,8 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     require(crateRewards[crateId].length == probabilityIntervals.length, "Rewards not set!");
 
     // Points + Crates + Cards
-    uint256[] memory rewards = new uint256[](1 + 3 + nftGame.nftCardsAmount());
+    Reward[] memory rewards = new Reward[](amount);
+    uint256[] memory aggregatedRewards = new uint256[](1 + 3 + nftGame.nftCardsAmount());
 
     uint256 entropyValue = isRedstoneOracleOn ? _getRedstoneEntropy(): _getChainlinkEntropy();
     uint256[] memory randomNumbers = LibPseudoRandom.pickRandomNumbers(amount, entropyValue);
@@ -208,38 +217,41 @@ contract NFTInteractions is FujiPriceAware, Initializable {
       for (uint256 i = 0; i < probabilityIntervals.length && isCard; i++) {
         if (randomNumbers[j] <= probabilityIntervals[i]) {
           isCard = false;
-          rewards[nftGame.POINTS_ID()] += crateRewards[crateId][i];
+          aggregatedRewards[nftGame.POINTS_ID()] += crateRewards[crateId][i];
+          rewards[j].amount = crateRewards[crateId][i];
         }
       }
 
       // if the reward is a card determine the card id
       if (isCard) {
         uint256 step = 1000000 / nftGame.nftCardsAmount();
-        uint256 randomNum = LibPseudoRandom.pickRandomNumbers(1, entropyValue + 1)[0];
+        uint256 randomNum = LibPseudoRandom.pickRandomNumbers(1, entropyValue + j)[0];
         uint256 randomId = NFT_CARD_ID_START;
         for (uint256 i = step; i <= randomNum; i += step) {
           randomId++;
         }
-        rewards[randomId]++;
+        aggregatedRewards[randomId]++;
+        rewards[j].tokenId = randomId;
+        rewards[j].amount = 1;
       }
     }
 
     // mint points
-    if (rewards[nftGame.POINTS_ID()] > 0) {
-      nftGame.mint(msg.sender, nftGame.POINTS_ID(), rewards[nftGame.POINTS_ID()]);
+    if (aggregatedRewards[nftGame.POINTS_ID()] > 0) {
+      nftGame.mint(msg.sender, nftGame.POINTS_ID(), aggregatedRewards[nftGame.POINTS_ID()]);
     }
 
     // mint cards
     for (uint256 i = NFT_CARD_ID_START; i < NFT_CARD_ID_START + nftGame.nftCardsAmount(); i++) {
-      if (rewards[i] > 0) {
-        nftGame.mint(msg.sender, i, rewards[i]);
+      if (aggregatedRewards[i] > 0) {
+        nftGame.mint(msg.sender, i, aggregatedRewards[i]);
       }
     }
 
     // burn opened crates
     nftGame.burn(msg.sender, crateId, amount);
 
-    emit CratesOpened(msg.sender, crateId, amount, rewards);
+    emit CratesOpened(msg.sender, crateId, rewards);
   }
 
   function lockFinalScore() external {

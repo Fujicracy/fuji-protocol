@@ -47,7 +47,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   /**
    * @dev Opened crates
    */
-  event CratesOpened(address user, uint256 crateId, uint256 amount, Reward[] rewards);
+  event CratesOpened(address user, uint256 crateId, Reward[] rewards);
 
   /**
    * @dev Final score locked
@@ -251,7 +251,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     // burn opened crates
     nftGame.burn(msg.sender, crateId, amount);
 
-    emit CratesOpened(msg.sender, crateId, amount, rewards);
+    emit CratesOpened(msg.sender, crateId, rewards);
   }
 
   function lockFinalScore() external {

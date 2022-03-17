@@ -7,9 +7,9 @@ const deployNFTGame = async (args) => {
   if (!deployed.deployTransaction) {
     return deployed;
   } else {
-    await deployed.deployTransaction.wait();
+    await deployed.deployTransaction.wait(5);
     const tx = await deployed.grantRole(deployed.GAME_ADMIN(), deployed.signer.address);
-    await tx.wait();
+    await tx.wait(5);
     return deployed;
   }
 };

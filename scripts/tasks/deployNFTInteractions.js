@@ -7,7 +7,7 @@ const deployNFTInteractions = async (args) => {
   if (!deployed.deployTransaction) {
     return deployed;
   } else {
-    await deployed.deployTransaction.wait();
+    await deployed.deployTransaction.wait(5);
     return deployed;
   }
 };

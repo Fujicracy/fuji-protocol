@@ -26,7 +26,7 @@ const updateNFTInteractions = async (nftinteractionsAddress, nftgameAddress, rew
         crateIds[i],
         rewardfactors[i].map((e) => e * prices[i])
       );
-      await temptx.wait();
+      await temptx.wait(5);
     }
   }
   console.log("NFTinteractions crate rewards set!");

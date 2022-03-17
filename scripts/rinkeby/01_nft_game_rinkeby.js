@@ -22,21 +22,35 @@ const deployPointFaucet = async () => {
   if (!deployed.deployTransaction) {
     return deployed;
   } else {
-    await deployed.deployTransaction.wait();
+    await deployed.deployTransaction.wait(5);
     return deployed;
   }
 };
 
 const updatePointFaucet = async (pointfaucetAddresss, nftgameAddress) => {
   const pointfaucet = await ethers.getContractAt("PointFaucet", pointfaucetAddresss);
-  const nftGame = await pointfaucet.nftGame();
-  if (!nftGame) {
+  const nftGameResponse = await pointfaucet.nftGame();
+  
+  if (!nftGameResponse) {
     const tx = await pointfaucet.setNFTGame(nftgameAddress);
-    await tx.wait();
-    console.log("Faucet set-up complete");
+    await tx.wait(5);
+    console.log("Faucet nftGame address set-up complete");
   } else {
-    console.log("Faucet already set-up");
+    console.log("Faucet nftGame address already set-up");
   }
+
+  const nftgame = await ethers.getContractAt("NFTGame", nftgameAddress);
+  const GAME_INTERACTOR = await nftgame.GAME_INTERACTOR();
+  const hasRole = await nftgame.hasRole(GAME_INTERACTOR, pointfaucet.address);
+
+  if (!hasRole) {
+    const tx1 = await nftgame.grantRole(GAME_INTERACTOR, pointfaucet.address);
+    await tx1.wait(5);
+    console.log("Faucet role GAME_INTERACTOR assigned in Nftgame complete");
+  } else {
+    console.log("Faucet role GAME_INTERACTOR already assigned.");
+  }
+  
 };
 
 const deployContracts = async () => {
@@ -56,7 +70,8 @@ const deployContracts = async () => {
 
   // 'pointfaucet' only required for Rinkeby
   let pointfaucet = await deployPointFaucet();
-  
+
+  console.log("network", network);
   await updateNFTGame(nftgame, nftinteractions, network);
   await updatePointFaucet(pointfaucet, nftgame);
 

@@ -203,7 +203,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     require(crateRewards[crateId].length == probabilityIntervals.length, "Rewards not set!");
 
     // Points + Crates + Cards
-    Reward[] memory rewardByCrate = new Reward[](amount);
+    Reward[] memory rewards = new Reward[](amount);
     uint256[] memory aggregatedRewards = new uint256[](1 + 3 + nftGame.nftCardsAmount());
 
     uint256 entropyValue = isRedstoneOracleOn ? _getRedstoneEntropy(): _getChainlinkEntropy();
@@ -218,7 +218,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
         if (randomNumbers[j] <= probabilityIntervals[i]) {
           isCard = false;
           aggregatedRewards[nftGame.POINTS_ID()] += crateRewards[crateId][i];
-          rewardByCrate[j].amount = crateRewards[crateId][i];
+          rewards[j].amount = crateRewards[crateId][i];
         }
       }
 
@@ -231,8 +231,8 @@ contract NFTInteractions is FujiPriceAware, Initializable {
           randomId++;
         }
         aggregatedRewards[randomId]++;
-        rewardByCrate[j].tokenId = randomId;
-        rewardByCrate[j].amount = 1;
+        rewards[j].tokenId = randomId;
+        rewards[j].amount = 1;
       }
     }
 
@@ -251,7 +251,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     // burn opened crates
     nftGame.burn(msg.sender, crateId, amount);
 
-    emit CratesOpened(msg.sender, crateId, amount, rewardByCrate);
+    emit CratesOpened(msg.sender, crateId, amount, rewards);
   }
 
   function lockFinalScore() external {

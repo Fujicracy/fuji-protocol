@@ -33,7 +33,7 @@ contract HelperFunct {
   }
 
   function _getProxyReceiver() internal pure returns (address) {
-    return 0x0A666645b6429eB1A5e04a4831092F7b907C2606;
+    return 0x51A24fbdb77A576D440FCC1B82C8a1EADf2729E0; // Rinkeby
   }
 
 

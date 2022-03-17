@@ -43,7 +43,7 @@ const deployContracts = async () => {
 
   // Deploy Core Money Handling Contracts
 
-  const vaultusdc = await deployVaultMod("VaultETHUSDC", "FujiVaultFTM", [
+  const vaultethusdc = await deployVaultMod("VaultETHUSDC", "FujiVaultFTM", [
     fujiadmin,
     oracle,
     ASSETS.ETH.address,

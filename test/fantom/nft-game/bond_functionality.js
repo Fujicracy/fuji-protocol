@@ -21,14 +21,7 @@ const {
   timeTravel,
 } = require("../../helpers");
 
-const FULL_FIXTURE = false;
 const DEBUG = true;
-
-if (FULL_FIXTURE) {
-  const { ASSETS, VAULTS } = require("../utils");
-} else {
-  const { ASSETS, VAULTS } = require("./quick_test_fixture");
-}
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const amountOfCratesToBuy = 10;
@@ -52,11 +45,7 @@ describe("Bond Functionality", function () {
 
     const loadFixture = createFixtureLoader(this.users, provider);
 
-    if (FULL_FIXTURE) {
-      this.f = await loadFixture(fixture);
-    } else {
-      this.f = await loadFixture(quickFixture);
-    }
+    this.f = await loadFixture(quickFixture);
 
     /// Specific testing conditions.
 

@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "../../abstracts/claimable/ClaimableUpgradeable.sol";
 import "./utils/VoucherCore.sol";
 import "./NFTGame.sol";
 
-contract PreTokenBonds is VoucherCore {
+contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgradeable {
   /**
    * @dev NFTGame contract address changed
    */
@@ -41,6 +42,9 @@ contract PreTokenBonds is VoucherCore {
       uint8 _unitDecimals,
       address _nftGame
   ) internal override {
+    // Claimable contract is added to have 'owner()' function required to update
+    // update and control external NFT front-ends.
+    __Claimable_init();
     VoucherCore._initialize(_name, _symbol, _unitDecimals);
     nftGame = NFTGame(_nftGame);
     bondTimes = [3, 6, 12];

@@ -1,12 +1,26 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.0;
 
-import "@solv/v2-solidity-utils/contracts/access/AdminControl.sol";
-import "@solv/v2-solidity-utils/contracts/misc/Constants.sol";
 import "./VNFTCoreV2.sol";
 
-abstract contract VoucherCore is VNFTCoreV2, AdminControl {
+library Constants {
+    enum ClaimType {
+        LINEAR,
+        ONE_TIME,
+        STAGED
+    }
+    enum VoucherType {
+        STANDARD_VESTING,
+        FLEXIBLE_DATE_VESTING,
+        BOUNDING
+    }
+    uint32 internal constant FULL_PERCENTAGE = 10000;
+    address internal constant ETH_ADDRESS =
+        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+}
+
+abstract contract VoucherCore is VNFTCoreV2 {
     /// @dev tokenId => slot
     mapping(uint256 => uint256) public voucherSlotMapping;
 
@@ -17,7 +31,6 @@ abstract contract VoucherCore is VNFTCoreV2, AdminControl {
         string memory symbol_,
         uint8 unitDecimals_
     ) internal override {
-        AdminControl.__AdminControl_init(_msgSender());
         VNFTCoreV2._initialize(name_, symbol_, unitDecimals_);
         nextTokenId = 1;
     }
@@ -180,10 +193,5 @@ abstract contract VoucherCore is VNFTCoreV2, AdminControl {
         return voucherSlotMapping[tokenId_];
     }
 
-    function owner() external view virtual returns (address) {
-        return admin;
-    }
-
     function voucherType() external view virtual returns (Constants.VoucherType) {}
-
 }

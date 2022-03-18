@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.2;
+pragma solidity ^0.8.0;
 
-import "@solv/v2-solidity-utils/contracts/openzeppelin/token/ERC721/ERC721Upgradeable.sol";
-import "@solv/v2-solidity-utils/contracts/openzeppelin/utils/EnumerableSetUpgradeable.sol";
-import "./interface/IVNFT.sol";
-import "./interface/optional/IVNFTMetadata.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+import "../interfaces/IVNFT.sol";
+import "../interfaces/IVNFTMetadata.sol";
 
 abstract contract VNFTCoreV2 is IVNFT, IVNFTMetadata, ERC721Upgradeable {
     using SafeMathUpgradeable for uint256;

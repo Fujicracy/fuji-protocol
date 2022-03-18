@@ -36,12 +36,30 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
 
   uint256 public bondPrice;
 
-  function _initialize(
+  string private _contractURI;
+
+  // SlotID => to URI mapping
+  mapping(uint256 => string) private _slotURI;
+
+  /**
+  * @dev See {IERC165-supportsInterface}.
+  */
+  function supportsInterface(bytes4 interfaceId) public view 
+    override(AccessControlUpgradeable, ERC721Upgradeable) returns (bool) {
+      return
+        interfaceId == type(IVNFT).interfaceId ||
+        interfaceId == type(IAccessControlUpgradeable).interfaceId ||
+        interfaceId == type(IERC721Upgradeable).interfaceId ||
+        interfaceId == type(IERC721MetadataUpgradeable).interfaceId ||
+        super.supportsInterface(interfaceId);
+  }
+
+  function initialize(
       string memory _name,
       string memory _symbol,
       uint8 _unitDecimals,
       address _nftGame
-  ) internal override {
+  ) external {
     // Claimable contract is added to have 'owner()' function required to update
     // update and control external NFT front-ends.
     __Claimable_init();
@@ -50,6 +68,39 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
     bondTimes = [3, 6, 12];
     bondPrice = 10000;
   }
+
+  /// View functions
+
+
+  /**
+   * @notice Returns the number of tokens per bond for a slotID (vesting time)
+   */
+  function tokensPerUnit(uint256 _slot) public view returns(uint256) {
+    uint256 totalUnits = 0;
+    for (uint256 i = 0; i < bondTimes.length; i++) {
+      totalUnits += unitsInSlot(bondTimes[i]);
+    }
+    uint256 slot = bondTimes[_slot];
+    uint256 multiplier = slot == 3 ? 1 : slot == 6 ? 2 : 4;
+    return (IERC20(underlying).balanceOf(address(this)) * multiplier  / totalUnits);
+  } 
+
+  /**
+   * @notice Returns the contract URI for contract metadata
+   */
+  function contractURI() external override view returns (string memory) {
+    return _contractURI;
+  }
+
+  /**
+   * @notice Returns the slot URI for metadata
+   * @param slot: slot id to request URI
+   */
+  function slotURI(uint256 slot) external override view returns (string memory) {
+    return _slotURI[slot];
+  }
+
+  /// Administrative functions
 
   /**
    * @notice Set address for NFTGame contract
@@ -88,6 +139,22 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
   }
 
   /**
+   * @notice Set the contract URI
+   */
+  function setContractURI(string calldata _URI) external {
+    _contractURI = _URI;
+  }
+
+  /**
+   * @notice Set the URI for a slotID
+   */
+  function setSlotURI(uint256 _slot, string calldata _URI) external {
+    _slotURI[_slot] = _URI;
+  }
+
+  /// Change state functions
+
+  /**
    * @notice Function to be called from Interactions contract, after burning the points
    */
   function mint(address _user, uint256 _type, uint256 _units) external {
@@ -108,20 +175,8 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
     require(underlying != address(0), "Underlying not set");
     //TODO check date (create new phase?)
     //TODO check units
-
     //TODO burn units
 
     IERC20(underlying).transfer(user, tokensPerUnit(_type) * _units);
-  }
-
-  function tokensPerUnit(uint256 _type) public {
-    uint256 totalUnits = 0;
-    for (uint256 i = 0; i < bondTimes.length; i++) {
-      totalUnits += unitsInSlot(bondTimes[i]);
-    }
-
-    uint256 slot = bondTimes[_type];
-    uint256 multiplier = slot == 3 ? 1 : slot == 6 ? 2 : 4;
-    return (IERC20(underlying).balanceOf(address(this)) / totalUnits) * multiplier;
-  }
+  }   
 }

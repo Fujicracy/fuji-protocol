@@ -35,7 +35,6 @@ abstract contract VNFTCoreV2 is IVNFT, IVNFTMetadata, ERC721Upgradeable {
         uint8 unitDecimals_
     ) internal virtual {
         ERC721Upgradeable.__ERC721_init(name_, symbol_);
-        ERC165Upgradeable._registerInterface(type(IVNFT).interfaceId);
         _unitDecimals = unitDecimals_;
     }
 

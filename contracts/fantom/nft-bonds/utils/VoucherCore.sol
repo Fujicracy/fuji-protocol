@@ -193,5 +193,6 @@ abstract contract VoucherCore is VNFTCoreV2 {
         return voucherSlotMapping[tokenId_];
     }
 
-    function voucherType() external view virtual returns (Constants.VoucherType) {}
+    // Fuji change. 
+    // function voucherType() external view virtual returns (Constants.VoucherType) {}
 }

@@ -91,9 +91,9 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     emit NFTGameChanged(_nftGame);
   }
 
-  function setPreTokenBonds(address _preTokenBodns) external {
+  function setPreTokenBonds(address _preTokenBonds) external {
     require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
-    preTokenBonds = PreTokenBonds(_preTokenBodns);
+    preTokenBonds = PreTokenBonds(_preTokenBonds);
     emit PreTokenBondsChanged(_preTokenBonds);
   }
 
@@ -272,7 +272,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     uint256 lockedNFTId = nftGame.userLock(msg.sender, boostNumber);
 
     // Emit locking event
-    LockedScore(msg.sender, lockedNFTId);
+    emit LockedScore(msg.sender, lockedNFTId);
   }
 
   /// Read-only functions

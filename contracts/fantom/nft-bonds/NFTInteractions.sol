@@ -307,6 +307,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * @notice calls chainlink-oracle for entropy value.
    */
   function _getChainlinkEntropy() private view returns (uint256) {
+    // Hardcoded for fantom
     (,int numA,,,) = AggregatorV3Interface(0xf4766552D15AE4d256Ad41B6cf2933482B0680dc).latestRoundData();
     (,int numB,,,) = AggregatorV3Interface(0x11DdD3d147E5b83D01cee7070027092397d63658).latestRoundData();
     return uint256(numA * numB);

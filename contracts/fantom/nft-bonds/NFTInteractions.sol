@@ -61,9 +61,9 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   bool public isRedstoneOracleOn;
 
   // CrateID => crate rewards
-  mapping(uint256 => uint256[]) crateRewards;
+  mapping(uint256 => uint256[]) public crateRewards;
 
-  uint256[] private probabilityIntervals;
+  uint256[] private _probabilityIntervals;
 
   NFTGame private nftGame;
 
@@ -75,9 +75,15 @@ contract NFTInteractions is FujiPriceAware, Initializable {
 
   function initialize(address _nftGame) external initializer {
     isRedstoneOracleOn = true;
-    maxDelay = 3 * 60;
+    maxDelay = 5 * 60;
     nftGame = NFTGame(_nftGame);
-    probabilityIntervals = [500000, 700000, 900000, 950000, 950100];
+    _probabilityIntervals = [500000, 700000, 900000, 950000, 950100];
+
+    // Set basic cardBoost
+    uint256 cardsLimit = nftGame.nftCardsAmount() + NFT_CARD_ID_START;
+    for (uint256 index = NFT_CARD_ID_START; index < cardsLimit; index++) {
+      cardBoost[index] = 110;
+    }
   }
 
   // Admin functions
@@ -108,7 +114,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    */
   function setProbabilityIntervals(uint256[] memory intervals) external {
     require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
-    probabilityIntervals = intervals;
+    _probabilityIntervals = intervals;
   }
 
   /**
@@ -200,7 +206,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
       "Invalid crate ID!"
     );
     require(nftGame.balanceOf(msg.sender, crateId) >= amount, "Not enough crates!");
-    require(crateRewards[crateId].length == probabilityIntervals.length, "Rewards not set!");
+    require(crateRewards[crateId].length == _probabilityIntervals.length, "Rewards not set!");
 
     // Points + Crates + Cards
     Reward[] memory rewards = new Reward[](amount);
@@ -214,8 +220,8 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     for (uint256 j = 0; j < amount; j++) {
       isCard = true;
       // iterate propability intervals to see the reward for a specific crate
-      for (uint256 i = 0; i < probabilityIntervals.length && isCard; i++) {
-        if (randomNumbers[j] <= probabilityIntervals[i]) {
+      for (uint256 i = 0; i < _probabilityIntervals.length && isCard; i++) {
+        if (randomNumbers[j] <= _probabilityIntervals[i]) {
           isCard = false;
           aggregatedRewards[nftGame.POINTS_ID()] += crateRewards[crateId][i];
           rewards[j].amount = crateRewards[crateId][i];
@@ -242,7 +248,8 @@ contract NFTInteractions is FujiPriceAware, Initializable {
     }
 
     // mint cards
-    for (uint256 i = NFT_CARD_ID_START; i < NFT_CARD_ID_START + nftGame.nftCardsAmount(); i++) {
+    uint256 cardsLimit = nftGame.nftCardsAmount() + NFT_CARD_ID_START;
+    for (uint256 i = NFT_CARD_ID_START; i < cardsLimit; i++) {
       if (aggregatedRewards[i] > 0) {
         nftGame.mint(msg.sender, i, aggregatedRewards[i]);
       }
@@ -266,6 +273,13 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   }
 
   /// Read-only functions
+
+  /**
+   * @notice Returns the probability intervals
+   */
+  function getProbabilityIntervals() external view returns (uint256[] memory) {
+    return _probabilityIntervals;
+  }
 
   /**
    * @notice Returns the totalBoost of user according to cards in possesion.

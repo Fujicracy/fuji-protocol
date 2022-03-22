@@ -24,10 +24,10 @@ const forkUrl =
   network === "fantom"
     ? "https://rpc.ftm.tools/"
     : network === "bsc"
-    ? "https://bsc-dataseed.binance.org/"
-    : network === "polygon"
-    ? `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_ID}`
-    : mainnetUrl;
+      ? "https://bsc-dataseed.binance.org/"
+      : network === "polygon"
+        ? "https://polygon-rpc.com"
+        : mainnetUrl
 
 //
 // Select the network you want to deploy to here:
@@ -105,6 +105,10 @@ module.exports = {
     },
     polygon: {
       url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_ID}`,
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : { mnemonic: mnemonic() },
+    },
+    mumbai: {
+      url: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.ALCHEMY_ID}`,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : { mnemonic: mnemonic() },
     },
   },

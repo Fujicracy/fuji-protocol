@@ -43,7 +43,7 @@ const deployContracts = async () => {
   // Provider Contracts
   const aaveMATIC = await deployProvider("ProviderAaveMATIC");
   const kashi = await deployProvider("ProviderKashi");
-  const wePiggy = await deployProvider("ProviderWePiggy");
+  const wepiggy = await deployProvider("ProviderWepiggy");
 
   // Deploy Core Money Handling Contracts
   // const vaultharvester = await deployVaultHarvester();
@@ -83,12 +83,12 @@ const deployContracts = async () => {
 
   // Vault Set-up
   await updateVault("VaultMATICDAI", vaultdai, {
-    providers: [aaveMATIC, kashi, wePiggy],
+    providers: [aaveMATIC, kashi, wepiggy],
     fujiadmin,
     f1155,
   });
   await updateVault("VaultMATICUSDC", vaultusdc, {
-    providers: [aaveMATIC, kashi, wePiggy],
+    providers: [aaveMATIC, kashi, wepiggy],
     fujiadmin,
     f1155,
   });

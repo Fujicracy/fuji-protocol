@@ -10,7 +10,7 @@ const ASSETS = {
     name: "dai",
     nameUp: "DAI",
     address: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
-    oracle: "	0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D",
+    oracle: "0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D",
     decimals: 18,
   },
   USDC: {

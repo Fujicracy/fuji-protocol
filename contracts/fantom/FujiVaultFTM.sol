@@ -19,7 +19,7 @@ import "../interfaces/IFujiERC1155.sol";
 import "../interfaces/IProvider.sol";
 import "../libraries/Errors.sol";
 import "./libraries/LibUniversalERC20UpgradeableFTM.sol";
-import "./nft-bonds/NFTGame.sol";
+import "./nft-bonds/interfaces/INFTGame.sol";
 
 /**
  * @dev Contract for the interaction of Fuji users with the Fuji protocol.
@@ -799,7 +799,7 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
    * Used to plug functionality. 
    */
   function _afterDebtActionCallback(uint256 _amount, bool _isPayback) internal {
-    NFTGame game = NFTGame(nftGame);
+    INFTGame game = INFTGame(nftGame);
     if (block.timestamp < game.gamePhaseTimestamps(1) && block.timestamp >= game.gamePhaseTimestamps(0) && game.isValidVault(address(this))) {
       game.checkStateOfPoints(msg.sender, _amount, _isPayback, _borrowAssetDecimals);
     }

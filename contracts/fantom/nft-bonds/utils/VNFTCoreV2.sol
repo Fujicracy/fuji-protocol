@@ -302,6 +302,7 @@ abstract contract VNFTCoreV2 is IVNFT, IVNFTMetadata, ERC721Upgradeable {
         address to_,
         uint256 tokenId_
     ) internal virtual override {
+        to_;
         if (from_ != address(0)) {
             _clearApproveUnits(tokenId_);
         }

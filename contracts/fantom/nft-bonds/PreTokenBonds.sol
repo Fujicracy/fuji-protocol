@@ -8,6 +8,8 @@ import "./utils/VoucherCore.sol";
 import "./NFTGame.sol";
 
 contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgradeable {
+  using StringsUpgradeable for uint256;
+
   /**
    * @dev NFTGame contract address changed
    */
@@ -36,10 +38,11 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
 
   uint256 public bondPrice;
 
-  string private _contractURI;
-
-  // SlotID => to URI mapping
-  mapping(uint256 => string) private _slotURI;
+  // Metadata for ERC3525:
+  // Refer to: https://eips.ethereum.org/EIPS/eip-3525#metadata
+  string private _tokenBaseURI; // ERC721 general base token URI
+  string private _contractURI; // Contract Info URI 
+  string private _slotBaseURI; // Slot base URI 
 
   /**
   * @dev See {IERC165-supportsInterface}.
@@ -71,7 +74,6 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
 
   /// View functions
 
-
   /**
    * @notice Returns the number of tokens per bond for a slotID (vesting time)
    */
@@ -83,21 +85,32 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
     uint256 slot = bondTimes[_slot];
     uint256 multiplier = slot == 3 ? 1 : slot == 6 ? 2 : 4;
     return (IERC20(underlying).balanceOf(address(this)) * multiplier  / totalUnits);
-  } 
+  }
+
+  /**
+  * @notice Returns the token Id metadata URI
+  * Example: '{_tokenBaseURI}/{tokenId}.json'
+  * @dev See {IERC721Metadata-tokenURI}.
+  */
+  function tokenURI(uint256 tokenId) public view override returns (string memory) {
+      require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+      return string(abi.encodePacked(_tokenBaseURI, tokenId.toString(), ".json"));
+  }
 
   /**
    * @notice Returns the contract URI for contract metadata
+   * See {setContractURI(string)}
    */
   function contractURI() external override view returns (string memory) {
     return _contractURI;
   }
 
   /**
-   * @notice Returns the slot URI for metadata
-   * @param slot: slot id to request URI
+   * @notice Returns the slot ID URI for metadata
+   * Example: '{_slotBaseURI}/{slotID}.json'
    */
-  function slotURI(uint256 slot) external override view returns (string memory) {
-    return _slotURI[slot];
+  function slotURI(uint256 slotID) external override view returns (string memory) {
+    return string(abi.encodePacked(_slotBaseURI, slotID.toString(), ".json"));
   }
 
   /// Administrative functions
@@ -139,17 +152,27 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
   }
 
   /**
-   * @notice Set the contract URI
+   * @notice Set the base URI for a Token ID metadata
+   * @dev example input: 'https://www.mysite.com/metadata/token/'
+   */
+  function setBaseTokenURI(string calldata _URI) external {
+    _slotBaseURI = _URI;
+  }
+
+  /**
+   * @notice Set the contract general URI metadata
+   * @dev example input: 'https://www.mysite.com/metadata/contractERC3525.json'
    */
   function setContractURI(string calldata _URI) external {
     _contractURI = _URI;
   }
 
   /**
-   * @notice Set the URI for a slotID
+   * @notice Set the base URI for a slot ID metadata
+   * @dev example input: 'https://www.mysite.com/metadata/slots/'
    */
-  function setSlotURI(uint256 _slot, string calldata _URI) external {
-    _slotURI[_slot] = _URI;
+  function setBaseSlotURI(string calldata _URI) external {
+    _slotBaseURI = _URI;
   }
 
   /// Change state functions
@@ -171,6 +194,9 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
     IERC20(underlying).transferFrom(msg.sender, address(this), _amount);
   }
 
+  /**
+   * @notice Claims tokens at voucher expiry date.
+   */
   function claim(address user, uint256 _type, uint256 _units) external {
     require(underlying != address(0), "Underlying not set");
     //TODO check date (create new phase?)
@@ -178,5 +204,5 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
     //TODO burn units
 
     IERC20(underlying).transfer(user, tokensPerUnit(_type) * _units);
-  }   
+  }
 }

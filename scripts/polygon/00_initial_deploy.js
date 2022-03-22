@@ -17,9 +17,9 @@ const { updateFujiERC1155 } = require("../tasks/updateFujiERC1155");
 const { updateFujiFliquidator } = require("../tasks/updateFujiFliquidator");
 const { updateVault } = require("../tasks/updateVault");
 const { setDeploymentsPath, network } = require("../utils");
-const { ASSETS, SPOOKY_ROUTER_ADDR } = require("./consts");
+const { ASSETS, QUICK_ROUTER_ADDR } = require("./consts");
 
-global.progressPrefix = __filename.split("/").pop()
+global.progressPrefix = __filename.split("/").pop();
 global.progress = ora().start(progressPrefix + ": Starting...");
 global.console.log = (...args) => {
   progress.text = `${progressPrefix}: ${args.join(" ")}`;
@@ -41,24 +41,24 @@ const deployContracts = async () => {
   ]);
 
   // Provider Contracts
-  const cream = await deployProvider("ProviderCream");
-  const scream = await deployProvider("ProviderScream");
-  const geist = await deployProvider("ProviderGeist");
+  const aaveMATIC = await deployProvider("ProviderAaveMATIC");
+  const kashi = await deployProvider("ProviderKashi");
+  const wePiggy = await deployProvider("ProviderWePiggy");
 
   // Deploy Core Money Handling Contracts
   // const vaultharvester = await deployVaultHarvester();
   const swapper = await deploySwapper();
 
-  const vaultdai = await deployVault("VaultFTMDAI", [
+  const vaultdai = await deployVault("VaultMATICDAI", [
     fujiadmin,
     oracle,
-    ASSETS.FTM.address,
+    ASSETS.MATIC.address,
     ASSETS.DAI.address,
   ]);
-  const vaultusdc = await deployVault("VaultFTMUSDC", [
+  const vaultusdc = await deployVault("VaultMATICUSDC", [
     fujiadmin,
     oracle,
-    ASSETS.FTM.address,
+    ASSETS.MATIC.address,
     ASSETS.USDC.address,
   ]);
 
@@ -75,20 +75,20 @@ const deployContracts = async () => {
   await updateFujiFliquidator(fliquidator, {
     fujiadmin,
     oracle,
-    swapper: SPOOKY_ROUTER_ADDR,
+    swapper: QUICK_ROUTER_ADDR,
   });
   await updateFlasher(flasher, fujiadmin);
   await updateController(controller, fujiadmin);
   await updateFujiERC1155(f1155, [vaultdai, vaultusdc, fliquidator]);
 
   // Vault Set-up
-  await updateVault("VaultFTMDAI", vaultdai, {
-    providers: [cream, scream, geist],
+  await updateVault("VaultMATICDAI", vaultdai, {
+    providers: [aaveMATIC, kashi, wePiggy],
     fujiadmin,
     f1155,
   });
-  await updateVault("VaultFTMUSDC", vaultusdc, {
-    providers: [cream, scream, geist],
+  await updateVault("VaultMATICUSDC", vaultusdc, {
+    providers: [aaveMATIC, kashi, wePiggy],
     fujiadmin,
     f1155,
   });
@@ -97,8 +97,8 @@ const deployContracts = async () => {
 };
 
 const main = async () => {
-  if (network !== "fantom") {
-    throw new Error("Please set 'NETWORK=fantom' in ./packages/hardhat/.env");
+  if (network !== "polygon") {
+    throw new Error("Please set 'NETWORK=polygon' in ./packages/hardhat/.env");
   }
 
   await setDeploymentsPath("core");

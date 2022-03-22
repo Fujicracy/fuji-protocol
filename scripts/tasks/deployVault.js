@@ -8,7 +8,6 @@ const deployVault = async (name, args) => {
   // Call initialize function of the implementation contract if it's not already called.
   // This is a precaution measure to make sure a malicious actor won't take control
   // of the implementation contract.
-  //TODO question
   const implAddr = await upgrades.erc1967.getImplementationAddress(deployed);
   const implContract = await ethers.getContractAt(contractName, implAddr);
   const implOwner = await implContract.owner();

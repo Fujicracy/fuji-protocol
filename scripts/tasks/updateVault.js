@@ -4,7 +4,20 @@ const { callIf, network } = require("../utils");
 const updateVault = async (name, vault, params) => {
   const { providers, fujiadmin, f1155 } = params;
 
-  const contractName = network === "fantom" ? "FujiVaultFTM" : "FujiVault";
+  let contractName;
+  switch (network) {
+    case "mainnet":
+      contractName = "FujiVault";
+      break;
+    case "fantom":
+      contractName = "FujiVaultFTM";
+      break;
+    case "polygon":
+      contractName = "FujiVaultMATIC";
+      break;
+    default:
+      break;
+  }
   const vaultContract = await ethers.getContractAt(contractName, vault);
 
   if (providers && providers.length > 0) {

@@ -1,23 +1,11 @@
 const { ethers } = require("hardhat");
-const { callIf, network } = require("../utils");
+const { callIf, networkSuffix } = require("../utils");
 
 const updateVault = async (name, vault, params) => {
   const { providers, fujiadmin, f1155 } = params;
 
-  let contractName;
-  switch (network) {
-    case "mainnet":
-      contractName = "FujiVault";
-      break;
-    case "fantom":
-      contractName = "FujiVaultFTM";
-      break;
-    case "polygon":
-      contractName = "FujiVaultMATIC";
-      break;
-    default:
-      break;
-  }
+  const contractName = networkSuffix("FujiVault");
+
   const vaultContract = await ethers.getContractAt(contractName, vault);
 
   if (providers && providers.length > 0) {

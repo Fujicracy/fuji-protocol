@@ -1,20 +1,7 @@
-const { deployProxy, redeployIf, network } = require("../utils");
+const { deployProxy, redeployIf, networkSuffix } = require("../utils");
 
 const deployVault = async (name, args) => {
-  let contractName;
-  switch (network) {
-    case "mainnet":
-      contractName = "FujiVault";
-      break;
-    case "fantom":
-      contractName = "FujiVaultFTM";
-      break;
-    case "polygon":
-      contractName = "FujiVaultMATIC";
-      break;
-    default:
-      break;
-  }
+  const contractName = networkSuffix("FujiVault");
 
   const deployed = await redeployIf(name, contractName, () => false, deployProxy, args);
 

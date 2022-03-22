@@ -1,21 +1,9 @@
 const { ethers } = require("hardhat");
-const { callIf, network } = require("../utils");
+const { callIf, networkSuffix } = require("../utils");
 
 const updateFlasher = async (flasher, fujiadmin) => {
-  let contractName;
-  switch (network) {
-    case "mainnet":
-      contractName = "Flasher";
-      break;
-    case "fantom":
-      contractName = "FlasherFTM";
-      break;
-    case "polygon":
-      contractName = "FlasherMATIC";
-      break;
-    default:
-      break;
-  }
+  const contractName = networkSuffix("Flasher");
+
   const flasherContract = await ethers.getContractAt(contractName, flasher);
 
   if (fujiadmin) {

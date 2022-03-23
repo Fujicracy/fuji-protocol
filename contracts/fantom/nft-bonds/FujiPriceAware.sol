@@ -8,22 +8,21 @@ contract FujiPriceAware {
   using ECDSA for bytes32;
 
   uint256 public maxDelay;
-  address private trustedSigner;
-
+  address private _trustedSigner;
 
   function getTrustedSigner() public view virtual returns (address) {
-    return trustedSigner;
+    return _trustedSigner;
   }
 
   function _setMaxDelay(uint256 _maxDelay) internal virtual {
     maxDelay = _maxDelay;
   }
 
-  function _authorizeSigner(address _trustedSigner) internal virtual {
-    require(_trustedSigner != address(0));
-    trustedSigner = _trustedSigner;
+  function _authorizeSigner(address trustedSigner) internal virtual {
+    require(trustedSigner != address(0), "No zero addr!");
+    _trustedSigner = trustedSigner;
 
-    emit TrustedSignerChanged(trustedSigner);
+    emit TrustedSignerChanged(_trustedSigner);
   }
 
   function isSignerAuthorized(address _receviedSigner) public view virtual returns (bool) {

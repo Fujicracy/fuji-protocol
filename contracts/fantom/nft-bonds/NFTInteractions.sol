@@ -61,11 +61,11 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   bool public isRedstoneOracleOn;
 
   // CrateID => crate rewards
-  mapping(uint256 => uint256[]) public crateRewards;
+  mapping(uint256 => uint256[]) private _crateRewards;
 
   uint256[] private _probabilityIntervals;
 
-  NFTGame private nftGame;
+  NFTGame public nftGame;
 
   // CrateID => crate price
   mapping(uint256 => uint256) public cratePrices;
@@ -123,7 +123,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    */
   function setCrateRewards(uint256 crateId, uint256[] memory rewards) external {
     require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
-    crateRewards[crateId] = rewards;
+    _crateRewards[crateId] = rewards;
     emit CrateRewardsChanged(crateId, rewards);
   }
 
@@ -206,13 +206,13 @@ contract NFTInteractions is FujiPriceAware, Initializable {
       "Invalid crate ID!"
     );
     require(nftGame.balanceOf(msg.sender, crateId) >= amount, "Not enough crates!");
-    require(crateRewards[crateId].length == _probabilityIntervals.length, "Rewards not set!");
+    require(_crateRewards[crateId].length == _probabilityIntervals.length, "Rewards not set!");
 
     // Points + Crates + Cards
     Reward[] memory rewards = new Reward[](amount);
     uint256[] memory aggregatedRewards = new uint256[](1 + 3 + nftGame.nftCardsAmount());
 
-    uint256 entropyValue = isRedstoneOracleOn ? _getRedstoneEntropy(): _getChainlinkEntropy();
+    uint256 entropyValue = isRedstoneOracleOn ? _getRedstoneEntropy() : _getChainlinkEntropy();
     uint256[] memory randomNumbers = LibPseudoRandom.pickRandomNumbers(amount, entropyValue);
     bool isCard;
 
@@ -223,8 +223,8 @@ contract NFTInteractions is FujiPriceAware, Initializable {
       for (uint256 i = 0; i < _probabilityIntervals.length && isCard; i++) {
         if (randomNumbers[j] <= _probabilityIntervals[i]) {
           isCard = false;
-          aggregatedRewards[nftGame.POINTS_ID()] += crateRewards[crateId][i];
-          rewards[j].amount = crateRewards[crateId][i];
+          aggregatedRewards[nftGame.POINTS_ID()] += _crateRewards[crateId][i];
+          rewards[j].amount = _crateRewards[crateId][i];
         }
       }
 
@@ -282,6 +282,13 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   }
 
   /**
+   * @notice Returns the rewards for a specific crate
+   */
+  function getCrateRewards(uint256 crateId) external view returns (uint256[] memory) {
+    return _crateRewards[crateId];
+  }
+
+  /**
    * @notice Returns the totalBoost of user according to cards in possesion.
    * @dev Value is 100 based. In example; 150 is +50% or 1.5 in decimal
    */
@@ -322,8 +329,10 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    */
   function _getChainlinkEntropy() private view returns (uint256) {
     // Hardcoded for fantom
-    (,int numA,,,) = AggregatorV3Interface(0xf4766552D15AE4d256Ad41B6cf2933482B0680dc).latestRoundData();
-    (,int numB,,,) = AggregatorV3Interface(0x11DdD3d147E5b83D01cee7070027092397d63658).latestRoundData();
+    (, int256 numA, , , ) = AggregatorV3Interface(0xf4766552D15AE4d256Ad41B6cf2933482B0680dc)
+      .latestRoundData();
+    (, int256 numB, , , ) = AggregatorV3Interface(0x11DdD3d147E5b83D01cee7070027092397d63658)
+      .latestRoundData();
     return uint256(numA * numB);
   }
 }

@@ -36,7 +36,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
   // Constants
 
-  uint256 constant SEC = 86400;
+  uint256 public constant SEC = 86400;
 
   // uint256 private constant MINIMUM_DAILY_DEBT_POSITION = 1;
   // uint256 private constant POINT_PER_DEBTUNIT_PER_DAY = 1;
@@ -104,8 +104,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   /**
-  * @dev See {IERC165-supportsInterface}.
-  */
+   * @dev See {IERC165-supportsInterface}.
+   */
   function supportsInterface(bytes4 interfaceId)
     public
     view
@@ -121,9 +121,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   /**
    * @notice Returns the URI string for metadata of token _id.
    */
-  function uri(
-    uint256 _id
-  ) public override view returns (string memory) {
+  function uri(uint256 _id) public view override returns (string memory) {
     return string(abi.encodePacked(ERC1155Upgradeable.uri(0), _uint2str(_id), ".json"));
   }
 
@@ -163,9 +161,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   /**
    * @notice Set the base URI for the metadata of every token Id.
    */
-  function setBaseURI(
-    string memory _newBaseURI
-  ) public {
+  function setBaseURI(string memory _newBaseURI) public {
     require(hasRole(GAME_ADMIN, msg.sender), Errors.VL_NOT_AUTHORIZED);
     _setURI(_newBaseURI);
   }
@@ -173,9 +169,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   /**
    * @dev Set the contract URI for general information of this ERC1155.
    */
-  function setContractURI(
-    string memory _newContractURI
-  ) public {
+  function setContractURI(string memory _newContractURI) public {
     require(hasRole(GAME_ADMIN, msg.sender), Errors.VL_NOT_AUTHORIZED);
     contractURI = _newContractURI;
   }
@@ -376,11 +370,11 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
   /**
    * @notice Returns the owner that can manage front-end updates.
-   * @dev This state function is required to allow a EOA 
+   * @dev This state function is required to allow a EOA
    * to manage some NFT front-ends.
-   * This 'owner()' should not have any game admin role. 
+   * This 'owner()' should not have any game admin role.
    */
-  function owner() external view returns(address) {
+  function owner() external view returns (address) {
     return _frontEndAdmin;
   }
 
@@ -542,34 +536,34 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   /**
-  * @notice Convert uint256 to string
-  * @param _i Unsigned integer to convert to string
-  */
+   * @notice Convert uint256 to string
+   * @param _i Unsigned integer to convert to string
+   */
   function _uint2str(uint256 _i) internal pure returns (string memory _uintAsString) {
-      if (_i == 0) {
-          return "0";
-      }
+    if (_i == 0) {
+      return "0";
+    }
 
-      uint256 j = _i;
-      uint256 ii = _i;
-      uint256 len;
+    uint256 j = _i;
+    uint256 ii = _i;
+    uint256 len;
 
-      // Get number of bytes
-      while (j != 0) {
-          len++;
-          j /= 10;
-      }
+    // Get number of bytes
+    while (j != 0) {
+      len++;
+      j /= 10;
+    }
 
-      bytes memory bstr = new bytes(len);
-      uint256 k = len - 1;
+    bytes memory bstr = new bytes(len);
+    uint256 k = len - 1;
 
-      // Get each individual ASCII
-      while (ii != 0) {
-          bstr[k--] = bytes1(uint8(48 + (ii % 10)));
-          ii /= 10;
-      }
+    // Get each individual ASCII
+    while (ii != 0) {
+      bstr[k--] = bytes1(uint8(48 + (ii % 10)));
+      ii /= 10;
+    }
 
-      // Convert to string
-      return string(bstr);
+    // Convert to string
+    return string(bstr);
   }
 }

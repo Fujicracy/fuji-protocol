@@ -37,10 +37,6 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   // Constants
 
   uint256 public constant SEC = 86400;
-
-  // uint256 private constant MINIMUM_DAILY_DEBT_POSITION = 1;
-  // uint256 private constant POINT_PER_DEBTUNIT_PER_DAY = 1;
-
   uint256 public constant POINTS_ID = 0;
   uint256 public constant POINTS_DECIMALS = 5;
 
@@ -79,7 +75,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
    */
   string public contractURI;
 
-  address private _frontEndAdmin;
+  address private _owner;
 
   modifier onlyVault() {
     require(isValidVault(msg.sender), "Not valid vault!");
@@ -93,7 +89,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     _setupRole(GAME_ADMIN, msg.sender);
     _setupRole(GAME_INTERACTOR, msg.sender);
     setGamePhases(phases);
-    _frontEndAdmin = msg.sender;
+    _owner = msg.sender;
     nftCardsAmount = 10;
     gamePhaseTimestamps = [
       block.timestamp,
@@ -175,11 +171,11 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   /**
-   * @dev Set the contract URI for general information of this ERC1155.
+   * @dev See 'owner()'
    */
-  function setFrontEndAdmin(address _newfrontEndAdmin) public {
+  function setOwner(address _newOwner) public {
     require(hasRole(GAME_ADMIN, msg.sender), Errors.VL_NOT_AUTHORIZED);
-    _frontEndAdmin = _newfrontEndAdmin;
+    _owner = _newOwner;
   }
 
   // Game control functions
@@ -369,13 +365,13 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   /**
-   * @notice Returns the owner that can manage front-end updates.
-   * @dev This state function is required to allow a EOA
-   * to manage some NFT front-ends.
-   * This 'owner()' should not have any game admin role.
+   * @notice Returns the owner that can manage external NFT-marketplace front-ends.
+   * @dev This view function is required to allow an EOA
+   * to manage some front-end features in websites like: OpenSea, Rarible, etc
+   * This 'owner()' does not have any game-admin role.
    */
   function owner() external view returns (address) {
-    return _frontEndAdmin;
+    return _owner;
   }
 
   // Internal Functions

@@ -79,6 +79,7 @@ describe("Bond Functionality", function () {
     await nftinteractions.connect(user).lockFinalScore();
 
     slotsIdArray = await pretokenbond.getBondVestingTimes();
+    slotsIdArray = slotsIdArray.map( e => e.toString());
     evmSnapshot0 = await evmSnapshot();
   });
 
@@ -86,7 +87,7 @@ describe("Bond Functionality", function () {
     evmRevert(evmSnapshot0);
   });
 
-  describe("Basic Bond ERC721 Functionality", () => {
+  describe.only("Basic Bond ERC721 Functionality", () => {
 
     before(async () => {
       // Admin force mint vouchers
@@ -171,7 +172,11 @@ describe("Bond Functionality", function () {
 
   describe.only("Basic Bond ERC3525 Functionality", () => {
 
+    // Variables used in more than one test.
     let numberOfBondUnits;
+    let splitterUser;
+    let dummytokenIDtoSplit;
+    let newTokenId;
 
     before(async () => {
       // Admin force mint vouchers
@@ -195,7 +200,7 @@ describe("Bond Functionality", function () {
         // Minted 'vouchers' tokenIds are enummerable, starting at 1.
         tempTokenID = index + 1;
         const slot = await pretokenbond.voucherSlotMapping(tempTokenID);
-        expect(slot).to.eq(slotsIdArray[index]);
+        expect(slot).to.eq(index);
       }
     });
 
@@ -203,7 +208,7 @@ describe("Bond Functionality", function () {
       // Count all # of vouchers in the same slot. 'tokensInSlot(uint256 _slot)'
       let numOfTokens;
       for (let index = 0; index < slotsIdArray.length; index++) {
-        numOfTokens = await pretokenbond.tokensInSlot(slotsIdArray[index]);
+        numOfTokens = await pretokenbond.tokensInSlot(index);
         // For each slot type, 1 voucher was minted for'user': see 'before' in this block.
         expect(numOfTokens).to.eq(1); 
       }
@@ -219,7 +224,8 @@ describe("Bond Functionality", function () {
       // Returns the token id for the `_index`th token in the token list 
       // of the slot 'tokenOfSlotByIndex(uint256 _slot, uint256 _index)'
       const dummyIndex = 0;
-      expect(await pretokenbond.tokenOfSlotByIndex(slotsIdArray[0], dummyIndex)).to.eq(1);
+      const month3Vesting = "3";
+      expect(await pretokenbond.tokenOfSlotByIndex(slotsIdArray.indexOf(month3Vesting), dummyIndex)).to.eq(1);
     });
 
     it("Should return bond 'units' when token Id is passed", async () => {
@@ -245,7 +251,6 @@ describe("Bond Functionality", function () {
 
       // Verify that the receiverDumbTokenId is owned by the spender.
       expect(await pretokenbond.ownerOf(receiverDumbTokenId)).to.eq(spender.address);
-      console.log("pass1");
 
       // Verify that the token Ids 'from' and 'to' are of the same slot.
       expect(
@@ -253,7 +258,6 @@ describe("Bond Functionality", function () {
       ).to.eq(
         await pretokenbond.voucherSlotMapping(receiverDumbTokenId)
       );
-      console.log("pass2");
 
       const unitsInReceiverTokenId = await pretokenbond.unitsInToken(receiverDumbTokenId);
 
@@ -264,7 +268,6 @@ describe("Bond Functionality", function () {
       expect(
         await pretokenbond.allowance(dummyApprovertokenID, spender.address)
       ).to.eq(dumbAmountOfUnitsToApprove);
-      console.log("pass3");
 
       const scontract = pretokenbond.connect(spender);
       await scontract.functions['transferFrom(address,address,uint256,uint256,uint256)'](
@@ -281,19 +284,18 @@ describe("Bond Functionality", function () {
       ).to.eq(
         unitsInReceiverTokenId.add(dumbAmountOfUnitsToApprove)
       );
-      console.log("pass4");
     });
 
-    it.only("Should split token Id and 'units' should match split amount", async () => {
+    it("Should split token Id and 'units' should match split amount", async () => {
       // Split a token into several by separating its units and assigning each portion to a new created token.
-      const dummytokenID = 6;
+      dummytokenIDtoSplit = 2;
       const dummyAmountToSplit = 3;
-      let splitterUser = await pretokenbond.ownerOf(dummytokenID);
-      spliiterUser = splitterUser == user.address ? user : otherUser;
-      const nextTokenId = (await pretokenbond.nextTokenId()) + 1;
-      await pretokenbond.connect(spliiterUser).splt(dummytokenID, dummyAmountToSplit);
+      splitterUser = await pretokenbond.ownerOf(dummytokenIDtoSplit);
+      splitterUser = splitterUser == user.address ? user : otherUser;
+      newTokenId = await pretokenbond.nextTokenId();
+      await pretokenbond.connect(splitterUser).split(dummytokenIDtoSplit, [dummyAmountToSplit]);
       expect(
-        await pretokenbond.unitsInToken(nextTokenId)
+        await pretokenbond.unitsInToken(newTokenId)
       ).to.equal(
         ethers.BigNumber.from([dummyAmountToSplit])
       );
@@ -301,26 +303,36 @@ describe("Bond Functionality", function () {
 
     it("Should merge token Ids of the same slot", async () => {
       // Merge several tokens into one by merging their units into a target token before burning them.
-      const dummytokenID = ethers.BigNumber.from([6]); // Should be the same as previous test.
-      const lastTokenId = await pretokenbond.nextTokenId();
-      await pretokenbond.merge([dummytokenID, lastTokenId], dummytokenID);
+      // Take split tokens from last test.
+      const tokenIDToMergeFrom = dummytokenIDtoSplit;
+      const lastTokenIDSplit = newTokenId;
+
+      // New voucher minted by admin directly from 'PreTokenBonds.sol' to 'otherUser'.
+      // Required for result merge.
+      let slotType = await pretokenbond.slotOf(tokenIDToMergeFrom);
+      const finalMergeTokenId = await pretokenbond.callStatic.mint(splitterUser.address, slotType, 0);
+      await pretokenbond.mint(splitterUser.address, slotType, 0);
+
+      // Merge operation.
+      await pretokenbond.connect(splitterUser).merge([tokenIDToMergeFrom, lastTokenIDSplit], finalMergeTokenId);
+
       expect(
-        await pretokenbond.unitsInToken(dummytokenID)
+        await pretokenbond.unitsInToken(finalMergeTokenId)
       ).to.eq(
-        ethers.BigNumber.from(this.numberOfBondUnits)
+        ethers.BigNumber.from([numberOfBondUnits])
       );
       expect(
-        await pretokenbond.unitsInToken(lastTokenId)
+        await pretokenbond.unitsInToken(tokenIDToMergeFrom)
       ).to.eq(0);
     });
 
     it("Should transfer 'units' of token Id to new token Id", async () => {
       // transferFrom(address _from, address _to, uint256 _tokenId, uint256 _units)
-      const dummytokenID = 11;
+      const dummytokenID = 3;
       const dumbAmountOfBondsToTrasnfer = 4;
-      const newTokenId = (await pretokenbond.newTokenId()) + 1;
-      await pretokenbond.connect(user)
-        .transferFrom(
+      const newTokenId = await pretokenbond.nextTokenId();
+      const lcontract = pretokenbond.connect(user);
+      await lcontract.functions['transferFrom(address,address,uint256,uint256)'](
           user.address,
           otherUser.address,
           dummytokenID,

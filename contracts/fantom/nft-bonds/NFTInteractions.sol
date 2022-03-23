@@ -3,8 +3,6 @@ pragma solidity ^0.8.0;
 
 /// @title NFT Interactions
 /// @author fuji-dao.eth
-
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "./NFTGame.sol";

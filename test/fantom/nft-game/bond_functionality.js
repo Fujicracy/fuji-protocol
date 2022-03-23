@@ -10,21 +10,18 @@ const { fixture } = require("../utils");
 
 const { ZERO_ADDR } = require("./../../helpers.js")
 
-const { quickFixture, ASSETS, VAULTS } = require("./quick_test_fixture");
+const { bondFixture, ASSETS, VAULTS } = require("./fixtures/bond_fixture");
 
 const {
   parseUnits,
-  formatUnitsToNum,
   evmSnapshot,
   evmRevert,
-  evmSetNextBlockTimestamp,
   timeTravel,
 } = require("../../helpers");
 
 const DEBUG = true;
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const amountOfCratesToBuy = 10;
 
 /// ERC3525 Glossary
 
@@ -33,294 +30,296 @@ const amountOfCratesToBuy = 10;
 // All token Ids with the same slot are compatible. They have the same vesting schedule.
 // Units of a token Id are the bonds. Each bond unit, depending on slot, is redeemable for Fuji tokens.
 
-
 describe("Bond Functionality", function () {
-  before(async function () {
-    this.users = await ethers.getSigners();
 
-    this.admin = this.users[0];
-    this.user = this.users[1];
-    this.otherUser = this.users[2];
-    this.operator = this.users[3];
+  let admin;
+  let users;
+  let user;
+  let otherUser;
+  let operator;
 
-    const loadFixture = createFixtureLoader(this.users, provider);
+  let nftgame;
+  let nftinteractions;
+  let pretokenbond;
 
-    this.f = await loadFixture(quickFixture);
+  let evmSnapshot0;
+  let cardIds;
+  let slotsIdArray;
+  let pointsDecimals;
 
-    /// Specific testing conditions.
+  before(async () => {
+    users = await ethers.getSigners();
 
-    // Move to accumulation phase.
-    const now = (await provider.getBlock("latest")).timestamp;
-    const quicktimeGap = 2; // 2 seconds
-    const day = 60 * 60 * 24;
-    const phases = [
-      now,
-      now + quicktimeGap,
-      now + day,
-      now + day
-    ];
-    await this.f.nftgame.setGamePhases(phases);
+    admin = users[0];
+    user = users[1];
+    otherUser = users[2];
+    operator = users[3];
+
+    const loadFixture = createFixtureLoader(users, provider);
+
+    const fixtureItems = await loadFixture(bondFixture);
+
+    pretokenbond = fixtureItems.pretokenbond;
+    nftgame = fixtureItems.nftgame;
+    nftinteractions = fixtureItems.nftinteractions;
+    cardIds = fixtureItems.cardIds;
+    pointsDecimals = fixtureItems.pointsDecimals;
 
     // Force mint points for 'user'
-    await this.f.nftgame.mint(this.user.address, 0, parseUnits(200, 5));
+    await nftgame.mint(user.address, 0, parseUnits(200, pointsDecimals));
 
     // Mint All cardIDs for 'user'
-    const cardIds = this.f.cardIds;
     for (let index = cardIds[0]; index <= cardIds[1]; index++) {
-      await this.f.nftgame.mint(index, this.user.address);
+      await nftgame.connect(admin).mint(index, user.address);
     }
 
-    // This condition is for testing only, allowing time travel and using redstone entropy feed.
-    await this.f.nftinteractions.setMaxEntropyDelay(60 * 60 * 24 * 365 * 2);
-
     // Move to trading phase.
-    await timeTravel(day);
+    await timeTravel(fixtureItems.day + 1);
 
-    await this.f.nftinteractions.connect(this.user).lockFinalScore();
+    await nftinteractions.connect(user).lockFinalScore();
 
-    // Deploy pretokenbond
-    const PreTokenBond = ethers.getContractFactory("PreTokenBond");
-    this.pretokenbond = await upgrades.deployProxy(
-      PreTokenBond,
-      [
-        // QUESTION: what will be the initializer params to be added here.
-        //initializer functions
-      ],
-      { kind: 'uups' }
-    );
-    this.evmSnapshot0 = await evmSnapshot();
+    slotsIdArray = await pretokenbond.getBondVestingTimes();
+    evmSnapshot0 = await evmSnapshot();
   });
 
-  after(async function () {
-    evmRevert(this.evmSnapshot0);
+  after(async () => {
+    evmRevert(evmSnapshot0);
   });
 
-  describe("Basic Bond ERC721 Functionality", function () {
+  describe.only("Basic Bond ERC721 Functionality", () => {
 
-    before(async function () {
+    before(async () => {
       // Admin force mint bonds of each slot for user
-      const slotsIdArray = await TBD; // QUESTION: Check how we will fetch the slots ids that exists.
-      this.numberOfEachBondTypeToBuy = 5;
+      const numberOfEachBondTypeToBuy = 5;
 
-      // QUESTION: Check what method can be used for vouchers/token ids to be minted by admin.
+      // Vouchers/token ids minted by admin.
       for (let index = 0; index < slotsIdArray.length; index++) {
-        await this.pretokenbond.mint(this.user.address, slotsIdArray[index], this.numberOfEachBondTypeToBuy);
+        await pretokenbond.connect(admin).mint(
+          user.address,
+          index,
+          numberOfEachBondTypeToBuy
+        );
       }
     });
 
-    after(async function () {
-      evmRevert(this.evmSnapshot0);
+    after(async () => {
+      evmRevert(evmSnapshot0);
     });
 
-    it("Return value when calling 'balanceOf'", async function () {
-      let bal;
-      for (let index = 0; index < slotsIdArray.length; index++) {
-        bal = await this.pretokenbond.balanceOf(this.user.address, index + 1);
-        expect(bal).to.be.gt(0);
+    it("Return value when calling 'balanceOf'", async () => {
+      const bal = await pretokenbond.balanceOf(user.address);
+      expect(bal).to.equal(slotsIdArray.length);
+    });
+
+    it("Revert when calling 'balanceOf' address 0", async () => {
+      await expect(pretokenbond.balanceOf(ZERO_ADDR)).to.be.reverted;
+    });
+
+    it("Returns owner of token ID when calling 'ownerOf'", async () => {
+      let tempowner;
+      for (let index = 1; index < slotsIdArray.length + 1; index++) {
+        tempowner = await pretokenbond.ownerOf(index);
+        expect(tempowner).to.eq(user.address);
       }
     });
 
-    it("Revert when calling 'balanceOf' address 0", async function () {
-      await expect(this.pretokenbond.balanceOf(ZERO_ADDR, 1)).to.be.reverted;
-    });
-
-    it("Returns owner of token ID when calling 'ownerOf'", async function () {
-      const owner = await this.pretokenbond.ownerOf(1);
-      expect(owner).to.eq(this.user.address);
-    });
-
-    it("Succesfully transfer tokenID", async function () {
-      await this.pretokenbond.connect(this.user).transferFrom(this.user.address, this.otherUser.address, 1);
-      const balOtherUser = this.pretokenbond.balanceOf(this.otherUser.address, 1);
+    it("Succesfully transfer tokenID", async () => {
+      const tokenID = 1;
+      const localcontract = pretokenbond.connect(user);
+      await localcontract.functions['transferFrom(address,address,uint256)'](user.address, otherUser.address, tokenID);
+      const balOtherUser = await pretokenbond.balanceOf(otherUser.address);
+      const owner = await pretokenbond.ownerOf(tokenID);
       expect(balOtherUser).to.eq(1);
+      expect(owner).to.eq(otherUser.address);
     });
 
-    it("Returns the account approved for `tokenId`", async function () {
-      const tokenID = 11;
-      expect(tokenID).to.be.lte(this.numberOfEachBondTypeToBuy * 3); // Check that tokenID is in range.
-      await this.pretokenbond.connect(this.user).approve(this.otherUser.address, tokenID);
-      const approvedUser = await this.pretokenbond.getApproved(tokenID);
-      expect(approvedUser).to.eq(this.otherUser.address);
+    it("Returns the account approved for `tokenId`", async () => {
+      const tokenID = 1;
+      const localcontract = pretokenbond.connect(otherUser);
+      await localcontract.functions['approve(address,uint256)'](user.address, tokenID);
+      const approvedUser = await pretokenbond.getApproved(tokenID);
+      expect(approvedUser).to.eq(user.address);
     });
 
-    it("Succesfully transfer the approved `tokenId`", async function () {
-      const tokenID = 11; // This tokenID must be the same as in previous test. 
-      await this.pretokenbond.connect(this.otherUser).transferFrom(this.user.address, this.otherUser.address, tokenID);
-      const owner = await this.pretokenbond.ownerOf(tokenID);
-      expect(owner).to.eq(this.otherUser.address);
+    it("Succesfully transfer the approved `tokenId`", async () => {
+      const tokenID = 1; // This tokenID must be the same as in previous test.
+      const localcontract = pretokenbond.connect(user);
+      await localcontract.functions['transferFrom(address,address,uint256)'](otherUser.address, user.address, tokenID);
+      const owner = await pretokenbond.ownerOf(tokenID);
+      expect(owner).to.eq(user.address);
     });
 
-    it("Succesfully approve `operator` and performs transfer", async function () {
-      const tokenID = 12;
-      expect(tokenID).to.be.lte(this.numberOfEachBondTypeToBuy * 3); // Check that tokenID is in range.
-      await this.pretokenbond.connect(this.user).setApprovalForAll(this.operator.address, true);
-      await this.pretokenbond.connect(this.operator).transferFrom(this.user.address, this.otherUser.address, tokenID);
-      const owner = await this.pretokenbond.ownerOf(tokenID);
-      expect(owner).to.eq(this.otherUser.address);
+    it("Succesfully approve `operator` and performs transfer", async () => {
+      const tokenID = 2;
+      await pretokenbond.connect(user).setApprovalForAll(operator.address, true);
+      const localcontract = pretokenbond.connect(operator);
+      await localcontract.functions['transferFrom(address,address,uint256)'](user.address, otherUser.address, tokenID);
+      const owner = await pretokenbond.ownerOf(tokenID);
+      expect(owner).to.eq(otherUser.address);
     });
 
-    it("Succesfully remove `operator` and reverts when trying transfer", async function () {
-      const tokenID = 13;
-      expect(tokenID).to.be.lte(this.numberOfEachBondTypeToBuy * 3); // Check that tokenID is in range.
-      await this.pretokenbond.connect(this.user).setApprovalForAll(this.operator.address, false);
+    it("Succesfully remove `operator` and reverts when trying transfer", async () => {
+      const tokenID = 3;
+      await pretokenbond.connect(user).setApprovalForAll(operator.address, false);
+      const localcontract = pretokenbond.connect(operator);
       await expect(
-        this.pretokenbond.connect(this.operator).transferFrom(this.user.address, this.otherUser.address, tokenID)
+        localcontract.functions['transferFrom(address,address,uint256)'](user.address, otherUser.address, tokenID)
       ).to.be.reverted;
     });
   });
 
   describe("Basic Bond ERC3525 Functionality", function () {
 
-    before(async function () {
+    before(async () => {
       this.slotsIdArray = await TBD; // QUESTION: Check how we will fetch the slots ids that exists.
       // Admin force mint bonds of each slot for user
       this.numberOfEachBondTypeToBuy = 5;
 
       // QUESTION: Check what method can be used for vouchers/token ids to be minted by admin.
       for (let index = 0; index < slotsIdArray.length; index++) {
-        await this.pretokenbond.mint(this.user.address, slotsArray[index], numberOfEachBondTypeToBuy);
-        await this.pretokenbond.mint(this.otherUser.address, slotsArray[index], numberOfEachBondTypeToBuy);
+        await pretokenbond.mint(user.address, slotsArray[index], numberOfEachBondTypeToBuy);
+        await pretokenbond.mint(otherUser.address, slotsArray[index], numberOfEachBondTypeToBuy);
       }
     });
 
-    after(async function () {
+    after(async () => {
       evmRevert(this.evmSnapshot0);
     });
 
-    it("Returns 'slot' type for each token Id", async function () {
+    it("Returns 'slot' type for each token Id", async () => {
       // Find the slot of a tokenID 'voucherSlotMapping(uint256 _tokenId)'
       const number = this.numberOfEachBondTypeToBuy;
       let tempTokenID;
       for (let index = 0; index < this.slotsIdArray.length; index++) {
         tempTokenID = index + 1; // QUESTION: all minted 'vouchers' tokenIds should be enummerable, starting at 1.
-        const slot = await this.pretokenbond.voucherSlotMapping(tempTokenID);
+        const slot = await pretokenbond.voucherSlotMapping(tempTokenID);
         expect(slot).to.eq(slotsIdArray[index]);
       }
     });
 
-    it("Returns supply of token ids with 'slot' type", async function () {
+    it("Returns supply of token ids with 'slot' type", async () => {
       // Count all # of vouchers in the same slot. 'tokensInSlot(uint256 _slot)'
       for (let index = 0; index < this.slotsIdArray.length; index++) {
-        const numOfBondUnits = await this.pretokenbond.tokensInSlot(this.slotsIdArray[index]);
+        const numOfBondUnits = await pretokenbond.tokensInSlot(this.slotsIdArray[index]);
         expect(numOfBondUnits).to.eq(2); // for each slot type, 2 vouchers were minted. User and otherUser, see 'before' in this block.
       }
     });
 
-    it("Returns decimals of the 'units' of a token Id ", async function () {
+    it("Returns decimals of the 'units' of a token Id ", async () => {
       // Number of decimals a token uses for units 'unitDecimals()'
-      expect(await this.pretokenbond.unitDecimals()).to.be.gt(0);
+      expect(await pretokenbond.unitDecimals()).to.be.gt(0);
     });
 
-    it("Returns token Id when calling slot and index", async function () {
+    it("Returns token Id when calling slot and index", async () => {
       // The id for the `_index`th token in the token list of the slot 'tokenOfSlotByIndex(uint256 _slot, uint256 _index)'
       const dummyIndex = 1;
-      expect(await this.pretokenbond.tokenOfSlotByIndex(this.slotsIdArray[0], dummyIndex)).to.eq(1);
+      expect(await pretokenbond.tokenOfSlotByIndex(this.slotsIdArray[0], dummyIndex)).to.eq(1);
     });
 
-    it("Should return bond 'units' when token Id is passed", async function () {
+    it("Should return bond 'units' when token Id is passed", async () => {
       // The amount of units of `_tokenId` 'unitsInToken(uint256 _tokenId)'
       const dummytokenID = 1;
-      expect(await this.pretokenbond.unitsInToken(dummytokenID)).to.eq(this.numberOfEachBondTypeToBuy)
+      expect(await pretokenbond.unitsInToken(dummytokenID)).to.eq(this.numberOfEachBondTypeToBuy)
     });
 
-    it("Should approve and transfer succesfully 'units' of token Id to another token Id of the same slot", async function () {
+    it("Should approve and transfer succesfully 'units' of token Id to another token Id of the same slot", async () => {
       // approve(address _to, uint256 _tokenId, uint256 _units), allowance(uint256 _tokenId, address _spender)
       // transferFrom(address _from, address _to, uint256 _tokenId, uint256 _targetTokenId, uint256 _units) external;
 
       const dummyApprovertokenID = 1;
       const dumbAmountOfUnitsToApprove = ethers.BigNumber.from([2]);
-      const dumbApprover = await this.pretokenbond.ownerOf(dummyApprovertokenID);
+      const dumbApprover = await pretokenbond.ownerOf(dummyApprovertokenID);
       let approver;
       let spender;
 
-      if (dumbApprover == this.user.address) {
-        approver = this.user;
-        spender = this.otherUser;
+      if (dumbApprover == user.address) {
+        approver = user;
+        spender = otherUser;
       } else {
-        approver = this.otherUser;
-        spender = this.user;
+        approver = otherUser;
+        spender = user;
       }
       const receiverDumbTokenId = 2;
 
       // Verify that the receiverDumbTokenId is owned by the spender.
-      expect(await this.pretokenbond.ownerOf(receiverDumbTokenId)).to.eq(spender.address);
+      expect(await pretokenbond.ownerOf(receiverDumbTokenId)).to.eq(spender.address);
 
       // Verify that the token Ids 'from' and 'to' are of the same slot.
       expect(
-        await this.pretokenbond.voucherSlotMapping(dummyApprovertokenID)
+        await pretokenbond.voucherSlotMapping(dummyApprovertokenID)
       ).to.eq(
-        await this.pretokenbond.voucherSlotMapping(receiverDumbTokenId)
+        await pretokenbond.voucherSlotMapping(receiverDumbTokenId)
       );
 
-      const unitsInReceiverTokenId = await this.pretokenbond.unitsInToken(receiverDumbTokenId);
+      const unitsInReceiverTokenId = await pretokenbond.unitsInToken(receiverDumbTokenId);
 
-      await this.pretokenbond.connect(approver).approve(spender.address, dummyApprovertokenID, dumbAmountOfUnitsToApprove);
+      await pretokenbond.connect(approver).approve(spender.address, dummyApprovertokenID, dumbAmountOfUnitsToApprove);
 
       // Verify allowance if equat to 'dumbAmountOfUnitsToApprove'
       expect(
-        await this.pretokenbond.allowance(dummyApprovertokenID, spender.address)
+        await pretokenbond.allowance(dummyApprovertokenID, spender.address)
       ).to.eq(dumbAmountOfUnitsToApprove);
 
-      await this.pretokenbond.connect(spender)
+      await pretokenbond.connect(spender)
         .transferFrom(approver.address, spender.address, dummyApprovertokenID, receiverDumbTokenId, dumbAmountOfUnitsToApprove);
 
       // Verify 'units' of 'receiverDumbTokenId' increased after 'transferFrom'
       expect(
-        await this.pretokenbond.unitsInToken(receiverDumbTokenId)
+        await pretokenbond.unitsInToken(receiverDumbTokenId)
       ).to.eq(
         unitsInReceiverTokenId.add(dumbAmountOfUnitsToApprove)
       );
     });
 
-    it("Should split token Id and 'units' should match split amount", async function () {
+    it("Should split token Id and 'units' should match split amount", async () => {
       // Split a token into several by separating its units and assigning each portion to a new created token.
       const dummytokenID = 6;
       const dummyAmountToSplit = 3;
-      let splitterUser = await this.pretokenbond.ownerOf(dummytokenID);
-      spliiterUser = splitterUser == this.user.address ? this.user : this.otherUser;
-      const nextTokenId = (await this.pretokenbond.nextTokenId()) + 1;
-      await this.pretokenbond.connect(spliiterUser).splt(dummytokenID, dummyAmountToSplit);
+      let splitterUser = await pretokenbond.ownerOf(dummytokenID);
+      spliiterUser = splitterUser == user.address ? user : otherUser;
+      const nextTokenId = (await pretokenbond.nextTokenId()) + 1;
+      await pretokenbond.connect(spliiterUser).splt(dummytokenID, dummyAmountToSplit);
       expect(
-        await this.pretokenbond.unitsInToken(nextTokenId)
+        await pretokenbond.unitsInToken(nextTokenId)
       ).to.equal(
         ethers.BigNumber.from([dummyAmountToSplit])
       );
     });
 
-    it("Should merge token Ids of the same slot", async function () {
+    it("Should merge token Ids of the same slot", async () => {
       // Merge several tokens into one by merging their units into a target token before burning them.
       const dummytokenID = ethers.BigNumber.from([6]); // Should be the same as previous test.
-      const lastTokenId = await this.pretokenbond.nextTokenId();
-      await this.pretokenbond.merge([dummytokenID, lastTokenId], dummytokenID);
+      const lastTokenId = await pretokenbond.nextTokenId();
+      await pretokenbond.merge([dummytokenID, lastTokenId], dummytokenID);
       expect(
-        await this.pretokenbond.unitsInToken(dummytokenID)
+        await pretokenbond.unitsInToken(dummytokenID)
       ).to.eq(
         ethers.BigNumber.from(this.numberOfEachBondTypeToBuy)
       );
       expect(
-        await this.pretokenbond.unitsInToken(lastTokenId)
+        await pretokenbond.unitsInToken(lastTokenId)
       ).to.eq(0);
     });
 
-    it("Should transfer 'units' of token Id to new token Id", async function () {
+    it("Should transfer 'units' of token Id to new token Id", async () => {
       // transferFrom(address _from, address _to, uint256 _tokenId, uint256 _units)
       const dummytokenID = 11;
       const dumbAmountOfBondsToTrasnfer = 4;
-      const newTokenId = (await this.pretokenbond.newTokenId()) + 1;
-      await this.pretokenbond.connect(this.user)
+      const newTokenId = (await pretokenbond.newTokenId()) + 1;
+      await pretokenbond.connect(user)
         .transferFrom(
-          this.user.address,
-          this.otherUser.address,
+          user.address,
+          otherUser.address,
           dummytokenID,
           dumbAmountOfBondsToTrasnfer
         );
       expect(
-        await this.pretokenbond.ownerOf(newTokenId)
+        await pretokenbond.ownerOf(newTokenId)
       ).to.eq(
-        this.otherUser.address
+        otherUser.address
       );
       expect(
-        await this.pretokenbond.unitsInToken(newTokenId)
+        await pretokenbond.unitsInToken(newTokenId)
       ).to.eq(
         ethers.BigNumber.from([dumbAmountOfBondsToTrasnfer])
       );
@@ -330,23 +329,23 @@ describe("Bond Functionality", function () {
 
   describe("Fuji Bond Specific Functionality", function () {
 
-    after(async function () {
+    after(async () => {
       evmRevert(this.evmSnapshot0);
     });
 
-    it("Should return a value for price of mining a token ID", async function () {
+    it("Should return a value for price of mining a token ID", async () => {
 
     });
 
-    it("Should return value for the vesting time for different 'slots'", async function () {
+    it("Should return value for the vesting time for different 'slots'", async () => {
 
     });
 
-    it("Should allow to mint a token ID with zero units before end of bond phase", async function () {
+    it("Should allow to mint a token ID with zero units before end of bond phase", async () => {
 
     });
 
-    it("Should revert if try to mint a token Id after bond phase", async function () {
+    it("Should revert if try to mint a token Id after bond phase", async () => {
 
     });
 

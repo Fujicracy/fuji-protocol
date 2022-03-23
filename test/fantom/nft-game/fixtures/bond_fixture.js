@@ -30,7 +30,7 @@ const ASSETS = {
 
 const {
   parseUnits
-} = require("../../helpers");
+} = require("../../../helpers");
 
 // iterate through all ASSETS and create pairs
 const getVaults = () => {
@@ -51,13 +51,13 @@ const getVaults = () => {
 };
 
 /**
- * Quick fixture provides a minimal testing setup for nft-game testing.
+ * Bond fixture provides a minimal testing setup for nft-game testing in bonding phase.
  * Only 'vaultftmdai' is available.
  * Only scream provider is available.
  * Crate prices are artificially low.
  * Crate rewards are simplified.
  */
-const quickFixture = async ([wallet]) => {
+const bondFixture = async ([wallet]) => {
   // Step 0: Common
   const tokens = {};
   for (const asset in ASSETS) {
@@ -145,14 +145,17 @@ const quickFixture = async ([wallet]) => {
   await nftgame.setValidVaults([vaults['vaultftmdai'].address]);
 
   const now = (await provider.getBlock("latest")).timestamp;
-  const week = 60 * 60 * 24 * 7;
-  const phases = [
-    now + week,
-    now + 2 * week,
-    now + 3 * week,
-    now + 4 *week
-  ];
 
+  const quicktimeGap = 2; // 2 seconds
+  const day = 60 * 60 * 24;
+
+  const phases = [
+    now,            // 0 = start game launch
+    now + day,      // 1 = end of accumulation
+    now + 2 * day,  // 2 = end of trade and lock
+    now + 3 * day   // 3 = end of bond
+  ];
+  
   await nftgame.setGamePhases(phases);
 
   const crateIds = [
@@ -163,18 +166,18 @@ const quickFixture = async ([wallet]) => {
 
   const pointsDecimals = await nftgame.POINTS_DECIMALS();
 
-  // Simplified low crate prices just for testing
+  // Low crate prices just for testing only
   const prices = [2, 4, 8].map((e) => parseUnits(e, pointsDecimals));
 
   for (let i = 0; i < prices.length; i++) {
     await nftinteractions.setCratePrice(crateIds[i], prices[i]);
   }
 
-  // Simplified reward factors just for testing
+  // Reward factors just for testing only
   const rewardfactors = [
-    [0, 0, 1, 2, 25],
-    [0, 0, 1, 4, 50],
-    [0, 0, 1, 8, 100],
+    [0, 1, 2, 25, 50],
+    [0, 1, 4, 50, 100],
+    [0, 1, 8, 200, 1000],
   ];
 
   for (let i = 0; i < rewardfactors.length; i++) {
@@ -192,23 +195,54 @@ const quickFixture = async ([wallet]) => {
     firstID.add(totalCards).sub(1)
   ];
 
+  // Delayed entropy feed check to allowing time travel; for testing only
+  await nftinteractions.setMaxEntropyDelay(60 * 60 * 24 * 365 * 2);
+
+  /// pretokenbond contract deploy and setup
+
+  const PreTokenBond = await getContractFactory("PreTokenBonds");
+  const pretokenbond = await upgrades.deployProxy(PreTokenBond,
+    [
+      "Fuji Pre-Token Bonds FTM",
+      "FUJI-preTBonds-FTM",
+      pointsDecimals,
+      nftgame.address
+    ]
+  );
+
+  const MockToken = await getContractFactory("MockToken");
+  const mocktoken = await upgrades.deployProxy(MockToken, []);
+
+  // Set pretokenbond.sol getters for metadata for testing only
+
+  await pretokenbond.setBaseTokenURI("https://www.example.com/metadata/token/");
+  await pretokenbond.setContractURI("https://www.example.com/metadata/contract.json");
+  await pretokenbond.setBaseSlotURI("https://www.example.com/metadata/slot/");
+
+  // Low bond price for testing only
+  await pretokenbond.setBondPrice(parseUnits(10, pointsDecimals))
+
   return {
     ...tokens,
     ...vaults,
     scream,
     nftgame,
     nftinteractions,
+    pretokenbond,
+    mocktoken,
     oracle,
     fujiadmin,
     f1155,
+    pointsDecimals,
     now,
+    day,
     crateIds,
     cardIds
   };
 };
 
 module.exports = {
-  quickFixture,
+  bondFixture,
   ASSETS,
   VAULTS: getVaults(),
 };

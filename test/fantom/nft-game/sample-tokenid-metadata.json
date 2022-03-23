@@ -1,0 +1,30 @@
+{
+  "title": "Token Metadata",
+  "type": "object",
+  "properties": {
+      "name": {
+          "type": "string",
+          "description": "Identifies the asset to which this NFT represents"
+      },
+      "description": {
+          "type": "string",
+          "description": "Describes the asset to which this NFT represents"
+      },
+      "image": {
+          "type": "string",
+          "description": "A URI pointing to a resource with mime type image/* representing the asset to which this NFT represents."
+      },
+       "units": {
+          "type": "integer",
+          "description": 1
+      },
+ "slot": {
+          "type": "BigNumber",
+          "description": "The id of the slot that this token belongs to."
+      },
+      "properties": {
+          "type": "object",
+          "description": "Arbitrary properties. Values may be strings, numbers, object or arrays."
+      }
+  }
+}

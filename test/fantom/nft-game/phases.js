@@ -8,7 +8,7 @@ const { BigNumber, provider } = ethers;
 
 const { fixture } = require("../utils");
 
-const { quickFixture, ASSETS, VAULTS } = require("./quick_test_fixture");
+const { quickFixture, ASSETS, VAULTS } = require("./fixtures/quick_test_fixture");
 
 const {
   parseUnits,
@@ -25,7 +25,7 @@ const DEBUG = true;
 if (FULL_FIXTURE) {
   const { ASSETS, VAULTS } = require("../utils");
 } else {
-  const { ASSETS, VAULTS } = require("./quick_test_fixture");
+  const { ASSETS, VAULTS } = require("./fixtures/quick_test_fixture");
 }
 
 // ACTIONS TO TEST FOR EACH PHASE

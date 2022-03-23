@@ -34,7 +34,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
 
   address public underlying;
 
-  uint256[] public bondTimes;
+  uint256[] private _bondSlotTimes;
 
   uint256 public bondPrice;
 
@@ -62,13 +62,13 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
       string memory _symbol,
       uint8 _unitDecimals,
       address _nftGame
-  ) external {
+  ) external initializer {
     // Claimable contract is added to have 'owner()' function required to update
     // update and control external NFT front-ends.
     __Claimable_init();
     VoucherCore._initialize(_name, _symbol, _unitDecimals);
     nftGame = NFTGame(_nftGame);
-    bondTimes = [3, 6, 12];
+    _bondSlotTimes = [3, 6, 12];
     bondPrice = 10000;
   }
 
@@ -79,12 +79,19 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
    */
   function tokensPerUnit(uint256 _slot) public view returns(uint256) {
     uint256 totalUnits = 0;
-    for (uint256 i = 0; i < bondTimes.length; i++) {
-      totalUnits += unitsInSlot(bondTimes[i]);
+    for (uint256 i = 0; i < _bondSlotTimes.length; i++) {
+      totalUnits += unitsInSlot(_bondSlotTimes[i]);
     }
-    uint256 slot = bondTimes[_slot];
+    uint256 slot = _bondSlotTimes[_slot];
     uint256 multiplier = slot == 3 ? 1 : slot == 6 ? 2 : 4;
     return (IERC20(underlying).balanceOf(address(this)) * multiplier  / totalUnits);
+  }
+
+  /**
+   * @notice Returns the allowed Bond vesting times (slots).
+   */
+  function getBondVestingTimes() public view returns(uint256[] memory) {
+    return _bondSlotTimes;
   }
 
   /**
@@ -136,16 +143,16 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
   /**
    * @notice Set bond times
    */
-  function setBondTimes(uint256[] memory _bondTimes) external {
+  function setBondTimes(uint256[] calldata _newbondSlotTimes) external {
     require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
-    bondTimes = _bondTimes;
-    emit BondTimesChanges(_bondTimes);
+    _bondSlotTimes = _newbondSlotTimes;
+    emit BondTimesChanges(_bondSlotTimes);
   }
 
   /**
    * @notice Set bond price
    */
-  function setBondTimes(uint256 _bondPrice) external {
+  function setBondPrice(uint256 _bondPrice) external {
     require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
     bondPrice = _bondPrice;
     emit BondPriceChanges(_bondPrice);
@@ -156,6 +163,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
    * @dev example input: 'https://www.mysite.com/metadata/token/'
    */
   function setBaseTokenURI(string calldata _URI) external {
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
     _slotBaseURI = _URI;
   }
 
@@ -164,6 +172,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
    * @dev example input: 'https://www.mysite.com/metadata/contractERC3525.json'
    */
   function setContractURI(string calldata _URI) external {
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
     _contractURI = _URI;
   }
 
@@ -172,6 +181,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
    * @dev example input: 'https://www.mysite.com/metadata/slots/'
    */
   function setBaseSlotURI(string calldata _URI) external {
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
     _slotBaseURI = _URI;
   }
 
@@ -182,7 +192,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
    */
   function mint(address _user, uint256 _type, uint256 _units) external {
     require(nftGame.hasRole(nftGame.GAME_INTERACTOR(), msg.sender), "No permission!");
-    _mint(_user, bondTimes[_type], _units);
+    _mint(_user, _bondSlotTimes[_type], _units);
   }
 
   /**

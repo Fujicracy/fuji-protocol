@@ -1,0 +1,18 @@
+{
+  "title": "Fuji PreToken Bonds Metadata",
+  "type": "object",
+  "properties": {
+      "name": {
+          "type": "string",
+          "description": "Fuji Vouchers for Pre-Token Bonds"
+      },
+      "description": {
+          "type": "string",
+          "description": "Fuji PreToken Bonds are vouchers holding the amount of bonds you own. Bonds can be redeemed for FUJI tokens at voucher expiration."
+      },
+       "unitDecimals": {
+          "type": "integer",
+          "description": 5
+      }
+  }
+}

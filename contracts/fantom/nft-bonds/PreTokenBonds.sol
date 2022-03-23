@@ -30,6 +30,12 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
    */
   event BondPriceChanges(uint256 newBondPrice);
 
+  enum SlotVestingTypes {
+    months3,
+    months6,
+    months12
+  }
+
   NFTGame private nftGame;
 
   address public underlying;
@@ -190,9 +196,9 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
   /**
    * @notice Function to be called from Interactions contract, after burning the points
    */
-  function mint(address _user, uint256 _type, uint256 _units) external {
+  function mint(address _user, SlotVestingTypes _type, uint256 _units) external returns (uint256 tokenID) {
     require(nftGame.hasRole(nftGame.GAME_INTERACTOR(), msg.sender), "No permission!");
-    _mint(_user, _bondSlotTimes[_type], _units);
+    tokenID = _mint(_user, _bondSlotTimes[uint256(_type)], _units);
   }
 
   /**

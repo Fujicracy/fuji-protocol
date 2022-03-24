@@ -26,7 +26,7 @@ const forkUrl =
     : network === "bsc"
       ? "https://bsc-dataseed.binance.org/"
       : network === "polygon"
-        ? "https://polygon-rpc.com"
+        ? "https://polygon-rpc.com/"
         : mainnetUrl
 
 //
@@ -105,10 +105,6 @@ module.exports = {
     },
     polygon: {
       url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_ID}`,
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : { mnemonic: mnemonic() },
-    },
-    mumbai: {
-      url: `https://polygon-mumbai.g.alchemy.com/v2/${process.env.ALCHEMY_ID}`,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : { mnemonic: mnemonic() },
     },
   },

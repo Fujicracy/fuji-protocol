@@ -87,7 +87,7 @@ describe("Bond Functionality", function () {
     evmRevert(evmSnapshot0);
   });
 
-  describe.only("Basic Bond ERC721 Functionality", () => {
+  describe("Basic Bond ERC721 Functionality", () => {
 
     before(async () => {
       // Admin force mint vouchers
@@ -170,7 +170,7 @@ describe("Bond Functionality", function () {
     });
   });
 
-  describe.only("Basic Bond ERC3525 Functionality", () => {
+  describe("Basic Bond ERC3525 Functionality", () => {
 
     // Variables used in more than one test.
     let numberOfBondUnits;
@@ -352,17 +352,27 @@ describe("Bond Functionality", function () {
 
   });
 
-  describe("Fuji Bond Specific Functionality", function () {
+  describe.only("Fuji Bond Specific Functionality", function () {
 
     after(async () => {
       evmRevert(this.evmSnapshot0);
     });
 
     it("Should return a value for price of mining a token ID", async () => {
-
+      // A default bond price is set at calling 'initialize()'
+      // However, an admin function   
+      const bondPrice = await pretokenbond.bondPrice();
+      expect(bondPrice).to.be.gt(0);
     });
 
     it("Should return value for the vesting time for different 'slots'", async () => {
+      const vestingTimes = await pretokenbond.getBondVestingTimes();
+      const expectedDefaultVestingTimes = [
+        ethers.BigNumber.from("3"),
+        ethers.BigNumber.from("6"),
+        ethers.BigNumber.from("12"),
+      ]
+      expect(expectedDefaultVestingTimes).to.eq(vestingTimes);
 
     });
 

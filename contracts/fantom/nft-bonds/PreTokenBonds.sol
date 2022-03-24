@@ -3,11 +3,11 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "../../abstracts/claimable/ClaimableUpgradeable.sol";
 import "./utils/VoucherCore.sol";
 import "./NFTGame.sol";
+import "../../libraries/Errors.sol";
 
-contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgradeable {
+contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
   using StringsUpgradeable for uint256;
 
   /**
@@ -36,6 +36,8 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
     months12
   }
 
+  address private _owner;
+
   NFTGame private nftGame;
 
   address public underlying;
@@ -57,25 +59,21 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
     override(AccessControlUpgradeable, ERC721Upgradeable) returns (bool) {
       return
         interfaceId == type(IVNFT).interfaceId ||
-        interfaceId == type(IAccessControlUpgradeable).interfaceId ||
         interfaceId == type(IERC721Upgradeable).interfaceId ||
         interfaceId == type(IERC721MetadataUpgradeable).interfaceId ||
-        super.supportsInterface(interfaceId);
+        // 'super.supportsInterface()' will read from  {AccessControlUpgradeable}
+        super.supportsInterface(interfaceId); 
   }
 
   function initialize(
-      string memory _name,
-      string memory _symbol,
       uint8 _unitDecimals,
       address _nftGame
   ) external initializer {
-    // Claimable contract is added to have 'owner()' function required to update
-    // update and control external NFT front-ends.
-    __Claimable_init();
-    VoucherCore._initialize(_name, _symbol, _unitDecimals);
+    _owner = msg.sender;
+    VoucherCore._initialize("FujiDAO PreToken Bonds", "fjVoucherBond", _unitDecimals);
     nftGame = NFTGame(_nftGame);
     _bondSlotTimes = [3, 6, 12];
-    bondPrice = 10000;
+    bondPrice = 100000;
   }
 
   /// View functions
@@ -126,78 +124,108 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
     return string(abi.encodePacked(_slotBaseURI, slotID.toString(), ".json"));
   }
 
+  /**
+   * @notice Returns the owner that can manage external NFT-marketplace front-ends.
+   * @dev This view function is required to allow an EOA
+   * to manage some front-end features in websites like: OpenSea, Rarible, etc
+   * This 'owner()' does not have any game-admin role.
+   */
+  function owner() external view returns (address) {
+    return _owner;
+  }
+
   /// Administrative functions
 
   /**
-   * @notice Set address for NFTGame contract
+   * @notice Admin restricted function to set address for NFTGame contract
    */
   function setNFTGame(address _nftGame) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(_nftGame != address(0), Errors.VL_ZERO_ADDR);
     nftGame = NFTGame(_nftGame);
     emit NFTGameChanged(_nftGame);
   }
 
   /**
-   * @notice Set address for underlying Fuji ERC-20
+   * @notice Admin restricted function to set address for bond claimaible 
+   * underlying Fuji ERC-20
    */
   function setUnderlying(address _underlying) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(_underlying != address(0), Errors.VL_ZERO_ADDR);
     underlying = _underlying;
     emit UnderlyingChanged(_underlying);
   }
   
   /**
-   * @notice Set bond times
+   * @notice Admin restricted function to set bond times.
+   * @param _newbondSlotTimes Array of values in months for vesting time.
+   * Example: [3, 6, 12]
    */
-  function setBondTimes(uint256[] calldata _newbondSlotTimes) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+  function setBondVestingTimes(uint256[] calldata _newbondSlotTimes) external {
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
+    for (uint256 index = 0; index < _newbondSlotTimes.length; index++) {
+      require(_newbondSlotTimes[index] > 0, "No zero values!");
+    }
     _bondSlotTimes = _newbondSlotTimes;
     emit BondTimesChanges(_bondSlotTimes);
   }
 
   /**
-   * @notice Set bond price
+   * @notice Admin restricted function to set bond price.
+   * @dev Price is in relation to token id=0 (points) in {NFTGame} contract.
    */
   function setBondPrice(uint256 _bondPrice) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(_bondPrice > 0, "No zero value!");
     bondPrice = _bondPrice;
     emit BondPriceChanges(_bondPrice);
   }
 
   /**
-   * @notice Set the base URI for a Token ID metadata
+   * @notice Admin restricted function to set the base URI for a Token ID metadata
    * @dev example input: 'https://www.mysite.com/metadata/token/'
    */
   function setBaseTokenURI(string calldata _URI) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
     _slotBaseURI = _URI;
   }
 
   /**
-   * @notice Set the contract general URI metadata
+   * @notice Admin restricted function to set the contract general URI metadata
    * @dev example input: 'https://www.mysite.com/metadata/contractERC3525.json'
    */
   function setContractURI(string calldata _URI) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
     _contractURI = _URI;
   }
 
   /**
-   * @notice Set the base URI for a slot ID metadata
+   * @notice Admin restricted function to set the base URI for a slot ID metadata
    * @dev example input: 'https://www.mysite.com/metadata/slots/'
    */
   function setBaseSlotURI(string calldata _URI) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
     _slotBaseURI = _URI;
+  }
+
+  /**
+   * @dev See 'owner()'
+   */
+  function setOwner(address _newOwner) public {
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(_newOwner != address(0), Errors.VL_ZERO_ADDR);
+    _owner = _newOwner;
   }
 
   /// Change state functions
 
   /**
    * @notice Function to be called from Interactions contract, after burning the points
+   * @dev Mint access restricted only via {NFTInteractions} contract
    */
   function mint(address _user, SlotVestingTypes _type, uint256 _units) external returns (uint256 tokenID) {
-    require(nftGame.hasRole(nftGame.GAME_INTERACTOR(), msg.sender), "No permission!");
+    require(nftGame.hasRole(nftGame.GAME_INTERACTOR(), msg.sender), Errors.VL_NOT_AUTHORIZED);
     tokenID = _mint(_user, uint256(_type), _units);
   }
 
@@ -205,7 +233,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable, ClaimableUpgrad
    * @notice Deposits Fuji ERC-20 tokens as underlying
    */
   function deposit(uint256 _amount) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
     require(underlying != address(0), "Underlying not set");
     IERC20(underlying).transferFrom(msg.sender, address(this), _amount);
   }

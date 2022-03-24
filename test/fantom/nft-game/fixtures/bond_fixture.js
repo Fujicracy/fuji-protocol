@@ -203,8 +203,6 @@ const bondFixture = async ([wallet]) => {
   const PreTokenBond = await getContractFactory("PreTokenBonds");
   const pretokenbond = await upgrades.deployProxy(PreTokenBond,
     [
-      "Fuji Pre-Token Bonds FTM",
-      "FUJI-preTBonds-FTM",
       pointsDecimals,
       nftgame.address
     ]

@@ -49,16 +49,42 @@ const deployContracts = async () => {
   // const vaultharvester = await deployVaultHarvester();
   const swapper = await deploySwapper();
 
-  const vaultdai = await deployVault("VaultMATICDAI", [
+  const vaultmaticdai = await deployVault("VaultMATICDAI", [
     fujiadmin,
     oracle,
     ASSETS.MATIC.address,
     ASSETS.DAI.address,
   ]);
-  const vaultusdc = await deployVault("VaultMATICUSDC", [
+  const vaultmaticusdc = await deployVault("VaultMATICUSDC", [
     fujiadmin,
     oracle,
     ASSETS.MATIC.address,
+    ASSETS.USDC.address,
+  ]);
+
+  const vaultwbtcdai = await deployVault("VaultWBTCDAI", [
+    fujiadmin,
+    oracle,
+    ASSETS.WBTC.address,
+    ASSETS.DAI.address,
+  ]);
+  const vaultwbtcusdc = await deployVault("VaultWBTCUSDC", [
+    fujiadmin,
+    oracle,
+    ASSETS.WBTC.address,
+    ASSETS.USDC.address,
+  ]);
+
+  const vaultwethdai = await deployVault("VaultWETHDAI", [
+    fujiadmin,
+    oracle,
+    ASSETS.WETH.address,
+    ASSETS.DAI.address,
+  ]);
+  const vaultwethusdc = await deployVault("VaultWETHUSDC", [
+    fujiadmin,
+    oracle,
+    ASSETS.WETH.address,
     ASSETS.USDC.address,
   ]);
 
@@ -79,15 +105,45 @@ const deployContracts = async () => {
   });
   await updateFlasher(flasher, fujiadmin);
   await updateController(controller, fujiadmin);
-  await updateFujiERC1155(f1155, [vaultdai, vaultusdc, fliquidator]);
+  await updateFujiERC1155(f1155, [
+    vaultmaticdai,
+    vaultmaticusdc,
+    vaultwbtcdai,
+    vaultwbtcusdc,
+    vaultwethdai,
+    vaultwethusdc,
+    fliquidator,
+  ]);
 
   // Vault Set-up
-  await updateVault("VaultMATICDAI", vaultdai, {
+  await updateVault("VaultMATICDAI", vaultmaticdai, {
     providers: [aaveMATIC, kashi, wepiggy],
     fujiadmin,
     f1155,
   });
-  await updateVault("VaultMATICUSDC", vaultusdc, {
+  await updateVault("VaultMATICUSDC", vaultmaticusdc, {
+    providers: [aaveMATIC, kashi, wepiggy],
+    fujiadmin,
+    f1155,
+  });
+
+  await updateVault("VaultWBTCDAI", vaultwbtcdai, {
+    providers: [aaveMATIC, kashi, wepiggy],
+    fujiadmin,
+    f1155,
+  });
+  await updateVault("VaultWBTCUSDC", vaultwbtcusdc, {
+    providers: [aaveMATIC, kashi, wepiggy],
+    fujiadmin,
+    f1155,
+  });
+
+  await updateVault("VaultWETHDAI", vaultwethdai, {
+    providers: [aaveMATIC, kashi, wepiggy],
+    fujiadmin,
+    f1155,
+  });
+  await updateVault("VaultWETHUSDC", vaultwethusdc, {
     providers: [aaveMATIC, kashi, wepiggy],
     fujiadmin,
     f1155,

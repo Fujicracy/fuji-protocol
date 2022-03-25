@@ -235,7 +235,8 @@ const bondFixture = async ([wallet]) => {
     now,
     day,
     crateIds,
-    cardIds
+    cardIds,
+    phases
   };
 };
 

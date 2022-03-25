@@ -38,11 +38,13 @@ describe("Bond Functionality", function () {
   let otherUser;
   let operator;
 
+  let fixtureItems;
   let nftgame;
   let nftinteractions;
   let pretokenbond;
 
   let evmSnapshot0;
+  let initialPoints;
   let cardIds;
   let slotsIdArray;
   let pointsDecimals;
@@ -57,7 +59,7 @@ describe("Bond Functionality", function () {
 
     const loadFixture = createFixtureLoader(users, provider);
 
-    const fixtureItems = await loadFixture(bondFixture);
+    fixtureItems = await loadFixture(bondFixture);
 
     pretokenbond = fixtureItems.pretokenbond;
     nftgame = fixtureItems.nftgame;
@@ -66,7 +68,8 @@ describe("Bond Functionality", function () {
     pointsDecimals = fixtureItems.pointsDecimals;
 
     // Force mint points for 'user'
-    await nftgame.mint(user.address, 0, parseUnits(200, pointsDecimals));
+    initialPoints = parseUnits(200, pointsDecimals);
+    await nftgame.mint(user.address, 0, initialPoints);
 
     // Mint All cardIDs for 'user'
     for (let index = cardIds[0]; index <= cardIds[1]; index++) {
@@ -79,7 +82,7 @@ describe("Bond Functionality", function () {
     await nftinteractions.connect(user).lockFinalScore();
 
     slotsIdArray = await pretokenbond.getBondVestingTimes();
-    slotsIdArray = slotsIdArray.map( e => e.toString());
+    slotsIdArray = slotsIdArray.map(e => e.toString());
     evmSnapshot0 = await evmSnapshot();
   });
 
@@ -210,7 +213,7 @@ describe("Bond Functionality", function () {
       for (let index = 0; index < slotsIdArray.length; index++) {
         numOfTokens = await pretokenbond.tokensInSlot(index);
         // For each slot type, 1 voucher was minted for'user': see 'before' in this block.
-        expect(numOfTokens).to.eq(1); 
+        expect(numOfTokens).to.eq(1);
       }
     });
 
@@ -239,8 +242,8 @@ describe("Bond Functionality", function () {
       // transferFrom(address _from, address _to, uint256 _tokenId, uint256 _targetTokenId, uint256 _units) external;
 
       // New voucher minted by admin directly from 'PreTokenBonds.sol' to 'otherUser'. Type 3-months
-      const month3typeVoucher = 0;
-      const receiverDumbTokenId = await pretokenbond.callStatic.mint(otherUser.address, month3typeVoucher, numberOfBondUnits);
+      const month3Vesting = "3";
+      const receiverDumbTokenId = await pretokenbond.callStatic.mint(otherUser.address, slotsIdArray.indexOf(month3Vesting), numberOfBondUnits);
       await pretokenbond.mint(otherUser.address, month3typeVoucher, numberOfBondUnits);
 
       const dummyApprovertokenID = 1;
@@ -333,11 +336,11 @@ describe("Bond Functionality", function () {
       const newTokenId = await pretokenbond.nextTokenId();
       const lcontract = pretokenbond.connect(user);
       await lcontract.functions['transferFrom(address,address,uint256,uint256)'](
-          user.address,
-          otherUser.address,
-          dummytokenID,
-          dumbAmountOfBondsToTrasnfer
-        );
+        user.address,
+        otherUser.address,
+        dummytokenID,
+        dumbAmountOfBondsToTrasnfer
+      );
       expect(
         await pretokenbond.ownerOf(newTokenId)
       ).to.eq(
@@ -352,20 +355,58 @@ describe("Bond Functionality", function () {
 
   });
 
-  describe.only("Fuji Bond Specific Functionality", function () {
+  describe.only("Fuji Bond Specific Functionality", () => {
+
+    let mocktoken;
+    let endOfAccumulationTimestamp;
+    let endOfTradeLockTimestamp;
+    let endOfBondTimestamp;
+
+    before(async () => {
+      // Deploy mock token that will be used for testing
+      const MockToken = await getContractFactory("MockToken");
+      mocktoken = await upgrades.deployProxy(MockToken, []);
+
+      // Mint mock token for admin
+      await mocktoken.mint(mocktoken.signer.address, parseUnits(3000000));
+
+      // Extending the accumulating phase
+
+      endOfAccumulationTimestamp = fixtureItems.phases[0] + fixtureItems.day * 2;
+      endOfTradeLockTimestamp = endOfAccumulationTimestamp + fixtureItems.day;
+      endOfBondTimestamp = endOfTradeLockTimestamp + fixtureItems.day;
+
+      const newPhases = [
+        fixtureItems.phases[0],     // 0 = start game launch
+        endOfAccumulationTimestamp, // 1 = end of accumulation
+        endOfTradeLockTimestamp,    // 2 = end of trade and lock
+        endOfBondTimestamp          // 3 = end of bond
+      ];
+
+      await nftgame.setGamePhases(newPhases);
+    });
 
     after(async () => {
       evmRevert(this.evmSnapshot0);
     });
 
-    it("Should return a value for price of mining a token ID", async () => {
+    it("Should return a value for price per bond 'units'", async () => {
       // A default bond price is set at calling 'initialize()'
       // However, an admin function   
       const bondPrice = await pretokenbond.bondPrice();
       expect(bondPrice).to.be.gt(0);
     });
 
+    it("Only admin should be able to change price of bonds 'units'", async () => {
+      // 'user' should not be able to set price.
+      await expect(pretokenbond.connect(user).setBondPrice(1)).to.be.reverted;
+      const newBondPrice = parseUnits(2, 5);
+      await pretokenbond.setBondPrice(newBondPrice);
+      expect(await pretokenbond.bondPrice()).to.eq(newBondPrice);
+    });
+
     it("Should return value for the vesting time for different 'slots'", async () => {
+      // Vesting times are used to check internally claiming.
       const vestingTimes = await pretokenbond.getBondVestingTimes();
       const expectedDefaultVestingTimes = [
         ethers.BigNumber.from("3"),
@@ -373,16 +414,69 @@ describe("Bond Functionality", function () {
         ethers.BigNumber.from("12"),
       ]
       expect(expectedDefaultVestingTimes).to.eq(vestingTimes);
-
     });
 
-    it("Should allow to mint a token ID with zero units before end of bond phase", async () => {
-
+    it("Should revert if user tries to mint voucher before accumulation phase ends", async () => {
+      const numberOfBondUnits = 5;
+      const month3Vesting = "3";
+      await expect(
+        nftinteractions.connect(user).mintBonds(slotsIdArray.indexOf(month3Vesting), numberOfBondUnits)
+      ).to.be.revertedWith("Wrong game phase!");
     });
 
-    it("Should revert if try to mint a token Id after bond phase", async () => {
+    it("Should mint voucher only after accumulation phase ends, 'user' is locked, with points from 'NFTGame'", async () => {
+      // Moved to trading phase
+      await timeTravel(fixtureItems.day + 1);
+      const numberOfBondUnits = ethers.BigNumber.from([5]);
+      const month3Vesting = "3";
+      
+      await expect(
+        nftinteractions.connect(user).mintBonds(slotsIdArray.indexOf(month3Vesting), numberOfBondUnits)
+      ).to.be.revertedWith("User not locked");
 
+      // 'user' locks in points.
+      await nftinteractions.connect(user).lockFinalScore();
+
+      // 'user' mints voucher.
+      await nftinteractions.connect(user).mintBonds(slotsIdArray.indexOf(month3Vesting), numberOfBondUnits);
+      const tokenID = await pretokenbond.nextTokenId()
+      const owner = await pretokenbond.ownerOf(tokenID - 1);
+      expect(owner).to.eq(user.address);
+
+      // checks 'user' points are deducted.
+      const bondPrice = await pretokenbond.bondPrice();
+      const costOfVoucher = bondPrice.mul(numberOfBondUnits);
+      expect(await nftgame.balanceOf(user.address, 0)).to.eq(initialPoints.sub(costOfVoucher));
     });
+
+    it("Should revert if user tries to mint directly from 'PreTokenBonds.sol' contract", async () => {
+      const numberOfBondUnits = 5;
+      const month3Vesting = "3";
+      await expect(
+        pretokenbond.connect(user).mint(user.address, slotsIdArray.indexOf(month3Vesting), numberOfBondUnits)
+      ).to.be.reverted;
+    });
+
+    it("Should not be able to mint voucher after bonding phase ends", async () => {
+      // Mint 1 voucher of each type before moving to trading phase.
+      const numberOfBondUnits = ethers.BigNumber.from([5]);
+      const month6Vesting = "6";
+      const month12Vesting = "12";
+      await nftinteractions.connect(user).mintBonds(slotsIdArray.indexOf(month6Vesting), numberOfBondUnits);
+      await nftinteractions.connect(user).mintBonds(slotsIdArray.indexOf(month12Vesting), numberOfBondUnits);
+
+      // Moved to end bonding phase
+      await timeTravel(fixtureItems.day * 3 + 1);
+
+      await expect(
+        pretokenbond.connect(user).mint(user.address, slotsIdArray.indexOf(month6Vesting), numberOfBondUnits)
+      ).to.be.reverted;
+    });
+
+    it("Should return zero when calling 'tokensPerUnit(uint256)' if no token deposit has been performed", async () => {
+    });
+
+
 
 
   });

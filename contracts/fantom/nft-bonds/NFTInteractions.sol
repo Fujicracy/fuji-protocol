@@ -3,14 +3,14 @@ pragma solidity ^0.8.0;
 
 /// @title NFT Interactions
 /// @author fuji-dao.eth
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./NFTGame.sol";
 import "../libraries/LibPseudoRandom.sol";
 import "./FujiPriceAware.sol";
 import "./PreTokenBonds.sol";
 
-contract NFTInteractions is FujiPriceAware, Initializable {
+contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
   using LibPseudoRandom for uint256;
 
   /**
@@ -73,6 +73,7 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   mapping(uint256 => uint256) public cardBoost;
 
   function initialize(address _nftGame) external initializer {
+    __ReentrancyGuard_init();
     maxDelay = 3 * 60;
     nftGame = NFTGame(_nftGame);
     probabilityIntervals = [500000, 700000, 900000, 950000, 950100];
@@ -162,25 +163,27 @@ contract NFTInteractions is FujiPriceAware, Initializable {
    * @param _type: the vesting group (based on time) associated with the bond 
    * @param amount: number of bonds to be minted
   */
-  function mintBonds(PreTokenBonds.SlotVestingTypes _type, uint amount) external {
-    require(nftGame.getPhase() == 3,"Wrong game phase");
+  function mintBonds(PreTokenBonds.SlotVestingTypes _type, uint amount) external nonReentrant {
+    require(nftGame.getPhase() >= 2,"Wrong game phase");
     require(_isLocked(msg.sender), "User not locked");
+    require(amount > 0, "Zero amount!");
 
-    uint256 price = amount * preTokenBonds.bondPrice();
-    require(nftGame.balanceOf(msg.sender, nftGame.POINTS_ID()) >= price, "Not enough points");
+    uint256 cost = amount * preTokenBonds.bondPrice();
+    require(nftGame.balanceOf(msg.sender, nftGame.POINTS_ID()) >= cost, "Not enough points");
 
-    nftGame.burn(msg.sender, nftGame.POINTS_ID(), price);
+    nftGame.burn(msg.sender, nftGame.POINTS_ID(), cost);
     preTokenBonds.mint(msg.sender, _type, amount);
   }
 
   /**
    * @notice Burns user points to mint a new crate
    */
-  function mintCrates(uint256 crateId, uint256 amount) external {
+  function mintCrates(uint256 crateId, uint256 amount) external nonReentrant {
     // accumulation and trading only
     uint256 phase = nftGame.getPhase();
     require(phase > 0 && phase < 3, "Wrong game phase!");
     require(!_isLocked(msg.sender), "User already locked!");
+    require(amount > 0, "Zero amount!");
 
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
@@ -201,11 +204,12 @@ contract NFTInteractions is FujiPriceAware, Initializable {
   /**
    * @notice opens one crate with the given id
    */
-  function openCrate(uint256 crateId, uint256 amount) external {
+  function openCrate(uint256 crateId, uint256 amount) external nonReentrant {
     // accumulation and trading only
     uint256 phase = nftGame.getPhase();
     require(phase > 0 && phase < 3, "Wrong game phase!");
     require(!_isLocked(msg.sender), "User already locked!");
+    require(amount > 0, "Zero amount!");
 
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,

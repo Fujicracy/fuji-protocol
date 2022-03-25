@@ -81,12 +81,12 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
   /**
    * @notice Returns the number of tokens per bond for a slotID (vesting time)
    */
-  function tokensPerUnit(uint256 _slot) public view returns(uint256) {
+  function tokensPerUnit(SlotVestingTypes _slot) public view returns(uint256) {
     uint256 totalUnits = 0;
     for (uint256 i = 0; i < _bondSlotTimes.length; i++) {
       totalUnits += unitsInSlot(_bondSlotTimes[i]);
     }
-    uint256 slot = _bondSlotTimes[_slot];
+    uint256 slot = _bondSlotTimes[uint256(_slot)];
     uint256 multiplier = slot == 3 ? 1 : slot == 6 ? 2 : 4;
     return (IERC20(underlying).balanceOf(address(this)) * multiplier  / totalUnits);
   }
@@ -121,6 +121,12 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    * Example: '{_slotBaseURI}/{slotID}.json'
    */
   function slotURI(uint256 slotID) external override view returns (string memory) {
+    require(
+      slotID == uint256(SlotVestingTypes.months3) ||
+      slotID == uint256(SlotVestingTypes.months6) ||
+      slotID == uint256(SlotVestingTypes.months12),
+      "Only accept: 0, 1, 2"
+       );
     return string(abi.encodePacked(_slotBaseURI, slotID.toString(), ".json"));
   }
 
@@ -223,6 +229,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
   /**
    * @notice Function to be called from Interactions contract, after burning the points
    * @dev Mint access restricted only via {NFTInteractions} contract
+   * '_units' > 0 is checked at {NFTInteractions}
    */
   function mint(address _user, SlotVestingTypes _type, uint256 _units) external returns (uint256 tokenID) {
     require(nftGame.hasRole(nftGame.GAME_INTERACTOR(), msg.sender), Errors.VL_NOT_AUTHORIZED);
@@ -235,7 +242,10 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
   function deposit(uint256 _amount) external {
     require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
     require(underlying != address(0), "Underlying not set");
-    IERC20(underlying).transferFrom(msg.sender, address(this), _amount);
+    require(_amount > 0, "Zero amount!");
+    IERC20 token = IERC20(underlying);
+    require(token.allowance(msg.sender, address(this)) >= _amount, "No allowance!");
+    token.transferFrom(msg.sender, address(this), _amount);
   }
 
   /**

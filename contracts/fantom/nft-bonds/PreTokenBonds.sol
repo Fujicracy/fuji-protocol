@@ -233,7 +233,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    */
   function mint(address _user, SlotVestingTypes _type, uint256 _units) external returns (uint256 tokenID) {
     require(nftGame.hasRole(nftGame.GAME_INTERACTOR(), msg.sender), Errors.VL_NOT_AUTHORIZED);
-    tokenID = _mint(_user, uint256(_type), _units);
+    tokenID = _mint(_user,  _bondSlotTimes[uint256(_type)], _units);
   }
 
   /**

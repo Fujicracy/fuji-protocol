@@ -251,12 +251,21 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
   /**
    * @notice Claims tokens at voucher expiry date.
    */
-  function claim(address user, uint256 _type, uint256 _units) external {
+  function claim(uint256 _tokenId) external {
+    require (ownerOf(_tokenId) == msg.sender, "No permission");
     require(underlying != address(0), "Underlying not set");
-    //TODO check date (create new phase?)
-    //TODO check units
-    //TODO burn units
+    SlotVestingTypes vestingType = SlotVestingTypes(_slotOf(_tokenId));
+    require (block.timestamp >= vestingTypeToTimestamp(vestingType), "Claiming not active yet");
 
-    IERC20(underlying).transfer(user, tokensPerUnit(_type) * _units);
+    uint256 units = unitsInToken(_tokenId);
+    _burnVoucher(_tokenId);
+
+    IERC20(underlying).transfer(msg.sender, tokensPerUnit(vestingType) * units);
+  }
+
+  // Intenral functions
+
+  function vestingTypeToTimestamp(SlotVestingTypes _slot) view internal returns (uint256) {
+    return nftGame.gamePhaseTimestamps(3) + (30 days * _bondSlotTimes[uint256(_slot)]); 
   }
 }

@@ -195,10 +195,19 @@ const bondFixture = async ([wallet]) => {
     firstID.add(totalCards).sub(1)
   ];
 
+  // Set Cardboosts
+  for (let index = firstID; index < (firstID + totalCards); index++) {
+    await nftinteractions.setCardBoost(firstID, 110);
+  }
+
   // Delayed entropy feed check to allowing time travel; for testing only
   await nftinteractions.setMaxEntropyDelay(60 * 60 * 24 * 365 * 2);
 
-  /// pretokenbond contract deploy and setup
+  /**
+   * 
+   * Pretokenbond contract deploy and setup
+   * 
+   */
 
   const PreTokenBond = await getContractFactory("PreTokenBonds");
   const pretokenbond = await upgrades.deployProxy(PreTokenBond,
@@ -208,17 +217,23 @@ const bondFixture = async ([wallet]) => {
     ]
   );
 
+  // Set pretokenbond contract in nftinteractions
+  await nftinteractions.setPreTokenBonds(pretokenbond.address);
+
+  // Deploy of mock tocken to be used in bond testing.
   const MockToken = await getContractFactory("MockToken");
   const mocktoken = await upgrades.deployProxy(MockToken, []);
 
-  // Set pretokenbond.sol getters for metadata for testing only
+  // Set underlying in pretokenbond contract
+  await pretokenbond.setUnderlying(mocktoken.address);
 
+  // Set pretokenbond.sol getters for metadata
   await pretokenbond.setBaseTokenURI("https://www.example.com/metadata/token/");
   await pretokenbond.setContractURI("https://www.example.com/metadata/contract.json");
   await pretokenbond.setBaseSlotURI("https://www.example.com/metadata/slot/");
 
-  // Low bond price for testing only
-  await pretokenbond.setBondPrice(parseUnits(10, pointsDecimals))
+  // Override for testing only: change to low bond price
+  await pretokenbond.setBondPrice(parseUnits(1, pointsDecimals))
 
   return {
     ...tokens,

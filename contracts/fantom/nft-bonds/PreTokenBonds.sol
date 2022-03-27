@@ -23,18 +23,12 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
   /**
    * @dev Bond times changed
    */
-  event BondTimesChanges(uint256[] newBondTimes);
+  event BondTimesChanges(uint256 newBondTimes, uint256 newMultiplier);
 
   /**
    * @dev Bond price changed
    */
   event BondPriceChanges(uint256 newBondPrice);
-
-  enum SlotVestingTypes {
-    months3,
-    months6,
-    months12
-  }
 
   address private _owner;
 
@@ -44,90 +38,98 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
 
   uint256[] private _bondSlotTimes;
 
+  // _bondSlotTime => multiplier value
+  mapping(uint256 => uint256) public bondSlotMultiplier;
+
   uint256 public bondPrice;
 
   // Metadata for ERC3525:
   // Refer to: https://eips.ethereum.org/EIPS/eip-3525#metadata
   string private _tokenBaseURI; // ERC721 general base token URI
-  string private _contractURI; // Contract Info URI 
-  string private _slotBaseURI; // Slot base URI 
+  string private _contractURI; // Contract Info URI
+  string private _slotBaseURI; // Slot base URI
 
   /**
-  * @dev See {IERC165-supportsInterface}.
-  */
-  function supportsInterface(bytes4 interfaceId) public view 
-    override(AccessControlUpgradeable, ERC721Upgradeable) returns (bool) {
-      return
-        interfaceId == type(IVNFT).interfaceId ||
-        interfaceId == type(IERC721Upgradeable).interfaceId ||
-        interfaceId == type(IERC721MetadataUpgradeable).interfaceId ||
-        // 'super.supportsInterface()' will read from  {AccessControlUpgradeable}
-        super.supportsInterface(interfaceId); 
+   * @dev See {IERC165-supportsInterface}.
+   */
+  function supportsInterface(bytes4 interfaceId)
+    public
+    view
+    override(AccessControlUpgradeable, ERC721Upgradeable)
+    returns (bool)
+  {
+    return
+      interfaceId == type(IVNFT).interfaceId ||
+      interfaceId == type(IERC721Upgradeable).interfaceId ||
+      interfaceId == type(IERC721MetadataUpgradeable).interfaceId ||
+      // 'super.supportsInterface()' will read from  {AccessControlUpgradeable}
+      super.supportsInterface(interfaceId);
   }
 
-  function initialize(
-      uint8 _unitDecimals,
-      address _nftGame
-  ) external initializer {
+  function initialize(uint8 _unitDecimals, address _nftGame) external initializer {
     _owner = msg.sender;
     VoucherCore._initialize("FujiDAO PreToken Bonds", "fjVoucherBond", _unitDecimals);
     nftGame = NFTGame(_nftGame);
     _bondSlotTimes = [3, 6, 12];
+    uint8[3] memory defaultMultipliers = [1,2,4];
+    uint256 length = _bondSlotTimes.length;
+    for (uint256 i = 0; i < length; ) {
+      bondSlotMultiplier[_bondSlotTimes[i]] = defaultMultipliers[i];
+      unchecked {
+        ++i;
+      }
+    }
     bondPrice = 100000;
   }
 
   /// View functions
 
   /**
-   * @notice Returns the number of tokens per bond for a slotID (vesting time)
+   * @notice Returns the number of tokens per unit bond for a slotID (vesting time)
    */
-  function tokensPerUnit(SlotVestingTypes _slot) public view returns(uint256) {
-    uint256 totalUnits = 0;
-    for (uint256 i = 0; i < _bondSlotTimes.length; i++) {
-      totalUnits += unitsInSlot(_bondSlotTimes[i]);
-    }
-    uint256 slot = _bondSlotTimes[uint256(_slot)];
-    uint256 multiplier = slot == 3 ? 1 : slot == 6 ? 2 : 4;
-    return (IERC20(underlying).balanceOf(address(this)) * multiplier  / totalUnits);
+  function tokensPerUnit(uint256 _slot) public view returns (uint256) {
+    uint256 WeightedUnits = _computeWeightedUnitAmounts();
+    uint256 basicTokensPerUnit = IERC20(underlying).balanceOf(address(this)) / WeightedUnits;
+    return basicTokensPerUnit * bondSlotMultiplier[_slot];
   }
 
   /**
    * @notice Returns the allowed Bond vesting times (slots).
    */
-  function getBondVestingTimes() public view returns(uint256[] memory) {
+  function getBondVestingTimes() public view returns (uint256[] memory) {
     return _bondSlotTimes;
   }
 
   /**
-  * @notice Returns the token Id metadata URI
-  * Example: '{_tokenBaseURI}/{tokenId}.json'
-  * @dev See {IERC721Metadata-tokenURI}.
-  */
+   * @notice Returns the token Id metadata URI
+   * Example: '{_tokenBaseURI}/{tokenId}.json'
+   * @dev See {IERC721Metadata-tokenURI}.
+   */
   function tokenURI(uint256 tokenId) public view override returns (string memory) {
-      require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
-      return string(abi.encodePacked(_tokenBaseURI, tokenId.toString(), ".json"));
+    require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+    return string(abi.encodePacked(_tokenBaseURI, tokenId.toString(), ".json"));
   }
 
   /**
    * @notice Returns the contract URI for contract metadata
    * See {setContractURI(string)}
    */
-  function contractURI() external override view returns (string memory) {
+  function contractURI() external view override returns (string memory) {
     return _contractURI;
   }
 
   /**
    * @notice Returns the slot ID URI for metadata
+   * @dev Only if passed slot ID is valid.
    * Example: '{_slotBaseURI}/{slotID}.json'
    */
-  function slotURI(uint256 slotID) external override view returns (string memory) {
-    require(
-      slotID == uint256(SlotVestingTypes.months3) ||
-      slotID == uint256(SlotVestingTypes.months6) ||
-      slotID == uint256(SlotVestingTypes.months12),
-      "Only accept: 0, 1, 2"
-       );
-    return string(abi.encodePacked(_slotBaseURI, slotID.toString(), ".json"));
+  function slotURI(uint256 slotID) external view override returns (string memory _uri) {
+    uint256[] memory localSlots = _bondSlotTimes;
+    for (uint256 index = 0; index < localSlots.length; index++) {
+      if (localSlots[index] == slotID) {
+        _uri = string(abi.encodePacked(_slotBaseURI, slotID.toString(), ".json"));
+      }
+    }
   }
 
   /**
@@ -153,7 +155,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
   }
 
   /**
-   * @notice Admin restricted function to set address for bond claimaible 
+   * @notice Admin restricted function to set address for bond claimaible
    * underlying Fuji ERC-20
    */
   function setUnderlying(address _underlying) external {
@@ -162,24 +164,26 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
     underlying = _underlying;
     emit UnderlyingChanged(_underlying);
   }
-  
+
   /**
-   * @notice Admin restricted function to set bond times.
-   * @param _newbondSlotTimes Array of values in months for vesting time.
-   * Example: [3, 6, 12]
+   * @notice Admin restricted function to push a new bond time.
+   * @dev '_newbondSlotTime' should be different than existing bond times.
+   * @param _newbondSlotTime Value in months of new vesting time to push.
+   * Defaults: [3, 6, 12]
    */
-  function setBondVestingTimes(uint256[] calldata _newbondSlotTimes) external {
+  function setBondVestingTimes(uint256 _newbondSlotTime, uint256 _newMultiplier) external {
     require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
-    for (uint256 index = 0; index < _newbondSlotTimes.length; index++) {
-      require(_newbondSlotTimes[index] > 0, "No zero values!");
-    }
-    _bondSlotTimes = _newbondSlotTimes;
-    emit BondTimesChanges(_bondSlotTimes);
+    require(_newbondSlotTime > 0 && _newMultiplier > 0, "No zero values!");
+    require(!_checkIfSlotExists(_newbondSlotTime), "Bond slot exists!");
+
+    _bondSlotTimes.push(_newbondSlotTime);
+    bondSlotMultiplier[_newbondSlotTime] = _newMultiplier;
+    emit BondTimesChanges(_newbondSlotTime, _newMultiplier);
   }
 
   /**
    * @notice Admin restricted function to set bond price.
-   * @dev Price is in relation to token id=0 (points) in {NFTGame} contract.
+   * @dev Price is per (token id=0) points in {NFTGame} contract.
    */
   function setBondPrice(uint256 _bondPrice) external {
     require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
@@ -228,12 +232,20 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
 
   /**
    * @notice Function to be called from Interactions contract, after burning the points
-   * @dev Mint access restricted only via {NFTInteractions} contract
-   * '_units' > 0 is checked at {NFTInteractions}
+   * @dev Mint access restricted for users only via {NFTInteractions} contract
+   *
    */
-  function mint(address _user, SlotVestingTypes _type, uint256 _units) external returns (uint256 tokenID) {
+  function mint(
+    address _user,
+    uint256 _slot,
+    uint256 _units
+  ) external returns (uint256 tokenID) {
     require(nftGame.hasRole(nftGame.GAME_INTERACTOR(), msg.sender), Errors.VL_NOT_AUTHORIZED);
-    tokenID = _mint(_user,  _bondSlotTimes[uint256(_type)], _units);
+    require(_units > 0, "Invalid amount!");
+    require(_checkIfSlotExists(_slot), "Invalid slot!");
+    uint256 phase = nftGame.getPhase();
+    require(phase >= 2 && phase < 4, "Wrong game phase!");
+    tokenID = _mint(_user, _slot, _units);
   }
 
   /**
@@ -250,22 +262,53 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
 
   /**
    * @notice Claims tokens at voucher expiry date.
+   * @dev Msg.sender should be owner of tokenId.
    */
   function claim(uint256 _tokenId) external {
-    require (ownerOf(_tokenId) == msg.sender, "No permission");
+    require(ownerOf(_tokenId) == msg.sender, "Wrong owner!");
     require(underlying != address(0), "Underlying not set");
-    SlotVestingTypes vestingType = SlotVestingTypes(_slotOf(_tokenId));
-    require (block.timestamp >= vestingTypeToTimestamp(vestingType), "Claiming not active yet");
+    uint256 slot = _slotOf(_tokenId);
+    require(block.timestamp >= _vestingTypeToTimestamp(slot), "Claiming not active yet");
 
+    // 'units' and 'tokensPerBond' should be computed before voucher burn.
     uint256 units = unitsInToken(_tokenId);
+    uint256 tokensPerBond = tokensPerUnit(slot);
     _burnVoucher(_tokenId);
 
-    IERC20(underlying).transfer(msg.sender, tokensPerUnit(vestingType) * units);
+    IERC20(underlying).transfer(msg.sender, units * tokensPerBond);
   }
 
-  // Intenral functions
+  /// Internal functions
 
-  function vestingTypeToTimestamp(SlotVestingTypes _slot) view internal returns (uint256) {
-    return nftGame.gamePhaseTimestamps(3) + (30 days * _bondSlotTimes[uint256(_slot)]); 
+  /**
+   * @notice Returns true if slot id exists.
+   */
+  function _checkIfSlotExists(uint256 _slot) internal view returns (bool exists) {
+    // Next lines use the gas optmized form of loops.
+    uint256[] memory localbondTimes = _bondSlotTimes;
+    uint256 length = localbondTimes.length;
+    for (uint256 index = 0; index < length; ) {
+      if (_slot == localbondTimes[index]) {
+        exists = true;
+      }
+      unchecked {
+        ++index;
+      }
+    }
+  }
+
+  function _vestingTypeToTimestamp(uint256 _slot) internal view returns (uint256) {
+    // _slot input can remained unchecked since is returned from '_slotOf()'.
+    return nftGame.gamePhaseTimestamps(3) + (30 days * _slot);
+  }
+
+  function _computeWeightedUnitAmounts() internal view returns (uint256 weightedTotal) {
+    uint256 length = _bondSlotTimes.length;
+    for (uint256 i = 0; i < length; ) {
+      weightedTotal += unitsInSlot(_bondSlotTimes[i]) * bondSlotMultiplier[_bondSlotTimes[i]];
+      unchecked {
+        ++i;
+      }
+    }
   }
 }

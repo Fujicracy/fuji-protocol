@@ -14,6 +14,8 @@ import "../../interfaces/IVault.sol";
 import "../../interfaces/IVaultControl.sol";
 import "../../interfaces/IERC20Extended.sol";
 
+import "hardhat/console.sol";
+
 contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable {
   /**
    * @dev Changing valid vaults
@@ -164,7 +166,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     _updateUserInfo(user, uint128(debt), phase);
 
     // Compute and assign final score
-    uint256 finalScore = (userdata[user].accruedPoints * boostNumber) / 100;
+    uint256 finalScore = boostNumber == 0 ? userdata[user].accruedPoints : (userdata[user].accruedPoints * boostNumber) / 100;
 
     userdata[user].accruedPoints = uint128(finalScore);
     lockedNFTID = uint256(keccak256(abi.encodePacked(user, finalScore)));
@@ -177,7 +179,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     uint256 balance;
     for (uint256 index = 1; index < 4; index++) {
       balance = balanceOf(user, index);
-       _burn(user, index, balance);
+      _burn(user, index, balance);
     }
 
     // Burn one of each nft cards in deck
@@ -185,7 +187,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
       balance = balanceOf(user, index);
       if (balance > 0) {
         _burn(user, index, 1);
-      } 
+      }
     }
   }
 
@@ -328,9 +330,11 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     } else if (phase >= gamePhaseTimestamps[0] && phase < gamePhaseTimestamps[1]) {
       phase = 1; // Accumulation
     } else if (phase >= gamePhaseTimestamps[1] && phase < gamePhaseTimestamps[2]) {
-      phase = 2; // Trade and lock
+      phase = 2; // Trading
+    } else if (phase >= gamePhaseTimestamps[2] && phase < gamePhaseTimestamps[3]) {
+      phase = 3; // Locking and bonding
     } else {
-      phase = 3; // Bonding
+      phase = 4; // Vesting time
     }
   }
 

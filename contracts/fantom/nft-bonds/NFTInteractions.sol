@@ -157,14 +157,14 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
   }
 
   /// Interaction Functions
-  
+
   /**
    * @notice mints new bonds
-   * @param _type: the vesting group (based on time) associated with the bond 
+   * @param _slotType: the vesting slot (based on time) associated with the bond
    * @param amount: number of bonds to be minted
-  */
-  function mintBonds(PreTokenBonds.SlotVestingTypes _type, uint amount) external nonReentrant {
-    require(nftGame.getPhase() >= 2,"Wrong game phase");
+   * @dev '_slotType' input validations is done in {PreTokenBonds} contract.
+   */
+  function mintBonds(uint256 _slotType, uint256 amount) external nonReentrant returns(uint256 tokenId) {
     require(_isLocked(msg.sender), "User not locked");
     require(amount > 0, "Zero amount!");
 
@@ -172,7 +172,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
     require(nftGame.balanceOf(msg.sender, nftGame.POINTS_ID()) >= cost, "Not enough points");
 
     nftGame.burn(msg.sender, nftGame.POINTS_ID(), cost);
-    preTokenBonds.mint(msg.sender, _type, amount);
+    tokenId = preTokenBonds.mint(msg.sender, _slotType, amount);
   }
 
   /**
@@ -284,13 +284,13 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * @dev Value is 100 based. In example; 150 is +50% or 1.5 in decimal
    */
   function computeBoost(address user) public view returns (uint256 totalBoost) {
-    for (
-      uint256 index = NFT_CARD_ID_START;
-      index < NFT_CARD_ID_START + nftGame.nftCardsAmount();
-      index++
-    ) {
+    uint256 cardLimit = NFT_CARD_ID_START + nftGame.nftCardsAmount();
+    for (uint256 index = NFT_CARD_ID_START; index < cardLimit;) {
       if (nftGame.balanceOf(user, index) > 0) {
         totalBoost += cardBoost[index];
+      }
+      unchecked {
+        ++index;
       }
     }
   }
@@ -301,7 +301,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * @notice returns true if user is already locked.
    */
   function _isLocked(address user) internal view returns (bool locked) {
-    (,,,,uint256 lockedID) = nftGame.userdata(user);
+    (, , , , uint256 lockedID) = nftGame.userdata(user);
     if (lockedID != 0) {
       locked = true;
     }

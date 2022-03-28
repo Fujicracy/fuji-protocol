@@ -125,9 +125,13 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    */
   function slotURI(uint256 slotID) external view override returns (string memory _uri) {
     uint256[] memory localSlots = _bondSlotTimes;
-    for (uint256 index = 0; index < localSlots.length; index++) {
-      if (localSlots[index] == slotID) {
+    uint256 length = localSlots.length;
+    for (uint256 i = 0; i < length;) {
+      if (localSlots[i] == slotID) {
         _uri = string(abi.encodePacked(_slotBaseURI, slotID.toString(), ".json"));
+      }
+      unchecked {
+        ++i;
       }
     }
   }
@@ -287,12 +291,12 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
     // Next lines use the gas optmized form of loops.
     uint256[] memory localbondTimes = _bondSlotTimes;
     uint256 length = localbondTimes.length;
-    for (uint256 index = 0; index < length; ) {
-      if (_slot == localbondTimes[index]) {
+    for (uint256 i = 0; i < length; ) {
+      if (_slot == localbondTimes[i]) {
         exists = true;
       }
       unchecked {
-        ++index;
+        ++i;
       }
     }
   }

@@ -7,14 +7,20 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./NFTGame.sol";
 import "../libraries/LibPseudoRandom.sol";
-import "../../libraries/Errors.sol";
 import "./FujiPriceAware.sol";
 import "./PreTokenBonds.sol";
 import "../../interfaces/chainlink/AggregatorV3Interface.sol";
 
-contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
-  using LibPseudoRandom for uint256;
+library GameErrors {
+  string public constant NOT_ADMIN = "G00";
+  string public constant WRONG_PHASE = "G01";
+  string public constant INVALID_INPUT = "G02";
+  string public constant VALUE_NOT_SET = "G03";
+  string public constant USER_LOCK_ERROR = "G04";
+  string public constant NOT_ENOUGH_AMOUNT = "G05";
+}
 
+contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
   /**
    * @dev Reward for opening a crate, 'tokenId' corresponds to ERC1155 ids
    */
@@ -92,8 +98,11 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
 
     // Set basic cardBoost
     uint256 cardsLimit = nftGame.nftCardsAmount() + NFT_CARD_ID_START;
-    for (uint256 index = NFT_CARD_ID_START; index < cardsLimit; index++) {
-      cardBoost[index] = 110;
+    for (uint256 i = NFT_CARD_ID_START; i < cardsLimit;) {
+      cardBoost[i] = 110;
+      unchecked {
+        ++i;
+      }
     }
   }
 
@@ -103,13 +112,13 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * @notice Set address for NFTGame contract
    */
   function setNFTGame(address _nftGame) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), GameErrors.NOT_ADMIN);
     nftGame = NFTGame(_nftGame);
     emit NFTGameChanged(_nftGame);
   }
 
   function setPreTokenBonds(address _preTokenBonds) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), "No permission!");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), GameErrors.NOT_ADMIN);
     preTokenBonds = PreTokenBonds(_preTokenBonds);
     emit PreTokenBondsChanged(_preTokenBonds);
   }
@@ -118,10 +127,10 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * @notice sets the prices for the crates
    */
   function setCratePrice(uint256 crateId, uint256 price) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), GameErrors.NOT_ADMIN);
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
-      "Invalid crate ID!"
+      GameErrors.INVALID_INPUT
     );
     cratePrices[crateId] = price;
     emit CratePriceChanged(crateId, price);
@@ -131,7 +140,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * @notice sets probability intervals for crate rewards
    */
   function setProbabilityIntervals(uint256[] memory intervals) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), GameErrors.NOT_ADMIN);
     _probabilityIntervals = intervals;
   }
 
@@ -140,7 +149,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * rewards are an array, with each element corresponding to the points multiplier value
    */
   function setCrateRewards(uint256 crateId, uint256[] memory rewards) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), GameErrors.NOT_ADMIN);
     _crateRewards[crateId] = rewards;
     emit CrateRewardsChanged(crateId, rewards);
   }
@@ -150,8 +159,8 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * @dev boost is a base 100 number. In example, boost = 115, 15% boost. 1.15 for computation.
    */
   function setCardBoost(uint256 cardId, uint256 boost) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
-    require(boost >= 100, "Boost not > 100!");
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), GameErrors.NOT_ADMIN);
+    require(boost >= 100, GameErrors.INVALID_INPUT);
     cardBoost[cardId] = boost;
     emit CardBoostChanged(cardId, boost);
   }
@@ -161,7 +170,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * Admin function required by redstone-evm-connector (oracle).
    */
   function authorizeSignerEntropyFeed(address _trustedSigner) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), GameErrors.NOT_ADMIN);
     _authorizeSigner(_trustedSigner);
   }
 
@@ -170,7 +179,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * Admin function required by redstone-evm-connector (oracle).
    */
   function setMaxEntropyDelay(uint256 _maxDelay) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), GameErrors.NOT_ADMIN);
     _setMaxDelay(_maxDelay);
   }
 
@@ -179,7 +188,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * switch(1) = redstone, switch(0) = chainlink
    */
   function setIsRedstoneOracleOn(bool switch_) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), GameErrors.NOT_ADMIN);
     isRedstoneOracleOn = switch_;
   }
 
@@ -192,11 +201,11 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * @dev '_slotType' input validations is done in {PreTokenBonds} contract.
    */
   function mintBonds(uint256 _slotType, uint256 amount) external nonReentrant returns(uint256 tokenId) {
-    require(_isLocked(msg.sender), "User not locked");
-    require(amount > 0, "Zero amount!");
+    require(_isLocked(msg.sender), GameErrors.USER_LOCK_ERROR);
+    require(amount > 0, GameErrors.INVALID_INPUT);
 
     uint256 cost = amount * preTokenBonds.bondPrice();
-    require(nftGame.balanceOf(msg.sender, nftGame.POINTS_ID()) >= cost, "Not enough points");
+    require(nftGame.balanceOf(msg.sender, nftGame.POINTS_ID()) >= cost, GameErrors.NOT_ENOUGH_AMOUNT);
 
     nftGame.burn(msg.sender, nftGame.POINTS_ID(), cost);
     tokenId = preTokenBonds.mint(msg.sender, _slotType, amount);
@@ -208,18 +217,18 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
   function mintCrates(uint256 crateId, uint256 amount) external nonReentrant {
     // accumulation and trading only
     uint256 phase = nftGame.getPhase();
-    require(phase > 0 && phase < 3, "Wrong game phase!");
-    require(!_isLocked(msg.sender), "User already locked!");
-    require(amount > 0, "Zero amount!");
+    require(phase > 0 && phase < 3, GameErrors.WRONG_PHASE);
+    require(!_isLocked(msg.sender), GameErrors.USER_LOCK_ERROR);
+    require(amount > 0, GameErrors.INVALID_INPUT);
 
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
-      "Invalid crate ID!"
+      GameErrors.INVALID_INPUT
     );
 
     uint256 price = cratePrices[crateId] * amount;
-    require(price > 0, "Price not set");
-    require(nftGame.balanceOf(msg.sender, nftGame.POINTS_ID()) >= price, "Not enough points!");
+    require(price > 0, GameErrors.VALUE_NOT_SET);
+    require(nftGame.balanceOf(msg.sender, nftGame.POINTS_ID()) >= price, GameErrors.NOT_ENOUGH_AMOUNT);
 
     nftGame.burn(msg.sender, nftGame.POINTS_ID(), price);
 
@@ -234,16 +243,16 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
   function openCrate(uint256 crateId, uint256 amount) external nonReentrant {
     // accumulation and trading only
     uint256 phase = nftGame.getPhase();
-    require(phase > 0 && phase < 3, "Wrong game phase!");
-    require(!_isLocked(msg.sender), "User already locked!");
-    require(amount > 0, "Zero amount!");
+    require(phase > 0 && phase < 3, GameErrors.WRONG_PHASE);
+    require(!_isLocked(msg.sender), GameErrors.USER_LOCK_ERROR);
+    require(amount > 0, GameErrors.INVALID_INPUT);
 
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
-      "Invalid crate ID!"
+      GameErrors.INVALID_INPUT
     );
-    require(nftGame.balanceOf(msg.sender, crateId) >= amount, "Not enough crates!");
-    require(_crateRewards[crateId].length == _probabilityIntervals.length, "Rewards not set!");
+    require(nftGame.balanceOf(msg.sender, crateId) >= amount, GameErrors.NOT_ENOUGH_AMOUNT);
+    require(_crateRewards[crateId].length == _probabilityIntervals.length, GameErrors.VALUE_NOT_SET);
 
     // Points + Crates + Cards
     Reward[] memory rewards = new Reward[](amount);
@@ -301,7 +310,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
   function lockFinalScore() external {
     // trading-phase only
     uint256 phase = nftGame.getPhase();
-    require(phase >= 2, "Wrong game phase!");
+    require(phase >= 2, GameErrors.WRONG_PHASE);
     uint256 boostNumber = computeBoost(msg.sender);
     uint256 lockedNFTId = nftGame.userLock(msg.sender, boostNumber);
 
@@ -332,12 +341,12 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
   function computeBoost(address user) public view returns (uint256 totalBoost) {
     totalBoost = 100;
     uint256 cardLimit = NFT_CARD_ID_START + nftGame.nftCardsAmount();
-    for (uint256 index = NFT_CARD_ID_START; index < cardLimit;) {
-      if (nftGame.balanceOf(user, index) > 0) {
-        totalBoost += cardBoost[index];
+    for (uint256 i = NFT_CARD_ID_START; i < cardLimit;) {
+      if (nftGame.balanceOf(user, i) > 0) {
+        totalBoost += cardBoost[i];
       }
       unchecked {
-        ++index;
+        ++i;
       }
     }
   }

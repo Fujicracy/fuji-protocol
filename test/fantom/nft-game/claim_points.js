@@ -1,28 +1,22 @@
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { createFixtureLoader } = require("ethereum-waffle");
-const { getContractAt, getContractFactory } = ethers;
 
 const { MerkleTree } = require('merkletreejs');
 const keccak256 = require('keccak256');
 const pointsData = require('./sample-merkle-leaves.json');
 
-const { BigNumber, provider } = ethers;
+const { provider } = ethers;
 
 const abiCoder = ethers.utils.defaultAbiCoder;
 
-const { fixture, ASSETS, VAULTS, syncTime } = require("../utils");
+const { quickFixture } = require("./quick_test_fixture")
 
 const {
-  parseUnits,
-  formatUnitsToNum,
   evmSnapshot,
   evmRevert,
-  timeTravel,
 } = require("../../helpers");
-const { DEFAULT_PRICE } = require("redstone-evm-connector/lib/utils/v2/impl/builder/MockableEthersContractWrapperBuilder");
 
-const SEC = 60 * 60 * 24;
 const DEBUG = false;
 
 describe("Claiming Bonus Points Tests", function () {
@@ -52,18 +46,10 @@ describe("Claiming Bonus Points Tests", function () {
     eligibleUser = users[eligibleUserNumber];
     nonEligibleUser = users[19];
 
-    // const loadFixture = createFixtureLoader(users, provider);
-    // f = await loadFixture(fixture);
-    // nftgame = f.nftgame;
-
-    const NFTGame = await getContractFactory("NFTGame");
-    nftgame = await upgrades.deployProxy(NFTGame, []);
-  
-    const NFTInteractions = await getContractFactory("NFTInteractions");
-    nftinteractions = await upgrades.deployProxy(NFTInteractions, [nftgame.address]);
-
-    await nftgame.grantRole(nftgame.GAME_ADMIN(), nftgame.signer.address);
-    await nftgame.grantRole(nftgame.GAME_INTERACTOR(), nftinteractions.address);
+    const loadFixture = createFixtureLoader(users, provider);
+    f = await loadFixture(quickFixture);
+    nftgame = f.nftgame;
+    nftinteractions = f.nftinteractions;
 
     points_ID = await nftgame.POINTS_ID();
 
@@ -94,7 +80,7 @@ describe("Claiming Bonus Points Tests", function () {
     const pretendedPoints = ethers.BigNumber.from(pointsData[0][1].toString());
 
     const readPoints = await nftgame.balanceOf(nonEligibleUser.address, points_ID);
-    expect(nftgame.connect(nonEligibleUser)
+    await expect(nftgame.connect(nonEligibleUser)
     .claimBonusPoints(pretendedPoints, pretendedProof)).to.be.revertedWith("Invalid merkle proof");
     expect(await nftgame.balanceOf(nonEligibleUser.address, points_ID)).to.eq(readPoints);
   });
@@ -121,7 +107,7 @@ describe("Claiming Bonus Points Tests", function () {
     // First try ok
     await nftgame.connect(newEligibleUser).claimBonusPoints(headPoints, realProof);
     // Second try should revert.
-    expect(nftgame.connect(newEligibleUser).claimBonusPoints(headPoints, realProof)).to.be.revertedWith("Points already claimed!");
+    await expect(nftgame.connect(newEligibleUser).claimBonusPoints(headPoints, realProof)).to.be.revertedWith("Points already claimed!");
   });
 
 });

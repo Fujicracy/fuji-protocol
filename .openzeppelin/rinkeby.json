@@ -1,0 +1,942 @@
+{
+  "manifestVersion": "3.2",
+  "admin": {
+    "address": "0x5d3535a3C60A173ec79918b9e41404307ebB4F17",
+    "txHash": "0x8a76b8e881a01d8b71b91011a94aba1e300548cbd8509015baf36b28500c8890",
+    "deployTransaction": {
+      "hash": "0x8a76b8e881a01d8b71b91011a94aba1e300548cbd8509015baf36b28500c8890",
+      "type": 2,
+      "accessList": [],
+      "blockHash": null,
+      "blockNumber": null,
+      "transactionIndex": null,
+      "confirmations": 0,
+      "from": "0x3BFf7fD5AACb1a22e1dd3ddbd8cfB8622A9E9A5B",
+      "gasPrice": {
+        "type": "BigNumber",
+        "hex": "0x0119001f10"
+      },
+      "maxPriorityFeePerGas": {
+        "type": "BigNumber",
+        "hex": "0x3b9aca00"
+      },
+      "maxFeePerGas": {
+        "type": "BigNumber",
+        "hex": "0x0119001f10"
+      },
+      "gasLimit": {
+        "type": "BigNumber",
+        "hex": "0x0762b4"
+      },
+      "to": null,
+      "value": {
+        "type": "BigNumber",
+        "hex": "0x00"
+      },
+      "nonce": 86,
+      "data": "0x608060405234801561001057600080fd5b50600080546001600160a01b031916339081178255604051909182917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0908290a350610759806100616000396000f3fe60806040526004361061007b5760003560e01c80639623609d1161004e5780639623609d1461011157806399a88ec414610124578063f2fde38b14610144578063f3b7dead146101645761007b565b8063204e1c7a14610080578063715018a6146100bc5780637eff275e146100d35780638da5cb5b146100f3575b600080fd5b34801561008c57600080fd5b506100a061009b366004610515565b610184565b6040516001600160a01b03909116815260200160405180910390f35b3480156100c857600080fd5b506100d1610215565b005b3480156100df57600080fd5b506100d16100ee366004610554565b610292565b3480156100ff57600080fd5b506000546001600160a01b03166100a0565b6100d161011f36600461058c565b61031c565b34801561013057600080fd5b506100d161013f366004610554565b6103ad565b34801561015057600080fd5b506100d161015f366004610515565b610405565b34801561017057600080fd5b506100a061017f366004610515565b6104ef565b6000806000836001600160a01b03166040516101aa90635c60da1b60e01b815260040190565b600060405180830381855afa9150503d80600081146101e5576040519150601f19603f3d011682016040523d82523d6000602084013e6101ea565b606091505b5091509150816101f957600080fd5b8080602001905181019061020d9190610538565b949350505050565b6000546001600160a01b031633146102485760405162461bcd60e51b815260040161023f906106c0565b60405180910390fd5b600080546040516001600160a01b03909116907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0908390a3600080546001600160a01b0319169055565b6000546001600160a01b031633146102bc5760405162461bcd60e51b815260040161023f906106c0565b6040516308f2839760e41b81526001600160a01b038281166004830152831690638f283970906024015b600060405180830381600087803b15801561030057600080fd5b505af1158015610314573d6000803e3d6000fd5b505050505050565b6000546001600160a01b031633146103465760405162461bcd60e51b815260040161023f906106c0565b60405163278f794360e11b81526001600160a01b03841690634f1ef286903490610376908690869060040161065d565b6000604051808303818588803b15801561038f57600080fd5b505af11580156103a3573d6000803e3d6000fd5b5050505050505050565b6000546001600160a01b031633146103d75760405162461bcd60e51b815260040161023f906106c0565b604051631b2ce7f360e11b81526001600160a01b038281166004830152831690633659cfe6906024016102e6565b6000546001600160a01b0316331461042f5760405162461bcd60e51b815260040161023f906106c0565b6001600160a01b0381166104945760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b606482015260840161023f565b600080546040516001600160a01b03808516939216917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e091a3600080546001600160a01b0319166001600160a01b0392909216919091179055565b6000806000836001600160a01b03166040516101aa906303e1469160e61b815260040190565b600060208284031215610526578081fd5b81356105318161070b565b9392505050565b600060208284031215610549578081fd5b81516105318161070b565b60008060408385031215610566578081fd5b82356105718161070b565b915060208301356105818161070b565b809150509250929050565b6000806000606084860312156105a0578081fd5b83356105ab8161070b565b925060208401356105bb8161070b565b9150604084013567ffffffffffffffff808211156105d7578283fd5b818601915086601f8301126105ea578283fd5b8135818111156105fc576105fc6106f5565b604051601f8201601f19908116603f01168101908382118183101715610624576106246106f5565b8160405282815289602084870101111561063c578586fd5b82602086016020830137856020848301015280955050505050509250925092565b600060018060a01b038416825260206040818401528351806040850152825b818110156106985785810183015185820160600152820161067c565b818111156106a95783606083870101525b50601f01601f191692909201606001949350505050565b6020808252818101527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e6572604082015260600190565b634e487b7160e01b600052604160045260246000fd5b6001600160a01b038116811461072057600080fd5b5056fea2646970667358221220d849f96f3086b9f82cdcf665adb8c697ace05638da1c7c16ab2d26293717af6764736f6c63430008020033",
+      "r": "0x3942b0e1df4c5325fb50c5c99b8237c98f0f53f2e3581c5a134de2b89094bf8a",
+      "s": "0x20f0d3e09f017c5fbbd003d408a7a9b6fd41c3587f3f00005319f13f112c78fd",
+      "v": 1,
+      "creates": "0x5d3535a3C60A173ec79918b9e41404307ebB4F17",
+      "chainId": 4
+    }
+  },
+  "proxies": [
+    {
+      "address": "0xB5044e6F642D593E9B95940864c0ea3072cA2636",
+      "txHash": "0xfbe0768aae3071750aa624986fe054a9b5ab89a08ff9422300e1f9f08725f712",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x480f3c11381824E9EEbEEdbB6398dB86e38bAEA0",
+      "txHash": "0x990f3c9b8c1f7e2fe1b585b8ffd506f68fd1fa6103107084b6259b44f215b48d",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x00ADe4989f0b3E0021368dbACd93FC43d8bD19A7",
+      "txHash": "0x0033dd8938624f8f35a7427712d8649b01f379f5c1162252022fc979d66ef795",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x249282aB3539F5287aeB4500eEDCE2bD46b390b7",
+      "txHash": "0x73079379d21b0c743da3ba80de8b8a988fef706618429a532133bcb1ebe13c18",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x67f1e16bad9D2f9fCd0EDD4FB1BEa9831EbfD057",
+      "txHash": "0x61f0b3c0aa065840d63390849d1dc2eb69fff036fec147798a2a5f12119903d6",
+      "kind": "transparent"
+    }
+  ],
+  "impls": {
+    "1b0d9bdce09da37e9514a1218fc8f4930b88305f9af9689bbe290cd5034890b7": {
+      "address": "0x6A99043E2EB6377c88262A1Ae169F7e89396BB5b",
+      "txHash": "0x95d850570b1542a0cb2c08e49cbcb7c707b7847005be4c298a964776218a092b",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:26"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:30"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:21"
+          },
+          {
+            "contract": "OwnableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\OwnableUpgradeable.sol:77"
+          },
+          {
+            "contract": "FujiAdmin",
+            "label": "_flasher",
+            "type": "t_address",
+            "src": "contracts\\FujiAdmin.sol:14"
+          },
+          {
+            "contract": "FujiAdmin",
+            "label": "_fliquidator",
+            "type": "t_address",
+            "src": "contracts\\FujiAdmin.sol:15"
+          },
+          {
+            "contract": "FujiAdmin",
+            "label": "_ftreasury",
+            "type": "t_address_payable",
+            "src": "contracts\\FujiAdmin.sol:16"
+          },
+          {
+            "contract": "FujiAdmin",
+            "label": "_controller",
+            "type": "t_address",
+            "src": "contracts\\FujiAdmin.sol:17"
+          },
+          {
+            "contract": "FujiAdmin",
+            "label": "_vaultHarvester",
+            "type": "t_address",
+            "src": "contracts\\FujiAdmin.sol:18"
+          },
+          {
+            "contract": "FujiAdmin",
+            "label": "validVault",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "contracts\\FujiAdmin.sol:20"
+          },
+          {
+            "contract": "FujiAdmin",
+            "label": "_swapper",
+            "type": "t_address",
+            "src": "contracts\\FujiAdmin.sol:22"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address"
+          },
+          "t_address_payable": {
+            "label": "address payable"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          }
+        }
+      }
+    },
+    "0ae1ae5156018a5eca45cf7d51d386847858a9a865e8675087206f629d54356b": {
+      "address": "0xc62c72C583dD40c6AFec8a99E80E63DC190Ea533",
+      "txHash": "0x1bf59bace718c5dd036b6c1d7e7951b4d9311fee6531719695271c077a81bab3",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:26"
+          },
+          {
+            "contract": "ERC165Upgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\introspection\\ERC165Upgradeable.sol:35"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:30"
+          },
+          {
+            "contract": "FujiBaseERC1155",
+            "label": "_balances",
+            "type": "t_mapping(t_uint256,t_mapping(t_address,t_uint256))",
+            "src": "contracts\\abstracts\\fujiERC1155\\FujiBaseERC1155.sol:34"
+          },
+          {
+            "contract": "FujiBaseERC1155",
+            "label": "_operatorApprovals",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_bool))",
+            "src": "contracts\\abstracts\\fujiERC1155\\FujiBaseERC1155.sol:37"
+          },
+          {
+            "contract": "FujiBaseERC1155",
+            "label": "_totalSupply",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "src": "contracts\\abstracts\\fujiERC1155\\FujiBaseERC1155.sol:40"
+          },
+          {
+            "contract": "FujiBaseERC1155",
+            "label": "_uri",
+            "type": "t_string_storage",
+            "src": "contracts\\abstracts\\fujiERC1155\\FujiBaseERC1155.sol:44"
+          },
+          {
+            "contract": "ClaimableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "contracts\\abstracts\\claimable\\ClaimableUpgradeable.sol:13"
+          },
+          {
+            "contract": "ClaimableUpgradeable",
+            "label": "pendingOwner",
+            "type": "t_address",
+            "src": "contracts\\abstracts\\claimable\\ClaimableUpgradeable.sol:15"
+          },
+          {
+            "contract": "F1155Manager",
+            "label": "addrPermit",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "contracts\\abstracts\\fujiERC1155\\F1155Manager.sol:29"
+          },
+          {
+            "contract": "FujiERC1155",
+            "label": "assetIDs",
+            "type": "t_mapping(t_enum(AssetType)17820,t_mapping(t_address,t_uint256))",
+            "src": "contracts\\FujiERC1155.sol:25"
+          },
+          {
+            "contract": "FujiERC1155",
+            "label": "assetIDtype",
+            "type": "t_mapping(t_uint256,t_enum(AssetType)17820)",
+            "src": "contracts\\FujiERC1155.sol:28"
+          },
+          {
+            "contract": "FujiERC1155",
+            "label": "qtyOfManagedAssets",
+            "type": "t_uint64",
+            "src": "contracts\\FujiERC1155.sol:30"
+          },
+          {
+            "contract": "FujiERC1155",
+            "label": "indexes",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "src": "contracts\\FujiERC1155.sol:34"
+          }
+        ],
+        "types": {
+          "t_mapping(t_enum(AssetType)17820,t_mapping(t_address,t_uint256))": {
+            "label": "mapping(enum IFujiERC1155.AssetType => mapping(address => uint256))"
+          },
+          "t_enum(AssetType)17820": {
+            "label": "enum IFujiERC1155.AssetType",
+            "members": [
+              "collateralToken",
+              "debtToken"
+            ]
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_uint256,t_enum(AssetType)17820)": {
+            "label": "mapping(uint256 => enum IFujiERC1155.AssetType)"
+          },
+          "t_uint64": {
+            "label": "uint64"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_uint256))": {
+            "label": "mapping(uint256 => mapping(address => uint256))"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_bool))": {
+            "label": "mapping(address => mapping(address => bool))"
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          }
+        }
+      }
+    },
+    "e37b5192986641e0be961821bb49ff53f44cee5fb93bc070ef8c3a841626ce9b": {
+      "address": "0xD03F27D110c5DB644014BBDF05ec1Eb3951D8Da1",
+      "txHash": "0xb9a927fbd58e281c400a2f0b271cc6873be94e50e6701742007b1d0bd486ffde",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:26"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:30"
+          },
+          {
+            "contract": "ClaimableUpgradeable",
+            "label": "_owner",
+            "type": "t_address",
+            "src": "contracts\\abstracts\\claimable\\ClaimableUpgradeable.sol:13"
+          },
+          {
+            "contract": "ClaimableUpgradeable",
+            "label": "pendingOwner",
+            "type": "t_address",
+            "src": "contracts\\abstracts\\claimable\\ClaimableUpgradeable.sol:15"
+          },
+          {
+            "contract": "PausableUpgradeable",
+            "label": "_paused",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:28"
+          },
+          {
+            "contract": "PausableUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\PausableUpgradeable.sol:96"
+          },
+          {
+            "contract": "VaultControlUpgradeable",
+            "label": "vAssets",
+            "type": "t_struct(VaultAssets)18291_storage",
+            "src": "contracts\\abstracts\\vault\\VaultBaseUpgradeable.sol:20"
+          },
+          {
+            "contract": "ReentrancyGuardUpgradeable",
+            "label": "_status",
+            "type": "t_uint256",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:37"
+          },
+          {
+            "contract": "ReentrancyGuardUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:67"
+          },
+          {
+            "contract": "FujiVaultFTM",
+            "label": "safetyF",
+            "type": "t_struct(Factor)18155_storage",
+            "src": "contracts\\fantom\\FujiVaultFTM.sol:42"
+          },
+          {
+            "contract": "FujiVaultFTM",
+            "label": "collatF",
+            "type": "t_struct(Factor)18155_storage",
+            "src": "contracts\\fantom\\FujiVaultFTM.sol:45"
+          },
+          {
+            "contract": "FujiVaultFTM",
+            "label": "protocolFee",
+            "type": "t_struct(Factor)18155_storage",
+            "src": "contracts\\fantom\\FujiVaultFTM.sol:48"
+          },
+          {
+            "contract": "FujiVaultFTM",
+            "label": "bonusLiqF",
+            "type": "t_struct(Factor)18155_storage",
+            "src": "contracts\\fantom\\FujiVaultFTM.sol:51"
+          },
+          {
+            "contract": "FujiVaultFTM",
+            "label": "providers",
+            "type": "t_array(t_address)dyn_storage",
+            "src": "contracts\\fantom\\FujiVaultFTM.sol:54"
+          },
+          {
+            "contract": "FujiVaultFTM",
+            "label": "activeProvider",
+            "type": "t_address",
+            "src": "contracts\\fantom\\FujiVaultFTM.sol:55"
+          },
+          {
+            "contract": "FujiVaultFTM",
+            "label": "_fujiAdmin",
+            "type": "t_contract(IFujiAdmin)17815",
+            "src": "contracts\\fantom\\FujiVaultFTM.sol:57"
+          },
+          {
+            "contract": "FujiVaultFTM",
+            "label": "fujiERC1155",
+            "type": "t_address",
+            "src": "contracts\\fantom\\FujiVaultFTM.sol:58"
+          },
+          {
+            "contract": "FujiVaultFTM",
+            "label": "oracle",
+            "type": "t_contract(IFujiOracle)17949",
+            "src": "contracts\\fantom\\FujiVaultFTM.sol:59"
+          },
+          {
+            "contract": "FujiVaultFTM",
+            "label": "name",
+            "type": "t_string_storage",
+            "src": "contracts\\fantom\\FujiVaultFTM.sol:61"
+          },
+          {
+            "contract": "FujiVaultFTM",
+            "label": "_collateralAssetDecimals",
+            "type": "t_uint8",
+            "src": "contracts\\fantom\\FujiVaultFTM.sol:63"
+          },
+          {
+            "contract": "FujiVaultFTM",
+            "label": "_borrowAssetDecimals",
+            "type": "t_uint8",
+            "src": "contracts\\fantom\\FujiVaultFTM.sol:64"
+          },
+          {
+            "contract": "FujiVaultFTM",
+            "label": "_userFeeTimestamps",
+            "type": "t_mapping(t_address,t_uint256)",
+            "src": "contracts\\fantom\\FujiVaultFTM.sol:68"
+          },
+          {
+            "contract": "FujiVaultFTM",
+            "label": "remainingProtocolFee",
+            "type": "t_uint256",
+            "src": "contracts\\fantom\\FujiVaultFTM.sol:69"
+          },
+          {
+            "contract": "FujiVaultFTM",
+            "label": "nftGame",
+            "type": "t_address",
+            "src": "contracts\\fantom\\FujiVaultFTM.sol:71"
+          }
+        ],
+        "types": {
+          "t_struct(Factor)18155_storage": {
+            "label": "struct IVault.Factor",
+            "members": [
+              {
+                "label": "a",
+                "type": "t_uint64"
+              },
+              {
+                "label": "b",
+                "type": "t_uint64"
+              }
+            ]
+          },
+          "t_uint64": {
+            "label": "uint64"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_contract(IFujiAdmin)17815": {
+            "label": "contract IFujiAdmin"
+          },
+          "t_contract(IFujiOracle)17949": {
+            "label": "contract IFujiOracle"
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_uint8": {
+            "label": "uint8"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_struct(VaultAssets)18291_storage": {
+            "label": "struct IVaultControl.VaultAssets",
+            "members": [
+              {
+                "label": "collateralAsset",
+                "type": "t_address"
+              },
+              {
+                "label": "borrowAsset",
+                "type": "t_address"
+              },
+              {
+                "label": "collateralID",
+                "type": "t_uint64"
+              },
+              {
+                "label": "borrowID",
+                "type": "t_uint64"
+              }
+            ]
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          }
+        }
+      }
+    },
+    "c7cd2cbbd74be0bfcd762139bb5d2c05ba5509b11f886c65144fe5fa874826b3": {
+      "address": "0x7596B21F29F41749306c42e09C83245C47578876",
+      "txHash": "0x1602769a752d4063896cbedadba4305e3d5b8cf4afd36aec60d12904e96793ab",
+      "layout": {
+        "storage": [
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:26"
+          },
+          {
+            "contract": "ContextUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\ContextUpgradeable.sol:30"
+          },
+          {
+            "contract": "ERC165Upgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)50_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\utils\\introspection\\ERC165Upgradeable.sol:35"
+          },
+          {
+            "contract": "ERC1155Upgradeable",
+            "label": "_balances",
+            "type": "t_mapping(t_uint256,t_mapping(t_address,t_uint256))",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC1155\\ERC1155Upgradeable.sol:24"
+          },
+          {
+            "contract": "ERC1155Upgradeable",
+            "label": "_operatorApprovals",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_bool))",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC1155\\ERC1155Upgradeable.sol:27"
+          },
+          {
+            "contract": "ERC1155Upgradeable",
+            "label": "_uri",
+            "type": "t_string_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC1155\\ERC1155Upgradeable.sol:30"
+          },
+          {
+            "contract": "ERC1155Upgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)47_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\token\\ERC1155\\ERC1155Upgradeable.sol:458"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "_roles",
+            "type": "t_mapping(t_bytes32,t_struct(RoleData)43_storage)",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\AccessControlUpgradeable.sol:63"
+          },
+          {
+            "contract": "AccessControlUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin\\contracts-upgradeable\\access\\AccessControlUpgradeable.sol:219"
+          },
+          {
+            "contract": "NFTGame",
+            "label": "merkleRoot",
+            "type": "t_bytes32",
+            "src": "contracts\\fantom\\nft-bonds\\NFTGame.sol:55"
+          },
+          {
+            "contract": "NFTGame",
+            "label": "nftCardsAmount",
+            "type": "t_uint256",
+            "src": "contracts\\fantom\\nft-bonds\\NFTGame.sol:56"
+          },
+          {
+            "contract": "NFTGame",
+            "label": "userdata",
+            "type": "t_mapping(t_address,t_struct(UserData)14119_storage)",
+            "src": "contracts\\fantom\\nft-bonds\\NFTGame.sol:58"
+          },
+          {
+            "contract": "NFTGame",
+            "label": "isClaimed",
+            "type": "t_mapping(t_address,t_bool)",
+            "src": "contracts\\fantom\\nft-bonds\\NFTGame.sol:61"
+          },
+          {
+            "contract": "NFTGame",
+            "label": "totalSupply",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "src": "contracts\\fantom\\nft-bonds\\NFTGame.sol:64"
+          },
+          {
+            "contract": "NFTGame",
+            "label": "validVaults",
+            "type": "t_array(t_address)dyn_storage",
+            "src": "contracts\\fantom\\nft-bonds\\NFTGame.sol:66"
+          },
+          {
+            "contract": "NFTGame",
+            "label": "gamePhaseTimestamps",
+            "type": "t_array(t_uint256)4_storage",
+            "src": "contracts\\fantom\\nft-bonds\\NFTGame.sol:73"
+          }
+        ],
+        "types": {
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_mapping(t_address,t_struct(UserData)14119_storage)": {
+            "label": "mapping(address => struct NFTGame.UserData)"
+          },
+          "t_address": {
+            "label": "address"
+          },
+          "t_struct(UserData)14119_storage": {
+            "label": "struct NFTGame.UserData",
+            "members": [
+              {
+                "label": "lastTimestampUpdate",
+                "type": "t_uint64"
+              },
+              {
+                "label": "rateOfAccrual",
+                "type": "t_uint64"
+              },
+              {
+                "label": "accruedPoints",
+                "type": "t_uint128"
+              },
+              {
+                "label": "recordedDebtBalance",
+                "type": "t_uint128"
+              },
+              {
+                "label": "lockedNFTID",
+                "type": "t_uint256"
+              }
+            ]
+          },
+          "t_uint64": {
+            "label": "uint64"
+          },
+          "t_uint128": {
+            "label": "uint128"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)"
+          },
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]"
+          },
+          "t_array(t_uint256)4_storage": {
+            "label": "uint256[4]"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)43_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)"
+          },
+          "t_struct(RoleData)43_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "members",
+                "type": "t_mapping(t_address,t_bool)"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32"
+              }
+            ]
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_mapping(t_uint256,t_mapping(t_address,t_uint256))": {
+            "label": "mapping(uint256 => mapping(address => uint256))"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_bool))": {
+            "label": "mapping(address => mapping(address => bool))"
+          },
+          "t_string_storage": {
+            "label": "string"
+          },
+          "t_array(t_uint256)47_storage": {
+            "label": "uint256[47]"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]"
+          }
+        }
+      }
+    },
+    "17a46975fef3187c3439a14195ba514cc27d031d5848b21d5bf9f2ffa91c6b37": {
+      "address": "0x2f80f02BaE83D88847b8e3FB844C10AD60b7cAF5",
+      "txHash": "0xf0d890ef753aef5046f401946ab29f7d3f67d6c4dbea7c94738c652b51c1000e",
+      "layout": {
+        "storage": [
+          {
+            "contract": "FujiPriceAware",
+            "label": "maxDelay",
+            "type": "t_uint256",
+            "src": "contracts\\fantom\\nft-bonds\\FujiPriceAware.sol:10"
+          },
+          {
+            "contract": "FujiPriceAware",
+            "label": "trustedSigner",
+            "type": "t_address",
+            "src": "contracts\\fantom\\nft-bonds\\FujiPriceAware.sol:11"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:26"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "isRedstoneOracleOn",
+            "type": "t_bool",
+            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:53"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "crateRewards",
+            "type": "t_mapping(t_uint256,t_array(t_uint256)dyn_storage)",
+            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:56"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "probabilityIntervals",
+            "type": "t_array(t_uint256)dyn_storage",
+            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:58"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "nftGame",
+            "type": "t_contract(NFTGame)6145",
+            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:60"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "cratePrices",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:63"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "cardBoost",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:66"
+          }
+        ],
+        "types": {
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_uint256,t_array(t_uint256)dyn_storage)": {
+            "label": "mapping(uint256 => uint256[])"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]"
+          },
+          "t_contract(NFTGame)6145": {
+            "label": "contract NFTGame"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)"
+          },
+          "t_address": {
+            "label": "address"
+          }
+        }
+      }
+    },
+    "8c304dc63ac5b6edda8d8bd3d10a4ff3003194285e36da730d538cbb84d49605": {
+      "address": "0x41B391cD906D3C050430aFFa2E30d7BEa3ECfA51",
+      "txHash": "0x0cdf6db995d5a90aed178711c95e06226045ebb1020875aae9618eeadb1ef395",
+      "layout": {
+        "storage": [
+          {
+            "contract": "FujiPriceAware",
+            "label": "maxDelay",
+            "type": "t_uint256",
+            "src": "contracts\\fantom\\nft-bonds\\FujiPriceAware.sol:10"
+          },
+          {
+            "contract": "FujiPriceAware",
+            "label": "trustedSigner",
+            "type": "t_address",
+            "src": "contracts\\fantom\\nft-bonds\\FujiPriceAware.sol:11"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:21"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:26"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "isRedstoneOracleOn",
+            "type": "t_bool",
+            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:61"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "crateRewards",
+            "type": "t_mapping(t_uint256,t_array(t_uint256)dyn_storage)",
+            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:64"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "probabilityIntervals",
+            "type": "t_array(t_uint256)dyn_storage",
+            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:66"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "nftGame",
+            "type": "t_contract(NFTGame)6171",
+            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:68"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "cratePrices",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:71"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "cardBoost",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:74"
+          }
+        ],
+        "types": {
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_uint256,t_array(t_uint256)dyn_storage)": {
+            "label": "mapping(uint256 => uint256[])"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]"
+          },
+          "t_contract(NFTGame)6171": {
+            "label": "contract NFTGame"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)"
+          },
+          "t_address": {
+            "label": "address"
+          }
+        }
+      }
+    }
+  }
+}

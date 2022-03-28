@@ -64,15 +64,11 @@ module.exports = {
     },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_ID}`,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : { mnemonic: mnemonic() },
     },
     kovan: {
       url: `https://kovan.infura.io/v3/${process.env.INFURA_ID}`,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : { mnemonic: mnemonic() },
     },
     mainnet: {
       url: mainnetUrl,
@@ -84,22 +80,16 @@ module.exports = {
     },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${process.env.INFURA_ID}`,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : { mnemonic: mnemonic() },
     },
     goerli: {
       url: `https://goerli.infura.io/v3/${process.env.INFURA_ID}`,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : { mnemonic: mnemonic() },
     },
     xdai: {
       url: "https://rpc.xdaichain.com/",
       gasPrice: 1000000000,
-      accounts: {
-        mnemonic: mnemonic(),
-      },
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : { mnemonic: mnemonic() },
     },
     polygon: {
       url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_ID}`,

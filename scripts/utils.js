@@ -143,6 +143,16 @@ const upgradeProxy = async (name, contractName) => {
   return addr;
 };
 
+const copyMinedTxParams = async (txHash) => {
+  const reftx = await provider.getTransaction(txHash);
+  let unsignedTx = {
+    maxFeePerGas: reftx.maxFeePerGas,
+    maxPriorityFeePerGas: reftx.maxPriorityFeePerGas,
+    chainId: reftx.chainId
+  }
+  return unsignedTx;
+}
+
 module.exports = {
   deploy,
   deployProxy,
@@ -153,5 +163,6 @@ module.exports = {
   updateDeployments,
   redeployIf,
   callIf,
+  copyMinedTxParams,
   network,
 };

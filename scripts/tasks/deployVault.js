@@ -11,10 +11,10 @@ const deployVault = async (name, args) => {
   const implAddr = await upgrades.erc1967.getImplementationAddress(deployed);
   const implContract = await ethers.getContractAt(contractName, implAddr);
   const implOwner = await implContract.owner();
-  if (implOwner === "0x0000000000000000000000000000000000000000") {
-    await implContract.initialize(...args);
-    console.log(`Implementation contract ${contractName}: initialized`);
-  }
+  // if (implOwner === "0x0000000000000000000000000000000000000000") {
+    // await implContract.initialize(...args);
+    // console.log(`Implementation contract ${contractName}: initialized`);
+  // }
 
   return deployed;
 };

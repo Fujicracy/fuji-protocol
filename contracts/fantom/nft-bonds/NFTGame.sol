@@ -15,8 +15,6 @@ import "../../interfaces/IVaultControl.sol";
 import "../../interfaces/IERC20Extended.sol";
 import "./libraries/GameErrors.sol";
 
-import "hardhat/console.sol";
-
 contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable {
   /**
    * @dev Changing valid vaults

@@ -81,6 +81,9 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
   uint256[] private _probabilityIntervals;
 
   NFTGame public nftGame;
+  uint256 private _pointsID;
+  bytes32 private _nftgame_GAME_ADMIN;
+
   PreTokenBonds public preTokenBonds;
 
   // CrateID => crate price
@@ -94,6 +97,12 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
     isRedstoneOracleOn = true;
     maxDelay = 5 * 60;
     nftGame = NFTGame(_nftGame);
+
+    // '_pointsID' and '_nftgame_GAME_ADMIN'
+    // are stored locally to reduce contract size.
+    _pointsID = nftGame.POINTS_ID();
+    _nftgame_GAME_ADMIN = nftGame.GAME_ADMIN();
+
     _probabilityIntervals = [500000, 700000, 900000, 950000, 950100];
 
     // Set basic cardBoost
@@ -112,13 +121,13 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * @notice Set address for NFTGame contract
    */
   function setNFTGame(address _nftGame) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
     nftGame = NFTGame(_nftGame);
     emit NFTGameChanged(_nftGame);
   }
 
   function setPreTokenBonds(address _preTokenBonds) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
     preTokenBonds = PreTokenBonds(_preTokenBonds);
     emit PreTokenBondsChanged(_preTokenBonds);
   }
@@ -127,7 +136,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * @notice sets the prices for the crates
    */
   function setCratePrice(uint256 crateId, uint256 price) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
       GameErrors.INVALID_INPUT
@@ -140,7 +149,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * @notice sets probability intervals for crate rewards
    */
   function setProbabilityIntervals(uint256[] memory intervals) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
     _probabilityIntervals = intervals;
   }
 
@@ -149,7 +158,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * rewards are an array, with each element corresponding to the points multiplier value
    */
   function setCrateRewards(uint256 crateId, uint256[] memory rewards) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
     _crateRewards[crateId] = rewards;
     emit CrateRewardsChanged(crateId, rewards);
   }
@@ -159,7 +168,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * @dev boost is a base 100 number. In example, boost = 115, 15% boost. 1.15 for computation.
    */
   function setCardBoost(uint256 cardId, uint256 boost) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
     require(boost >= 100, GameErrors.INVALID_INPUT);
     cardBoost[cardId] = boost;
     emit CardBoostChanged(cardId, boost);
@@ -170,7 +179,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * Admin function required by redstone-evm-connector (oracle).
    */
   function authorizeSignerEntropyFeed(address _trustedSigner) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
     _authorizeSigner(_trustedSigner);
   }
 
@@ -179,7 +188,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * Admin function required by redstone-evm-connector (oracle).
    */
   function setMaxEntropyDelay(uint256 _maxDelay) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
     _setMaxDelay(_maxDelay);
   }
 
@@ -188,7 +197,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * switch(1) = redstone, switch(0) = chainlink
    */
   function setIsRedstoneOracleOn(bool switch_) external {
-    require(nftGame.hasRole(nftGame.GAME_ADMIN(), msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
     isRedstoneOracleOn = switch_;
   }
 
@@ -205,9 +214,9 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
     require(amount > 0, GameErrors.INVALID_INPUT);
 
     uint256 cost = amount * preTokenBonds.bondPrice();
-    require(nftGame.balanceOf(msg.sender, nftGame.POINTS_ID()) >= cost, GameErrors.NOT_ENOUGH_AMOUNT);
+    require(nftGame.balanceOf(msg.sender, _pointsID) >= cost, GameErrors.NOT_ENOUGH_AMOUNT);
 
-    nftGame.burn(msg.sender, nftGame.POINTS_ID(), cost);
+    nftGame.burn(msg.sender, _pointsID, cost);
     tokenId = preTokenBonds.mint(msg.sender, _slotType, amount);
   }
 
@@ -228,9 +237,9 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
 
     uint256 price = cratePrices[crateId] * amount;
     require(price > 0, GameErrors.VALUE_NOT_SET);
-    require(nftGame.balanceOf(msg.sender, nftGame.POINTS_ID()) >= price, GameErrors.NOT_ENOUGH_AMOUNT);
+    require(nftGame.balanceOf(msg.sender, _pointsID) >= price, GameErrors.NOT_ENOUGH_AMOUNT);
 
-    nftGame.burn(msg.sender, nftGame.POINTS_ID(), price);
+    nftGame.burn(msg.sender, _pointsID, price);
 
     nftGame.mint(msg.sender, crateId, amount);
 
@@ -255,28 +264,34 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
     require(_crateRewards[crateId].length == _probabilityIntervals.length, GameErrors.VALUE_NOT_SET);
 
     // Points + Crates + Cards
+    uint256 cardsAmount = nftGame.nftCardsAmount();
     Reward[] memory rewards = new Reward[](amount);
-    uint256[] memory aggregatedRewards = new uint256[](1 + 3 + nftGame.nftCardsAmount());
+    uint256[] memory aggregatedRewards = new uint256[](1 + 3 + cardsAmount);
 
     uint256 entropyValue = isRedstoneOracleOn ? _getRedstoneEntropy() : _getChainlinkEntropy();
     uint256[] memory randomNumbers = LibPseudoRandom.pickRandomNumbers(amount, entropyValue);
     bool isCard;
 
     // iterate all crates to open
-    for (uint256 j = 0; j < amount; j++) {
+    uint256 plength = _probabilityIntervals.length;
+    uint256 pointsID = _pointsID;
+    for (uint256 j = 0; j < amount;) {
       isCard = true;
       // iterate propability intervals to see the reward for a specific crate
-      for (uint256 i = 0; i < _probabilityIntervals.length && isCard; i++) {
+      for (uint256 i = 0; i < plength && isCard;) {
         if (randomNumbers[j] <= _probabilityIntervals[i]) {
           isCard = false;
-          aggregatedRewards[nftGame.POINTS_ID()] += _crateRewards[crateId][i];
+          aggregatedRewards[pointsID] += _crateRewards[crateId][i];
           rewards[j].amount = _crateRewards[crateId][i];
+        }
+        unchecked {
+          ++i;
         }
       }
 
       // if the reward is a card determine the card id
       if (isCard) {
-        uint256 step = 1000000 / nftGame.nftCardsAmount();
+        uint256 step = 1000000 / cardsAmount;
         uint256 randomNum = LibPseudoRandom.pickRandomNumbers(1, entropyValue + j)[0];
         uint256 randomId = NFT_CARD_ID_START;
         for (uint256 i = step; i <= randomNum; i += step) {
@@ -286,18 +301,24 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
         rewards[j].tokenId = randomId;
         rewards[j].amount = 1;
       }
+      unchecked {
+        ++j;
+      }
     }
 
     // mint points
-    if (aggregatedRewards[nftGame.POINTS_ID()] > 0) {
-      nftGame.mint(msg.sender, nftGame.POINTS_ID(), aggregatedRewards[nftGame.POINTS_ID()]);
+    if (aggregatedRewards[pointsID] > 0) {
+      nftGame.mint(msg.sender, pointsID, aggregatedRewards[pointsID]);
     }
 
     // mint cards
-    uint256 cardsLimit = nftGame.nftCardsAmount() + NFT_CARD_ID_START;
-    for (uint256 i = NFT_CARD_ID_START; i < cardsLimit; i++) {
+    uint256 cardsLimit = cardsAmount + NFT_CARD_ID_START;
+    for (uint256 i = NFT_CARD_ID_START; i < cardsLimit;) {
       if (aggregatedRewards[i] > 0) {
         nftGame.mint(msg.sender, i, aggregatedRewards[i]);
+      }
+      unchecked {
+        ++i;
       }
     }
 

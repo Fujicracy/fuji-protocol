@@ -38,11 +38,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
   // Constants
 
-  uint256 constant SEC = 86400;
-
-  // uint256 private constant MINIMUM_DAILY_DEBT_POSITION = 1;
-  // uint256 private constant POINT_PER_DEBTUNIT_PER_DAY = 1;
-
+  uint256 public constant SEC = 86400;
   uint256 public constant POINTS_ID = 0;
   uint256 public constant POINTS_DECIMALS = 5;
 
@@ -75,6 +71,14 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   // 3 = end of bond
   uint256[4] public gamePhaseTimestamps;
 
+  /**
+   * @dev State URI variable required for some front-end applications
+   * for defining project description.
+   */
+  string public contractURI;
+
+  address private _owner;
+
   modifier onlyVault() {
     require(isValidVault(msg.sender), "Not valid vault!");
     _;
@@ -87,9 +91,36 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     _setupRole(GAME_ADMIN, msg.sender);
     _setupRole(GAME_INTERACTOR, msg.sender);
     setGamePhases(phases);
-    nftCardsAmount = 8;
-    gamePhaseTimestamps = [block.timestamp, block.timestamp + 7 days,
-    block.timestamp + 14 days, block.timestamp + 21 days];
+    _owner = msg.sender;
+    nftCardsAmount = 10;
+    gamePhaseTimestamps = [
+      block.timestamp,
+      block.timestamp + 7 days,
+      block.timestamp + 14 days,
+      block.timestamp + 21 days
+    ];
+  }
+
+  /**
+   * @dev See {IERC165-supportsInterface}.
+   */
+  function supportsInterface(bytes4 interfaceId)
+    public
+    view
+    override(ERC1155Upgradeable, AccessControlUpgradeable)
+    returns (bool)
+  {
+    return
+      interfaceId == type(IERC1155Upgradeable).interfaceId ||
+      interfaceId == type(IERC1155MetadataURIUpgradeable).interfaceId ||
+      super.supportsInterface(interfaceId); //Default to 'supportsInterface()' in AccessControlUpgradeable
+  }
+
+  /**
+   * @notice Returns the URI string for metadata of token _id.
+   */
+  function uri(uint256 _id) public view override returns (string memory) {
+    return string(abi.encodePacked(ERC1155Upgradeable.uri(0), _uint2str(_id), ".json"));
   }
 
   /// State Changing Functions
@@ -107,7 +138,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
   function setGamePhases(uint256[4] memory newPhasesTimestamps) public {
     require(hasRole(GAME_ADMIN, msg.sender), Errors.VL_NOT_AUTHORIZED);
-    uint256 temp =newPhasesTimestamps[0];
+    uint256 temp = newPhasesTimestamps[0];
     for (uint256 index = 1; index < newPhasesTimestamps.length; index++) {
       require(newPhasesTimestamps[index] > temp, "Wrong game phases values!");
       temp = newPhasesTimestamps[index];
@@ -123,6 +154,30 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     require(newnftCardsAmount > nftCardsAmount, "Wrong value!");
     nftCardsAmount = newnftCardsAmount;
     emit CardAmountChanged(newnftCardsAmount);
+  }
+
+  /**
+   * @notice Set the base URI for the metadata of every token Id.
+   */
+  function setBaseURI(string memory _newBaseURI) public {
+    require(hasRole(GAME_ADMIN, msg.sender), Errors.VL_NOT_AUTHORIZED);
+    _setURI(_newBaseURI);
+  }
+
+  /**
+   * @dev Set the contract URI for general information of this ERC1155.
+   */
+  function setContractURI(string memory _newContractURI) public {
+    require(hasRole(GAME_ADMIN, msg.sender), Errors.VL_NOT_AUTHORIZED);
+    contractURI = _newContractURI;
+  }
+
+  /**
+   * @dev See 'owner()'
+   */
+  function setOwner(address _newOwner) public {
+    require(hasRole(GAME_ADMIN, msg.sender), Errors.VL_NOT_AUTHORIZED);
+    _owner = _newOwner;
   }
 
   // Game control functions
@@ -235,8 +290,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   /**
-  * @notice Claims bonus points given to user before 'gameLaunchTimestamp'.
-  */
+   * @notice Claims bonus points given to user before 'gameLaunchTimestamp'.
+   */
   function claimBonusPoints(uint256 pointsToClaim, bytes32[] calldata proof) public {
     require(!isClaimed[msg.sender], "Points already claimed!");
     require(_verify(_leaf(msg.sender, pointsToClaim), proof), "Invalid merkle proof");
@@ -246,7 +301,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     uint256 debt = getUserDebt(msg.sender);
     uint256 phase = getPhase();
     _updateUserInfo(msg.sender, uint128(debt), phase);
-    
+
     // Mint points
     _mintPoints(msg.sender, pointsToClaim);
   }
@@ -311,14 +366,14 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     return totalDebt;
   }
 
-  function supportsInterface(bytes4 interfaceId)
-    public
-    view
-    virtual
-    override(ERC1155Upgradeable, AccessControlUpgradeable)
-    returns (bool)
-  {
-    return super.supportsInterface(interfaceId);
+  /**
+   * @notice Returns the owner that can manage external NFT-marketplace front-ends.
+   * @dev This view function is required to allow an EOA
+   * to manage some front-end features in websites like: OpenSea, Rarible, etc
+   * This 'owner()' does not have any game-admin role.
+   */
+  function owner() external view returns (address) {
+    return _owner;
   }
 
   // Internal Functions
@@ -469,14 +524,46 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   /**
    * @notice hashes using keccak256 the leaf inputs.
    */
-  function _leaf(address account, uint256 points) internal pure returns (bytes32 hashedLeaf){
+  function _leaf(address account, uint256 points) internal pure returns (bytes32 hashedLeaf) {
     hashedLeaf = keccak256(abi.encode(account, points));
   }
 
   /**
    * @notice hashes using keccak256 the leaf inputs.
    */
-  function _verify(bytes32 leaf, bytes32[] memory proof) internal view returns (bool){
+  function _verify(bytes32 leaf, bytes32[] memory proof) internal view returns (bool) {
     return MerkleProof.verify(proof, merkleRoot, leaf);
+  }
+
+  /**
+   * @notice Convert uint256 to string
+   * @param _i Unsigned integer to convert to string
+   */
+  function _uint2str(uint256 _i) internal pure returns (string memory _uintAsString) {
+    if (_i == 0) {
+      return "0";
+    }
+
+    uint256 j = _i;
+    uint256 ii = _i;
+    uint256 len;
+
+    // Get number of bytes
+    while (j != 0) {
+      len++;
+      j /= 10;
+    }
+
+    bytes memory bstr = new bytes(len);
+    uint256 k = len - 1;
+
+    // Get each individual ASCII
+    while (ii != 0) {
+      bstr[k--] = bytes1(uint8(48 + (ii % 10)));
+      ii /= 10;
+    }
+
+    // Convert to string
+    return string(bstr);
   }
 }

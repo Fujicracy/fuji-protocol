@@ -46,7 +46,7 @@ const updateDeployments = async (name, contractName, address) => {
 
 const getContractAddress = (name) => {
   return getDeployments(name).address;
-}
+};
 
 const redeployIf = async (name, contractName, deployContract, args = []) => {
   const currentDeployment = getDeployments(name);
@@ -55,25 +55,30 @@ const redeployIf = async (name, contractName, deployContract, args = []) => {
   const checkExistance = await ethers.provider.getCode(addr);
 
   if (
-    checkExistance !== '0x' &&
+    checkExistance !== "0x" &&
     currentDeployment.bytecode === contractArtifacts.bytecode &&
     JSON.stringify(currentDeployment.abi) === JSON.stringify(contractArtifacts.abi)
   ) {
-    console.log(name + ": Skipping...");
+    progress.text = name + ": Skipping...";
+    // console.log(name + ": Skipping...");
     return currentDeployment.address;
   }
 
-  console.log(name + ": Deploying...");
+  progress.text = name + ": Deploying...";
+  // console.log(name + ": Deploying...");
   const deployed = await deployContract(name, contractName, args);
-  console.log(name + ": Deployed at", deployed.address);
+  progress.text = name + ": Deployed at" + deployed.address;
+  // console.log(name + ": Deployed at", deployed.address);
   return deployed.address;
 };
 
 const callIf = async (name, shouldCall, call) => {
   if (!(await shouldCall())) {
-    console.log(name + ": Skipping...");
+    progress.text = name + ": Skipping...";
+    // console.log(name + ": Skipping...");
   } else {
-    console.log(name + ": Setting...");
+    name + ": Skipping...";
+    // console.log(name + ": Setting...");
     await call();
   }
 };

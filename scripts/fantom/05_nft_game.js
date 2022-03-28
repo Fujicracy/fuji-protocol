@@ -4,11 +4,13 @@ const { ethers } = require("hardhat");
 const { provider } = ethers;
 const { setDeploymentsPath, network, getContractAddress, deployProxy } = require("../utils");
 
-global.progressPrefix = __filename.split("/").pop()
+const { WrapperBuilder } = require("redstone-evm-connector");
+
+global.progressPrefix = __filename.split("/").pop();
 global.progress = ora().start(progressPrefix + ": Starting...");
 global.console.log = (...args) => {
   progress.text = `${progressPrefix}: ${args.join(" ")}`;
-}
+};
 
 const getVaultsAddrs = () => {
   const vaultftmdai = getContractAddress("VaultFTMDAI");
@@ -21,21 +23,30 @@ const getVaultsAddrs = () => {
 };
 
 const deployContracts = async () => {
-  console.log("\n\n 📡 Deploying...\n");
+  console.log("📡 Deploying...");
 
   const now = (await provider.getBlock("latest")).timestamp;
   const week = 60 * 60 * 24 * 7;
-  const phases = [
-    now,
-    now + 1 * week,
-    now + 2 * week,
-    now + 3 * week
-  ];
+  const phases = [now, now + 1 * week, now + 2 * week, now + 3 * week];
 
   const nftgame = await deployProxy("NFTGame", "NFTGame", [phases]);
   console.log("Deployed at " + nftgame.address);
 
-  const nftinteractions = await deployProxy("NFTInteractions", "NFTInteractions", [nftgame.address]);
+  const nftinteractions = await deployProxy("NFTInteractions", "NFTInteractions", [
+    nftgame.address,
+  ]);
+
+  const wrappednftinteractions = WrapperBuilder
+    .wrapLite(nftinteractions)
+    .usingPriceFeed("redstone", { asset: "ENTROPY" });
+
+  await wrappednftinteractions.authorizeSignerEntropyFeed("0x0C39486f770B26F5527BBBf942726537986Cd7eb");
+
+  await nftinteractions.setMaxEntropyDelay(60 * 60 * 24 * 365 * 2); // Only for testing
+
+  for (let i = 4; i < 12; i += 1) {
+    await nftinteractions.setCardBoost(i, 105);
+  }
 
   await nftgame.grantRole(nftgame.GAME_ADMIN(), nftgame.signer.address);
   await nftgame.grantRole(nftgame.GAME_INTERACTOR(), nftinteractions.address);

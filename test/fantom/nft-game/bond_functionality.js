@@ -6,7 +6,7 @@ const { BigNumber, provider } = ethers;
 
 const { ZERO_ADDR } = require("./../../helpers.js")
 
-const { bondFixture, ASSETS, VAULTS } = require("./fixtures/bond_fixture");
+const { bondFixture } = require("./fixtures/bond_fixture");
 
 const {
   parseUnits,
@@ -442,7 +442,7 @@ describe("Bond Functionality", function () {
       
       await expect(
         nftinteractions.connect(user).mintBonds(month3Vesting, numberOfBondUnits)
-      ).to.be.revertedWith("User not locked");
+      ).to.be.revertedWith("G04");
 
       // 'user' locks in points.
       await nftinteractions.connect(user).lockFinalScore();

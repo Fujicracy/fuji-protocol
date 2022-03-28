@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "../../libraries/LibPseudoRandom.sol";
+import "../libraries/LibPseudoRandom.sol";
 import "../FujiPriceAware.sol";
 
 contract MockRandomTests is FujiPriceAware {

@@ -6,19 +6,11 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./NFTGame.sol";
-import "../libraries/LibPseudoRandom.sol";
+import "./libraries/GameErrors.sol";
+import "./libraries/LibPseudoRandom.sol";
 import "./FujiPriceAware.sol";
 import "./PreTokenBonds.sol";
 import "../../interfaces/chainlink/AggregatorV3Interface.sol";
-
-library GameErrors {
-  string public constant NOT_ADMIN = "G00";
-  string public constant WRONG_PHASE = "G01";
-  string public constant INVALID_INPUT = "G02";
-  string public constant VALUE_NOT_SET = "G03";
-  string public constant USER_LOCK_ERROR = "G04";
-  string public constant NOT_ENOUGH_AMOUNT = "G05";
-}
 
 contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
   /**

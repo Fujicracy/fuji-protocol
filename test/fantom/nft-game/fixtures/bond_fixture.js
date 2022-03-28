@@ -32,24 +32,6 @@ const {
   parseUnits
 } = require("../../../helpers");
 
-// iterate through all ASSETS and create pairs
-const getVaults = () => {
-  const assets = Object.values(ASSETS);
-  const vaults = [];
-  assets.forEach((collateral, i1) => {
-    assets.forEach((debt, i2) => {
-      if (i1 !== i2) {
-        vaults.push({
-          name: `vault${collateral.name}${debt.name}`,
-          collateral,
-          debt,
-        });
-      }
-    });
-  });
-  return vaults;
-};
-
 /**
  * Bond fixture provides a minimal testing setup for nft-game testing in bonding phase.
  * Only 'vaultftmdai' is available.
@@ -58,13 +40,7 @@ const getVaults = () => {
  * Crate rewards are simplified.
  */
 const bondFixture = async ([wallet]) => {
-  // Step 0: Common
-  const tokens = {};
-  for (const asset in ASSETS) {
-    tokens[`${ASSETS[asset].name}`] = await getContractAt("IERC20", ASSETS[asset].address);
-  }
-  const swapper = await getContractAt("IUniswapV2Router02", SPOOKY_ROUTER_ADDR);
-
+  
   // Step 1: Base Contracts
   const FujiAdmin = await getContractFactory("FujiAdmin");
   const fujiadmin = await upgrades.deployProxy(FujiAdmin, []);
@@ -104,35 +80,27 @@ const bondFixture = async ([wallet]) => {
     console.log("scream", scream.address);
   }
 
-  // Setp 3: Vaults
+  // Step 3: Deploy vaults
   const FujiVaultFTM = await getContractFactory("FujiVaultFTM");
   // deploy a vault for each entry in ASSETS
-  const vaults = {};
-  for (const { name, collateral, debt } of getVaults()) {
-    const vault = await upgrades.deployProxy(FujiVaultFTM, [
-      fujiadmin.address,
-      oracle.address,
-      collateral.address,
-      debt.address,
-    ]);
+  const vault = await upgrades.deployProxy(FujiVaultFTM, [
+    fujiadmin.address,
+    oracle.address,
+    ASSETS.FTM.address,
+    ASSETS.DAI.address
+  ]);
 
-    if (DEBUG) {
-      console.log(name, vault.address);
-    }
-
-    await f1155.setPermit(vault.address, true);
-    await vault.setFujiERC1155(f1155.address);
-    await vault.setNFTGame(nftgame.address);
-    await fujiadmin.allowVault(vault.address, true);
-    await vault.setProviders(
-      [
-        scream.address,
-      ]
-    );
-    await vault.setActiveProvider(scream.address);
-
-    vaults[name] = vault;
-  }
+  // Step 3.1: Setup vault 
+  await f1155.setPermit(vault.address, true);
+  await vault.setFujiERC1155(f1155.address);
+  await vault.setNFTGame(nftgame.address);
+  await fujiadmin.allowVault(vault.address, true);
+  await vault.setProviders(
+    [
+      scream.address,
+    ]
+  );
+  await vault.setActiveProvider(scream.address);
 
   // Step 4: General Setup
   await fujiadmin.setTreasury(TREASURY_ADDR);
@@ -140,13 +108,11 @@ const bondFixture = async ([wallet]) => {
   // Step 5: Specific Game Set-up
   await nftgame.grantRole(nftgame.GAME_ADMIN(), nftgame.signer.address);
   await nftgame.grantRole(nftgame.GAME_INTERACTOR(), nftinteractions.address);
-
+  
   // Only one vault for quick testing
-  await nftgame.setValidVaults([vaults['vaultftmdai'].address]);
+  await nftgame.setValidVaults([vault.address]);
 
   const now = (await provider.getBlock("latest")).timestamp;
-
-  const quicktimeGap = 2; // 2 seconds
   const day = 60 * 60 * 24;
 
   const phases = [
@@ -177,7 +143,7 @@ const bondFixture = async ([wallet]) => {
   const rewardfactors = [
     [0, 1, 2, 25, 50],
     [0, 1, 4, 50, 100],
-    [0, 1, 8, 200, 1000],
+    [0, 1, 8, 200, 1000]
   ];
 
   for (let i = 0; i < rewardfactors.length; i++) {
@@ -190,21 +156,24 @@ const bondFixture = async ([wallet]) => {
   const firstID = await nftinteractions.NFT_CARD_ID_START();
   const totalCards = await nftgame.nftCardsAmount();
 
+  let lastId = firstID.add(totalCards).sub(1);
+
   const cardIds = [
     firstID,
-    firstID.add(totalCards).sub(1)
+    lastId
   ];
 
   // Set Cardboosts
-  for (let index = firstID; index < (firstID + totalCards); index++) {
+  for (let index = firstID; index <= lastId.toNumber() / 1; index++) {
     await nftinteractions.setCardBoost(firstID, 110);
   }
 
   // Delayed entropy feed check to allowing time travel; for testing only
   await nftinteractions.setMaxEntropyDelay(60 * 60 * 24 * 365 * 2);
+  console.log("Step:5 Complete bond_fixture");
 
   /**
-   * 
+   * Step 6
    * Pretokenbond contract deploy and setup
    * 
    */
@@ -233,11 +202,10 @@ const bondFixture = async ([wallet]) => {
   await pretokenbond.setBaseSlotURI("https://www.example.com/metadata/slot/");
 
   // Override for testing only: change to low bond price
-  await pretokenbond.setBondPrice(parseUnits(1, pointsDecimals))
+  await pretokenbond.setBondPrice(parseUnits(1, pointsDecimals));
 
   return {
-    ...tokens,
-    ...vaults,
+    vault,
     scream,
     nftgame,
     nftinteractions,
@@ -256,7 +224,5 @@ const bondFixture = async ([wallet]) => {
 };
 
 module.exports = {
-  bondFixture,
-  ASSETS,
-  VAULTS: getVaults(),
+  bondFixture
 };

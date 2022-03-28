@@ -13,7 +13,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "../../interfaces/IVault.sol";
 import "../../interfaces/IVaultControl.sol";
 import "../../interfaces/IERC20Extended.sol";
-import "../../libraries/Errors.sol";
+import "./libraries/GameErrors.sol";
 
 import "hardhat/console.sol";
 
@@ -93,11 +93,12 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     setGamePhases(phases);
     _owner = msg.sender;
     nftCardsAmount = 10;
+    uint timestamp = block.timestamp;
     gamePhaseTimestamps = [
-      block.timestamp,
-      block.timestamp + 7 days,
-      block.timestamp + 14 days,
-      block.timestamp + 21 days
+      timestamp,
+      timestamp + 7 days,
+      timestamp + 14 days,
+      timestamp + 21 days
     ];
   }
 
@@ -131,16 +132,16 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
    * @notice Sets the list of vaults that count towards the game
    */
   function setValidVaults(address[] memory vaults) external {
-    require(hasRole(GAME_ADMIN, msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
     validVaults = vaults;
     emit ValidVaultsChanged(vaults);
   }
 
   function setGamePhases(uint256[4] memory newPhasesTimestamps) public {
-    require(hasRole(GAME_ADMIN, msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
     uint256 temp = newPhasesTimestamps[0];
     for (uint256 index = 1; index < newPhasesTimestamps.length; index++) {
-      require(newPhasesTimestamps[index] > temp, "Wrong game phases values!");
+      require(newPhasesTimestamps[index] > temp, GameErrors.INVALID_INPUT);
       temp = newPhasesTimestamps[index];
     }
     gamePhaseTimestamps = newPhasesTimestamps;
@@ -150,8 +151,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
    * @notice sets card amount in game.
    */
   function setnftCardsAmount(uint256 newnftCardsAmount) external {
-    require(hasRole(GAME_ADMIN, msg.sender), Errors.VL_NOT_AUTHORIZED);
-    require(newnftCardsAmount > nftCardsAmount, "Wrong value!");
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(newnftCardsAmount > nftCardsAmount, GameErrors.INVALID_INPUT);
     nftCardsAmount = newnftCardsAmount;
     emit CardAmountChanged(newnftCardsAmount);
   }
@@ -160,7 +161,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
    * @notice Set the base URI for the metadata of every token Id.
    */
   function setBaseURI(string memory _newBaseURI) public {
-    require(hasRole(GAME_ADMIN, msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
     _setURI(_newBaseURI);
   }
 
@@ -168,7 +169,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
    * @dev Set the contract URI for general information of this ERC1155.
    */
   function setContractURI(string memory _newContractURI) public {
-    require(hasRole(GAME_ADMIN, msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
     contractURI = _newContractURI;
   }
 
@@ -176,7 +177,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
    * @dev See 'owner()'
    */
   function setOwner(address _newOwner) public {
-    require(hasRole(GAME_ADMIN, msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
     _owner = _newOwner;
   }
 
@@ -209,8 +210,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   function userLock(address user, uint256 boostNumber) external returns (uint256 lockedNFTID) {
-    require(hasRole(GAME_INTERACTOR, msg.sender), Errors.VL_NOT_AUTHORIZED);
-    require(userdata[user].lockedNFTID == 0, "User already locked!");
+    require(hasRole(GAME_INTERACTOR, msg.sender), GameErrors.NOT_ADMIN);
+    require(userdata[user].lockedNFTID == 0, GameErrors.USER_LOCK_ERROR);
 
     uint256 phase = getPhase();
     uint256 debt = getUserDebt(user);
@@ -254,10 +255,10 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     uint256 id,
     uint256 amount
   ) external {
-    require(hasRole(GAME_INTERACTOR, msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(hasRole(GAME_INTERACTOR, msg.sender), GameErrors.NOT_ADMIN);
     // accumulation and trading
     uint256 phase = getPhase();
-    require(phase >= 1, "Wrong game phase!");
+    require(phase >= 1, GameErrors.WRONG_PHASE);
 
     if (id == POINTS_ID) {
       _mintPoints(user, amount);
@@ -272,16 +273,16 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     uint256 id,
     uint256 amount
   ) external {
-    require(hasRole(GAME_INTERACTOR, msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(hasRole(GAME_INTERACTOR, msg.sender), GameErrors.NOT_ADMIN);
     // accumulation, trading and bonding
     uint256 phase = getPhase();
-    require(phase >= 1, "Wrong game phase!");
+    require(phase >= 1, GameErrors.WRONG_PHASE);
 
     if (id == POINTS_ID) {
       uint256 debt = getUserDebt(user);
       _compoundPoints(user, debt, phase);
       _updateUserInfo(user, uint128(debt), phase);
-      require(userdata[user].accruedPoints >= amount, "Not enough points!");
+      require(userdata[user].accruedPoints >= amount, GameErrors.NOT_ENOUGH_AMOUNT);
       userdata[user].accruedPoints -= uint128(amount);
     } else {
       _burn(user, id, amount);
@@ -307,7 +308,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   function setMerkleRoot(bytes32 _merkleRoot) external {
-    require(hasRole(GAME_ADMIN, msg.sender), Errors.VL_NOT_AUTHORIZED);
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
     require(_merkleRoot[0] != 0, "Empty merkleRoot!");
     merkleRoot = _merkleRoot;
   }
@@ -514,10 +515,10 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     amounts;
     data;
     if (_isPointsId(ids)) {
-      revert("Game points not transferable!");
+      revert(GameErrors.NOT_TRANSFERABLE);
     }
-    if (getPhase() == 3) {
-      require(!_isCrateOrCardId(ids), "GamePhase: Id not transferable!");
+    if (getPhase() >= 3) {
+      require(!_isCrateOrCardId(ids), GameErrors.NOT_TRANSFERABLE);
     }
   }
 

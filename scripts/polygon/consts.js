@@ -2,7 +2,7 @@ const ASSETS = {
   MATIC: {
     name: "matic",
     nameUp: "MATIC",
-    address: "0x0000000000000000000000000000000000001010",
+    address: "0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF",
     oracle: "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
     decimals: 18,
   },

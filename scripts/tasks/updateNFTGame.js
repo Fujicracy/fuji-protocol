@@ -1,54 +1,45 @@
 const { ethers } = require("hardhat");
-const { getContractAddress } = require("../utils");
 
-const getVaultsAddrs = (network) => {
-  if (network == 'rinkeby') {
-    const vaultethusdc = getContractAddress("VaultETHUSDC");
-    return [vaultethusdc];
-  } else {
-    return [];
-  }
-};
-
-const updateNFTGame = async (nftgameAddress, nftinteractionsAddress, network) => {
+const updateNFTGame = async (nftgameAddress, nftinteractionsAddress, vaults) => {
+  // Build ethersjs contract
   const nftgame = await ethers.getContractAt("NFTGame", nftgameAddress);
+
+  // Assigning GAME_INTERACTOR role in 'NFTGame.sol'
   const GAME_INTERACTOR = await nftgame.GAME_INTERACTOR();
   const hasRole = await nftgame.hasRole(GAME_INTERACTOR, nftinteractionsAddress);
   if (!hasRole) {
     const tx = await nftgame.grantRole(GAME_INTERACTOR, nftinteractionsAddress);
-    await tx.wait(5);
-    console.log("Roles assigned in Nftgame complete");
+    await tx.wait();
+    console.log("'GAME_INTERACTOR' roles assigned in Nftgame complete");
   } else {
-    console.log("NFTGame roles already assigned.");
+    console.log("'GAME_INTERACTOR' roles already assigned!");
   }
 
-  const vaults = getVaultsAddrs(network);
-
-  let temptx;
+  // Setting NFTGame address in vaults
   for (let i = 0; i < vaults.length; i += 1) {
     const vaultAddr = vaults[i];
     const vault = await ethers.getContractAt("FujiVaultFTM", vaultAddr);
-    const address = await vault.nftGame();
-    if (address != nftgameAddress) {
-      temptx = await vault.setNFTGame(nftgameAddress);
-      await temptx.wait(5);
+    const returnedAddress = await vault.nftGame();
+    if (returnedAddress != nftgameAddress) {
+      try {
+        let tx = await vault.setNFTGame(nftgameAddress);
+        console.log(`...setting NFTGame address in vault ${vaultAddr}`);
+        await tx.wait();
+        console.log(`NFTGame address succesfully set in vault ${vaultAddr}`);
+      } catch (error) {
+        console.log("ERROR: Could not set NFTGame address, check vault contract owner!");
+        console.log(error);
+      }
+    } else {
+      console.log(`...skipping NFTGame address already set in vault ${vaultAddr}`);
     }
   }
-  console.log("NFTGame address set in vaults");
 
-  // const recordedvaults = await nftgame.validVaults(0);
-  // console.log('recordedvaults', recordedvaults);
-  // if (!recordedvaults) {
-  //   const tx2 = await nftgame.setValidVaults(vaults);
-  //   await tx2.wait(5);
-  //   console.log("Valid vaults set in NFTgame");
-  // } else {
-  //   console.log("Valid vaults already set in NFTgame");
-  // }
-
+  // Setting valid vaults in NFTGame.sol
   const tx2 = await nftgame.setValidVaults(vaults);
-  await tx2.wait(5);
-  console.log("Valid vaults set in NFTgame");
+  console.log("...setting valid vaults in NFTgame");
+  await tx2.wait();
+  console.log("Valid vaults succesfully set in NFTgame");
 };
 
 module.exports = {

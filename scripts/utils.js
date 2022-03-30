@@ -48,6 +48,14 @@ const getContractAddress = (name) => {
   return getDeployments(name).address;
 };
 
+/**
+ * Deploy a contract if it has not been deployed, otherwise read address from hardhat artifacts folder.
+ * @param {string} name same as contractName, except for FujiVaults. 
+ * @param {string} contractName name of the compiled contract.
+ * @param {Function} deployContract function call type {deploy, deployProxy}.
+ * @param {Array} args arguments required in contract constructor or initializer.
+ * @returns {Promise} resolves to 'string' address of the deployed contract.
+ */
 const redeployIf = async (name, contractName, deployContract, args = []) => {
   const currentDeployment = getDeployments(name);
   const contractArtifacts = await artifacts.readArtifact(contractName);

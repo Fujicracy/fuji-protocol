@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 library GameErrors {
-  string public constant NOT_ADMIN = "G00";
+  string public constant NOT_AUTH = "G00";
   string public constant WRONG_PHASE = "G01";
   string public constant INVALID_INPUT = "G02";
   string public constant VALUE_NOT_SET = "G03";

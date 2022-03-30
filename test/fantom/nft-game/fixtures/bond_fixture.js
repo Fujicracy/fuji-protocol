@@ -170,7 +170,6 @@ const bondFixture = async ([wallet]) => {
 
   // Delayed entropy feed check to allowing time travel; for testing only
   await nftinteractions.setMaxEntropyDelay(60 * 60 * 24 * 365 * 2);
-  console.log("Step:5 Complete bond_fixture");
 
   /**
    * Step 6

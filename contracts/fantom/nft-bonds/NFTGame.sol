@@ -130,13 +130,13 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
    * @notice Sets the list of vaults that count towards the game
    */
   function setValidVaults(address[] memory vaults) external {
-    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     validVaults = vaults;
     emit ValidVaultsChanged(vaults);
   }
 
   function setGamePhases(uint256[4] memory newPhasesTimestamps) public {
-    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     uint256 temp = newPhasesTimestamps[0];
     for (uint256 index = 1; index < newPhasesTimestamps.length; index++) {
       require(newPhasesTimestamps[index] > temp, GameErrors.INVALID_INPUT);
@@ -149,7 +149,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
    * @notice sets card amount in game.
    */
   function setnftCardsAmount(uint256 newnftCardsAmount) external {
-    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     require(newnftCardsAmount > nftCardsAmount, GameErrors.INVALID_INPUT);
     nftCardsAmount = newnftCardsAmount;
     emit CardAmountChanged(newnftCardsAmount);
@@ -159,7 +159,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
    * @notice Set the base URI for the metadata of every token Id.
    */
   function setBaseURI(string memory _newBaseURI) public {
-    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     _setURI(_newBaseURI);
   }
 
@@ -167,7 +167,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
    * @dev Set the contract URI for general information of this ERC1155.
    */
   function setContractURI(string memory _newContractURI) public {
-    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     contractURI = _newContractURI;
   }
 
@@ -175,7 +175,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
    * @dev See 'owner()'
    */
   function setOwner(address _newOwner) public {
-    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     _owner = _newOwner;
   }
 
@@ -208,7 +208,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   function userLock(address user, uint256 boostNumber) external returns (uint256 lockedNFTID) {
-    require(hasRole(GAME_INTERACTOR, msg.sender), GameErrors.NOT_ADMIN);
+    require(hasRole(GAME_INTERACTOR, msg.sender), GameErrors.NOT_AUTH);
     require(userdata[user].lockedNFTID == 0, GameErrors.USER_LOCK_ERROR);
 
     uint256 phase = getPhase();
@@ -253,7 +253,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     uint256 id,
     uint256 amount
   ) external {
-    require(hasRole(GAME_INTERACTOR, msg.sender), GameErrors.NOT_ADMIN);
+    require(hasRole(GAME_INTERACTOR, msg.sender), GameErrors.NOT_AUTH);
     // accumulation and trading
     uint256 phase = getPhase();
     require(phase >= 1, GameErrors.WRONG_PHASE);
@@ -271,7 +271,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     uint256 id,
     uint256 amount
   ) external {
-    require(hasRole(GAME_INTERACTOR, msg.sender), GameErrors.NOT_ADMIN);
+    require(hasRole(GAME_INTERACTOR, msg.sender), GameErrors.NOT_AUTH);
     // accumulation, trading and bonding
     uint256 phase = getPhase();
     require(phase >= 1, GameErrors.WRONG_PHASE);
@@ -306,7 +306,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   function setMerkleRoot(bytes32 _merkleRoot) external {
-    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     require(_merkleRoot[0] != 0, "Empty merkleRoot!");
     merkleRoot = _merkleRoot;
   }

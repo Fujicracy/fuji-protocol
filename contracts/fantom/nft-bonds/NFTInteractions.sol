@@ -113,13 +113,13 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * @notice Set address for NFTGame contract
    */
   function setNFTGame(address _nftGame) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     nftGame = NFTGame(_nftGame);
     emit NFTGameChanged(_nftGame);
   }
 
   function setPreTokenBonds(address _preTokenBonds) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     preTokenBonds = PreTokenBonds(_preTokenBonds);
     emit PreTokenBondsChanged(_preTokenBonds);
   }
@@ -128,7 +128,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * @notice sets the prices for the crates
    */
   function setCratePrice(uint256 crateId, uint256 price) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
       GameErrors.INVALID_INPUT
@@ -141,7 +141,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * @notice sets probability intervals for crate rewards
    */
   function setProbabilityIntervals(uint256[] memory intervals) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     _probabilityIntervals = intervals;
   }
 
@@ -150,7 +150,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * rewards are an array, with each element corresponding to the points multiplier value
    */
   function setCrateRewards(uint256 crateId, uint256[] memory rewards) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     _crateRewards[crateId] = rewards;
     emit CrateRewardsChanged(crateId, rewards);
   }
@@ -160,7 +160,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * @dev boost is a base 100 number. In example, boost = 115, 15% boost. 1.15 for computation.
    */
   function setCardBoost(uint256 cardId, uint256 boost) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     require(boost >= 100, GameErrors.INVALID_INPUT);
     cardBoost[cardId] = boost;
     emit CardBoostChanged(cardId, boost);
@@ -171,7 +171,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * Admin function required by redstone-evm-connector (oracle).
    */
   function authorizeSignerEntropyFeed(address _trustedSigner) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     _authorizeSigner(_trustedSigner);
   }
 
@@ -180,7 +180,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * Admin function required by redstone-evm-connector (oracle).
    */
   function setMaxEntropyDelay(uint256 _maxDelay) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     _setMaxDelay(_maxDelay);
   }
 
@@ -189,7 +189,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * switch(1) = redstone, switch(0) = chainlink
    */
   function setIsRedstoneOracleOn(bool switch_) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     isRedstoneOracleOn = switch_;
   }
 

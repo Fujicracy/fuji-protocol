@@ -1,45 +1,62 @@
 const { ethers } = require("hardhat");
 
-const updateNFTGame = async (nftgameAddress, nftinteractionsAddress, vaults) => {
+const updateNFTGame = async (nftgameAddress, nftinteractionsAddress, vaults, multisg) => {
   // Build ethersjs contract
   const nftgame = await ethers.getContractAt("NFTGame", nftgameAddress);
 
-  // Assigning GAME_INTERACTOR role in 'NFTGame.sol'
+  // Assigning GAME_INTERACTOR,a nd GAME_ADMIN role in 'NFTGame.sol'
   const GAME_INTERACTOR = await nftgame.GAME_INTERACTOR();
-  const hasRole = await nftgame.hasRole(GAME_INTERACTOR, nftinteractionsAddress);
-  if (!hasRole) {
+  const GAME_ADMIN = await nftgame.GAME_ADMIN();
+  const hasRole1 = await nftgame.hasRole(GAME_INTERACTOR, nftinteractionsAddress);
+  const hasRole2 = await nftgame.hasRole(GAME_ADMIN, multisg);
+  if (!hasRole1) {
     const tx = await nftgame.grantRole(GAME_INTERACTOR, nftinteractionsAddress);
     await tx.wait();
-    console.log("'GAME_INTERACTOR' roles assigned in Nftgame complete");
+    progress.text = "'GAME_INTERACTOR' role assigned in Nftgame complete!";
   } else {
-    console.log("'GAME_INTERACTOR' roles already assigned!");
+    progress.text = "'GAME_INTERACTOR' role already assigned!";
+  }
+  if (!hasRole2) {
+    const tx = await nftgame.grantRole(GAME_ADMIN, multisg);
+    await tx.wait();
+    progress.text = "'GAME_ADMIN' role assigned in Nftgame complete!";
+  } else {
+    progress.text = "'GAME_ADMIN' role already assigned!";
   }
 
   // Setting NFTGame address in vaults
-  for (let i = 0; i < vaults.length; i += 1) {
-    const vaultAddr = vaults[i];
-    const vault = await ethers.getContractAt("FujiVaultFTM", vaultAddr);
-    const returnedAddress = await vault.nftGame();
-    if (returnedAddress != nftgameAddress) {
-      try {
-        let tx = await vault.setNFTGame(nftgameAddress);
-        console.log(`...setting NFTGame address in vault ${vaultAddr}`);
-        await tx.wait();
-        console.log(`NFTGame address succesfully set in vault ${vaultAddr}`);
-      } catch (error) {
-        console.log("ERROR: Could not set NFTGame address, check vault contract owner!");
-        console.log(error);
+  // Ensure vaults array has contents
+  if (vaults.length > 0) {
+    for (let i = 0; i < vaults.length; i += 1) {
+      const vaultAddr = vaults[i];
+      const vault = await ethers.getContractAt("FujiVaultFTM", vaultAddr);
+      const returnedAddress = await vault.nftGame();
+      if (returnedAddress != nftgameAddress) {
+        try {
+          let tx = await vault.setNFTGame(nftgameAddress);
+          progress.text = `...setting NFTGame address in vault ${vaultAddr}`;
+          await tx.wait();
+          progress.text = `NFTGame address succesfully set in vault ${vaultAddr}`;
+        } catch (error) {
+          progress.text = "ERROR: Could not set NFTGame address, check vault contract owner!";
+          console.log(error);
+        }
+      } else {
+        progress.text = `...skipping NFTGame address already set in vault ${vaultAddr}`;
       }
-    } else {
-      console.log(`...skipping NFTGame address already set in vault ${vaultAddr}`);
     }
-  }
 
-  // Setting valid vaults in NFTGame.sol
-  const tx2 = await nftgame.setValidVaults(vaults);
-  console.log("...setting valid vaults in NFTgame");
-  await tx2.wait();
-  console.log("Valid vaults succesfully set in NFTgame");
+    // Setting valid vaults in NFTGame.sol
+    const tx2 = await nftgame.setValidVaults(vaults);
+    progress.text = "...setting valid vaults in NFTgame";
+    await tx2.wait();
+    progress.text = "Valid vaults succesfully set in NFTgame";
+
+  } else {
+
+    progress.text = "No vault addresses passed in 'updateNFTGame()'";
+
+  }
 };
 
 module.exports = {

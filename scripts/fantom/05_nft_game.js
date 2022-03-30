@@ -7,8 +7,10 @@ const { WrapperBuilder } = require("redstone-evm-connector");
 
 const { deployNFTGame } = require("../tasks/deployNFTGame");
 const { deployNFTInteractions } = require("../tasks/deployNFTInteractions");
+const { deployPreTokenBonds } = require("../tasks/deployPreTokenBonds")
 const { updateNFTGame } = require("../tasks/updateNFTGame");
 const { updateNFTInteractions } = require("../tasks/updateNFTInteractions");
+const { updatePreTokenBonds } = require("../tasks/updatePreTokenBonds");
 
 const { 
   setDeploymentsPath,
@@ -57,6 +59,8 @@ const CRATE_IDS = [
   CRATE_EPIC_ID,
   CRATE_LEGENDARY_ID
 ];
+
+const MULTISIG = "0x40578F7902304e0e34d7069Fb487ee57F841342e";
 
 /**
  * Deploys and sets-up the {NFTGame} and {NFTInteractions} contracts
@@ -111,10 +115,12 @@ const deployContracts = async () => {
   // Functions below return string addresses
   let nftgame = await deployNFTGame([phases]);
   let nftinteractions = await deployNFTInteractions([nftgame]);
-
+  let pretokenbonds = await deployPreTokenBonds([POINTS_DECIMALS, nftgame]);
+  
   // Build etherjs contracts again
   nftgame = await ethers.getContractAt("NFTGame", nftgame);
   nftinteractions = await ethers.getContractAt("NFTInteractions", nftinteractions);
+  pretokenbonds = await ethers.getContractAt("PreTokenBonds", pretokenbonds);
 
   // Authorize Redstone entropy signer, if not set.
   const entropyTrustedSigner = await nftinteractions.getTrustedSigner();
@@ -122,25 +128,41 @@ const deployContracts = async () => {
     const wrappednftinteractions = WrapperBuilder
     .wrapLite(nftinteractions)
     .usingPriceFeed("redstone", { asset: "ENTROPY" });
-    const txA = await wrappednftinteractions
-      .authorizeSignerEntropyFeed("0x0C39486f770B26F5527BBBf942726537986Cd7eb");
-    console.log(`...authorizing Redstone entropy provider tx-hash: ${txA.hash}`);
+    const txA = await wrappednftinteractions.authorizeSignerEntropyFeed("0x0C39486f770B26F5527BBBf942726537986Cd7eb");
+    progress.text = `...authorizing Redstone entropy provider tx-hash: ${txA.hash}`;
     await txA.wait();
+    progress.text = `succesfully set Redstone entropy signer`;
+  } else {
+    progress.text = `...skipping Redstone entropy signer is set!`;
   }
-  
+
   // Get vaults
   let vaults =[];
+  let adminAddress;
   if (TESTING_PARAMS) {
     // Entropy check bypassed in testing
     await nftinteractions.setMaxEntropyDelay(60 * 60 * 24 * 365 * 2);
     vaults = getVaultsAddrs();
-    vaults = [vaults[0]];
+    vaults = !vaults[0] ? [] : vaults[0];
+    adminAddress = nftgame.signer.address;
   } else {
     vaults = getVaultsAddrs();
+    adminAddress = MULTISIG;
   }
- 
-  await updateNFTGame(nftgame.address, nftinteractions.address, vaults);
+
+  await updateNFTGame(nftgame.address, nftinteractions.address, vaults, adminAddress);
   await updateNFTInteractions(nftinteractions.address, CRATE_IDS, rewardfactors, prices);
+  await updatePreTokenBonds(
+    pretokenbonds.address,
+    nftinteractions.address,
+    [
+      "https://www.example.com/metadata/token/",
+      "https://www.example.com/metadata/contract.json",
+      "https://www.example.com/metadata/slot/"
+    ],
+    POINTS_DECIMALS,
+    TESTING_PARAMS
+  );
 
   progress.succeed(progressPrefix);
 };

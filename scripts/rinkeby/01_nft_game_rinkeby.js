@@ -1,5 +1,6 @@
 require("dotenv").config();
 const chalk = require("chalk");
+const ora = require("ora");
 const { ethers } = require("hardhat");
 const { provider } = ethers;
 
@@ -20,6 +21,12 @@ const {
 const { 
   parseUnits 
 } = require("../../test/helpers");
+
+global.progressPrefix = __filename.split("/").pop();
+global.progress = ora().start(progressPrefix + ": Starting...");
+global.console.log = (...args) => {
+  progress.text = `${progressPrefix}: ${args.join(" ")}`;
+};
 
 const deployPointFaucet = async () => {
   const name = "PointFaucet";
@@ -113,10 +120,12 @@ const deployContracts = async () => {
     const wrappednftinteractions = WrapperBuilder
     .wrapLite(nftinteractions)
     .usingPriceFeed("redstone", { asset: "ENTROPY" });
-    const txA = await wrappednftinteractions
-      .authorizeSignerEntropyFeed("0x0C39486f770B26F5527BBBf942726537986Cd7eb");
+    const txA = await wrappednftinteractions.authorizeSignerEntropyFeed("0x0C39486f770B26F5527BBBf942726537986Cd7eb");
     console.log(`...authorizing Redstone entropy provider tx-hash: ${txA.hash}`);
     await txA.wait();
+    console.log(`succesfully set Redstone entropy signer`);
+  } else {
+    console.log(`...skipping Redstone entropy signer is set!`);
   }
 
   // Deploy 'pointfaucet'; only required for Rinkeby
@@ -126,7 +135,7 @@ const deployContracts = async () => {
   console.log("network", network);
   const vaults = getVaultsAddrs(network);
   
-  await updateNFTGame(nftgame.address, nftinteractions.address, vaults);
+  await updateNFTGame(nftgame.address, nftinteractions.address, vaults, nftgame.signer.address);
   await updatePointFaucet(pointfaucet, nftgame);
   await updateNFTInteractions(nftinteractions.address, CRATE_IDS, rewardfactors, prices);
 

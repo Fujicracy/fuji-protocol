@@ -156,7 +156,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    * @notice Admin restricted function to set address for NFTGame contract
    */
   function setNFTGame(address _nftGame) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     require(_nftGame != address(0), GameErrors.INVALID_INPUT);
     nftGame = NFTGame(_nftGame);
     emit NFTGameChanged(_nftGame);
@@ -167,7 +167,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    * underlying Fuji ERC-20
    */
   function setUnderlying(address _underlying) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     require(_underlying != address(0), GameErrors.INVALID_INPUT);
     underlying = _underlying;
     emit UnderlyingChanged(_underlying);
@@ -180,7 +180,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    * @param _newMultiplier Assigned multiplier for bond reward for '_newbondSlotTime'
    */
   function setBondVestingTimes(uint256 _newbondSlotTime, uint256 _newMultiplier) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     require(
       _newbondSlotTime > 0 &&
       _newMultiplier > 0 &&
@@ -198,7 +198,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    * @dev Price is per (token id=0) points in {NFTGame} contract.
    */
   function setBondPrice(uint256 _bondPrice) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     require(_bondPrice > 0, GameErrors.INVALID_INPUT);
     bondPrice = _bondPrice;
     emit BondPriceChanges(_bondPrice);
@@ -209,7 +209,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    * @dev example input: 'https://www.mysite.com/metadata/token/'
    */
   function setBaseTokenURI(string calldata _URI) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     _slotBaseURI = _URI;
   }
 
@@ -218,7 +218,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    * @dev example input: 'https://www.mysite.com/metadata/contractERC3525.json'
    */
   function setContractURI(string calldata _URI) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     _contractURI = _URI;
   }
 
@@ -227,7 +227,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    * @dev example input: 'https://www.mysite.com/metadata/slots/'
    */
   function setBaseSlotURI(string calldata _URI) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     _slotBaseURI = _URI;
   }
 
@@ -235,7 +235,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    * @dev See 'owner()'
    */
   function setOwner(address _newOwner) public {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     require(_newOwner != address(0), GameErrors.INVALID_INPUT);
     _owner = _newOwner;
   }
@@ -252,7 +252,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
     uint256 _slot,
     uint256 _units
   ) external returns (uint256 tokenID) {
-    require(nftGame.hasRole(_nftgame_GAME_INTERACTOR, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_INTERACTOR, msg.sender), GameErrors.NOT_AUTH);
     require(_units > 0 && _checkIfSlotExists(_slot), GameErrors.INVALID_INPUT);
     uint256 phase = nftGame.getPhase();
     require(phase >= 2 && phase < 4, GameErrors.WRONG_PHASE);
@@ -263,7 +263,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    * @notice Deposits Fuji ERC-20 tokens as underlying
    */
   function deposit(uint256 _amount) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_ADMIN);
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     require(underlying != address(0), GameErrors.VALUE_NOT_SET);
     require(_amount > 0, GameErrors.INVALID_INPUT);
     IERC20 token = IERC20(underlying);

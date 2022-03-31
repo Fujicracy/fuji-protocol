@@ -1,7 +1,10 @@
 require("dotenv").config();
 const chalk = require("chalk");
+const ora = require("ora");
 const { ethers } = require("hardhat");
 const { provider } = ethers;
+
+const { WrapperBuilder } = require("redstone-evm-connector");
 
 const { deployNFTGame } = require("../tasks/deployNFTGame");
 const { deployNFTInteractions } = require("../tasks/deployNFTInteractions");
@@ -14,6 +17,16 @@ const {
   redeployIf,
   deploy
 } = require("../utils");
+
+const { 
+  parseUnits 
+} = require("../../test/helpers");
+
+global.progressPrefix = __filename.split("/").pop();
+global.progress = ora().start(progressPrefix + ": Starting...");
+global.console.log = (...args) => {
+  progress.text = `${progressPrefix}: ${args.join(" ")}`;
+};
 
 const deployPointFaucet = async () => {
   const name = "PointFaucet";
@@ -50,8 +63,27 @@ const updatePointFaucet = async (pointfaucetAddresss, nftgameAddress) => {
   } else {
     console.log("Faucet role GAME_INTERACTOR already assigned.");
   }
-  
 };
+
+const getVaultsAddrs = (network) => {
+  if (network == 'rinkeby') {
+    const vaultethusdc = getContractAddress("VaultETHUSDC");
+    return [vaultethusdc];
+  } else {
+    return [];
+  }
+};
+
+/// Fixed Game Parameters
+const POINTS_DECIMALS = 5;
+const CRATE_COMMON_ID =1;
+const CRATE_EPIC_ID = 2;
+const CRATE_LEGENDARY_ID = 3;
+const CRATE_IDS = [
+  CRATE_COMMON_ID,
+  CRATE_EPIC_ID,
+  CRATE_LEGENDARY_ID
+];
 
 const deployContracts = async () => {
   console.log("\n\n 📡 Deploying...\n");
@@ -64,30 +96,48 @@ const deployContracts = async () => {
     now + 9 * day,
     now + 11 * day
   ];
-
-  const nftgame = await deployNFTGame([phases]);
-  const nftinteractions = await deployNFTInteractions([nftgame.address]);
-
-  // 'pointfaucet' only required for Rinkeby
-  let pointfaucet = await deployPointFaucet();
-
-  console.log("network", network);
-  await updateNFTGame(nftgame, nftinteractions, network);
-  await updatePointFaucet(pointfaucet, nftgame);
-
   // Note that 'standard' rewards chances:
   // 50%, 20%, 20%, 5%, 0.01%
   const rewardfactors = [
-    [0, 0, 1, 2, 25], // CrateId = 1 
-    [0, 0, 1, 4, 50], // CrateId = 2
-    [0, 0, 1, 8, 100] // CrateId = 3
+    [1, 0, 0, 2, 25], // CrateId = 1 
+    [1, 0, 0, 4, 50], // CrateId = 2
+    [1, 0, 0, 8, 100] // CrateId = 3
   ];
 
-  // This price array will be scaled by 'ethers.utils.parseUnits()'
-  // According to 'POINTS_DECIMALS()' in NFTGame.sol
-  const prices = [2, 4, 8];
+  const prices = [2, 4, 8].map( i => parseUnits(i, POINTS_DECIMALS));
 
-  await updateNFTInteractions(nftinteractions, nftgame, rewardfactors, prices);
+  // Functions below return string addresses
+  let nftgame = await deployNFTGame([phases]);
+  let nftinteractions = await deployNFTInteractions([nftgame.address]);
+
+  // Build etherjs contracts again
+  nftgame = await ethers.getContractAt("NFTGame", nftgame);
+  nftinteractions = await ethers.getContractAt("NFTInteractions", nftinteractions);
+
+  // Authorize Redstone entropy signer, if not set.
+  const entropyTrustedSigner = await nftinteractions.getTrustedSigner();
+  if (entropyTrustedSigner != "0x0C39486f770B26F5527BBBf942726537986Cd7eb") {
+    const wrappednftinteractions = WrapperBuilder
+    .wrapLite(nftinteractions)
+    .usingPriceFeed("redstone", { asset: "ENTROPY" });
+    const txA = await wrappednftinteractions.authorizeSignerEntropyFeed("0x0C39486f770B26F5527BBBf942726537986Cd7eb");
+    console.log(`...authorizing Redstone entropy provider tx-hash: ${txA.hash}`);
+    await txA.wait();
+    console.log(`succesfully set Redstone entropy signer`);
+  } else {
+    console.log(`...skipping Redstone entropy signer is set!`);
+  }
+
+  // Deploy 'pointfaucet'; only required for Rinkeby
+  let pointfaucet = await deployPointFaucet();
+
+  // Get vaults
+  console.log("network", network);
+  const vaults = getVaultsAddrs(network);
+  
+  await updateNFTGame(nftgame.address, nftinteractions.address, vaults, nftgame.signer.address);
+  await updatePointFaucet(pointfaucet, nftgame);
+  await updateNFTInteractions(nftinteractions.address, CRATE_IDS, rewardfactors, prices);
 
   console.log("Finished!");
 };

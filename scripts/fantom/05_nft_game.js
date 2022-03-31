@@ -7,7 +7,7 @@ const { WrapperBuilder } = require("redstone-evm-connector");
 
 const { deployNFTGame } = require("../tasks/deployNFTGame");
 const { deployNFTInteractions } = require("../tasks/deployNFTInteractions");
-const { deployPreTokenBonds } = require("../tasks/deployPreTokenBonds")
+const { deployPreTokenBonds } = require("../tasks/deployPreTokenBonds");
 const { updateNFTGame } = require("../tasks/updateNFTGame");
 const { updateNFTInteractions } = require("../tasks/updateNFTInteractions");
 const { updatePreTokenBonds } = require("../tasks/updatePreTokenBonds");
@@ -48,6 +48,7 @@ const getVaultsAddrs = (network) => {
 };
 
 const TESTING_PARAMS = true;
+const SKIP_VAULTS = false;
 
 /// Fixed Game Parameters
 const POINTS_DECIMALS = 5;
@@ -148,6 +149,10 @@ const deployContracts = async () => {
   } else {
     vaults = getVaultsAddrs();
     adminAddress = MULTISIG;
+  }
+
+  if(SKIP_VAULTS) {
+    vaults = [];
   }
 
   await updateNFTGame(nftgame.address, nftinteractions.address, vaults, adminAddress);

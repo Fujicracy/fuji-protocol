@@ -1,23 +1,23 @@
 const { ethers } = require("hardhat");
 
-const updateNFTGame = async (nftgameAddress, nftinteractionsAddress, vaults, multisg) => {
+const updateNFTGame = async (nftGameAddress, nftInteractionsAddress, vaults, multiSig, merkleRoot) => {
   // Build ethersjs contract
-  const nftgame = await ethers.getContractAt("NFTGame", nftgameAddress);
+  const nftgame = await ethers.getContractAt("NFTGame", nftGameAddress);
 
   // Assigning GAME_INTERACTOR,a nd GAME_ADMIN role in 'NFTGame.sol'
   const GAME_INTERACTOR = await nftgame.GAME_INTERACTOR();
   const GAME_ADMIN = await nftgame.GAME_ADMIN();
-  const hasRole1 = await nftgame.hasRole(GAME_INTERACTOR, nftinteractionsAddress);
-  const hasRole2 = await nftgame.hasRole(GAME_ADMIN, multisg);
+  const hasRole1 = await nftgame.hasRole(GAME_INTERACTOR, nftInteractionsAddress);
+  const hasRole2 = await nftgame.hasRole(GAME_ADMIN, multiSig);
   if (!hasRole1) {
-    const tx = await nftgame.grantRole(GAME_INTERACTOR, nftinteractionsAddress);
+    const tx = await nftgame.grantRole(GAME_INTERACTOR, nftInteractionsAddress);
     await tx.wait();
     progress.text = "'GAME_INTERACTOR' role assigned in Nftgame complete!";
   } else {
     progress.text = "'GAME_INTERACTOR' role already assigned!";
   }
   if (!hasRole2) {
-    const tx = await nftgame.grantRole(GAME_ADMIN, multisg);
+    const tx = await nftgame.grantRole(GAME_ADMIN, multiSig);
     await tx.wait();
     progress.text = "'GAME_ADMIN' role assigned in Nftgame complete!";
   } else {
@@ -31,9 +31,9 @@ const updateNFTGame = async (nftgameAddress, nftinteractionsAddress, vaults, mul
       const vaultAddr = vaults[i];
       const vault = await ethers.getContractAt("FujiVaultFTM", vaultAddr);
       const returnedAddress = await vault.nftGame();
-      if (returnedAddress != nftgameAddress) {
+      if (returnedAddress != nftGameAddress) {
         try {
-          let tx = await vault.setNFTGame(nftgameAddress);
+          let tx = await vault.setNFTGame(nftGameAddress);
           progress.text = `...setting NFTGame address in vault ${vaultAddr}`;
           await tx.wait();
           progress.text = `NFTGame address succesfully set in vault ${vaultAddr}`;
@@ -51,6 +51,15 @@ const updateNFTGame = async (nftgameAddress, nftinteractionsAddress, vaults, mul
     progress.text = "...setting valid vaults in NFTgame";
     await tx2.wait();
     progress.text = "Valid vaults succesfully set in NFTgame";
+
+    if (merkleRoot) {
+      const tx3 = await nftgame.setMerkleRoot(merkleRoot);
+      progress.text = "...setting merkleRoot in NFTgame";
+      await tx3.wait();
+      progress.text = "MerkleRoot succesfully set in NFTgame";
+    } else {
+      console.warn("MerkleRoot is NOT set!");
+    }
 
   } else {
 

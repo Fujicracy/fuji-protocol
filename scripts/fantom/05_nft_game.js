@@ -77,6 +77,7 @@ const deployContracts = async () => {
   let prices = [];
   let rewardfactors = [];
   let phases = [];
+  let merkleRoot;
   // 0 = start game launch
   // 1 = end of accumulation
   // 2 = end of trade and lock
@@ -94,6 +95,7 @@ const deployContracts = async () => {
       [1, 0, 1, 4, 50],
       [1, 0, 1, 8, 100],
     ];
+    merkleRoot = "0xb7ceab32617cfb6af52f5c6051179ea7c0bbc688bc3c08fd7843d6fc1af4440e";
   } else {
     // Production parameters
     const LaunchTimestamp = 1649419200;
@@ -155,7 +157,7 @@ const deployContracts = async () => {
     vaults = [];
   }
 
-  await updateNFTGame(nftgame.address, nftinteractions.address, vaults, adminAddress);
+  await updateNFTGame(nftgame.address, nftinteractions.address, vaults, adminAddress, merkleRoot);
   await updateNFTInteractions(nftinteractions.address, CRATE_IDS, rewardfactors, prices);
   await updatePreTokenBonds(
     pretokenbonds.address,

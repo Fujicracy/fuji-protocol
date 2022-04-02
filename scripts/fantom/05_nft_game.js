@@ -82,7 +82,7 @@ const deployContracts = async () => {
   // 1 = end of accumulation
   // 2 = end of trade and lock
   // 3 = end of bond
-  if(TESTING_PARAMS) {
+  if (TESTING_PARAMS) {
     phases = [
       now,
       now + 4 * day,
@@ -95,7 +95,7 @@ const deployContracts = async () => {
       [1, 0, 1, 4, 50],
       [1, 0, 1, 8, 100],
     ];
-    merkleRoot = "0xb7ceab32617cfb6af52f5c6051179ea7c0bbc688bc3c08fd7843d6fc1af4440e";
+    merkleRoot = "0x903f8cb795059ae5a39d1a6caae25eb970d75914aa9324ccc657e9e38eb1a7c9";
   } else {
     // Production parameters
     const LaunchTimestamp = 1649419200;
@@ -129,14 +129,14 @@ const deployContracts = async () => {
   const entropyTrustedSigner = await nftinteractions.getTrustedSigner();
   if (entropyTrustedSigner != "0x0C39486f770B26F5527BBBf942726537986Cd7eb") {
     const wrappednftinteractions = WrapperBuilder
-    .wrapLite(nftinteractions)
-    .usingPriceFeed("redstone", { asset: "ENTROPY" });
+      .wrapLite(nftinteractions)
+      .usingPriceFeed("redstone", { asset: "ENTROPY" });
     const txA = await wrappednftinteractions.authorizeSignerEntropyFeed("0x0C39486f770B26F5527BBBf942726537986Cd7eb");
-    progress.text = `...authorizing Redstone entropy provider tx-hash: ${txA.hash}`;
+    console.log(`...authorizing Redstone entropy provider tx-hash: ${txA.hash}`);
     await txA.wait();
-    progress.text = `succesfully set Redstone entropy signer`;
+    console.log(`succesfully set Redstone entropy signer`);
   } else {
-    progress.text = `...skipping Redstone entropy signer is set!`;
+    console.log(`...skipping Redstone entropy signer is set!`);
   }
 
   // Get vaults
@@ -153,11 +153,17 @@ const deployContracts = async () => {
     adminAddress = MULTISIG;
   }
 
-  if(SKIP_VAULTS) {
+  if (SKIP_VAULTS) {
     vaults = [];
   }
 
-  await updateNFTGame(nftgame.address, nftinteractions.address, vaults, adminAddress, merkleRoot);
+  await updateNFTGame(
+    nftgame.address,
+    nftinteractions.address,
+    vaults,
+    adminAddress,
+    merkleRoot
+  );
   await updateNFTInteractions(nftinteractions.address, CRATE_IDS, rewardfactors, prices);
   await updatePreTokenBonds(
     pretokenbonds.address,

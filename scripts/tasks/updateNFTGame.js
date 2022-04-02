@@ -4,24 +4,35 @@ const updateNFTGame = async (nftGameAddress, nftInteractionsAddress, vaults, mul
   // Build ethersjs contract
   const nftgame = await ethers.getContractAt("NFTGame", nftGameAddress);
 
-  // Assigning GAME_INTERACTOR,a nd GAME_ADMIN role in 'NFTGame.sol'
+  // Assigning GAME_INTERACTOR and GAME_ADMIN role in 'NFTGame.sol'
   const GAME_INTERACTOR = await nftgame.GAME_INTERACTOR();
   const GAME_ADMIN = await nftgame.GAME_ADMIN();
   const hasRole1 = await nftgame.hasRole(GAME_INTERACTOR, nftInteractionsAddress);
   const hasRole2 = await nftgame.hasRole(GAME_ADMIN, multiSig);
+
   if (!hasRole1) {
     const tx = await nftgame.grantRole(GAME_INTERACTOR, nftInteractionsAddress);
     await tx.wait();
-    progress.text = "'GAME_INTERACTOR' role assigned in Nftgame complete!";
+    console.log("'GAME_INTERACTOR' role assigned in Nftgame complete!");
   } else {
-    progress.text = "'GAME_INTERACTOR' role already assigned!";
+    console.log("'GAME_INTERACTOR' role already assigned!");
   }
+
   if (!hasRole2) {
     const tx = await nftgame.grantRole(GAME_ADMIN, multiSig);
     await tx.wait();
-    progress.text = "'GAME_ADMIN' role assigned in Nftgame complete!";
+    console.log("'GAME_ADMIN' role assigned in Nftgame complete!");
   } else {
-    progress.text = "'GAME_ADMIN' role already assigned!";
+    console.log("'GAME_ADMIN' role already assigned!");
+  }
+
+  if (merkleRoot) {
+    const tx = await nftgame.setMerkleRoot(merkleRoot);
+    console.log("...setting merkleRoot in NFTgame");
+    await tx.wait();
+    console.log("MerkleRoot succesfully set in NFTgame");
+  } else {
+    console.warn("\nMerkleRoot is NOT set!");
   }
 
   // Setting NFTGame address in vaults
@@ -33,38 +44,27 @@ const updateNFTGame = async (nftGameAddress, nftInteractionsAddress, vaults, mul
       const returnedAddress = await vault.nftGame();
       if (returnedAddress != nftGameAddress) {
         try {
-          let tx = await vault.setNFTGame(nftGameAddress);
-          progress.text = `...setting NFTGame address in vault ${vaultAddr}`;
+          const tx = await vault.setNFTGame(nftGameAddress);
+          console.log(`...setting NFTGame address in vault ${vaultAddr}`);
           await tx.wait();
-          progress.text = `NFTGame address succesfully set in vault ${vaultAddr}`;
+          console.log(`NFTGame address succesfully set in vault ${vaultAddr}`);
         } catch (error) {
-          progress.text = "ERROR: Could not set NFTGame address, check vault contract owner!";
+          console.log("ERROR: Could not set NFTGame address, check vault contract owner!");
           console.log(error);
         }
       } else {
-        progress.text = `...skipping NFTGame address already set in vault ${vaultAddr}`;
+        console.log(`...skipping NFTGame address already set in vault ${vaultAddr}`);
       }
     }
 
     // Setting valid vaults in NFTGame.sol
     const tx2 = await nftgame.setValidVaults(vaults);
-    progress.text = "...setting valid vaults in NFTgame";
+    console.log("...setting valid vaults in NFTgame");
     await tx2.wait();
-    progress.text = "Valid vaults succesfully set in NFTgame";
-
-    if (merkleRoot) {
-      const tx3 = await nftgame.setMerkleRoot(merkleRoot);
-      progress.text = "...setting merkleRoot in NFTgame";
-      await tx3.wait();
-      progress.text = "MerkleRoot succesfully set in NFTgame";
-    } else {
-      console.warn("MerkleRoot is NOT set!");
-    }
+    console.log("Valid vaults succesfully set in NFTgame");
 
   } else {
-
-    progress.text = "No vault addresses passed in 'updateNFTGame()'";
-
+    console.warn("\nNo vault addresses passed in 'updateNFTGame()'");
   }
 };
 

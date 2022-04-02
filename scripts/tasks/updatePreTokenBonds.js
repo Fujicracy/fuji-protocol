@@ -1,12 +1,10 @@
 const { ethers } = require("hardhat");
-const {
-  parseUnits
-} = require("../../test/helpers");
+const { parseUnits } = require("../../test/helpers");
 
 const updatePreTokenBonds = async (
   pretokenbondAddress,
   nftinteractionsAddress,
-  uris=[],
+  uris = [],
   POINTS_DECIMALS,
   TEST_PARAM
 ) => {
@@ -18,11 +16,11 @@ const updatePreTokenBonds = async (
     const checkAddress = await nftinteractions.preTokenBonds();
     if (checkAddress != pretokenbondAddress) {
       let tx3 = await nftinteractions.setPreTokenBonds(pretokenbondAddress);
-      progress.text = `...setting PreTokenBonds  address`;
+      console.log(`...setting PreTokenBonds  address`);
       await tx3.wait();
-      progress.text = `succesfully set PreTokenBonds address`;
+      console.log(`succesfully set PreTokenBonds address`);
     } else {
-      progress.text = `...skipping: PreTokenBonds address already set`;
+      console.log(`...skipping: PreTokenBonds address already set`);
     }
 
   if (TEST_PARAM) {
@@ -41,10 +39,10 @@ const updatePreTokenBonds = async (
   } else if (uris.length == 3) {
     for (let i = 0; i < uris.length; i++) {
       let txu = await pretokenbonds.setBaseTokenURI(uris[i]);
-      progress.text = `...setting uri ${i+1} of 3`;
+      console.log(`...setting uri ${i+1} of 3`);
       await txu.wait();
     }
-    progress.text = `success setting all URIs!`;
+    console.log(`success setting all URIs!`);
   }
 }
 

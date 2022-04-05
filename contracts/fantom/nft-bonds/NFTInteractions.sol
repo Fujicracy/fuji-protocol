@@ -100,7 +100,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
     // Set basic cardBoost
     uint256 cardsLimit = nftGame.nftCardsAmount() + NFT_CARD_ID_START;
     for (uint256 i = NFT_CARD_ID_START; i < cardsLimit;) {
-      cardBoost[i] = 125;
+      cardBoost[i] = 10;
       unchecked {
         ++i;
       }
@@ -157,11 +157,11 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
 
   /**
    * @notice sets card boost rewards
-   * @dev boost is a base 100 number. In example, boost = 115, 15% boost. 1.15 for computation.
+   * @dev Global boost is a base 100 number.
    */
   function setCardBoost(uint256 cardId, uint256 boost) external {
     require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
-    require(boost >= 100, GameErrors.INVALID_INPUT);
+    require(boost > 0, GameErrors.INVALID_INPUT);
     cardBoost[cardId] = boost;
     emit CardBoostChanged(cardId, boost);
   }

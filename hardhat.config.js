@@ -8,6 +8,7 @@ require("@nomiclabs/hardhat-etherscan");
 require("@tenderly/hardhat-tenderly");
 require("hardhat-contract-sizer");
 require("hardhat-gas-reporter");
+require("@openzeppelin/hardhat-defender");
 require("@openzeppelin/hardhat-upgrades");
 
 const { isAddress, getAddress, formatUnits, parseUnits } = utils;
@@ -149,6 +150,10 @@ module.exports = {
   mocha: {
     timeout: 200000,
   },
+  defender: {
+    apiKey: process.env.OZ_DEFENDER_API_KEY,
+    apiSecret: process.env.OZ_DEFENDER_API_SECRET,
+  }
 };
 
 const DEBUG = false;

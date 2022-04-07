@@ -31,64 +31,67 @@ describe("Core Fuji Instance", function () {
     evmRevert(this.evmSnapshot0);
   });
 
-  describe("Admin functions of FujiVault", function () {
-    describe("Testing ownership transfer", function () {
-      it("Revert: User tricks to have ownership of the contract", async function () {
-        await expect(
-          this.f.vaultethdai.connect(this.user).transferOwnership(this.user.address)
-        ).to.be.revertedWith("Ownable: caller is not the owner");
-      });
+  console.warn("Skipping 10_vault_base_claimable ...");
+  console.warn("Reason: it's not possible to change from Ownable to Claimable because it breaks the storage layout!");
 
-      it("Success: Owner tries to transfer ownership to new Owner", async function () {
-        expect(await this.f.vaultethdai.pendingOwner()).to.be.equal(ZERO_ADDR);
+  //describe("Admin functions of FujiVault", function () {
+    //describe("Testing ownership transfer", function () {
+      //it("Revert: User tricks to have ownership of the contract", async function () {
+        //await expect(
+          //this.f.vaultethdai.connect(this.user).transferOwnership(this.user.address)
+        //).to.be.revertedWith("Ownable: caller is not the owner");
+      //});
 
-        await this.f.vaultethdai.connect(this.owner).transferOwnership(this.newOwner.address);
+      //it("Success: Owner tries to transfer ownership to new Owner", async function () {
+        //expect(await this.f.vaultethdai.pendingOwner()).to.be.equal(ZERO_ADDR);
 
-        expect(await this.f.vaultethdai.pendingOwner()).to.be.equal(this.newOwner.address);
+        //await this.f.vaultethdai.connect(this.owner).transferOwnership(this.newOwner.address);
 
-        await expect(
-          this.f.vaultethdai.connect(this.owner).transferOwnership(this.newOwner.address)
-        ).to.be.reverted;
-      });
+        //expect(await this.f.vaultethdai.pendingOwner()).to.be.equal(this.newOwner.address);
 
-      it("Revert: User tries to claim ownership", async function () {
-        await expect(this.f.vaultethdai.connect(this.user).claimOwnership()).to.be.reverted;
-      });
+        //await expect(
+          //this.f.vaultethdai.connect(this.owner).transferOwnership(this.newOwner.address)
+        //).to.be.reverted;
+      //});
 
-      it("Success: New owner tries to claim ownership", async function () {
-        await this.f.vaultethdai.connect(this.owner).transferOwnership(this.newOwner.address);
+      //it("Revert: User tries to claim ownership", async function () {
+        //await expect(this.f.vaultethdai.connect(this.user).claimOwnership()).to.be.reverted;
+      //});
 
-        expect(await this.f.vaultethdai.pendingOwner()).to.be.equal(this.newOwner.address);
-        expect(await this.f.vaultethdai.owner()).to.be.equal(this.owner.address);
+      //it("Success: New owner tries to claim ownership", async function () {
+        //await this.f.vaultethdai.connect(this.owner).transferOwnership(this.newOwner.address);
 
-        await this.f.vaultethdai.connect(this.newOwner).claimOwnership();
+        //expect(await this.f.vaultethdai.pendingOwner()).to.be.equal(this.newOwner.address);
+        //expect(await this.f.vaultethdai.owner()).to.be.equal(this.owner.address);
 
-        expect(await this.f.vaultethdai.pendingOwner()).to.be.equal(ZERO_ADDR);
-        expect(await this.f.vaultethdai.owner()).to.be.equal(this.newOwner.address);
-      });
+        //await this.f.vaultethdai.connect(this.newOwner).claimOwnership();
 
-      it("Revert: user tries to call cancelTransferOwnership", async function () {
-        await expect(
-          this.f.vaultethdai.connect(this.user).cancelTransferOwnership()
-        ).to.be.revertedWith("Ownable: caller is not the owner");
-      });
+        //expect(await this.f.vaultethdai.pendingOwner()).to.be.equal(ZERO_ADDR);
+        //expect(await this.f.vaultethdai.owner()).to.be.equal(this.newOwner.address);
+      //});
 
-      it("Revert: New owner tries to call cancelTransferOwnership before calling transferOwnership", async function () {
-        await expect(this.f.vaultethdai.connect(this.owner).cancelTransferOwnership()).to.be
-          .reverted;
-      });
+      //it("Revert: user tries to call cancelTransferOwnership", async function () {
+        //await expect(
+          //this.f.vaultethdai.connect(this.user).cancelTransferOwnership()
+        //).to.be.revertedWith("Ownable: caller is not the owner");
+      //});
 
-      it("Success: New owner tries to call cancelTransferOwnership after calling transferOwnership", async function () {
-        expect(await this.f.vaultethdai.pendingOwner()).to.be.equal(ZERO_ADDR);
+      //it("Revert: New owner tries to call cancelTransferOwnership before calling transferOwnership", async function () {
+        //await expect(this.f.vaultethdai.connect(this.owner).cancelTransferOwnership()).to.be
+          //.reverted;
+      //});
 
-        await this.f.vaultethdai.connect(this.owner).transferOwnership(this.newOwner.address);
+      //it("Success: New owner tries to call cancelTransferOwnership after calling transferOwnership", async function () {
+        //expect(await this.f.vaultethdai.pendingOwner()).to.be.equal(ZERO_ADDR);
 
-        expect(await this.f.vaultethdai.pendingOwner()).to.be.equal(this.newOwner.address);
+        //await this.f.vaultethdai.connect(this.owner).transferOwnership(this.newOwner.address);
 
-        await this.f.vaultethdai.connect(this.owner).cancelTransferOwnership();
+        //expect(await this.f.vaultethdai.pendingOwner()).to.be.equal(this.newOwner.address);
 
-        expect(await this.f.vaultethdai.pendingOwner()).to.be.equal(ZERO_ADDR);
-      });
-    });
-  });
+        //await this.f.vaultethdai.connect(this.owner).cancelTransferOwnership();
+
+        //expect(await this.f.vaultethdai.pendingOwner()).to.be.equal(ZERO_ADDR);
+      //});
+    //});
+  //});
 });

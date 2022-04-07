@@ -28,23 +28,19 @@ global.console.log = (...args) => {
   progress.text = `${progressPrefix}: ${args.join(" ")}`;
 };
 
-const getVaultsAddrs = (network) => {
-  if (network == "fantom") {
-    const vaultftmdai = getContractAddress("VaultFTMDAI");
-    const vaultftmusdc = getContractAddress("VaultFTMUSDC");
-    const vaultwethdai = getContractAddress("VaultWETHDAI");
-    const vaultwethusdc = getContractAddress("VaultWETHUSDC");
-    const vaultwbtcdai = getContractAddress("VaultWBTCDAI");
-    return [
-      vaultftmdai,
-      vaultftmusdc,
-      vaultwethdai,
-      vaultwethusdc,
-      vaultwbtcdai
-    ];
-  } else {
-    return [];
-  }
+const getVaultsAddrs = () => {
+  const vaultftmdai = getContractAddress("VaultFTMDAI");
+  const vaultftmusdc = getContractAddress("VaultFTMUSDC");
+  const vaultwethdai = getContractAddress("VaultWETHDAI");
+  const vaultwethusdc = getContractAddress("VaultWETHUSDC");
+  const vaultwbtcdai = getContractAddress("VaultWBTCDAI");
+  return [
+    vaultftmdai,
+    vaultftmusdc,
+    vaultwethdai,
+    vaultwethusdc,
+    vaultwbtcdai
+  ];
 };
 
 const TESTING_PARAMS = true;
@@ -146,7 +142,6 @@ const deployContracts = async () => {
     // Entropy check bypassed in testing
     await nftinteractions.setMaxEntropyDelay(60 * 60 * 24 * 365 * 2);
     vaults = getVaultsAddrs();
-    vaults = !vaults[0] ? [] : vaults[0];
     adminAddress = nftgame.signer.address;
   } else {
     vaults = getVaultsAddrs();

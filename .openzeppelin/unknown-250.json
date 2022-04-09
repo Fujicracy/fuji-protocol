@@ -1617,91 +1617,91 @@
             "contract": "FujiPriceAware",
             "label": "maxDelay",
             "type": "t_uint256",
-            "src": "contracts\\fantom\\nft-bonds\\FujiPriceAware.sol:10"
+            "src": "contracts/fantom/nft-bonds/FujiPriceAware.sol:10"
           },
           {
             "contract": "FujiPriceAware",
             "label": "_trustedSigner",
             "type": "t_address",
-            "src": "contracts\\fantom\\nft-bonds\\FujiPriceAware.sol:11"
+            "src": "contracts/fantom/nft-bonds/FujiPriceAware.sol:11"
           },
           {
             "contract": "Initializable",
             "label": "_initialized",
             "type": "t_bool",
-            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:39"
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:39"
           },
           {
             "contract": "Initializable",
             "label": "_initializing",
             "type": "t_bool",
-            "src": "@openzeppelin\\contracts-upgradeable\\proxy\\utils\\Initializable.sol:44"
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:44"
           },
           {
             "contract": "ReentrancyGuardUpgradeable",
             "label": "_status",
             "type": "t_uint256",
-            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:38"
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:38"
           },
           {
             "contract": "ReentrancyGuardUpgradeable",
             "label": "__gap",
             "type": "t_array(t_uint256)49_storage",
-            "src": "@openzeppelin\\contracts-upgradeable\\security\\ReentrancyGuardUpgradeable.sol:74"
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:74"
           },
           {
             "contract": "NFTInteractions",
             "label": "isRedstoneOracleOn",
             "type": "t_bool",
-            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:68"
+            "src": "contracts/fantom/nft-bonds/NFTInteractions.sol:68"
           },
           {
             "contract": "NFTInteractions",
             "label": "_crateRewards",
             "type": "t_mapping(t_uint256,t_array(t_uint256)dyn_storage)",
-            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:71"
+            "src": "contracts/fantom/nft-bonds/NFTInteractions.sol:71"
           },
           {
             "contract": "NFTInteractions",
             "label": "_probabilityIntervals",
             "type": "t_array(t_uint256)dyn_storage",
-            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:73"
+            "src": "contracts/fantom/nft-bonds/NFTInteractions.sol:73"
           },
           {
             "contract": "NFTInteractions",
             "label": "nftGame",
             "type": "t_contract(NFTGame)6818",
-            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:75"
+            "src": "contracts/fantom/nft-bonds/NFTInteractions.sol:75"
           },
           {
             "contract": "NFTInteractions",
             "label": "_pointsID",
             "type": "t_uint256",
-            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:76"
+            "src": "contracts/fantom/nft-bonds/NFTInteractions.sol:76"
           },
           {
             "contract": "NFTInteractions",
             "label": "_nftgame_GAME_ADMIN",
             "type": "t_bytes32",
-            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:77"
+            "src": "contracts/fantom/nft-bonds/NFTInteractions.sol:77"
           },
           {
             "contract": "NFTInteractions",
             "label": "preTokenBonds",
             "type": "t_contract(PreTokenBonds)8896",
-            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:79"
+            "src": "contracts/fantom/nft-bonds/NFTInteractions.sol:79"
           },
           {
             "contract": "NFTInteractions",
             "label": "cratePrices",
             "type": "t_mapping(t_uint256,t_uint256)",
-            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:82"
+            "src": "contracts/fantom/nft-bonds/NFTInteractions.sol:82"
           },
           {
             "contract": "NFTInteractions",
             "label": "cardBoost",
             "type": "t_mapping(t_uint256,t_uint256)",
-            "src": "contracts\\fantom\\nft-bonds\\NFTInteractions.sol:85"
+            "src": "contracts/fantom/nft-bonds/NFTInteractions.sol:85"
           }
         ],
         "types": {
@@ -2041,6 +2041,136 @@
           },
           "t_array(t_uint256)50_storage": {
             "label": "uint256[50]"
+          }
+        }
+      }
+    },
+    "b2b56a2b55452632e1acd69c5cde30d0c8ede68e5de9e19c6064444beb57f382": {
+      "address": "0xE3A8ECEdAf11cA4d5B5344C26748ffb3DA2bB624",
+      "txHash": "0x6f77f28f70ebad4c644e25294d7373b0e497bd55ba5b45231e919d334abe3fce",
+      "layout": {
+        "storage": [
+          {
+            "contract": "FujiPriceAware",
+            "label": "maxDelay",
+            "type": "t_uint256",
+            "src": "contracts/fantom/nft-bonds/FujiPriceAware.sol:10"
+          },
+          {
+            "contract": "FujiPriceAware",
+            "label": "_trustedSigner",
+            "type": "t_address",
+            "src": "contracts/fantom/nft-bonds/FujiPriceAware.sol:11"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initialized",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:39"
+          },
+          {
+            "contract": "Initializable",
+            "label": "_initializing",
+            "type": "t_bool",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:44"
+          },
+          {
+            "contract": "ReentrancyGuardUpgradeable",
+            "label": "_status",
+            "type": "t_uint256",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:38"
+          },
+          {
+            "contract": "ReentrancyGuardUpgradeable",
+            "label": "__gap",
+            "type": "t_array(t_uint256)49_storage",
+            "src": "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol:74"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "isRedstoneOracleOn",
+            "type": "t_bool",
+            "src": "contracts/fantom/nft-bonds/NFTInteractions.sol:68"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "_crateRewards",
+            "type": "t_mapping(t_uint256,t_array(t_uint256)dyn_storage)",
+            "src": "contracts/fantom/nft-bonds/NFTInteractions.sol:71"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "_probabilityIntervals",
+            "type": "t_array(t_uint256)dyn_storage",
+            "src": "contracts/fantom/nft-bonds/NFTInteractions.sol:73"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "nftGame",
+            "type": "t_contract(NFTGame)6818",
+            "src": "contracts/fantom/nft-bonds/NFTInteractions.sol:75"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "_pointsID",
+            "type": "t_uint256",
+            "src": "contracts/fantom/nft-bonds/NFTInteractions.sol:76"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "_nftgame_GAME_ADMIN",
+            "type": "t_bytes32",
+            "src": "contracts/fantom/nft-bonds/NFTInteractions.sol:77"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "preTokenBonds",
+            "type": "t_contract(PreTokenBonds)8896",
+            "src": "contracts/fantom/nft-bonds/NFTInteractions.sol:79"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "cratePrices",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "src": "contracts/fantom/nft-bonds/NFTInteractions.sol:82"
+          },
+          {
+            "contract": "NFTInteractions",
+            "label": "cardBoost",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "src": "contracts/fantom/nft-bonds/NFTInteractions.sol:85"
+          }
+        ],
+        "types": {
+          "t_bool": {
+            "label": "bool"
+          },
+          "t_mapping(t_uint256,t_array(t_uint256)dyn_storage)": {
+            "label": "mapping(uint256 => uint256[])"
+          },
+          "t_uint256": {
+            "label": "uint256"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]"
+          },
+          "t_contract(NFTGame)6818": {
+            "label": "contract NFTGame"
+          },
+          "t_bytes32": {
+            "label": "bytes32"
+          },
+          "t_contract(PreTokenBonds)8896": {
+            "label": "contract PreTokenBonds"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]"
+          },
+          "t_address": {
+            "label": "address"
           }
         }
       }

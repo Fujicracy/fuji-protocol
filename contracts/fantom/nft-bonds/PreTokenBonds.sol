@@ -106,12 +106,12 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
 
   /**
    * @notice Returns the token Id metadata URI
-   * Example: '{_tokenBaseURI}/{tokenId}.json'
+   * Example: '{_tokenBaseURI}/{tokenId}'
    * @dev See {IERC721Metadata-tokenURI}.
    */
   function tokenURI(uint256 tokenId) public view override returns (string memory) {
     require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
-    return string(abi.encodePacked(_tokenBaseURI, tokenId.toString(), ".json"));
+    return string(abi.encodePacked(_tokenBaseURI, tokenId.toString()));
   }
 
   /**
@@ -125,14 +125,14 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
   /**
    * @notice Returns the slot ID URI for metadata
    * @dev Only if passed slot ID is valid.
-   * Example: '{_slotBaseURI}/{slotID}.json'
+   * Example: '{_slotBaseURI}/{slotID}'
    */
   function slotURI(uint256 slotID) external view override returns (string memory _uri) {
     uint256[] memory localSlots = _bondSlotTimes;
     uint256 length = localSlots.length;
     for (uint256 i = 0; i < length;) {
       if (localSlots[i] == slotID) {
-        _uri = string(abi.encodePacked(_slotBaseURI, slotID.toString(), ".json"));
+        _uri = string(abi.encodePacked(_slotBaseURI, slotID.toString()));
       }
       unchecked {
         ++i;
@@ -215,7 +215,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
 
   /**
    * @notice Admin restricted function to set the contract general URI metadata
-   * @dev example input: 'https://www.mysite.com/metadata/contractERC3525.json'
+   * @dev example input: 'https://www.mysite.com/metadata/contractERC3525'
    */
   function setContractURI(string calldata _URI) external {
     require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);

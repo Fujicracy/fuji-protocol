@@ -38,7 +38,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
   uint256 public constant SEC = 86400;
   uint256 public constant POINTS_ID = 0;
-  uint256 public constant POINTS_DECIMALS = 5;
+  uint256 public constant POINTS_DECIMALS = 9;
 
   address private constant _FTM = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
 

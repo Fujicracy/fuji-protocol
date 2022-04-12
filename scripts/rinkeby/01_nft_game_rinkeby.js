@@ -72,7 +72,7 @@ const getVaultsAddrs = (network) => {
 };
 
 /// Fixed Game Parameters
-const POINTS_DECIMALS = 5;
+const POINTS_DECIMALS = 9;
 const CRATE_COMMON_ID =1;
 const CRATE_EPIC_ID = 2;
 const CRATE_LEGENDARY_ID = 3;

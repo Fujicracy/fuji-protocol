@@ -26,6 +26,9 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
    */
   event CardAmountChanged(uint256 newAmount);
 
+  /**
+   * @dev Rate of accrual is expressed in points per second (including 'POINTS_DECIMALS').
+   */
   struct UserData {
     uint64 lastTimestampUpdate;
     uint64 rateOfAccrual;

@@ -1,10 +1,10 @@
 // Rinkeby
 const ASSETS = {
-  ETH: {
-    name: "eth",
-    nameUp: "ETH",
-    address: "0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF",
-    oracle: "0x8A753747A1Fa494EC906cE90E9f37563A8AF630e",
+  DAI: {
+    name: "dai",
+    nameUp: "DAI",
+    address: "0x5592EC0cfb4dbc12D3aB100b257153436a1f0FEa",
+    oracle: "0x2bA49Aaa16E6afD2a993473cfB70Fa8559B523cF",
     decimals: 18,
   },
   USDC: {
@@ -13,14 +13,7 @@ const ASSETS = {
     address: "0x4DBCdF9B62e891a7cec5A2568C3F4FAF9E8Abe2b",
     oracle: "0xa24de01df22b63d23Ebc1882a5E3d4ec0d907bFB",
     decimals: 6,
-  },
-  DAI: {
-    name: "dai",
-    nameUp: "DAI",
-    address: "",
-    oracle: "",
-    decimals: 18,
-  },
+  }
 };
 
 const DEX_ROUTER_ADDR = "0x0000000000000000000000000000000000000000";

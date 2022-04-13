@@ -1,4 +1,5 @@
 const chalk = require("chalk");
+const ora = require("ora");
 const { deployController } = require("../tasks/deployController");
 const { deployFlasher } = require("../tasks/deployFlasher");
 const { deployFliquidator } = require("../tasks/deployFliquidator");
@@ -15,6 +16,12 @@ const { updateFujiFliquidator } = require("../tasks/updateFujiFliquidator");
 const { updateVault } = require("../tasks/updateVault");
 const { deployProxy, redeployIf, setDeploymentsPath, network } = require("../utils");
 const { ASSETS, DEX_ROUTER_ADDR } = require("./consts");
+
+global.progressPrefix = __filename.split("/").pop();
+global.progress = ora().start(progressPrefix + ": Starting...");
+global.console.log = (...args) => {
+  progress.text = `${progressPrefix}: ${args.join(" ")}`;
+};
 
 const deployVaultMod = async (name, contractName, args) => {
 
@@ -42,11 +49,10 @@ const deployContracts = async () => {
   const compoundMock = await deployProvider("ProviderMockCompound");
 
   // Deploy Core Money Handling Contracts
-
-  const vaultethusdc = await deployVaultMod("VaultETHUSDC", "FujiVaultFTM", [
+  const vaultdaiusdc = await deployVaultMod("VaultDAIUSDC", "FujiVaultFTM", [
     fujiadmin,
     oracle,
-    ASSETS.ETH.address,
+    ASSETS.DAI.address,
     ASSETS.USDC.address,
   ]);
 
@@ -64,16 +70,17 @@ const deployContracts = async () => {
   });
   await updateFlasher(flasher, fujiadmin);
   await updateController(controller, fujiadmin);
-  await updateFujiERC1155(f1155, [vaultusdc, fliquidator]);
+  await updateFujiERC1155(f1155, [vaultdaiusdc, fliquidator]);
 
   // Vault Set-up
-  await updateVault("VaultETHUSDC", vaultusdc, {
+  await updateVault("VaultDAIUSDC", vaultdaiusdc, {
     providers: [compoundMock],
     fujiadmin,
     f1155,
   });
 
-  console.log("Finished!");
+  progress.text = `Finished!`;
+  progress.succeed(progressPrefix);
 };
 
 const main = async () => {

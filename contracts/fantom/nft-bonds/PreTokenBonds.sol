@@ -83,7 +83,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
         ++i;
       }
     }
-    bondPrice = 100000;
+    bondPrice = 10 * 10 ** nftGame.POINTS_DECIMALS();
   }
 
   /// View functions

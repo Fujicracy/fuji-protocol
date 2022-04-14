@@ -1,0 +1,19 @@
+{
+  "name":"Heat Capsule",
+  "description":
+  "The heat capsule will keep you warm and alive each time the temperature decreases to the extreme lows.",
+  "tokenId":8,
+  "external_url":"https://www.fujidao.org",
+  "image":"https://storageapi2.fleek.co/705abd20-4ff5-4a50-95e6-50bd81b501bb-bucket/fuji-nft-game-bonds-images/Fuji_Capsule-min.jpg",
+  "attributes":
+    [
+      {
+        "trait_type":"Type",
+        "value":"Heat Capsule"
+      },
+      {
+        "trait_type":"Boost % Power",
+        "value": 10
+      }
+    ]
+}

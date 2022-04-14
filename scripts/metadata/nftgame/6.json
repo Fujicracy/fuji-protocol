@@ -1,0 +1,19 @@
+{
+  "name":"Gloves",
+  "description":
+  "What would be a climbing without gloves? Not a climbing of course. Fuji Gloves will ensure your fingers remain attached to your hand, all the way to the top.",
+  "tokenId":6,
+  "external_url":"https://www.fujidao.org",
+  "image":"https://storageapi2.fleek.co/705abd20-4ff5-4a50-95e6-50bd81b501bb-bucket/fuji-nft-game-bonds-images/Fuji_Glove-min.jpg",
+  "attributes":
+    [
+      {
+        "trait_type":"Type",
+        "value":"Gloves"
+      },
+      {
+        "trait_type":"Boost % Power",
+        "value": 10
+      }
+    ]
+}

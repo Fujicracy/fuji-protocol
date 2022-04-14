@@ -9,6 +9,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 
 import "../../interfaces/IVault.sol";
 import "../../interfaces/IVaultControl.sol";
@@ -16,6 +17,9 @@ import "../../interfaces/IERC20Extended.sol";
 import "./libraries/GameErrors.sol";
 
 contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable {
+
+  using StringsUpgradeable for uint256;
+
   /**
    * @dev Changing valid vaults
    */
@@ -122,7 +126,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
    * @notice Returns the URI string for metadata of token _id.
    */
   function uri(uint256 _id) public view override returns (string memory) {
-    return string(abi.encodePacked(ERC1155Upgradeable.uri(0), _uint2str(_id)));
+    return string(abi.encodePacked(ERC1155Upgradeable.uri(0), _id.toString(), ".json"));
   }
 
   /// State Changing Functions
@@ -537,35 +541,4 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     return MerkleProof.verify(proof, merkleRoot, leaf);
   }
 
-  /**
-   * @notice Convert uint256 to string
-   * @param _i Unsigned integer to convert to string
-   */
-  function _uint2str(uint256 _i) internal pure returns (string memory _uintAsString) {
-    if (_i == 0) {
-      return "0";
-    }
-
-    uint256 j = _i;
-    uint256 ii = _i;
-    uint256 len;
-
-    // Get number of bytes
-    while (j != 0) {
-      len++;
-      j /= 10;
-    }
-
-    bytes memory bstr = new bytes(len);
-    uint256 k = len - 1;
-
-    // Get each individual ASCII
-    while (ii != 0) {
-      bstr[k--] = bytes1(uint8(48 + (ii % 10)));
-      ii /= 10;
-    }
-
-    // Convert to string
-    return string(bstr);
-  }
 }

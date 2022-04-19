@@ -5,9 +5,11 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../libraries/LibUniversalERC20MATIC.sol";
 import "../../interfaces/IProvider.sol";
+import "../../interfaces/IWETH.sol";
 
 import "../../interfaces/aavev3/IPoolAddressProvider.sol";
 import "../../interfaces/aavev3/IAaveProtocolDataProvider.sol";
+import "../../interfaces/aavev3/IPool.sol";
 
 
 contract ProviderAaveV3MATIC is IProvider {
@@ -96,6 +98,19 @@ contract ProviderAaveV3MATIC is IProvider {
    * @param _amount token amount to deposit.
    */
   function deposit(address _asset, uint256 _amount) external payable override {
+    IPool aave = IPool(_getPoolAddressProvider().getPool());
+
+    bool isEth = _asset == _getMaticAddr();
+    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
+
+    // convert ETH to WETH
+    if (isEth) IWETH(_tokenAddr).deposit{ value: _amount }();
+
+    IERC20(_tokenAddr).univApprove(address(aave), _amount);
+
+    aave.supply(_tokenAddr, _amount, address(this), 0);
+
+    aave.setUserUseReserveAsCollateral(_tokenAddr, true);
   }
 
   /**

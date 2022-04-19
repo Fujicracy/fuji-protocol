@@ -30,4 +30,6 @@ interface IPool {
     uint256 interestRateMode,
     address onBehalfOf
   ) external returns (uint256);
+
+  function setUserUseReserveAsCollateral(address asset, bool useAsCollateral) external;
 }

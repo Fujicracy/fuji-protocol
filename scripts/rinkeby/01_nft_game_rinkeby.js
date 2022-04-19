@@ -45,9 +45,9 @@ const updatePointFaucet = async (pointfaucetAddresss, nftgameAddress) => {
   if (!nftGameResponse) {
     const tx = await pointfaucet.setNFTGame(nftgameAddress);
     await tx.wait();
-    progress.text = "Faucet nftGame address set-up complete";
+    console.log("Faucet nftGame address set-up complete");
   } else {
-    progress.text = "Faucet nftGame address already set-up";
+    console.log("Faucet nftGame address already set-up");
   }
 
   const nftgame = await ethers.getContractAt("NFTGame", nftgameAddress);
@@ -57,9 +57,9 @@ const updatePointFaucet = async (pointfaucetAddresss, nftgameAddress) => {
   if (!hasRole) {
     const tx1 = await nftgame.grantRole(GAME_INTERACTOR, pointfaucet.address);
     await tx1.wait();
-    progress.text = "Faucet role GAME_INTERACTOR assigned in Nftgame complete";
+    console.log("Faucet role GAME_INTERACTOR assigned in Nftgame complete");
   } else {
-    progress.text = "Faucet role GAME_INTERACTOR already assigned.";
+    console.log("Faucet role GAME_INTERACTOR already assigned.");
   }
 };
 
@@ -126,11 +126,11 @@ const deployContracts = async () => {
     .wrapLite(nftinteractions)
     .usingPriceFeed("redstone", { asset: "ENTROPY" });
     const txA = await wrappednftinteractions.authorizeSignerEntropyFeed("0x0C39486f770B26F5527BBBf942726537986Cd7eb");
-    progress.text = `...authorizing Redstone entropy provider tx-hash: ${txA.hash}`;
+    console.log(`...authorizing Redstone entropy provider tx-hash: ${txA.hash}`);
     await txA.wait();
-    progress.text = `succesfully set Redstone entropy signer`;
+    console.log(`succesfully set Redstone entropy signer`);
   } else {
-    progress.text = `...skipping Redstone entropy signer is set!`;
+    console.log(`...skipping Redstone entropy signer is set!`);
   }
 
   // Get vaults
@@ -151,7 +151,7 @@ const deployContracts = async () => {
     true
   );
 
-  progress.text = `Finished!`;
+  console.log(`Finished!`);
   progress.succeed(progressPrefix);
 };
 

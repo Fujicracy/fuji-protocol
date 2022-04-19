@@ -167,5 +167,16 @@ contract ProviderAaveV3MATIC is IProvider {
    */
 
   function payback(address _asset, uint256 _amount) external payable override {
+    IPool aave = IPool(_getPoolAddressProvider().getPool());
+
+    bool isEth = _asset == _getMaticAddr();
+    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
+
+    // convert ETH to WETH
+    if (isEth) IWETH(_tokenAddr).deposit{ value: _amount }();
+
+    IERC20(_tokenAddr).univApprove(address(aave), _amount);
+
+    aave.repay(_tokenAddr, _amount, 2, address(this));
   }
 }

@@ -3,12 +3,27 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-import "../../interfaces/IProvider.sol";
 import "../libraries/LibUniversalERC20MATIC.sol";
+import "../../interfaces/IProvider.sol";
+
+import "../../interfaces/aavev3/IPoolAddressProvider.sol";
+
 
 contract ProviderAaveV3MATIC is IProvider {
   using LibUniversalERC20MATIC for IERC20;
+
+  function _getPoolAddressProvider() internal pure returns (IPoolAddressProvider) {
+    return IPoolAddressProvider(0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb);
+  }
+
+  function _getWmaticAddr() internal pure returns (address) {
+    return 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
+  }
+
+  function _getMaticAddr() internal pure returns (address) {
+    return 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+  }
+
   /**
    * @dev Return the borrowing rate of ETH/ERC20_Token.
    * @param _asset to query the borrowing rate.

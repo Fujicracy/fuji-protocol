@@ -126,7 +126,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
    * @notice Returns the URI string for metadata of token _id.
    */
   function uri(uint256 _id) public view override returns (string memory) {
-    return string(abi.encodePacked(ERC1155Upgradeable.uri(0), _id.toString(), ".json"));
+    return string(abi.encodePacked(ERC1155Upgradeable.uri(0), _id.toString()));
   }
 
   /// State Changing Functions

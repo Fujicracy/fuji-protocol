@@ -7,6 +7,7 @@ import "../libraries/LibUniversalERC20MATIC.sol";
 import "../../interfaces/IProvider.sol";
 
 import "../../interfaces/aavev3/IPoolAddressProvider.sol";
+import "../../interfaces/aavev3/IAaveProtocolDataProvider.sol";
 
 
 contract ProviderAaveV3MATIC is IProvider {
@@ -29,6 +30,13 @@ contract ProviderAaveV3MATIC is IProvider {
    * @param _asset to query the borrowing rate.
    */
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
+    IAaveProtocolDataProvider aaveData = IAaveProtocolDataProvider(_getPoolAddressProvider().getPoolDataProvider());
+
+    (, , , , uint256 variableBorrowRate, , , , , , , ) = aaveData.getReserveData(
+      _asset == _getMaticAddr() ? _getWmaticAddr() : _asset
+    );
+
+    return variableBorrowRate;
   }
 
   /**

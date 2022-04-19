@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-interface IPoolDataProvider {
+interface IAaveProtocolDataProvider {
 function getReserveData(address asset)
   external
   view

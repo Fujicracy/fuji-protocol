@@ -145,6 +145,19 @@ contract ProviderAaveV3MATIC is IProvider {
    * @param _amount token amount to withdraw.
    */
   function withdraw(address _asset, uint256 _amount) external payable override {
+    IPool aave = IPool(_getPoolAddressProvider().getPool());
+
+    bool isEth = _asset == _getMaticAddr();
+    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
+
+    aave.withdraw(_tokenAddr, _amount, address(this));
+
+    // convert WETH to ETH
+    if (isEth) {
+      address unwrapper = _getUnwrapper();
+      IERC20(_tokenAddr).univTransfer(payable(unwrapper), _amount);
+      IUnwrapper(unwrapper).withdraw(_amount);
+    }
   }
 
   /**

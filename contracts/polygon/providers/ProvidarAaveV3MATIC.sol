@@ -65,6 +65,14 @@ contract ProviderAaveV3MATIC is IProvider {
     override
     returns (uint256)
   {
+    IAaveProtocolDataProvider aaveData = IAaveProtocolDataProvider(_getPoolAddressProvider().getPoolDataProvider());
+
+    bool isEth = _asset == _getMaticAddr();
+    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
+
+    (, , uint256 variableDebt, , , , , , ) = aaveData.getUserReserveData(_tokenAddr, _who);
+
+    return variableDebt;
   }
 
   /**

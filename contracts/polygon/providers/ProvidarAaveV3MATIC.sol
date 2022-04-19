@@ -44,6 +44,14 @@ contract ProviderAaveV3MATIC is IProvider {
    * @param _asset token address to query the balance.
    */
   function getBorrowBalance(address _asset) external view override returns (uint256) {
+    IAaveProtocolDataProvider aaveData = IAaveProtocolDataProvider(_getPoolAddressProvider().getPoolDataProvider());
+
+    bool isEth = _asset == _getMaticAddr();
+    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
+
+    (, , uint256 variableDebt, , , , , , ) = aaveData.getUserReserveData(_tokenAddr, msg.sender);
+
+    return variableDebt;
   }
 
   /**

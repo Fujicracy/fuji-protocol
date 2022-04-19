@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../libraries/LibUniversalERC20MATIC.sol";
 import "../../interfaces/IProvider.sol";
+import "../../interfaces/IUnwrapper.sol";
 import "../../interfaces/IWETH.sol";
 
 import "../../interfaces/aavev3/IPoolAddressProvider.sol";
@@ -25,6 +26,10 @@ contract ProviderAaveV3MATIC is IProvider {
 
   function _getMaticAddr() internal pure returns (address) {
     return 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+  }
+
+  function _getUnwrapper() internal pure returns (address) {
+    return 0x03E074BB834F7C4940dFdE8b29e63584b3dE3a87;
   }
 
   /**
@@ -119,6 +124,19 @@ contract ProviderAaveV3MATIC is IProvider {
    * @param _amount token amount to borrow.
    */
   function borrow(address _asset, uint256 _amount) external payable override {
+    IPool aave = IPool(_getPoolAddressProvider().getPool());
+
+    bool isEth = _asset == _getMaticAddr();
+    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
+
+    aave.borrow(_tokenAddr, _amount, 2, 0, address(this));
+
+    // convert WETH to ETH
+    if (isEth) {
+      address unwrapper = _getUnwrapper();
+      IERC20(_tokenAddr).univTransfer(payable(unwrapper), _amount);
+      IUnwrapper(unwrapper).withdraw(_amount);
+    }
   }
 
   /**

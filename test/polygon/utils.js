@@ -120,6 +120,8 @@ const fixture = async ([wallet]) => {
   const kashi = await ProviderKashi.deploy([]);
   const ProviderWepiggy = await getContractFactory("ProviderWepiggy");
   const wepiggy = await ProviderWepiggy.deploy([]);
+  const ProviderAaveV3MATIC = await getContractFactory("ProviderAaveV3MATIC");
+  const aavev3 = await ProviderAaveV3MATIC.deploy([]);
 
   // Log if debug is set true
   if (DEBUG) {
@@ -132,6 +134,7 @@ const fixture = async ([wallet]) => {
     console.log("aave", aave.address);
     console.log("kashi", kashi.address);
     console.log("wepiggy", wepiggy.address);
+    console.log("aave", aavev3.address);
   }
 
   // Setp 3: Vaults
@@ -157,7 +160,8 @@ const fixture = async ([wallet]) => {
       [
         aave.address,
         kashi.address,
-        wepiggy.address
+        wepiggy.address,
+        aavev3.address
       ]
     );
 
@@ -181,6 +185,7 @@ const fixture = async ([wallet]) => {
     aave,
     kashi,
     wepiggy,
+    aavev3,
     oracle,
     fujiadmin,
     fliquidator,

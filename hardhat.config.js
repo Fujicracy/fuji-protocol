@@ -26,7 +26,7 @@ const forkUrl =
     : network === "bsc"
       ? "https://bsc-dataseed.binance.org/"
       : network === "polygon"
-        ? "https://polygon-rpc.com/"
+        ? `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_ID}`
         : mainnetUrl
 
 //

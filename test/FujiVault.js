@@ -81,7 +81,6 @@ function testDeposit1a(vaults, amount, aeth) {
   }
 }
 
-
 /**
  * DEPRECATED
  * Performs deposit test in native token.
@@ -159,11 +158,14 @@ function testDeposit2(mapperAddr, vaults, amount) {
  * @param {object} amount - Etherjs compatible BigNumber.
  * @param {array} assets - Array of objects defining vault assets. See core-utils.js.
  */
-function testDeposit2a(vaults, amount, assets = ASSETS) {
+function testDeposit2a(vaults, amount, assets = ASSETS, v3 = false) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
     it(`deposit ${amount} ERC20 -> ${vault.collateral.nameUp} as collateral, check ${vault.name} balance`, async function () {
-      const aToken = await getContractAt("IERC20", assets[vault.collateral.nameUp].aToken);
+      const aTokenAddress = v3
+        ? assets[vault.collateral.nameUp].aTokenV3
+        : assets[vault.collateral.nameUp].aToken;
+      const aToken = await getContractAt("IERC20", aTokenAddress);
 
       const depositAmount = parseUnits(amount, vault.collateral.decimals);
       const negdepositAmount = parseUnits(-amount, vault.collateral.decimals);
@@ -180,6 +182,40 @@ function testDeposit2a(vaults, amount, assets = ASSETS) {
       );
 
       const vaultBal = await aToken.balanceOf(this.f[vault.name].address);
+
+      expect(vaultBal).to.be.equal(depositAmount);
+    });
+  }
+}
+
+/**
+ * Performs deposit test in ERC20 token.
+ * Provider should have AaveV3-like compatible smartcontracts interfaces.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amount - Etherjs compatible BigNumber.
+ * @param {array} assets - Array of objects defining vault assets. See core-utils.js.
+ */
+function testDeposit2a3(vaults, amount, assets = ASSETS) {
+  for (let i = 0; i < vaults.length; i += 1) {
+    const vault = vaults[i];
+    it(`deposit ${amount} ERC20 -> ${vault.collateral.nameUp} as collateral, check ${vault.name} balance`, async function () {
+      const aTokenV3 = await getContractAt("IERC20", assets[vault.collateral.nameUp].aTokenV3);
+
+      const depositAmount = parseUnits(amount, vault.collateral.decimals);
+      const negdepositAmount = parseUnits(-amount, vault.collateral.decimals);
+
+      await this.f[vault.collateral.name]
+        .connect(this.user1)
+        .approve(this.f[vault.name].address, depositAmount);
+
+      await checkTokenChange(
+        this.f[vault.name].connect(this.user1).deposit(depositAmount),
+        this.f[vault.collateral.name],
+        this.user1.address,
+        negdepositAmount
+      );
+
+      const vaultBal = await aTokenV3.balanceOf(this.f[vault.name].address);
 
       expect(vaultBal).to.be.equal(depositAmount);
     });

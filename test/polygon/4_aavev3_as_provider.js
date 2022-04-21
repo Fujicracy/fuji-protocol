@@ -143,12 +143,11 @@ describe("Polygon Fuji Instance", function () {
     });
 
     describe("Native token as collateral, ERC20 as borrow asset.", function () {
-      // testDeposit1a(
-      //   [vaultmaticdai, vaultmaticusdc, vaultmaticweth],
-      //   DEPOSIT_MATIC,
-      //   ASSETS.MATIC.aToken
-      // );
-      testDeposit1a([vaultmaticusdc], DEPOSIT_MATIC, ASSETS.MATIC.aToken);
+      testDeposit1a(
+        [vaultmaticdai, vaultmaticusdc, vaultmaticweth],
+        DEPOSIT_MATIC,
+        ASSETS.MATIC.aTokenV3
+      );
 
       testBorrow1([vaultmaticdai, vaultmaticusdc], DEPOSIT_MATIC, BORROW_STABLE);
       testBorrow1([vaultmaticweth], DEPOSIT_MATIC, BORROW_WETH);
@@ -163,18 +162,21 @@ describe("Polygon Fuji Instance", function () {
       testDeposit2a(
         [vaultwmaticdai, vaultwmaticusdc, vaultwmaticweth, vaultwmaticwbtc],
         DEPOSIT_MATIC,
-        ASSETS
+        ASSETS,
+        true
       );
-      testDeposit2a([vaultdaiwmatic, vaultusdcwmatic], DEPOSIT_STABLE, ASSETS);
+      testDeposit2a([vaultdaiwmatic, vaultusdcwmatic], DEPOSIT_STABLE, ASSETS, true);
       testDeposit2a(
         [vaultwethwmatic, vaultwethdai, vaultwethusdc, vaultwethwbtc],
         DEPOSIT_WETH,
-        ASSETS
+        ASSETS,
+        true
       );
       testDeposit2a(
         [vaultwbtcwmatic, vaultwbtcdai, vaultwbtcusdc, vaultwbtcweth],
         DEPOSIT_WBTC,
-        ASSETS
+        ASSETS,
+        true
       );
 
       testBorrow2([vaultwethdai, vaultwethusdc], DEPOSIT_WETH, BORROW_STABLE);

@@ -105,9 +105,9 @@ const deployContracts = async () => {
     rewardfactors = [
     // Note that 'standard' rewards chances are:
     // 50%, 20%, 20%, 5%, 0.01%
-      [1,    0,  1.2, 2, 25 ], // CrateId = 1 
-      [1,    0,  1.4, 4, 50 ], // CrateId = 2
-      [1, 0.25, 1.8,  8, 100], // CrateId = 3
+      [0.9, 0, 1.1, 2, 25 ], // CrateId = 1 
+      [0.9, 0, 1.1, 4, 50 ], // CrateId = 2
+      [0.9, 0, 1.1, 8, 100], // CrateId = 3
     ];
   }
   

@@ -8,7 +8,6 @@ import "../../interfaces/IProvider.sol";
 import "../../interfaces/IUnwrapper.sol";
 import "../../interfaces/IWETH.sol";
 
-import "../../interfaces/aavev3/IPoolAddressProvider.sol";
 import "../../interfaces/aavev3/IAaveProtocolDataProvider.sol";
 import "../../interfaces/aavev3/IPool.sol";
 
@@ -16,8 +15,12 @@ import "../../interfaces/aavev3/IPool.sol";
 contract ProviderAaveV3MATIC is IProvider {
   using LibUniversalERC20MATIC for IERC20;
 
-  function _getPoolAddressProvider() internal pure returns (IPoolAddressProvider) {
-    return IPoolAddressProvider(0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb);
+  function _getAaveProtocolDataProvider() internal pure returns (IAaveProtocolDataProvider) {
+    return IAaveProtocolDataProvider(0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654);
+  }
+
+  function _getPool() internal pure returns (IPool) {
+    return IPool(0x794a61358D6845594F94dc1DB02A252b5b4814aD);
   }
 
   function _getWmaticAddr() internal pure returns (address) {
@@ -37,7 +40,7 @@ contract ProviderAaveV3MATIC is IProvider {
    * @param _asset to query the borrowing rate.
    */
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
-    IAaveProtocolDataProvider aaveData = IAaveProtocolDataProvider(_getPoolAddressProvider().getPoolDataProvider());
+    IAaveProtocolDataProvider aaveData = _getAaveProtocolDataProvider();
 
     (, , , , uint256 variableBorrowRate, , , , , , , ) = aaveData.getReserveData(
       _asset == _getMaticAddr() ? _getWmaticAddr() : _asset
@@ -51,7 +54,7 @@ contract ProviderAaveV3MATIC is IProvider {
    * @param _asset token address to query the balance.
    */
   function getBorrowBalance(address _asset) external view override returns (uint256) {
-    IAaveProtocolDataProvider aaveData = IAaveProtocolDataProvider(_getPoolAddressProvider().getPoolDataProvider());
+    IAaveProtocolDataProvider aaveData = _getAaveProtocolDataProvider();
 
     bool isEth = _asset == _getMaticAddr();
     address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
@@ -72,7 +75,7 @@ contract ProviderAaveV3MATIC is IProvider {
     override
     returns (uint256)
   {
-    IAaveProtocolDataProvider aaveData = IAaveProtocolDataProvider(_getPoolAddressProvider().getPoolDataProvider());
+    IAaveProtocolDataProvider aaveData = _getAaveProtocolDataProvider();
 
     bool isEth = _asset == _getMaticAddr();
     address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
@@ -87,7 +90,7 @@ contract ProviderAaveV3MATIC is IProvider {
    * @param _asset token address to query the balance.
    */
   function getDepositBalance(address _asset) external view override returns (uint256) {
-    IAaveProtocolDataProvider aaveData = IAaveProtocolDataProvider(_getPoolAddressProvider().getPoolDataProvider());
+    IAaveProtocolDataProvider aaveData = _getAaveProtocolDataProvider();
 
     bool isEth = _asset == _getMaticAddr();
     address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
@@ -103,7 +106,7 @@ contract ProviderAaveV3MATIC is IProvider {
    * @param _amount token amount to deposit.
    */
   function deposit(address _asset, uint256 _amount) external payable override {
-    IPool aave = IPool(_getPoolAddressProvider().getPool());
+    IPool aave = _getPool();
 
     bool isEth = _asset == _getMaticAddr();
     address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
@@ -124,7 +127,7 @@ contract ProviderAaveV3MATIC is IProvider {
    * @param _amount token amount to borrow.
    */
   function borrow(address _asset, uint256 _amount) external payable override {
-    IPool aave = IPool(_getPoolAddressProvider().getPool());
+    IPool aave = _getPool();
 
     bool isEth = _asset == _getMaticAddr();
     address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
@@ -145,7 +148,7 @@ contract ProviderAaveV3MATIC is IProvider {
    * @param _amount token amount to withdraw.
    */
   function withdraw(address _asset, uint256 _amount) external payable override {
-    IPool aave = IPool(_getPoolAddressProvider().getPool());
+    IPool aave = _getPool();
 
     bool isEth = _asset == _getMaticAddr();
     address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
@@ -167,7 +170,7 @@ contract ProviderAaveV3MATIC is IProvider {
    */
 
   function payback(address _asset, uint256 _amount) external payable override {
-    IPool aave = IPool(_getPoolAddressProvider().getPool());
+    IPool aave = _getPool();
 
     bool isEth = _asset == _getMaticAddr();
     address _tokenAddr = isEth ? _getWmaticAddr() : _asset;

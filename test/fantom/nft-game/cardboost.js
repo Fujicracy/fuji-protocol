@@ -35,6 +35,7 @@ describe("CardBoost Quick Test", function () {
   let initialPoints;
   let cardIds;
   let pointsDecimals;
+  let cards;
 
   const TEST_CARDBOOST = 25;
   let expectedBoostAllCards;
@@ -61,7 +62,7 @@ describe("CardBoost Quick Test", function () {
       await nftinteractions.connect(admin).setCardBoost(index, TEST_CARDBOOST);
     }
 
-    const cards = await nftgame.nftCardsAmount();
+    cards = await nftgame.nftCardsAmount();
     expectedBoostAllCards = 100 + cards * TEST_CARDBOOST;
 
     evmSnapshot0 = await evmSnapshot();
@@ -83,7 +84,7 @@ describe("CardBoost Quick Test", function () {
 
   it("Should return 100 + 'TEST_CARDBOOST' when 'user' has 1 unqiue NFT cards", async () => {
     await nftgame.connect(admin).mint(user.address, cardIds[0], 1);
-    const  boost = await nftinteractions.computeBoost(user.address);
+    const boost = await nftinteractions.computeBoost(user.address);
     expect(125).to.eq(boost);
   });
 
@@ -99,7 +100,7 @@ describe("CardBoost Quick Test", function () {
     expect(expectedBoostAllCards).to.eq(boost);
   });
 
-  it("Should not double count repeated cards in boost", async () => {
+  it("Boost stack, 2 of each same card", async () => {
     const cardsToMint = 2;
     // Mint all cardIDs (again) for 'user'
     for (let index = cardIds[0]; index <= cardIds[1]; index++) {
@@ -108,7 +109,27 @@ describe("CardBoost Quick Test", function () {
       expect(cardsToMint).to.eq(bal);
     }
     const boost = await nftinteractions.computeBoost(user.address);
-    expect(expectedBoostAllCards).to.eq(boost);
+
+    const finalBoost = expectedBoostAllCards + cards * Math.floor(TEST_CARDBOOST / 2);
+    expect(finalBoost).to.eq(boost);
   });
 
+  it("Boost stack, boost should be 0 after 4th card", async () => {
+    const cardsToMint = 6;
+    // Mint all cardIDs (again) for 'user'
+    for (let index = cardIds[0]; index <= cardIds[1]; index++) {
+      await nftgame.connect(admin).mint(user.address, index, cardsToMint);
+      const bal = await nftgame.balanceOf(user.address, index);
+      expect(cardsToMint).to.eq(bal);
+    }
+    const boost = await nftinteractions.computeBoost(user.address);
+
+    // const finalBoost = expectedBoostAllCards + cards * Math.floor(TEST_CARDBOOST / 2);
+    let finalBoost = expectedBoostAllCards;
+    for (let j = 1; j < 4; j++) {
+      finalBoost += cards * Math.floor(TEST_CARDBOOST / 2 ** j);
+    }
+
+    expect(finalBoost).to.eq(boost);
+  });
 });

@@ -355,8 +355,12 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
     totalBoost = 100;
     uint256 cardLimit = NFT_CARD_ID_START + nftGame.nftCardsAmount();
     for (uint256 i = NFT_CARD_ID_START; i < cardLimit;) {
-      if (nftGame.balanceOf(user, i) > 0) {
-        totalBoost += cardBoost[i];
+      uint256 bal = nftGame.balanceOf(user, i);
+      for (uint256 j = 0; j < bal && j < 4;) {
+        totalBoost += cardBoost[i] / (2**j);
+        unchecked {
+          ++j;
+        }
       }
       unchecked {
         ++i;

@@ -768,6 +768,6 @@ contract FujiVaultFTM is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVaul
     _userFeeTimestamps[msg.sender] = block.timestamp;
     remainingProtocolFee += userFee;
 
-    emit Payback(msg.sender, vAssets.borrowAsset, debtBalance);
+    emit Payback(msg.sender, vAssets.borrowAsset, amountToPayback);
   }
 }

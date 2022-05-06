@@ -84,6 +84,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
   address private _owner;
 
+  uint256 public numPlayers;
+
   modifier onlyVault() {
     require(isValidVault(msg.sender), "Not valid vault!");
     _;
@@ -105,6 +107,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
       timestamp + 14 days,
       timestamp + 21 days
     ];
+    numPlayers = 0;
   }
 
   /**
@@ -209,6 +212,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
         // Compound points from previous state, considering current 'borrow()' or 'payback()' amount change.
         balanceChange = _convertToDebtUnits(balanceChange, decimals);
         _compoundPoints(user, isPayback ? debt + balanceChange : debt - balanceChange, phase);
+      } else {
+        numPlayers++;
       }
       _updateUserInfo(user, uint128(debt), phase);
     }

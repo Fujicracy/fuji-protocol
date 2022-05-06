@@ -61,6 +61,11 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    */
   event PreTokenBondsChanged(address newAddress);
 
+  /**
+   * @dev cardsPerDayRatio changed
+   */
+  event CardsPerDayRatioChanged(uint256 newCardsPerDayRatio);
+
   uint256 public constant CRATE_COMMON_ID = 1;
   uint256 public constant CRATE_EPIC_ID = 2;
   uint256 public constant CRATE_LEGENDARY_ID = 3;
@@ -87,6 +92,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
   // Number of minted cards since cardsCapTimeStamp
   uint256 public mintedCards;
   uint256 public cardsCapTimestamp;
+  uint256 public cardsPerDayRatio;
 
   function initialize(address _nftGame) external initializer {
     __ReentrancyGuard_init();
@@ -112,6 +118,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
 
     mintedCards = 0;
     cardsCapTimestamp = block.timestamp;
+    cardsPerDayRatio = 50;
   }
 
   // Admin functions
@@ -171,6 +178,17 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
     require(boost > 0, GameErrors.INVALID_INPUT);
     cardBoost[cardId] = boost;
     emit CardBoostChanged(cardId, boost);
+  }
+
+  /**
+   * @notice  sets cards per day ratio
+   * @dev the maximum amount of NFT cards being minted in crate rewards by the number of players
+   */
+  function setCardsPerDayRatio(uint256 _cardsPerDayRatio) external {
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
+    require(_cardsPerDayRatio > 0, GameErrors.INVALID_INPUT);
+    cardsPerDayRatio = _cardsPerDayRatio;
+    emit CardsPerDayRatioChanged(_cardsPerDayRatio);
   }
 
   /**
@@ -294,7 +312,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
       }
 
       // if the reward is a card determine the card id
-      if (isCard && mintedCards < nftGame.numPlayers()) {
+      if (isCard && mintedCards < nftGame.numPlayers() / cardsPerDayRatio) {
         mintedCards++;
         uint256 step = 1000000 / cardsAmount;
         uint256 randomNum = LibPseudoRandom.pickRandomNumbers(1, entropyValue + j)[0];

@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "./utils/VoucherCore.sol";
 import "./NFTGame.sol";
 import "./libraries/GameErrors.sol";
+import "./interfaces/IVNFTDescriptor.sol";
 
 contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
   using StringsUpgradeable for uint256;
@@ -45,11 +46,8 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
 
   uint256 public bondPrice;
 
-  // Metadata for ERC3525:
-  // Refer to: https://eips.ethereum.org/EIPS/eip-3525#metadata
-  string private _tokenBaseURI; // ERC721 general base token URI
-  string private _contractURI; // Contract Info URI
-  string private _slotBaseURI; // Slot base URI
+  // Metadata for ERC3525 generated on Chain by 'voucherDescriptor'
+  IVNFTDescriptor public voucherDescriptor;
 
   /**
    * @dev See {IERC165-supportsInterface}.
@@ -70,7 +68,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
 
   function initialize(uint8 _unitDecimals, address _nftGame) external initializer {
     _owner = msg.sender;
-    VoucherCore._initialize("FujiDAO PreToken Bonds", "fjVoucherBond", _unitDecimals);
+    VoucherCore._initialize("FujiDAO PreToken Bonds", "fjBondVoucher", _unitDecimals);
     nftGame = NFTGame(_nftGame);
     _nftgame_GAME_ADMIN = nftGame.GAME_ADMIN();
     _nftgame_GAME_INTERACTOR = nftGame.GAME_INTERACTOR();
@@ -111,7 +109,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    */
   function tokenURI(uint256 tokenId) public view override returns (string memory) {
     require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
-    return string(abi.encodePacked(_tokenBaseURI, tokenId.toString()));
+    return voucherDescriptor.tokenURI(tokenId);
   }
 
   /**
@@ -119,7 +117,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    * See {setContractURI(string)}
    */
   function contractURI() external view override returns (string memory) {
-    return _contractURI;
+    return voucherDescriptor.contractURI();
   }
 
   /**
@@ -127,17 +125,9 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    * @dev Only if passed slot ID is valid.
    * Example: '{_slotBaseURI}/{slotID}'
    */
-  function slotURI(uint256 slotID) external view override returns (string memory _uri) {
-    uint256[] memory localSlots = _bondSlotTimes;
-    uint256 length = localSlots.length;
-    for (uint256 i = 0; i < length;) {
-      if (localSlots[i] == slotID) {
-        _uri = string(abi.encodePacked(_slotBaseURI, slotID.toString()));
-      }
-      unchecked {
-        ++i;
-      }
-    }
+  function slotURI(uint256 slotID) external view override returns (string memory) {
+    require(_checkIfSlotExists(slotID), "SlotID does not exist!");
+    return voucherDescriptor.slotURI(slotID);
   }
 
   /**
@@ -205,30 +195,15 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
   }
 
   /**
-   * @notice Admin restricted function to set the base URI for a Token ID metadata
-   * @dev example input: 'https://www.mysite.com/metadata/token/'
+   * @notice Admin restricted function to set the {VoucherDescriptor} contract that generates:
+   * ContractURI metadata.
+   * Slot ID metadata.
+   * Token ID metadata.
    */
-  function setBaseTokenURI(string calldata _URI) external {
+  function setVoucherDescriptor(address _voucherDescriptorAddr) external {
     require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
-    _slotBaseURI = _URI;
-  }
-
-  /**
-   * @notice Admin restricted function to set the contract general URI metadata
-   * @dev example input: 'https://www.mysite.com/metadata/contractERC3525'
-   */
-  function setContractURI(string calldata _URI) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
-    _contractURI = _URI;
-  }
-
-  /**
-   * @notice Admin restricted function to set the base URI for a slot ID metadata
-   * @dev example input: 'https://www.mysite.com/metadata/slots/'
-   */
-  function setBaseSlotURI(string calldata _URI) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
-    _slotBaseURI = _URI;
+    require(_voucherDescriptorAddr != address(0), GameErrors.INVALID_INPUT);
+    voucherDescriptor = IVNFTDescriptor(_voucherDescriptorAddr);
   }
 
   /**

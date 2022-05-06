@@ -212,9 +212,12 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
         // Compound points from previous state, considering current 'borrow()' or 'payback()' amount change.
         balanceChange = _convertToDebtUnits(balanceChange, decimals);
         _compoundPoints(user, isPayback ? debt + balanceChange : debt - balanceChange, phase);
-      } else {
+      }
+
+      if (userdata[user].lastTimestampUpdate == 0) {
         numPlayers++;
       }
+
       _updateUserInfo(user, uint128(debt), phase);
     }
   }
@@ -307,6 +310,10 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     require(!isClaimed[msg.sender], "Points already claimed!");
     require(_verify(_leaf(msg.sender, pointsToClaim), proof), "Invalid merkle proof");
 
+    if (userdata[msg.sender].lastTimestampUpdate == 0) {
+      numPlayers++;
+    }
+
     // Update state of user (msg.sender)
     isClaimed[msg.sender] = true;
     uint256 debt = getUserDebt(msg.sender);
@@ -315,6 +322,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
     // Mint points
     _mintPoints(msg.sender, pointsToClaim);
+
   }
 
   function setMerkleRoot(bytes32 _merkleRoot) external {

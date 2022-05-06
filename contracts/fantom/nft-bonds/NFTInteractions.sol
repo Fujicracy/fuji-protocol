@@ -84,6 +84,10 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
   // CardID => boost: where boost is a base 100 number.
   mapping(uint256 => uint256) public cardBoost;
 
+  // Number of minted cards since cardsCapTimeStamp
+  uint256 public mintedCards;
+  uint256 public cardsCapTimestamp;
+
   function initialize(address _nftGame) external initializer {
     __ReentrancyGuard_init();
     isRedstoneOracleOn = true;
@@ -105,6 +109,9 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
         ++i;
       }
     }
+
+    mintedCards = 0;
+    cardsCapTimestamp = block.timestamp;
   }
 
   // Admin functions
@@ -255,6 +262,11 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
     require(nftGame.balanceOf(msg.sender, crateId) >= amount, GameErrors.NOT_ENOUGH_AMOUNT);
     require(_crateRewards[crateId].length == _probabilityIntervals.length, GameErrors.VALUE_NOT_SET);
 
+    if (block.timestamp > cardsCapTimestamp + 1 days) {
+      cardsCapTimestamp = block.timestamp;
+      mintedCards = 0;
+    }
+
     // Points + Crates + Cards
     uint256 cardsAmount = nftGame.nftCardsAmount();
     Reward[] memory rewards = new Reward[](amount);
@@ -282,7 +294,8 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
       }
 
       // if the reward is a card determine the card id
-      if (isCard) {
+      if (isCard && mintedCards < nftGame.numPlayers()) {
+        mintedCards++;
         uint256 step = 1000000 / cardsAmount;
         uint256 randomNum = LibPseudoRandom.pickRandomNumbers(1, entropyValue + j)[0];
         uint256 randomId = NFT_CARD_ID_START;

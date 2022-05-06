@@ -95,11 +95,11 @@ const deployContracts = async () => {
     now + 11 * day
   ];
   // Note that 'standard' rewards chances:
-  // 50%, 20%, 20%, 5%, 0.01%
+  // 52.50%, 20.00%, 22.50%, 3.99%, 0.01%
   const rewardfactors = [
-    [0.9, 0, 1.1, 2, 25], // CrateId = 1 
-    [0.9, 0, 1.1, 4, 50], // CrateId = 2
-    [0.9, 0, 1.1, 8, 100] // CrateId = 3
+    [0.25, 0, 1.1, 2, 25], // CrateId = 1 
+    [0.25, 0, 1.1, 4, 50], // CrateId = 2
+    [0.25, 0, 1.1, 8, 100] // CrateId = 3
   ];
 
   const prices = [10, 20, 40].map( i => parseUnits(i, POINTS_DECIMALS));

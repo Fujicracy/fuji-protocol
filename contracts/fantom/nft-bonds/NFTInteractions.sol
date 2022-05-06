@@ -105,7 +105,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
     _pointsID = nftGame.POINTS_ID();
     _nftgame_GAME_ADMIN = nftGame.GAME_ADMIN();
 
-    _probabilityIntervals = [500000, 700000, 900000, 950000, 950100];
+    _probabilityIntervals = [525000, 725000, 950000, 989900, 990000];
 
     // Set basic cardBoost
     uint256 cardsLimit = nftGame.nftCardsAmount() + NFT_CARD_ID_START;

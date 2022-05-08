@@ -91,7 +91,9 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
 
   // Number of minted cards since cardsCapTimeStamp
   uint256 public mintedCards;
+  // Last timestamp since the NFT card limit was reset
   uint256 public cardsCapTimestamp;
+  // The maximum number of NFT cards minted per day in relation to the amount of users
   uint256 public cardsPerDayRatio;
 
   function initialize(address _nftGame) external initializer {
@@ -280,6 +282,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
     require(nftGame.balanceOf(msg.sender, crateId) >= amount, GameErrors.NOT_ENOUGH_AMOUNT);
     require(_crateRewards[crateId].length == _probabilityIntervals.length, GameErrors.VALUE_NOT_SET);
 
+    // check if one day has passed to reset NFT card limit
     if (block.timestamp > cardsCapTimestamp + 1 days) {
       cardsCapTimestamp = block.timestamp;
       mintedCards = 0;
@@ -287,7 +290,9 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
 
     // Points + Crates + Cards
     uint256 cardsAmount = nftGame.nftCardsAmount();
+    // Used for event
     Reward[] memory rewards = new Reward[](amount);
+    // User for minting logic
     uint256[] memory aggregatedRewards = new uint256[](1 + 3 + cardsAmount);
 
     uint256 entropyValue = isRedstoneOracleOn ? _getRedstoneEntropy() : _getChainlinkEntropy();
@@ -312,18 +317,23 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
       }
 
       // if the reward is a card determine the card id
-      if (isCard && mintedCards < nftGame.numPlayers() / cardsPerDayRatio) {
-        mintedCards++;
-        uint256 step = 1000000 / cardsAmount;
-        uint256 randomNum = LibPseudoRandom.pickRandomNumbers(1, entropyValue + j)[0];
-        uint256 randomId = NFT_CARD_ID_START;
-        for (uint256 i = step; i <= randomNum; i += step) {
-          randomId++;
+      if (isCard) {
+        if (mintedCards < nftGame.numPlayers() / cardsPerDayRatio) {
+          mintedCards++;
+          uint256 step = 1000000 / cardsAmount;
+          uint256 randomNum = LibPseudoRandom.pickRandomNumbers(1, entropyValue + j)[0];
+          uint256 randomId = NFT_CARD_ID_START;
+          for (uint256 i = step; i <= randomNum; i += step) {
+            randomId++;
+          }
+          aggregatedRewards[randomId]++;
+          rewards[j].tokenId = randomId;
+        } else {
+          aggregatedRewards[pointsID] += _crateRewards[crateId][0];
+          rewards[j].amount = _crateRewards[crateId][0];
         }
-        aggregatedRewards[randomId]++;
-        rewards[j].tokenId = randomId;
-        rewards[j].amount = 1;
       }
+
       unchecked {
         ++j;
       }

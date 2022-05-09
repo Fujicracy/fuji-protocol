@@ -117,8 +117,6 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
         ++i;
       }
     }
-
-    mintedCards = 0;
     cardsCapTimestamp = block.timestamp;
     cardsPerDayRatio = 50;
   }

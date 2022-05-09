@@ -61,6 +61,11 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    */
   event PreTokenBondsChanged(address newAddress);
 
+  /**
+   * @dev cardsPerDayRatio changed
+   */
+  event CardsPerDayRatioChanged(uint256 newCardsPerDayRatio);
+
   uint256 public constant CRATE_COMMON_ID = 1;
   uint256 public constant CRATE_EPIC_ID = 2;
   uint256 public constant CRATE_LEGENDARY_ID = 3;
@@ -84,6 +89,13 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
   // CardID => boost: where boost is a base 100 number.
   mapping(uint256 => uint256) public cardBoost;
 
+  // Number of minted cards since cardsCapTimeStamp
+  uint256 public mintedCards;
+  // Last timestamp since the NFT card limit was reset
+  uint256 public cardsCapTimestamp;
+  // The maximum number of NFT cards minted per day in relation to the amount of users
+  uint256 public cardsPerDayRatio;
+
   function initialize(address _nftGame) external initializer {
     __ReentrancyGuard_init();
     isRedstoneOracleOn = true;
@@ -95,7 +107,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
     _pointsID = nftGame.POINTS_ID();
     _nftgame_GAME_ADMIN = nftGame.GAME_ADMIN();
 
-    _probabilityIntervals = [500000, 700000, 900000, 950000, 950100];
+    _probabilityIntervals = [525000, 725000, 950000, 989900, 990000];
 
     // Set basic cardBoost
     uint256 cardsLimit = nftGame.nftCardsAmount() + NFT_CARD_ID_START;
@@ -105,6 +117,8 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
         ++i;
       }
     }
+    cardsCapTimestamp = block.timestamp;
+    cardsPerDayRatio = 50;
   }
 
   // Admin functions
@@ -164,6 +178,17 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
     require(boost > 0, GameErrors.INVALID_INPUT);
     cardBoost[cardId] = boost;
     emit CardBoostChanged(cardId, boost);
+  }
+
+  /**
+   * @notice  sets cards per day ratio
+   * @dev the maximum amount of NFT cards being minted in crate rewards by the number of players
+   */
+  function setCardsPerDayRatio(uint256 _cardsPerDayRatio) external {
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
+    require(_cardsPerDayRatio > 0, GameErrors.INVALID_INPUT);
+    cardsPerDayRatio = _cardsPerDayRatio;
+    emit CardsPerDayRatioChanged(_cardsPerDayRatio);
   }
 
   /**
@@ -255,9 +280,17 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
     require(nftGame.balanceOf(msg.sender, crateId) >= amount, GameErrors.NOT_ENOUGH_AMOUNT);
     require(_crateRewards[crateId].length == _probabilityIntervals.length, GameErrors.VALUE_NOT_SET);
 
+    // check if one day has passed to reset NFT card limit
+    if (block.timestamp > cardsCapTimestamp + 1 days) {
+      cardsCapTimestamp = block.timestamp;
+      mintedCards = 0;
+    }
+
     // Points + Crates + Cards
     uint256 cardsAmount = nftGame.nftCardsAmount();
+    // Used for event
     Reward[] memory rewards = new Reward[](amount);
+    // User for minting logic
     uint256[] memory aggregatedRewards = new uint256[](1 + 3 + cardsAmount);
 
     uint256 entropyValue = isRedstoneOracleOn ? _getRedstoneEntropy() : _getChainlinkEntropy();
@@ -283,16 +316,22 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
 
       // if the reward is a card determine the card id
       if (isCard) {
-        uint256 step = 1000000 / cardsAmount;
-        uint256 randomNum = LibPseudoRandom.pickRandomNumbers(1, entropyValue + j)[0];
-        uint256 randomId = NFT_CARD_ID_START;
-        for (uint256 i = step; i <= randomNum; i += step) {
-          randomId++;
+        if (mintedCards < nftGame.numPlayers() / cardsPerDayRatio) {
+          mintedCards++;
+          uint256 step = 1000000 / cardsAmount;
+          uint256 randomNum = LibPseudoRandom.pickRandomNumbers(1, entropyValue + j)[0];
+          uint256 randomId = NFT_CARD_ID_START;
+          for (uint256 i = step; i <= randomNum; i += step) {
+            randomId++;
+          }
+          aggregatedRewards[randomId]++;
+          rewards[j].tokenId = randomId;
+        } else {
+          aggregatedRewards[pointsID] += _crateRewards[crateId][0];
+          rewards[j].amount = _crateRewards[crateId][0];
         }
-        aggregatedRewards[randomId]++;
-        rewards[j].tokenId = randomId;
-        rewards[j].amount = 1;
       }
+
       unchecked {
         ++j;
       }

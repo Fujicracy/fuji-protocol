@@ -4,22 +4,6 @@ pragma solidity ^0.8.0;
 
 import "./VNFTCoreV2.sol";
 
-library Constants {
-    enum ClaimType {
-        LINEAR,
-        ONE_TIME,
-        STAGED
-    }
-    enum VoucherType {
-        STANDARD_VESTING,
-        FLEXIBLE_DATE_VESTING,
-        BOUNDING
-    }
-    uint32 internal constant FULL_PERCENTAGE = 10000;
-    address internal constant ETH_ADDRESS =
-        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-}
-
 abstract contract VoucherCore is VNFTCoreV2 {
     /// @dev tokenId => slot
     mapping(uint256 => uint256) public voucherSlotMapping;
@@ -192,7 +176,5 @@ abstract contract VoucherCore is VNFTCoreV2 {
     {
         return voucherSlotMapping[tokenId_];
     }
-
-    // Fuji change. 
-    // function voucherType() external view virtual returns (Constants.VoucherType) {}
+    
 }

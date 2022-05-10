@@ -254,7 +254,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
     require(ownerOf(_tokenId) == msg.sender, "Wrong owner!");
     require(underlying != address(0), GameErrors.VALUE_NOT_SET);
     uint256 slot = _slotOf(_tokenId);
-    require(block.timestamp >= _vestingTypeToTimestamp(slot), "Claiming not active yet");
+    require(block.timestamp >= vestingTypeToTimestamp(slot), "Claiming not active yet");
 
     // 'units' and 'tokensPerBond' should be computed before voucher burn.
     uint256 units = unitsInToken(_tokenId);
@@ -262,6 +262,15 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
     _burnVoucher(_tokenId);
 
     IERC20(underlying).transfer(msg.sender, units * tokensPerBond);
+  }
+
+  /**
+   * @notice Returns the expiry date for bonds of voucher slot Id.
+   * @dev This function requires to be public to be called by {VoucherDescriptor}.
+   */
+  function vestingTypeToTimestamp(uint256 _slotId) public view returns (uint256) {
+    require(_checkIfSlotExists(_slotId), GameErrors.INVALID_INPUT);
+    return nftGame.gamePhaseTimestamps(3) + (30 days * _slotId);
   }
 
   /// Internal functions
@@ -281,11 +290,6 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
         ++i;
       }
     }
-  }
-
-  function _vestingTypeToTimestamp(uint256 _slot) internal view returns (uint256) {
-    // _slot input can remained unchecked since is returned from '_slotOf()'.
-    return nftGame.gamePhaseTimestamps(3) + (30 days * _slot);
   }
 
   function _computeWeightedUnitAmounts() internal view returns (uint256 weightedTotal) {

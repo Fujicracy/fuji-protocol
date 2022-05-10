@@ -113,7 +113,12 @@ const deployContracts = async () => {
   
   // Functions below return string addresses
   let nftgame = await deployNFTGame([phases]);
-  let nftinteractions = await deployNFTInteractions([nftgame]);
+  const library = {
+    libraries: {
+      LibPseudoRandom: "0x21D2e910eAb08F57f662477c3afc73bBE683aa67", // fantom
+    }
+  };
+  let nftinteractions = await deployNFTInteractions([nftgame], library);
   let pretokenbonds = await deployPreTokenBonds([POINTS_DECIMALS, nftgame]);
   
   // Build etherjs contracts again

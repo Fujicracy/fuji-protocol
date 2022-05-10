@@ -107,7 +107,12 @@ const deployContracts = async () => {
 
   // Functions below return string addresses
   let nftgame = await deployNFTGame([phases]);
-  let nftinteractions = await deployNFTInteractions([nftgame]);
+  const library = {
+    libraries: {
+      LibPseudoRandom: "0x63E978f8C647bAA71184b9eCcB39e0509C09D681", // rinkeby
+    }
+  };
+  let nftinteractions = await deployNFTInteractions([nftgame], library);
   let pretokenbonds = await deployPreTokenBonds([POINTS_DECIMALS, nftgame]);
 
   // Deploy 'pointfaucet'; only required for Rinkeby

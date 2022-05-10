@@ -13,7 +13,7 @@ interface IVNFTDescriptor {
   /**
    * @dev VoucherSVG contract address changed
    */
-  event SetVoucherSVG(address indexed voucher, address oldVoucherSVG, address newVoucherSVG);
+  event SetVoucherSVG(address newVoucherSVG);
 
   function contractURI() external view returns (string memory);
 

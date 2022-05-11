@@ -21,28 +21,39 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
   using StringConvertor for uint256;
   using StringConvertor for bytes;
 
+  struct Details {
+    bytes name;
+    bytes tokenDescription;
+    string underlying;
+    string slotDesc;
+    string claimDate;
+    uint256 slotId;
+    uint256 redeemableTokens;
+  }
+
   // '_bondSlotTimes' as defined in {PretokenBonds.sol} => short string description of vesting time
-  mapping(uint256 => string) _slotDetails;
+  mapping(uint256 => string) private _slotDetails;
 
-  // VoucherSVG address
-  address public voucherSVG;
-
-  uint256 public immutable chainID;
-
-  uint256 public immutable gameEdition;
+  // VoucherSVG
+  IVoucherSVG public voucherSVG;
 
   NFTGame private nftGame;
+  PreTokenBonds private voucher;
 
+  // Variables set at deployment
+  string private _pretokenbondName;
   bytes32 private _nftgame_GAME_ADMIN;
 
   constructor(
     address _nftGame,
-    uint256 _chainID,
-    uint256 _gameEdition
+    address _pretokenBonds
   ) {
     nftGame = NFTGame(_nftGame);
-    chainID = _chainID;
-    gameEdition = _gameEdition;
+    voucher = PreTokenBonds(_pretokenBonds);
+    _pretokenbondName = voucher.name();
+    _slotDetails[3] = '3 Month-expiry Bond';
+    _slotDetails[6] = '6 Month-expiry Bond';
+    _slotDetails[12] = '12 Month-expiry Bond';
   }
 
   /// Admin Functions
@@ -58,14 +69,25 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
   }
 
   /**
+   * @notice Admin restricted function to set address for PreTokenBonds contract
+   */
+  function setPreTokenBonds(address _pretokenBonds) external {
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
+    require(_pretokenBonds != address(0), GameErrors.INVALID_INPUT);
+    voucher = PreTokenBonds(_pretokenBonds);
+    emit PreTokenBondsChanged(_pretokenBonds);
+  }
+  /**
    * @notice Admin restricted function to set address for VoucherSVG contract
    */
   function setVoucherSVG(address _voucherSVG) external {
     require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
-    voucherSVG = _voucherSVG;
+    voucherSVG = IVoucherSVG(_voucherSVG);
     emit SetVoucherSVG(_voucherSVG);
   }
-
+  /**
+   * @notice Admin restricted function to set short string describing SlotId
+   */
   function setSlotDetailString(uint256 _slotId, string memory desc) external {
     require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     _slotDetails[_slotId] = desc;
@@ -75,12 +97,11 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
   /// View Functions
 
   function contractURI() external view override returns (string memory) {
-    PreTokenBonds voucher = PreTokenBonds(_msgSender());
     return
       string(
         abi.encodePacked(
-          'data:application/json;{"name":"', voucher.name(),
-          '","description":"', _contractDescription(voucher),
+          'data:application/json;{"name":"', _pretokenbondName,
+          '","description":"', _contractDescription(),
           '","unitDecimals":"', uint256(voucher.unitDecimals()).toString(),
           '","properties":{}}'
         )
@@ -93,17 +114,30 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
     return "";
   }
 
-  function tokenURI(uint256 tokenId) external view override returns (string memory) {
-    PreTokenBonds voucher = PreTokenBonds(_msgSender());
-    uint256 slot = voucher.slotOf(tokenId);
-    bytes memory name = abi.encodePacked(voucher.name(), " #", tokenId.toString());
-    string memory image = IVoucherSVG(voucherSVG).generateSVG(_msgSender(), tokenId);
-    return _tokenURI(name, voucher, tokenId, slot, image);
+  function tokenURI(uint256 _tokenId) external view override returns (string memory) {
+    Details memory tokenIdDetails = _buildDetails(_tokenId);
+    string memory image = voucherSVG.generateSVG(address(voucher), _tokenId);
+    return string(
+      abi.encodePacked(
+        "data:application/json;base64,",
+        Base64.encode(
+          abi.encodePacked(
+            '{"name":"', tokenIdDetails.name,
+            '","description":"', tokenIdDetails.tokenDescription,
+            '","image":"data:image/svg+xml;base64,', Base64.encode(bytes(image)),
+            '","bond units":"', voucher.unitsInToken(_tokenId).toString(),
+            '","slot":"', tokenIdDetails.slotId.toString(),
+            '","properties":', _properties(tokenIdDetails),
+            "}"
+          )
+        )
+      )
+    );
   }
 
   /// Internal functions
 
-  function _contractDescription(PreTokenBonds voucher) private view returns (bytes memory) {
+  function _contractDescription() private view returns (bytes memory) {
     string memory underlyingSymbol = ERC20(voucher.underlying()).symbol();
     return
       abi.encodePacked(
@@ -114,37 +148,18 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
       );
   }
 
-  function _tokenURI(
-    bytes memory _name,
-    PreTokenBonds _voucher,
-    uint256 _tokenId,
-    uint256 _slot,
-    string memory image
-  ) internal view returns (string memory) {
-    string memory _slotDetail = _getSlotDetail(_slot);
-    return
-      string(
-        abi.encodePacked(
-          "data:application/json;base64,",
-          Base64.encode(
-            abi.encodePacked(
-              '{"name":"', _name,
-              '","description":"', _tokenDescription(_voucher, _tokenId, _slotDetail),
-              '","image":"data:image/svg+xml;base64,', Base64.encode(bytes(image)),
-              '","bond units":"', _voucher.unitsInToken(_tokenId).toString(),
-              '","slot":"', _slot.toString(),
-              '","properties":', _properties(_voucher, _slot),
-              "}"
-            )
-          )
-        )
-      );
+  function _buildDetails(uint256 _tokenId) internal view returns(Details memory detailed) {
+    detailed.name = abi.encodePacked(_pretokenbondName, " #", _tokenId.toString());
+    detailed.tokenDescription = _tokenDescription(_tokenId);
+    detailed.slotId = voucher.slotOf(_tokenId);
+    detailed.underlying = voucher.underlying().addressToString();
+    detailed.slotDesc = _slotDetails[detailed.slotId];
+    detailed.claimDate = voucher.vestingTypeToTimestamp(detailed.slotId).dateToString();
+    detailed.redeemableTokens = voucher.tokensPerUnit(detailed.slotId) * voucher.unitsInToken(_tokenId);
   }
 
   function _tokenDescription(
-    PreTokenBonds voucher,
-    uint256 tokenId,
-    string memory slotDetail
+    uint256 tokenId
   ) private view returns (bytes memory) {
     string memory underlyingSymbol = ERC20(voucher.underlying()).symbol();
     return
@@ -154,41 +169,26 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
         _descVoucher(), "\\n\\n",
         abi.encodePacked(
           "- Voucher Address: ", address(voucher).addressToString(), "\\n",
-          "- Underlying Address: ", voucher.underlying().addressToString(), "\\n",
-          "- Vesting time: ", slotDetail
+          "- Underlying Address: ", voucher.underlying().addressToString(), "\\n"
         )
       );
   }
 
-  function _properties(PreTokenBonds voucher, uint256 _slotId)
-    private
-    view
+  function _properties(Details memory detailed)
+    internal
+    pure
     returns (bytes memory data)
   {
     return
       abi.encodePacked(
-        abi.encodePacked(
-          '{"underlyingToken":"', voucher.underlying().addressToString()
-        ),
-        abi.encodePacked(
-          '","claimType":"', 'One-time',
-          '","vesting time":"', _getSlotDetail(_slotId),
-          '","claim date":"', _getClaimDate(voucher, _slotId),
-          '","chain ID":"', chainID.toString(),
-          '","game edition":"', gameEdition.toString()
-        )
+          "{",
+          '"underlyingToken":"', detailed.underlying,
+          '","claimType":"OneTime"',
+          '","vesting time":"', detailed.slotDesc,
+          '","claim date":"', detailed.claimDate,
+          '","redeemable Tokens":"', detailed.redeemableTokens,
+          "}"
       );
-  }
-
-  function _getSlotDetail(uint256 _slotID) internal view returns (string memory) {
-    return _slotDetails[_slotID];
-  }
-
-  function _getClaimDate(
-    PreTokenBonds voucher,
-    uint256 _slotId
-  ) internal view returns (string memory) {
-    return voucher.vestingTypeToTimestamp(_slotId).datetimeToString();
   }
 
   function _descAlert() private pure returns (string memory) {

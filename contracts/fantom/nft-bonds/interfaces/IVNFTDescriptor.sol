@@ -7,6 +7,10 @@ interface IVNFTDescriptor {
    */
   event NFTGameChanged(address newAddress);
   /**
+   * @dev PreTokenBonds contract address changed
+   */
+  event PreTokenBondsChanged(address newAddress);
+  /**
    * @dev VoucherSVG contract address changed
    */
   event SlotDetailChanges(uint _slotID, string _desc);

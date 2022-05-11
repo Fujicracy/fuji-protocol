@@ -112,14 +112,21 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
       );
   }
 
-  function slotURI(uint256 slot) external pure override returns (string memory) {
-    slot;
-    // TODO
-    return "";
+  function slotURI(uint256 _slot) external view override returns (string memory) {
+    Details memory slotIdDetails = _buildDetailsSlot(_slot);
+    return 
+      string(
+        abi.encodePacked(
+          'data:application/json;{"unitsInSlot":"', voucher.unitsInSlot(_slot).toString(),
+          '","tokensInSlot":"', voucher.tokensInSlot(_slot).toString(),
+          '","properties":', _propertiesSlot(slotIdDetails),
+          '}'
+        )
+      );
   }
 
   function tokenURI(uint256 _tokenId) external view override returns (string memory) {
-    Details memory tokenIdDetails = _buildDetails(_tokenId);
+    Details memory tokenIdDetails = _buildDetailsToken(_tokenId);
     string memory image = voucherSVG.generateSVG(address(voucher), _tokenId);
     return string(
       abi.encodePacked(
@@ -131,7 +138,7 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
             '","image":"data:image/svg+xml;base64,', Base64.encode(bytes(image)),
             '","bond units":"', voucher.unitsInToken(_tokenId).toString(),
             '","slot":"', tokenIdDetails.slotId.toString(),
-            '","properties":', _properties(tokenIdDetails),
+            '","properties":', _propertiesToken(tokenIdDetails),
             "}"
           )
         )
@@ -152,7 +159,7 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
       );
   }
 
-  function _buildDetails(uint256 _tokenId) internal view returns(Details memory detailed) {
+  function _buildDetailsToken(uint256 _tokenId) internal view returns(Details memory detailed) {
     detailed.name = abi.encodePacked(_pretokenbondName, " #", _tokenId.toString());
     detailed.tokenDescription = _tokenDescription(_tokenId);
     detailed.slotId = voucher.slotOf(_tokenId);
@@ -160,6 +167,12 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
     detailed.slotDesc = _slotDetails[detailed.slotId];
     detailed.claimDate = voucher.vestingTypeToTimestamp(detailed.slotId).dateToString();
     detailed.redeemableTokens = voucher.tokensPerUnit(detailed.slotId) * voucher.unitsInToken(_tokenId);
+  }
+
+  function _buildDetailsSlot(uint256 _slotId) internal view returns(Details memory detailed) {
+    detailed.underlying = voucher.underlying().addressToString();
+    detailed.slotDesc = _slotDetails[_slotId];
+    detailed.claimDate = voucher.vestingTypeToTimestamp(_slotId).dateToString();
   }
 
   function _tokenDescription(
@@ -178,7 +191,7 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
       );
   }
 
-  function _properties(Details memory detailed)
+  function _propertiesToken(Details memory detailed)
     internal
     pure
     returns (bytes memory data)
@@ -191,6 +204,22 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
           '","vesting time":"', detailed.slotDesc,
           '","claim date":"', detailed.claimDate,
           '","redeemable Tokens":"', detailed.redeemableTokens,
+          "}"
+      );
+  }
+
+  function _propertiesSlot(Details memory detailed)
+    internal
+    pure
+    returns (bytes memory data)
+  {
+    return
+      abi.encodePacked(
+          "{",
+          '"underlyingToken":"', detailed.underlying,
+          '","claimType":"OneTime"',
+          '","vesting time":"', detailed.slotDesc,
+          '","claim date":"', detailed.claimDate,
           "}"
       );
   }

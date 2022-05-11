@@ -103,12 +103,12 @@ const deployContracts = async () => {
   ];
 
   const prices = [10, 20, 40].map( i => parseUnits(i, POINTS_DECIMALS));
-  const merkleRoot = "0x903f8cb795059ae5a39d1a6caae25eb970d75914aa9324ccc657e9e38eb1a7c9";
+  const merkleRoot = "0xc0decc3b3577dcfe4ac5930eb46aa7201451ebf2e525c6321ef559a079c69482";
 
   // Functions below return string addresses
   let nftgame = await deployNFTGame([phases]);
   let nftinteractions = await deployNFTInteractions([nftgame]);
-  let pretokenbonds = await deployPreTokenBonds([POINTS_DECIMALS, nftgame]);
+  let pretokenbonds = await deployPreTokenBonds([nftgame]);
 
   // Deploy 'pointfaucet'; only required for Rinkeby
   let pointfaucet = await deployPointFaucet();
@@ -142,11 +142,6 @@ const deployContracts = async () => {
   await updatePreTokenBonds(
     pretokenbonds.address,
     nftinteractions.address,
-    [
-      "https://www.example.com/metadata/token/",
-      "https://www.example.com/metadata/contract.json",
-      "https://www.example.com/metadata/slot/"
-    ],
     POINTS_DECIMALS,
     true
   );

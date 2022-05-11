@@ -41,15 +41,14 @@ library StringConvertor {
     return abi.encodePacked(fullStr, fraction);
   }
 
-  function trim(bytes memory self, uint256 cutLength)
-    internal
-    pure
-    returns (bytes memory newString)
-  {
+  function trim(bytes memory self, uint256 cutLength) internal pure returns (bytes memory newString) {
     newString = new bytes(self.length - cutLength);
-    uint256 index = newString.length;
-    while (index-- > 0) {
-      newString[index] = self[index];
+    uint256 nlength = newString.length;
+    for(uint i = 0; i < nlength;) {
+      newString[i] = self[i];
+      unchecked {
+        ++i;
+      }
     }
   }
 

@@ -180,7 +180,6 @@ const bondFixture = async ([wallet]) => {
   const PreTokenBond = await getContractFactory("PreTokenBonds");
   const pretokenbond = await upgrades.deployProxy(PreTokenBond,
     [
-      pointsDecimals,
       nftgame.address
     ]
   );
@@ -194,11 +193,6 @@ const bondFixture = async ([wallet]) => {
 
   // Set underlying in pretokenbond contract
   await pretokenbond.setUnderlying(mocktoken.address);
-
-  // Set pretokenbond.sol getters for metadata
-  await pretokenbond.setBaseTokenURI("https://www.example.com/metadata/token/");
-  await pretokenbond.setContractURI("https://www.example.com/metadata/contract.json");
-  await pretokenbond.setBaseSlotURI("https://www.example.com/metadata/slot/");
 
   // Override for testing only: change to low bond price
   await pretokenbond.setBondPrice(parseUnits(1, pointsDecimals));

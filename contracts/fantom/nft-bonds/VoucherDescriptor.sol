@@ -46,11 +46,14 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
 
   constructor(
     address _nftGame,
-    address _pretokenBonds
+    address _pretokenBonds,
+    address _voucherSVG
   ) {
     nftGame = NFTGame(_nftGame);
+    _nftgame_GAME_ADMIN = nftGame.GAME_ADMIN();
     voucher = PreTokenBonds(_pretokenBonds);
     _pretokenbondName = voucher.name();
+    voucherSVG = IVoucherSVG(_voucherSVG);
     _slotDetails[3] = '3 Month-expiry Bond';
     _slotDetails[6] = '6 Month-expiry Bond';
     _slotDetails[12] = '12 Month-expiry Bond';
@@ -65,6 +68,7 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
     require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     require(_nftGame != address(0), GameErrors.INVALID_INPUT);
     nftGame = NFTGame(_nftGame);
+    _nftgame_GAME_ADMIN = nftGame.GAME_ADMIN();
     emit NFTGameChanged(_nftGame);
   }
 

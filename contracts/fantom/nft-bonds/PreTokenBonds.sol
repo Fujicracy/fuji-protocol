@@ -33,7 +33,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
 
   address private _owner;
 
-  NFTGame private nftGame;
+  NFTGame public nftGame;
   bytes32 private _nftgame_GAME_ADMIN;
   bytes32 private _nftgame_GAME_INTERACTOR;
 
@@ -66,10 +66,11 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
       super.supportsInterface(interfaceId);
   }
 
-  function initialize(uint8 _unitDecimals, address _nftGame) external initializer {
+  function initialize(address _nftGame) external initializer {
     _owner = msg.sender;
-    VoucherCore._initialize("FujiDAO PreToken Bonds", "fjBondVoucher", _unitDecimals);
     nftGame = NFTGame(_nftGame);
+    uint8 decimals = uint8(nftGame.POINTS_DECIMALS());
+    VoucherCore._initialize("FujiDAO PreToken Bonds", "fjBondVoucher", decimals);
     _nftgame_GAME_ADMIN = nftGame.GAME_ADMIN();
     _nftgame_GAME_INTERACTOR = nftGame.GAME_INTERACTOR();
     _bondSlotTimes = [3, 6, 12];
@@ -81,7 +82,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
         ++i;
       }
     }
-    bondPrice = 10 * 10 ** nftGame.POINTS_DECIMALS();
+    bondPrice = 10 * 10 ** decimals;
   }
 
   /// View functions
@@ -149,6 +150,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
     require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     require(_nftGame != address(0), GameErrors.INVALID_INPUT);
     nftGame = NFTGame(_nftGame);
+    _nftgame_GAME_ADMIN = nftGame.GAME_ADMIN();
     emit NFTGameChanged(_nftGame);
   }
 

@@ -43,15 +43,26 @@ contract VoucherSVG is IVoucherSVG {
   bytes32 private _nftgame_GAME_ADMIN;
 
   constructor(
-    address _nftGame,
-    string[2] memory _onetimeBgColors
+    address _nftGame
   ) {
     nftGame = NFTGame(_nftGame);
-    require(_onetimeBgColors.length >= 2, GameErrors.INVALID_INPUT);
-    voucherBgColors = _onetimeBgColors;
+    _nftgame_GAME_ADMIN = nftGame.GAME_ADMIN();
+    voucherBgColors[0] = "D52E50";
+    voucherBgColors[1] = "101010";
   }
 
   /// Admin functions
+
+  /**
+   * @notice Admin restricted function to set address for NFTGame contract
+   */
+  function setNFTGame(address _nftGame) external {
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
+    require(_nftGame != address(0), GameErrors.INVALID_INPUT);
+    nftGame = NFTGame(_nftGame);
+    _nftgame_GAME_ADMIN = nftGame.GAME_ADMIN();
+    emit NFTGameChanged(_nftGame);
+  }
 
   function setVoucherBgColors(
         string[2] memory _onetimeBgColors

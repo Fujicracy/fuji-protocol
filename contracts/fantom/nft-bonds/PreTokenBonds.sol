@@ -222,6 +222,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
   /**
    * @notice Function to be called from Interactions contract, after burning the points
    * @dev Mint access restricted for users only via {NFTInteractions} contract
+   * _units must include decimals.
    *
    */
   function mint(

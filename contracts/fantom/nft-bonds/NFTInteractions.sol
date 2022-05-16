@@ -205,7 +205,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
     require(_isLocked(msg.sender), GameErrors.USER_LOCK_ERROR);
     require(amount > 0, GameErrors.INVALID_INPUT);
 
-    uint256 cost = amount * preTokenBonds.bondPrice();
+    uint256 cost = amount * preTokenBonds.bondPrice() / 10 ** nftGame.POINTS_DECIMALS();
     require(nftGame.balanceOf(msg.sender, _pointsID) >= cost, GameErrors.NOT_ENOUGH_AMOUNT);
 
     nftGame.burn(msg.sender, _pointsID, cost);

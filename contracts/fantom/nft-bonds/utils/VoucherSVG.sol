@@ -23,17 +23,17 @@ library SolvConstants {
 
 contract VoucherSVG is IVoucherSVG {
   using StringConvertor for uint256;
+  using StringConvertor for uint128;
   using StringConvertor for bytes;
 
   struct SVGParams {
-      address voucher;
-      string underlyingTokenSymbol;
-      uint256 tokenId;
-      uint256 bondsAmount;
-      uint64 startTime;
-      uint64 endTime;
-      uint8 claimType;
-      uint8 bondsDecimals;
+    string claimDate;
+    uint256 bondsAmount;
+    uint256 redemptionRate;
+    uint128 tokenId;
+    uint128 slotId;
+    uint8 bondsDecimals;
+    uint8 underlyingDecimals;
   }
 
   string[2] public voucherBgColors;
@@ -47,8 +47,8 @@ contract VoucherSVG is IVoucherSVG {
   ) {
     nftGame = NFTGame(_nftGame);
     _nftgame_GAME_ADMIN = nftGame.GAME_ADMIN();
-    voucherBgColors[0] = "D52E50";
-    voucherBgColors[1] = "101010";
+    voucherBgColors[0] = "#D52E50";
+    voucherBgColors[1] = "#101010";
   }
 
   /// Admin functions
@@ -76,19 +76,19 @@ contract VoucherSVG is IVoucherSVG {
   function generateSVG(address _voucher, uint256 _tokenId) external view override returns (string memory) {
     PreTokenBonds voucher = PreTokenBonds(_voucher);
     ERC20 underlyingToken = ERC20(voucher.underlying());
-    uint256 slotId = voucher.slotOf(_tokenId);
+    uint128 slotId = uint128(voucher.slotOf(_tokenId));
 
     SVGParams memory svgParams;
-    svgParams.voucher = address(voucher);
-    svgParams.underlyingTokenSymbol = underlyingToken.symbol();
-    svgParams.tokenId = _tokenId;
+    svgParams.claimDate = voucher.vestingTypeToTimestamp(slotId).dateToString();
     svgParams.bondsAmount = voucher.unitsInToken(_tokenId);
+    svgParams.redemptionRate = voucher.tokensInSlot(slotId);
+    svgParams.tokenId = uint128(_tokenId);
+    svgParams.slotId = slotId;
     svgParams.bondsDecimals = uint8(nftGame.POINTS_DECIMALS());
-    svgParams.startTime = uint64(nftGame.gamePhaseTimestamps(3));
-    svgParams.endTime = uint64(voucher.vestingTypeToTimestamp(slotId));
-    svgParams.claimType = uint8(SolvConstants.ClaimType.ONE_TIME);
-
+    svgParams.underlyingDecimals = uint8(underlyingToken.decimals());
+    
     return _generateSVG(svgParams);
+    // return '';
   }
 
   /// Internal functions
@@ -104,6 +104,7 @@ contract VoucherSVG is IVoucherSVG {
           _generateTitle(params),
           _generateLegend(),
           _generateClaimType(params),
+          _generateRedemption(params),
           "</g>",
           "</svg>"
         )
@@ -173,17 +174,15 @@ contract VoucherSVG is IVoucherSVG {
       string(
         abi.encodePacked(
           '<g transform="translate(40, 40)" fill="#FFFFFF" fill-rule="nonzero">',
+              '<image width="40" height="40" x="0" y="0" xlink:href="https://storageapi.fleek.co/705abd20-4ff5-4a50-95e6-50bd81b501bb-bucket/FujiLogo.png"></image>',
               '<text font-family="Arial" font-size="32">',
                   abi.encodePacked(
                       '<tspan x="', tokenIdLeftMargin.toString(), '" y="29"># ', tokenIdStr, '</tspan>'
                   ),
               '</text>',
-              '<text font-family="Arial" font-size="36">',
-                  '<tspan x="0" y="72">', _formatValue(params.bondsAmount, params.bondsDecimals), '</tspan>',
-              '</text>',
-              '<text font-family="Arial" font-size="24" font-weight="500">',
-                  '<tspan x="0" y="26">', params.underlyingTokenSymbol, ' Fuji Pre-Token Bond Voucher</tspan>',
-              '</text>',
+              '<text font-family="Arial" font-size="36"><tspan x="0" y="100">', _formatValue(params.bondsAmount, params.bondsDecimals),'</tspan></text>',
+              '<text font-family="Arial" font-size="24"><tspan x="0" y="130">Bond Units</tspan></text>',
+              '<text font-family="Arial" font-size="24" font-weight="500"><tspan x="50" y="26"> Fuji Pre-Token Bond Voucher</tspan></text>',
           '</g>'
         )
       );
@@ -210,14 +209,24 @@ contract VoucherSVG is IVoucherSVG {
     return 
       string(
         abi.encodePacked(
-          '<g transform="translate(40, 281)">',
-            '<rect fill="#000000" opacity="0.2" x="0" y="0" width="240" height="80" rx="16"></rect>',
-            '<text fill-rule="nonzero" font-family="Arial" font-size="20" font-weight="500" fill="#FFFFFF">',
-                '<tspan x="31" y="31">One-time</tspan>',
-            '</text>',
-            '<text fill-rule="nonzero" font-family="Arial" font-size="14" font-weight="500" fill="#FFFFFF">',
-                '<tspan x="30" y="58">Claim Date: ', uint256(params.endTime).dateToString(), '</tspan>',
-            '</text>',
+          '<g transform="translate(40, 260)">',
+            '<rect fill="#000000" opacity="0.2" x="0" y="0" width="240" height="100" rx="16"></rect>',
+            '<text fill-rule="nonzero" font-family="Arial" font-size="20" font-weight="500" fill="#FFFFFF"><tspan x="31" y="31">One-time</tspan></text>',
+            '<text fill-rule="nonzero" font-family="Arial" font-size="14" font-weight="500" fill="#FFFFFF"><tspan x="30" y="58">Claim Date: ', params.claimDate, '</tspan></text>',
+            '<text fill-rule="nonzero" font-family="Arial" font-size="14" font-weight="500" fill="#FFFFFF"><tspan x="31" y="85">', params.slotId.toString(),' Month-expiry Bond','</tspan></text>'
+          '</g>'
+        )
+      );
+  }
+
+  function _generateRedemption(SVGParams memory params) internal pure returns (string memory) {
+    return 
+      string(
+        abi.encodePacked(
+          '<g transform="translate(300, 310)">',
+            '<rect fill="#000000" opacity="0.2" x="0" y="0" width="240" height="50" rx="16"></rect>',
+            '<text fill-rule="nonzero" font-family="Arial" font-size="16" font-weight="500" fill="#FFFFFF"><tspan x="31" y="31">',
+            '1 Bond Unit = ', _formatValue(params.redemptionRate, params.underlyingDecimals),' tokens</tspan></text>',
           '</g>'
         )
       );

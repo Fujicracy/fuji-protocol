@@ -25,14 +25,10 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
     bytes name;
     bytes tokenDescription;
     string underlying;
-    string slotDesc;
     string claimDate;
     uint256 slotId;
     uint256 redeemableTokens;
   }
-
-  // '_bondSlotTimes' as defined in {PretokenBonds.sol} => short string description of vesting time
-  mapping(uint256 => string) private _slotDetails;
 
   // VoucherSVG
   IVoucherSVG public voucherSVG;
@@ -54,9 +50,6 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
     voucher = PreTokenBonds(_pretokenBonds);
     _pretokenbondName = voucher.name();
     voucherSVG = IVoucherSVG(_voucherSVG);
-    _slotDetails[3] = '3 Month-expiry Bond';
-    _slotDetails[6] = '6 Month-expiry Bond';
-    _slotDetails[12] = '12 Month-expiry Bond';
   }
 
   /// Admin Functions
@@ -88,14 +81,6 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
     require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     voucherSVG = IVoucherSVG(_voucherSVG);
     emit SetVoucherSVG(_voucherSVG);
-  }
-  /**
-   * @notice Admin restricted function to set short string describing SlotId
-   */
-  function setSlotDetailString(uint256 _slotId, string memory desc) external {
-    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
-    _slotDetails[_slotId] = desc;
-    emit SlotDetailChanges(_slotId, desc);
   }
 
   /// View Functions
@@ -164,14 +149,13 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
     detailed.tokenDescription = _tokenDescription(_tokenId);
     detailed.slotId = voucher.slotOf(_tokenId);
     detailed.underlying = voucher.underlying().addressToString();
-    detailed.slotDesc = _slotDetails[detailed.slotId];
     detailed.claimDate = voucher.vestingTypeToTimestamp(detailed.slotId).dateToString();
     detailed.redeemableTokens = voucher.tokensPerUnit(detailed.slotId) * voucher.unitsInToken(_tokenId);
   }
 
   function _buildDetailsSlot(uint256 _slotId) internal view returns(Details memory detailed) {
     detailed.underlying = voucher.underlying().addressToString();
-    detailed.slotDesc = _slotDetails[_slotId];
+    detailed.slotId = _slotId;
     detailed.claimDate = voucher.vestingTypeToTimestamp(_slotId).dateToString();
   }
 
@@ -200,11 +184,11 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
       abi.encodePacked(
           "{",
           '"underlyingToken":"', detailed.underlying,
-          '","claimType":"OneTime"',
-          '","vesting time":"', detailed.slotDesc,
+          '","claimType":"OneTime',
+          '","vesting time":"', detailed.slotId.toString(),' Month-expiry Bond',
           '","claim date":"', detailed.claimDate,
-          '","redeemable Tokens":"', detailed.redeemableTokens,
-          "}"
+          '","redeemable Tokens":"', detailed.redeemableTokens.toString(),
+          '"}'
       );
   }
 
@@ -218,9 +202,9 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
           "{",
           '"underlyingToken":"', detailed.underlying,
           '","claimType":"OneTime"',
-          '","vesting time":"', detailed.slotDesc,
+          '","vesting time":"', detailed.slotId.toString(),' Month-expiry Bond',
           '","claim date":"', detailed.claimDate,
-          "}"
+          '"}'
       );
   }
 

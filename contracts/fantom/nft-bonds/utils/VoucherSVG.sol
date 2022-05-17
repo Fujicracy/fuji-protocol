@@ -81,7 +81,7 @@ contract VoucherSVG is IVoucherSVG {
     SVGParams memory svgParams;
     svgParams.claimDate = voucher.vestingTypeToTimestamp(slotId).dateToString();
     svgParams.bondsAmount = voucher.unitsInToken(_tokenId);
-    svgParams.redemptionRate = voucher.tokensInSlot(slotId);
+    svgParams.redemptionRate = voucher.tokensPerUnit(slotId);
     svgParams.tokenId = uint128(_tokenId);
     svgParams.slotId = slotId;
     svgParams.bondsDecimals = uint8(nftGame.POINTS_DECIMALS());
@@ -102,7 +102,7 @@ contract VoucherSVG is IVoucherSVG {
           '<g stroke-width="1" fill="none" fill-rule="evenodd" font-family="Arial">',
           _generateBackground(),
           _generateTitle(params),
-          _generateLegend(),
+          _generateFujiLogo(),
           _generateClaimType(params),
           _generateRedemption(params),
           "</g>",
@@ -188,18 +188,22 @@ contract VoucherSVG is IVoucherSVG {
       );
   }
 
-  function _formatValue(uint256 value, uint8 decimals) private pure returns (bytes memory) {
-    return value.uint2decimal(decimals).trim(decimals - 2).addThousandsSeparator();
-  }
-
-  function _generateLegend() internal pure returns (string memory) {
-    return 
+    function _generateFujiLogo() internal pure returns (string memory) {
+    return
       string(
         abi.encodePacked(
-          '<g transform="translate(431, 165)">',
-            '<path d="M0,146 L1,0" stroke="url(#lg-3)" stroke-width="20" opacity="0.4" stroke-linecap="round" stroke-linejoin="round"></path>',
-            '<path d="M1,-12 C8,-12 13,-7 13,0 C13,6 9,11 3,12 L2,146 L-1,146 L-1,12 C-7,11 -11,6 -11,-0 C-11,-7 -6,-12 1,-12 Z" fill="url(#lg-5)" fill-rule="nonzero"></path>',
-            '<path d="M117,217 L-415,-98" stroke="url(#lg-4)" stroke-width="2" opacity="0.2"></path>',
+          '<g transform="translate(40, 40)">',
+            '<svg width="40" height="40" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">',
+              '<circle cx="300" cy="300" r="235" fill="#101010" stroke="url(#paint0_linear_113_36)" stroke-width="130"/>',
+              '<path d="M150 450.079L243.51 356.569C274.752 325.327 325.406 325.327 356.647 356.569L450 449.921L299.921 600L150 450.079Z" fill="#F5F5FD"/>',
+              '<path d="M133.66 466C176.2 508.627 235.02 535 300 535C364.98 535 423.8 508.627 466.34 466" stroke="#E4E4EB" stroke-width="132"/>',
+              '<defs>',
+              '<linearGradient id="paint0_linear_113_36" x1="300" y1="-85.5" x2="300" y2="657.5" gradientUnits="userSpaceOnUse">',
+              '<stop offset="0.178688" stop-color="#F60655"/>',
+              '<stop offset="0.882382" stop-color="#101010"/>',
+              '</linearGradient>',
+              '</defs>',
+            '</svg>',
           '</g>'
         )
       );
@@ -230,5 +234,9 @@ contract VoucherSVG is IVoucherSVG {
           '</g>'
         )
       );
+  }
+
+  function _formatValue(uint256 value, uint8 decimals) private pure returns (bytes memory) {
+    return value.uint2decimal(decimals).trim(decimals - 2).addThousandsSeparator();
   }
 }

@@ -92,7 +92,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    */
   function tokensPerUnit(uint256 _slot) public view returns (uint256) {
     uint256 WeightedUnits = _computeWeightedUnitAmounts();
-    uint256 basicTokensPerUnit = IERC20(underlying).balanceOf(address(this)) / WeightedUnits;
+    uint256 basicTokensPerUnit = IERC20(underlying).balanceOf(address(this)) * 10 ** _unitDecimals / WeightedUnits;
     return basicTokensPerUnit * bondSlotMultiplier[_slot];
   }
 

@@ -119,8 +119,8 @@ contract VoucherSVG is IVoucherSVG {
             abi.encodePacked(
                 '<defs>',
                     '<linearGradient x1="0%" y1="75%" x2="100%" y2="30%" id="lg-1">',
-                        '<stop stop-color="', color0,'" offset="0%"></stop>',
-                        '<stop stop-color="', color1, '" offset="100%"></stop>',
+                        '<stop stop-color="', color1,'" offset="0%"></stop>',
+                        '<stop stop-color="', color0, '" offset="100%"></stop>',
                     '</linearGradient>',
                     '<rect id="path-2" x="16" y="16" width="568" height="368" rx="16"></rect>',
                     '<linearGradient x1="100%" y1="50%" x2="0%" y2="50%" id="lg-2">',
@@ -192,8 +192,7 @@ contract VoucherSVG is IVoucherSVG {
     return
       string(
         abi.encodePacked(
-          '<g transform="translate(40, 40)">',
-            '<svg width="40" height="40" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">',
+          '<g transform="translate(40, 40) scale(.06 .06)">',
               '<circle cx="300" cy="300" r="235" fill="#101010" stroke="url(#paint0_linear_113_36)" stroke-width="130"/>',
               '<path d="M150 450.079L243.51 356.569C274.752 325.327 325.406 325.327 356.647 356.569L450 449.921L299.921 600L150 450.079Z" fill="#F5F5FD"/>',
               '<path d="M133.66 466C176.2 508.627 235.02 535 300 535C364.98 535 423.8 508.627 466.34 466" stroke="#E4E4EB" stroke-width="132"/>',
@@ -203,7 +202,6 @@ contract VoucherSVG is IVoucherSVG {
               '<stop offset="0.882382" stop-color="#101010"/>',
               '</linearGradient>',
               '</defs>',
-            '</svg>',
           '</g>'
         )
       );

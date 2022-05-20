@@ -82,7 +82,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
         ++i;
       }
     }
-    bondPrice = 10 * 10 ** decimals;
+    bondPrice = 10000 * 10 ** decimals;
   }
 
   /// View functions
@@ -91,8 +91,8 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    * @notice Returns the number of tokens per unit bond for a slotID (vesting time)
    */
   function tokensPerUnit(uint256 _slot) public view returns (uint256) {
-    uint256 WeightedUnits = _computeWeightedUnitAmounts();
-    uint256 basicTokensPerUnit = IERC20(underlying).balanceOf(address(this)) * 10 ** _unitDecimals / WeightedUnits;
+    uint256 weightedUnits = _computeWeightedUnitAmounts();
+    uint256 basicTokensPerUnit = IERC20(underlying).balanceOf(address(this)) * 10 ** _unitDecimals / weightedUnits;
     return basicTokensPerUnit * bondSlotMultiplier[_slot];
   }
 

@@ -103,17 +103,22 @@ const deployContracts = async () => {
     ];
     prices = [2000, 10000, 20000].map( i => parseUnits(i, POINTS_DECIMALS));
     rewardfactors = [
-    // Note that 'standard' rewards chances are:
-    // 50%, 20%, 20%, 5%, 0.01%
-      [0.9, 0, 1.1, 2, 25 ], // CrateId = 1 
-      [0.9, 0, 1.1, 4, 50 ], // CrateId = 2
-      [0.9, 0, 1.1, 8, 100], // CrateId = 3
+      // Note that 'standard' rewards chances are:
+      // 52.50%, 20.00%, 22.50%, 3.99%, 0.01%
+      [0.25, 0, 1.1, 2, 25], // CrateId = 1
+      [0.25, 0, 1.1, 4, 50], // CrateId = 2
+      [0.25, 0, 1.1, 8, 100], // CrateId = 3
     ];
   }
   
   // Functions below return string addresses
   let nftgame = await deployNFTGame([phases]);
-  let nftinteractions = await deployNFTInteractions([nftgame]);
+  const library = {
+    libraries: {
+      LibPseudoRandom: "0x21D2e910eAb08F57f662477c3afc73bBE683aa67", // fantom
+    }
+  };
+  let nftinteractions = await deployNFTInteractions([nftgame], library);
   let pretokenbonds = await deployPreTokenBonds([nftgame]);
   
   // Build etherjs contracts again

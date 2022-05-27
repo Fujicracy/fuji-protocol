@@ -13,13 +13,13 @@ import "./PreTokenBonds.sol";
 import "../../interfaces/chainlink/AggregatorV3Interface.sol";
 
 contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
-  /**
-   * @dev Reward for opening a crate, 'tokenId' corresponds to ERC1155 ids
-   */
-  struct Reward {
-    uint256 tokenId;
-    uint256 amount;
-  }
+  // /**
+  //  * @dev Reward for opening a crate, 'tokenId' corresponds to ERC1155 ids
+  //  */
+  // struct Reward {
+  //   uint256 tokenId;
+  //   uint256 amount;
+  // } delete
 
   /**
    * @dev Changing a crate points price
@@ -44,7 +44,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
   /**
    * @dev Opened crates
    */
-  event CratesOpened(address user, uint256 crateId, Reward[] rewards);
+  event CratesOpened(address user, uint256 crateId, LibPseudoRandom.Reward[] rewards);
 
   /**
    * @dev Final score locked
@@ -267,12 +267,11 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * @notice opens crates with the given id
    */
   function openCrate(uint256 crateId, uint256 amount) external nonReentrant {
-    // accumulation and trading only
+    // Accumulation and trading only
     uint256 phase = nftGame.getPhase();
     require(phase > 0 && phase < 3, GameErrors.WRONG_PHASE);
     require(!_isLocked(msg.sender), GameErrors.USER_LOCK_ERROR);
     require(amount > 0, GameErrors.INVALID_INPUT);
-
     require(
       crateId == CRATE_COMMON_ID || crateId == CRATE_EPIC_ID || crateId == CRATE_LEGENDARY_ID,
       GameErrors.INVALID_INPUT
@@ -280,69 +279,44 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
     require(nftGame.balanceOf(msg.sender, crateId) >= amount, GameErrors.NOT_ENOUGH_AMOUNT);
     require(_crateRewards[crateId].length == _probabilityIntervals.length, GameErrors.VALUE_NOT_SET);
 
-    // check if one day has passed to reset NFT card limit
+    // Check if one day has passed to reset NFT card limit
     if (block.timestamp > cardsCapTimestamp + 1 days) {
       cardsCapTimestamp = block.timestamp;
       mintedCards = 0;
     }
 
-    // Points + Crates + Cards
     uint256 cardsAmount = nftGame.nftCardsAmount();
-    // Used for event
-    Reward[] memory rewards = new Reward[](amount);
-    // User for minting logic
-    uint256[] memory aggregatedRewards = new uint256[](1 + 3 + cardsAmount);
-
     uint256 entropyValue = isRedstoneOracleOn ? _getRedstoneEntropy() : _getChainlinkEntropy();
-    uint256[] memory randomNumbers = LibPseudoRandom.pickRandomNumbers(amount, entropyValue);
-    bool isCard;
 
-    // iterate all crates to open
-    uint256 plength = _probabilityIntervals.length;
-    uint256 pointsID = _pointsID;
-    for (uint256 j = 0; j < amount;) {
-      isCard = true;
-      // iterate propability intervals to see the reward for a specific crate
-      for (uint256 i = 0; i < plength && isCard;) {
-        if (randomNumbers[j] <= _probabilityIntervals[i]) {
-          isCard = false;
-          aggregatedRewards[pointsID] += _crateRewards[crateId][i];
-          rewards[j].amount = _crateRewards[crateId][i];
-        }
-        unchecked {
-          ++i;
-        }
-      }
+    // Pack game conditionals
+    LibPseudoRandom.GameInfo memory gameInfo = LibPseudoRandom.GameInfo({
+        nftCardIdStart: uint32(NFT_CARD_ID_START),
+        cardsAmount: uint32(cardsAmount),
+        pointsID: uint32(_pointsID),
+        mintedCards: uint32(mintedCards),
+        numPlayers: uint32(nftGame.numPlayers()),
+        cardsPerDayRatio: uint32(cardsPerDayRatio)
+    });
 
-      // if the reward is a card determine the card id
-      if (isCard) {
-        if (mintedCards < nftGame.numPlayers() / cardsPerDayRatio) {
-          mintedCards++;
-          uint256 step = 1000000 / cardsAmount;
-          uint256 randomNum = LibPseudoRandom.pickRandomNumbers(1, entropyValue + j)[0];
-          uint256 randomId = NFT_CARD_ID_START;
-          for (uint256 i = step; i <= randomNum; i += step) {
-            randomId++;
-          }
-          aggregatedRewards[randomId]++;
-          rewards[j].tokenId = randomId;
-        } else {
-          aggregatedRewards[pointsID] += _crateRewards[crateId][0];
-          rewards[j].amount = _crateRewards[crateId][0];
-        }
-      }
+    (
+      // Used for event
+      LibPseudoRandom.Reward[] memory rewards,
+      // Used for minting logic
+      uint256[] memory aggregatedRewards
+    ) = LibPseudoRandom.iterateCratesLogic(
+      amount, 
+      _crateRewards[crateId], 
+      _probabilityIntervals, 
+      entropyValue, 
+      gameInfo
+    );
 
-      unchecked {
-        ++j;
-      }
+    // Mint points
+    if (aggregatedRewards[_pointsID] > 0) {
+      nftGame.mint(msg.sender, _pointsID, aggregatedRewards[_pointsID]);
     }
 
-    // mint points
-    if (aggregatedRewards[pointsID] > 0) {
-      nftGame.mint(msg.sender, pointsID, aggregatedRewards[pointsID]);
-    }
-
-    // mint cards
+    // Mint cards
     uint256 cardsLimit = cardsAmount + NFT_CARD_ID_START;
     for (uint256 i = NFT_CARD_ID_START; i < cardsLimit;) {
       if (aggregatedRewards[i] > 0) {
@@ -353,9 +327,8 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
       }
     }
 
-    // burn opened crates
+    // Burn opened crates
     nftGame.burn(msg.sender, crateId, amount);
-
     emit CratesOpened(msg.sender, crateId, rewards);
   }
 

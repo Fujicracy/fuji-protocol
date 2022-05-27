@@ -8,6 +8,8 @@ const { WrapperBuilder } = require("redstone-evm-connector");
 const SPOOKY_ROUTER_ADDR = "0xF491e7B69E4244ad4002BC14e878a34207E38c29";
 const TREASURY_ADDR = "0xb98d4D4e205afF4d4755E9Df19BD0B8BD4e0f148"; // Deployer
 
+const LIB_PSEUDORANDOM = "0x3A799ED4615A34300c42FA6569FbB9D239371293";
+
 const DEBUG = false;
 
 const ASSETS = {
@@ -133,8 +135,18 @@ const fixture = async ([wallet]) => {
   const NFTGame = await getContractFactory("NFTGame");
   const nftgame = await upgrades.deployProxy(NFTGame, [[1, 2, 3, 4]]);
 
-  const NFTInteractions = await getContractFactory("NFTInteractions");
-  const nftinteractions = await upgrades.deployProxy(NFTInteractions, [nftgame.address]);
+  const NFTInteractions = await getContractFactory("NFTInteractions", {
+    libraries: {
+      LibPseudoRandom: "0x63E978f8C647bAA71184b9eCcB39e0509C09D681", // fantom
+    }
+  });
+  const nftinteractions = await upgrades.deployProxy(
+    NFTInteractions,
+    [nftgame.address],
+    {
+      unsafeAllow: ['external-library-linking']
+    }
+  );
 
   const wrappednftinteractions = WrapperBuilder
     .wrapLite(nftinteractions)
@@ -240,4 +252,5 @@ module.exports = {
   fixture,
   ASSETS,
   VAULTS: getVaults(),
+  LIB_PSEUDORANDOM
 };

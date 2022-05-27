@@ -72,6 +72,8 @@ const getVaultsAddrs = (network) => {
   }
 };
 
+const { LIB_PSEUDORANDOM } = require("./consts");
+
 /// Fixed Game Parameters
 const POINTS_DECIMALS = 9;
 const CRATE_COMMON_ID =1;
@@ -109,7 +111,7 @@ const deployContracts = async () => {
   let nftgame = await deployNFTGame([phases]);
   const library = {
     libraries: {
-      LibPseudoRandom: "0x63E978f8C647bAA71184b9eCcB39e0509C09D681", // rinkeby
+      LibPseudoRandom: LIB_PSEUDORANDOM, // rinkeby
     }
   };
   let nftinteractions = await deployNFTInteractions([nftgame], library);

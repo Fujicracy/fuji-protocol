@@ -4,7 +4,7 @@ const { WrapperBuilder } = require("redstone-evm-connector");
 
 const { syncTime } = require("../utils");
 
-const DEBUG = false;
+const DEBUG = true;
 
 const RANDOM_LIBRARY_LOWER_LIMIT = ethers.BigNumber.from("0");;
 const RANDOM_LIBRARY_UPPER_LIMIT = ethers.BigNumber.from("1000001");
@@ -49,7 +49,14 @@ describe("Randomness Unit Tests", function () {
 
     await syncTime();
 
-    MockRandomTests = await ethers.getContractFactory("MockRandomTests");
+    MockRandomTests = await ethers.getContractFactory(
+      "MockRandomTests",
+      {
+        libraries: {
+          LibPseudoRandom: "0x63E978f8C647bAA71184b9eCcB39e0509C09D681", // fantom
+        }
+      }
+    );
     mockrandom = await MockRandomTests.deploy([]);
     await mockrandom.setMaxEntropyDelay(3*60);
     wrappedmockrandom = WrapperBuilder

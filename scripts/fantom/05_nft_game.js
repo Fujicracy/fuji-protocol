@@ -43,6 +43,8 @@ const getVaultsAddrs = () => {
   ];
 };
 
+const { LIB_PSEUDORANDOM } = require("./consts");
+
 const TESTING_PARAMS = true;
 const SKIP_VAULTS = false;
 
@@ -115,7 +117,7 @@ const deployContracts = async () => {
   let nftgame = await deployNFTGame([phases]);
   const library = {
     libraries: {
-      LibPseudoRandom: "0x21D2e910eAb08F57f662477c3afc73bBE683aa67", // fantom
+      LibPseudoRandom: LIB_PSEUDORANDOM, // fantom
     }
   };
   let nftinteractions = await deployNFTInteractions([nftgame], library);

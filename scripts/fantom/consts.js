@@ -45,7 +45,10 @@ const ASSETS = {
 
 const SPOOKY_ROUTER_ADDR = "0xF491e7B69E4244ad4002BC14e878a34207E38c29";
 
+const { LIB_PSEUDORANDOM } = require("../../test/fantom/utils");
+
 module.exports = {
   ASSETS,
   SPOOKY_ROUTER_ADDR,
+  LIB_PSEUDORANDOM
 };

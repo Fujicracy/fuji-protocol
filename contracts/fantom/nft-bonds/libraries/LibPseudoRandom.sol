@@ -1,10 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface INFTInteract {
-  function getCrateRewards(uint256 crateId) external view returns (uint256[] memory);
-}
-
 library LibPseudoRandom {
   /**
    * @dev Reward for opening a crate, 'tokenId' corresponds to ERC1155 ids
@@ -14,6 +10,9 @@ library LibPseudoRandom {
     uint256 amount;
   }
 
+  /**
+   * @dev Struct created to pack the basic game information required for 'interateCratesLogic()'
+   */
   struct GameInfo {
     uint32 nftCardIdStart;
     uint32 cardsAmount;
@@ -26,7 +25,8 @@ library LibPseudoRandom {
   uint256 private constant decimals = 6;
 
   /**
-   * @dev Returns 
+   * @dev Returns result of openening a series of creates
+   * This function was refactored out of {NFTInteractions.sol} to reduce bytecode.
    */
   function iterateCratesLogic(
     uint256 amount,
@@ -70,6 +70,24 @@ library LibPseudoRandom {
     }
   }
 
+  /**
+   * @dev Returns amount of requested picks of a pseudo-random number between 0 and 1.
+   * @dev Decimals is defined by constant.
+   * @param amountOfPicks number of random picks to return.
+   * @param entropy random value that must be provided from a reliable oracle source.
+   * @return results array of picks.
+   */
+  function pickRandomNumbers(uint256 amountOfPicks, uint256 entropy)
+    external
+    view
+    returns (uint256[] memory results)
+  {
+    results = _pickRandomNumbers(amountOfPicks, entropy);
+  }
+
+  /**
+   * @dev Returns amount and type of cards received, if the opened crate resulted in a card reward.
+   */
   function _isCardRoutine(
     uint256 jLoop,
     uint256 entropyValue,
@@ -96,20 +114,8 @@ library LibPseudoRandom {
   }
 
   /**
-   * @dev Returns amount of requested picks of a pseudo-random number between 0 and 1.
-   * @dev Decimals is defined by constant.
-   * @param amountOfPicks number of random picks to return.
-   * @param entropy random value that must be provided from a reliable oracle source.
-   * @return results array of picks.
+   * @dev See {pickRandomNumbers()}
    */
-  function pickRandomNumbers(uint256 amountOfPicks, uint256 entropy)
-    external
-    view
-    returns (uint256[] memory results)
-  {
-    results = _pickRandomNumbers(amountOfPicks, entropy);
-  }
-
   function _pickRandomNumbers(uint256 amountOfPicks, uint256 entropy)
     internal
     view
@@ -122,10 +128,16 @@ library LibPseudoRandom {
     }
   }
 
+  /**
+   * @dev Returns a number in range.
+   */
   function _pickProbability(uint256 nonce, uint256 entropy) private view returns (uint256 index) {
     index = (_random(nonce, entropy) % 10**decimals) + 1;
   }
 
+  /**
+   * @dev Returns a pseudo random number given nonce and entropy for external source. 
+   */
   function _random(uint256 nonce, uint256 entropy) private view returns (uint256) {
     return
       uint256(

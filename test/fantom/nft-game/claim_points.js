@@ -10,7 +10,7 @@ const { provider } = ethers;
 
 const abiCoder = ethers.utils.defaultAbiCoder;
 
-const { quickFixture } = require("./quick_test_fixture")
+const { quickFixture } = require("./fixtures/quick_test_fixture");
 
 const {
   evmSnapshot,

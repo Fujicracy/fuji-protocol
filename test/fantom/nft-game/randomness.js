@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const { WrapperBuilder } = require("redstone-evm-connector");
 
-const { syncTime } = require("../utils");
+const { syncTime, LIB_PSEUDORANDOM } = require("../utils");
 
 const DEBUG = true;
 
@@ -53,7 +53,7 @@ describe("Randomness Unit Tests", function () {
       "MockRandomTests",
       {
         libraries: {
-          LibPseudoRandom: "0x63E978f8C647bAA71184b9eCcB39e0509C09D681", // fantom
+          LibPseudoRandom: LIB_PSEUDORANDOM, // fantom
         }
       }
     );

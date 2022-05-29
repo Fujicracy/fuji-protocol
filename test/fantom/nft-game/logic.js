@@ -120,7 +120,7 @@ describe("NFT Bond Logic", function () {
     it("Interest", async function () {
       const vault = this.f.vaultftmdai;
       const depositAmount = parseUnits(5000);
-      const borrowAmount = parseUnits(1500);
+      const borrowAmount = parseUnits(200);
       const time = 60 * 60 * 24 * 365; // 1 year
 
       await vault.connect(this.user).depositAndBorrow(depositAmount, borrowAmount, {

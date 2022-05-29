@@ -264,7 +264,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
     uint256 tokensPerBond = tokensPerUnit(slot);
     _burnVoucher(_tokenId);
 
-    IERC20(underlying).transfer(msg.sender, units * tokensPerBond);
+    IERC20(underlying).transfer(msg.sender, units * tokensPerBond / 10 ** _unitDecimals);
   }
 
   /**

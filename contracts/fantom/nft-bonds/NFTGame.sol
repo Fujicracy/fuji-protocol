@@ -230,7 +230,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     _updateUserInfo(user, uint128(debt), phase);
 
     // Compute and assign final score
-    uint256 finalScore = boostNumber == 0 ? userdata[user].accruedPoints : (userdata[user].accruedPoints * boostNumber) / 100;
+    uint256 finalScore = (userdata[user].accruedPoints * boostNumber) / 100;
 
     userdata[user].accruedPoints = uint128(finalScore);
     lockedNFTID = uint256(keccak256(abi.encodePacked(user, finalScore)));

@@ -68,7 +68,7 @@ describe("Bond Functionality", function () {
 
     // Mint All cardIDs for 'user'
     for (let index = cardIds[0]; index <= cardIds[1]; index++) {
-      await nftgame.connect(admin).mint(index, user.address);
+      await nftgame.connect(admin).mint(user.address, index, 1);
     }
 
     // Move to trading phase.
@@ -401,7 +401,7 @@ describe("Bond Functionality", function () {
     it("Only admin should be able to change price of bonds 'units'", async () => {
       // 'user' should not be able to set price.
       await expect(pretokenbond.connect(user).setBondPrice(1)).to.be.reverted;
-      const newBondPrice = parseUnits(2, 5);
+      const newBondPrice = parseUnits(2, pointsDecimals);
       await pretokenbond.setBondPrice(newBondPrice);
       expect(await pretokenbond.bondPrice()).to.eq(newBondPrice);
     });
@@ -421,7 +421,7 @@ describe("Bond Functionality", function () {
     });
 
     it("Should revert if user tries to mint voucher before accumulation phase ends", async () => {
-      const numberOfBondUnits = 5;
+      const numberOfBondUnits = parseUnits(5, pointsDecimals);
       const month3Vesting = 3;
       const phase = await nftgame.getPhase();
       expect(phase).to.eq(1);
@@ -437,7 +437,7 @@ describe("Bond Functionality", function () {
       expect(phase).to.eq(2);
 
       // Mint the bonds
-      const numberOfBondUnits = BigNumber.from([20]);
+      const numberOfBondUnits = parseUnits(5, pointsDecimals);
       const month3Vesting = 3;
       
       await expect(
@@ -446,23 +446,25 @@ describe("Bond Functionality", function () {
 
       // 'user' locks in points.
       await nftinteractions.connect(user).lockFinalScore();
+      const lockedBalance = await nftgame.balanceOf(user.address, 0);
 
       // 'user' mints voucher.
       const lnftinteractions = nftinteractions.connect(user);
       // 'firstTokenId' is required in future tests. 
       firstTokenId = await lnftinteractions.callStatic.mintBonds(month3Vesting, numberOfBondUnits);
-      await nftinteractions.connect(user).mintBonds(month3Vesting, numberOfBondUnits);
+      await lnftinteractions.mintBonds(month3Vesting, numberOfBondUnits);
       const owner = await pretokenbond.ownerOf(firstTokenId);
       expect(owner).to.eq(user.address);
 
       // checks 'user' points are deducted.
       const bondPrice = await pretokenbond.bondPrice();
-      const costOfVoucher = bondPrice.mul(numberOfBondUnits);
-      expect(await nftgame.balanceOf(user.address, 0)).to.eq(initialPoints.sub(costOfVoucher));
+      const costOfVoucher = bondPrice.mul(numberOfBondUnits).div(parseUnits(1, pointsDecimals));
+      const newBalance = await nftgame.balanceOf(user.address, 0);
+      expect(newBalance).to.eq(lockedBalance.sub(costOfVoucher));
     });
 
     it("Should revert if user tries to mint directly from 'PreTokenBonds.sol' contract", async () => {
-      const numberOfBondUnits = 5;
+      const numberOfBondUnits = parseUnits(5, pointsDecimals);
       const month3Vesting = 3;
       await expect(
         pretokenbond.connect(user).mint(user.address, month3Vesting, numberOfBondUnits)
@@ -471,7 +473,7 @@ describe("Bond Functionality", function () {
 
     it("Should not be able to mint voucher after bonding phase ends", async () => {
       // Mint 1 voucher of each type before moving to trading phase.
-      const numberOfBondUnits = BigNumber.from([5]);
+      const numberOfBondUnits = parseUnits(5, pointsDecimals);
       const month6Vesting = 6;
       const month12Vesting = 12;
       const lnftinteractions = nftinteractions.connect(user);
@@ -489,7 +491,7 @@ describe("Bond Functionality", function () {
 
       // Revert expected now in bonding phase.
       await expect(
-        pretokenbond.connect(user).mint(user.address, month6Vesting, numberOfBondUnits)
+        lnftinteractions.mintBonds(month6Vesting, numberOfBondUnits)
       ).to.be.reverted;
     });
 
@@ -538,7 +540,7 @@ describe("Bond Functionality", function () {
       }
       
       const totalWeightedUnits = unitsPerSlot[0].add(unitsPerSlot[1].mul(multiplierValues[1])).add(unitsPerSlot[2].mul(multiplierValues[2]));
-      const basicTokenPerUnit = amountmocktoken.div(totalWeightedUnits);
+      const basicTokenPerUnit = amountmocktoken.mul(parseUnits(1, pointsDecimals)).div(totalWeightedUnits);
       
       const expectedTokensPerBond = [
         basicTokenPerUnit,
@@ -569,7 +571,7 @@ describe("Bond Functionality", function () {
       await pretokenbond.connect(user).claim(month3TokenId);
 
       const userTokenBalance = await mocktoken.balanceOf(user.address);
-      const newExpected = unitsInToken.mul(expectedTokensPerBond);
+      const newExpected = unitsInToken.mul(expectedTokensPerBond).div(parseUnits(1, pointsDecimals));
       latestUserTokenBal = latestUserTokenBal.add(newExpected);
 
       expect(userTokenBalance).to.eq(latestUserTokenBal);
@@ -591,7 +593,7 @@ describe("Bond Functionality", function () {
       await pretokenbond.connect(user).claim(month6TokenId);
       
       const userTokenBalance = await mocktoken.balanceOf(user.address);
-      const newExpected = unitsInToken.mul(expectedTokensPerBond);
+      const newExpected = unitsInToken.mul(expectedTokensPerBond).div(parseUnits(1, pointsDecimals));
       latestUserTokenBal = latestUserTokenBal.add(newExpected);
 
       expect(userTokenBalance).to.eq(latestUserTokenBal);
@@ -613,7 +615,7 @@ describe("Bond Functionality", function () {
       await pretokenbond.connect(user).claim(month12TokenId);
 
       const userTokenBalance = await mocktoken.balanceOf(user.address);
-      const newExpected = unitsInToken.mul(expectedTokensPerBond);
+      const newExpected = unitsInToken.mul(expectedTokensPerBond).div(parseUnits(1, pointsDecimals));
       latestUserTokenBal = latestUserTokenBal.add(newExpected);
 
       expect(userTokenBalance).to.eq(latestUserTokenBal);

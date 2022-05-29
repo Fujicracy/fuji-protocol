@@ -82,8 +82,8 @@ describe("NFT Bond Phase Tests", function () {
 
     it("No Points Accumulation", async function () {
       const vault = this.f.vaultftmdai;
-      const depositAmount = parseUnits(2500);
-      const borrowAmount = parseUnits(250);
+      const depositAmount = parseUnits(5000);
+      const borrowAmount = parseUnits(75);
       const time = 60 * 60 * 24 * 6; // 6 days
 
       await vault.connect(this.user).depositAndBorrow(depositAmount, borrowAmount, {
@@ -134,7 +134,7 @@ describe("NFT Bond Phase Tests", function () {
 
     it("Should have some points accumulated", async function () {
       const vault = this.f.vaultftmdai;
-      const borrowAmount = parseUnits(250);
+      const borrowAmount = parseUnits(75);
 
       await vault.connect(this.user).borrow(borrowAmount);
       const time = 60 * 60 * 24 * 4; // 4 more days since last time travel
@@ -211,7 +211,7 @@ describe("NFT Bond Phase Tests", function () {
     it("Should not accumulate more points", async function () {
       const userPointsInitial = await this.f.nftgame.balanceOf(this.user.address, 0);
       const vault = this.f.vaultftmdai;
-      const borrowAmount = parseUnits(250);
+      const borrowAmount = parseUnits(75);
       await vault.connect(this.user).borrow(borrowAmount);
       const time = 60 * 60 * 24 * 4; // 4 more days since last time travel
       await timeTravel(time);
@@ -303,7 +303,7 @@ describe("NFT Bond Phase Tests", function () {
     it("Should not accumulate more points", async function () {
       const userPointsInitial = await this.f.nftgame.balanceOf(this.user.address, 0);
       const vault = this.f.vaultftmdai;
-      const borrowAmount = parseUnits(250);
+      const borrowAmount = parseUnits(75);
       await vault.connect(this.user).borrow(borrowAmount);
       const time = 60 * 60 * 24 * 4; // 4 more days since last time travel
       await timeTravel(time);

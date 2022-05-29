@@ -157,8 +157,8 @@ const fixture = async ([wallet]) => {
   // Step 2: Providers
   const ProviderCream = await getContractFactory("ProviderCream");
   const cream = await ProviderCream.deploy([]);
-  const ProviderScream = await getContractFactory("ProviderScream");
-  const scream = await ProviderScream.deploy([]);
+  // const ProviderScream = await getContractFactory("ProviderScream");
+  // const scream = await ProviderScream.deploy([]);
   const ProviderGeist = await getContractFactory("ProviderGeist");
   const geist = await ProviderGeist.deploy([]);
   const ProviderHundred = await getContractFactory("ProviderHundred");
@@ -203,7 +203,6 @@ const fixture = async ([wallet]) => {
     await vault.setProviders(
       [
         cream.address,
-        scream.address,
         geist.address,
         hundred.address
       ]
@@ -231,7 +230,6 @@ const fixture = async ([wallet]) => {
     ...tokens,
     ...vaults,
     cream,
-    scream,
     geist,
     hundred,
     nftgame,

@@ -6,7 +6,8 @@ const { BigNumber, provider } = ethers;
 
 const { WrapperBuilder } = require("redstone-evm-connector");
 
-const { fixture, ASSETS, VAULTS, syncTime } = require("../utils");
+const {  syncTime } = require("../utils");
+const { quickFixture, VAULTS } = require("./fixtures/quick_test_fixture");
 
 const {
   parseUnits,
@@ -39,7 +40,7 @@ describe("NFT Bond Crate System", function () {
     this.user = this.users[2];
 
     const loadFixture = createFixtureLoader(this.users, provider);
-    this.f = await loadFixture(fixture);
+    this.f = await loadFixture(quickFixture);
 
     this.pointsDecimals = await this.f.nftgame.POINTS_DECIMALS();
     this.crateIds = [
@@ -55,7 +56,6 @@ describe("NFT Bond Crate System", function () {
 
   beforeEach(async function () {
     if (this.evmSnapshot1) await evmRevert(this.evmSnapshot1);
-
     this.evmSnapshot1 = await evmSnapshot();
   });
 
@@ -78,14 +78,14 @@ describe("NFT Bond Crate System", function () {
       const invalidId = 9999;
 
       await expect(this.f.nftinteractions.setCratePrice(invalidId, price)).to.be.revertedWith(
-        "Invalid crate ID"
+        "G02"
       );
     });
 
     it("Buying crate with no set price", async function () {
       await expect(
         this.f.nftinteractions.connect(this.user).mintCrates(this.crateIds[0], 1)
-      ).to.be.revertedWith("Price not set");
+      ).to.be.revertedWith("G01");
     });
   });
 
@@ -95,7 +95,7 @@ describe("NFT Bond Crate System", function () {
 
       for (let i = 0; i < VAULTS.length; i += 1) {
         const vault = VAULTS[i];
-        await this.f[vault.name].setActiveProvider(this.f.geist.address);
+        await this.f[vault.name].setActiveProvider(this.f.hundred.address);
       }
       await this.f.nftgame.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
 
@@ -115,13 +115,13 @@ describe("NFT Bond Crate System", function () {
       const invalidId = 9999;
       await expect(
         this.f.nftinteractions.connect(this.user).mintCrates(invalidId, 1)
-      ).to.be.revertedWith("Invalid crate ID");
+      ).to.be.revertedWith("G02");
     });
 
     it("Buying crate without points", async function () {
       await expect(
         this.f.nftinteractions.connect(this.user).mintCrates(this.crateIds[0], 1)
-      ).to.be.revertedWith("Not enough points");
+      ).to.be.revertedWith("G05");
     });
 
     it("Successfuly buying crate", async function () {
@@ -183,7 +183,7 @@ describe("NFT Bond Crate System", function () {
 
       for (let i = 0; i < VAULTS.length; i += 1) {
         const vault = VAULTS[i];
-        await this.f[vault.name].setActiveProvider(this.f.geist.address);
+        await this.f[vault.name].setActiveProvider(this.f.hundred.address);
       }
       await this.f.nftgame.setValidVaults(VAULTS.map((v) => this.f[v.name].address));
 
@@ -201,6 +201,7 @@ describe("NFT Bond Crate System", function () {
       const factors = [
         [0, 0.9, 1.1, 2, 25],
         [0, 0.9, 1.25, 4, 50],
+        [0]
       ];
       for (let i = 0; i < factors.length; i++) {
         await this.f.nftinteractions.setCrateRewards(
@@ -213,7 +214,7 @@ describe("NFT Bond Crate System", function () {
     beforeEach(async function () {
       const vault = this.f.vaultftmdai;
       const depositAmount = parseUnits(5000);
-      const borrowAmount = parseUnits(2000);
+      const borrowAmount = parseUnits(500);
       const amount = 2;
 
       await vault.connect(this.user).depositAndBorrow(depositAmount, borrowAmount, {
@@ -235,7 +236,7 @@ describe("NFT Bond Crate System", function () {
       const invalidId = 9999;
       const localcontract = await gameEntropySelector(this.f.nftinteractions, this.user);
       await syncTime();
-      await expect(localcontract.openCrate(invalidId, 1)).to.be.revertedWith("Invalid crate ID");
+      await expect(localcontract.openCrate(invalidId, 1)).to.be.revertedWith("G02");
     });
 
     it("Rewards not set", async function () {
@@ -243,7 +244,7 @@ describe("NFT Bond Crate System", function () {
       const localcontract = await gameEntropySelector(this.f.nftinteractions, this.user);
       await syncTime();
       await expect(localcontract.openCrate(noRewardsCrate, 1)).to.be.revertedWith(
-        "Rewards not set"
+        "G03"
       );
     });
 
@@ -252,7 +253,7 @@ describe("NFT Bond Crate System", function () {
       const localcontract = await gameEntropySelector(this.f.nftinteractions, this.user);
       await syncTime();
       await expect(localcontract.openCrate(this.crateIds[0], amount)).to.be.revertedWith(
-        "Not enough crates"
+        "G05"
       );
     });
 

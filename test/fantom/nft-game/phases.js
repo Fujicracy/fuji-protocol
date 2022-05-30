@@ -275,14 +275,8 @@ describe("NFT Bond Phase Tests", function () {
       for (let index = 0; index < crateIdsArray.length; index++) {
         await expect(await this.f.nftgame.balanceOf(this.user.address, crateIdsArray[index])).to.eq(0);
       }
-      let tempBalance;
       for (let index = 0; index < cardIdsArray.length; index++) {
-        tempBalance = cardPreLockBalance[index];
-        if (tempBalance > 0) {
-          tempBalance = tempBalance.sub(1); // Burned during the 'lockFinalScore()'
-        }
-        await expect(await this.f.nftgame.balanceOf(this.user.address, cardIdsArray[index]))
-          .to.eq(tempBalance);
+        await expect(await this.f.nftgame.balanceOf(this.user.address, cardIdsArray[index])).to.eq(0);
       }
     });
   });

@@ -14,6 +14,7 @@ import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "../../interfaces/IVault.sol";
 import "../../interfaces/IVaultControl.sol";
 import "../../interfaces/IERC20Extended.sol";
+import "./interfaces/ILockNFTDescriptor.sol";
 import "./libraries/GameErrors.sol";
 
 contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable {
@@ -31,6 +32,11 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   event CardAmountChanged(uint256 newAmount);
 
   /**
+  * @dev LockNFTDescriptor contract address changed
+  */
+  event LockNFTDesriptorChanged(address newAddress);
+
+  /**
    * @dev Rate of accrual is expressed in points per second (including 'POINTS_DECIMALS').
    */
   struct UserData {
@@ -38,6 +44,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     uint64 rateOfAccrual;
     uint128 accruedPoints;
     uint128 recordedDebtBalance;
+    uint128 finalScore;
+    uint128 gearsCollected;
     uint256 lockedNFTID;
   }
 
@@ -75,6 +83,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   // 2 = end of trade and lock
   // 3 = end of bond
   uint256[4] public gamePhaseTimestamps;
+
+  ILockNFTDescriptor public lockNFTdesc;
 
   /**
    * @dev State URI variable required for some front-end applications
@@ -121,7 +131,11 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
    * @notice Returns the URI string for metadata of token _id.
    */
   function uri(uint256 _id) public view override returns (string memory) {
-    return string(abi.encodePacked(ERC1155Upgradeable.uri(0), _id.toString()));
+    if (_id <= 3 + nftCardsAmount) {
+      return string(abi.encodePacked(ERC1155Upgradeable.uri(0), _id.toString()));
+    } else {
+      return lockNFTdesc.lockNFTUri(_id);
+    }
   }
 
   /// State Changing Functions
@@ -174,6 +188,15 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   /**
+   * @dev Set the contract URI for general information of this ERC1155.
+   */
+  function setLockNFTDescriptor(address _newLockNFTDescriptor) public {
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
+    lockNFTdesc = ILockNFTDescriptor(_newLockNFTDescriptor);
+    emit LockNFTDesriptorChanged(_newLockNFTDescriptor);
+  }
+
+  /**
    * @dev See 'owner()'
    */
   function setOwner(address _newOwner) public {
@@ -217,6 +240,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   function userLock(address user, uint256 boostNumber) external returns (uint256 lockedNFTID) {
     require(hasRole(GAME_INTERACTOR, msg.sender), GameErrors.NOT_AUTH);
     require(userdata[user].lockedNFTID == 0, GameErrors.USER_LOCK_ERROR);
+    require(address(lockNFTdesc) != address(0), GameErrors.VALUE_NOT_SET);
 
     uint256 phase = getPhase();
     uint256 debt = getUserDebt(user);
@@ -232,7 +256,10 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     // Compute and assign final score
     uint256 finalScore = (userdata[user].accruedPoints * boostNumber) / 100;
 
+    // 'accruedPoints' will be burned to mint bonds.
     userdata[user].accruedPoints = uint128(finalScore);
+    // 'finalScore' will be preserved for to LockNFT.
+    userdata[user].finalScore = uint128(finalScore);
     lockedNFTID = uint256(keccak256(abi.encodePacked(user, finalScore)));
     userdata[user].lockedNFTID = lockedNFTID;
 
@@ -246,13 +273,16 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
       _burn(user, index, balance);
     }
 
-    // Burn one of each nft cards in deck
+    // Burn 'climb gear' nft cards in deck
+    uint256 totalGears;
     for (uint256 index = 4; index < 4 + nftCardsAmount; index++) {
       balance = balanceOf(user, index);
       if (balance > 0) {
-        _burn(user, index, 1);
+        _burn(user, index, balance);
       }
+      totalGears += balance;
     }
+    userdata[user].gearsCollected = uint128(totalGears);
   }
 
   function mint(

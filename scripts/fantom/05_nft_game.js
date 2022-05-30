@@ -45,7 +45,7 @@ const getVaultsAddrs = () => {
 
 const { LIB_PSEUDORANDOM } = require("./consts");
 
-const TESTING_PARAMS = false;
+const TESTING_PARAMS = true;
 const SKIP_VAULTS = false;
 
 /// Fixed Game Parameters

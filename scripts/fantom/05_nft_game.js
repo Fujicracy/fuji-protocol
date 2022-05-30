@@ -45,7 +45,7 @@ const getVaultsAddrs = () => {
 
 const { LIB_PSEUDORANDOM } = require("./consts");
 
-const TESTING_PARAMS = true;
+const TESTING_PARAMS = false;
 const SKIP_VAULTS = false;
 
 /// Fixed Game Parameters
@@ -96,7 +96,7 @@ const deployContracts = async () => {
     merkleRoot = "0x903f8cb795059ae5a39d1a6caae25eb970d75914aa9324ccc657e9e38eb1a7c9";
   } else {
     // Production parameters
-    const LaunchTimestamp = 1649419200;
+    const LaunchTimestamp = 1653998400;
     phases = [
       LaunchTimestamp,
       LaunchTimestamp + 8 * week,

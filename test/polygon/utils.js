@@ -15,6 +15,7 @@ const ASSETS = {
     address: "0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF", // polygon
     oracle: "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
     aToken: "0x8dF3aad3a84da6b69A4DA8aeC3eA40d9091B2Ac4",
+    aTokenV3: "0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97",
     decimals: 18,
   },
   DAI: {
@@ -23,6 +24,7 @@ const ASSETS = {
     address: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063", // polygon
     oracle: "0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D",
     aToken: "0x27F8D03b3a2196956ED754baDc28D73be8830A6e",
+    aTokenV3: "0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE",
     decimals: 18,
   },
   USDC: {
@@ -31,6 +33,7 @@ const ASSETS = {
     address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", // polygon
     oracle: "0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7",
     aToken: "0x1a13F4Ca1d028320A707D99520AbFefca3998b7F",
+    aTokenV3: "0x625E7708f30cA75bfd92586e17077590C60eb4cD",
     decimals: 6,
   },
   WMATIC: {
@@ -39,6 +42,7 @@ const ASSETS = {
     address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", // polygon
     oracle: "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
     aToken: "0x8dF3aad3a84da6b69A4DA8aeC3eA40d9091B2Ac4",
+    aTokenV3: "0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97",
     decimals: 18,
   },
   WETH: {
@@ -47,6 +51,7 @@ const ASSETS = {
     address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", // polygon
     oracle: "0xF9680D99D6C9589e2a93a78A04A279e509205945",
     aToken: "0x28424507fefb6f7f8E9D3860F56504E4e5f5f390",
+    aTokenV3: "0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8",
     decimals: 18,
   },
   WBTC: {
@@ -55,6 +60,7 @@ const ASSETS = {
     address: "0x1BFD67037B42Cf73acF2047067bd4F2C47D9BfD6", // polygon
     oracle: "0xDE31F8bFBD8c84b5360CFACCa3539B938dd78ae6",
     aToken: "0x5c2ed810328349100A66B82b78a1791B101C9D61",
+    aTokenV3: "0x078f358208685046a11C85e8ad32895DED33A249",
     decimals: 8,
   },
 };
@@ -120,6 +126,8 @@ const fixture = async ([wallet]) => {
   const kashi = await ProviderKashi.deploy([]);
   const ProviderWepiggy = await getContractFactory("ProviderWepiggy");
   const wepiggy = await ProviderWepiggy.deploy([]);
+  const ProviderAaveV3MATIC = await getContractFactory("ProviderAaveV3MATIC");
+  const aavev3 = await ProviderAaveV3MATIC.deploy([]);
 
   // Log if debug is set true
   if (DEBUG) {
@@ -132,6 +140,7 @@ const fixture = async ([wallet]) => {
     console.log("aave", aave.address);
     console.log("kashi", kashi.address);
     console.log("wepiggy", wepiggy.address);
+    console.log("aave", aavev3.address);
   }
 
   // Setp 3: Vaults
@@ -157,7 +166,8 @@ const fixture = async ([wallet]) => {
       [
         aave.address,
         kashi.address,
-        wepiggy.address
+        wepiggy.address,
+        aavev3.address
       ]
     );
 
@@ -181,6 +191,7 @@ const fixture = async ([wallet]) => {
     aave,
     kashi,
     wepiggy,
+    aavev3,
     oracle,
     fujiadmin,
     fliquidator,

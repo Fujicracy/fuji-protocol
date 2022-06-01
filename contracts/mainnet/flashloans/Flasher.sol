@@ -54,6 +54,8 @@ contract Flasher is
   // Balancer
   address private immutable _balancerVault = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
+  bytes32 private _paramsHash;
+
   // need to be payable because of the conversion ETH <> WETH
   receive() external payable {}
 
@@ -90,6 +92,8 @@ contract Flasher is
     override
     isAuthorized
   {
+    require(_paramsHash == "", "_paramsHash should be empty!");
+    _paramsHash = keccak256(abi.encode(info));
     if (_flashnum == 0) {
       _initiateAaveFlashLoan(info);
     } else if (_flashnum == 1) {
@@ -351,6 +355,7 @@ contract Flasher is
     uint256 _fee,
     uint256 _value
   ) internal {
+    require( _paramsHash == keccak256(abi.encode(_info)), "False entry point!");
     if (_info.callType == FlashLoan.CallType.Switch) {
       IVault(_info.vault).executeSwitch{ value: _value }(_info.newProvider, _amount, _fee);
     } else if (_info.callType == FlashLoan.CallType.Close) {
@@ -370,6 +375,7 @@ contract Flasher is
         _fee
       );
     }
+    _paramsHash = "";
   }
 
   function _approveBeforeRepay(

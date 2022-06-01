@@ -34,6 +34,8 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver, IFlashLoanReci
   address private immutable _aaveLendingPool = 0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf;
   address private immutable _balancerVault = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
 
+  bytes32 private _paramsHash;
+
   // need to be payable because of the conversion ETH <> WETH
   receive() external payable {}
 
@@ -70,6 +72,8 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver, IFlashLoanReci
     override
     isAuthorized
   {
+    require(_paramsHash == "", "_paramsHash should be empty!");
+    _paramsHash = keccak256(abi.encode(info));
     if (_flashnum == 0) {
       _initiateGeistFlashLoan(info);
     } else if (_flashnum == 3) {
@@ -211,6 +215,7 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver, IFlashLoanReci
     uint256 _fee,
     uint256 _value
   ) internal {
+    require( _paramsHash == keccak256(abi.encode(_info)), "False entry point!");
     if (_info.callType == FlashLoan.CallType.Switch) {
       IVault(_info.vault).executeSwitch{ value: _value }(_info.newProvider, _amount, _fee);
     } else if (_info.callType == FlashLoan.CallType.Close) {
@@ -230,6 +235,7 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver, IFlashLoanReci
         _fee
       );
     }
+    _paramsHash = "";
   }
 
   function _approveBeforeRepay(

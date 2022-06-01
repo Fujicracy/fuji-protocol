@@ -1,7 +1,7 @@
-const { deployProxy, redeployIf, network } = require("../utils");
+const { deployProxy, redeployIf, networkSuffix } = require("../utils");
 
 const deployVault = async (name, args) => {
-  const contractName = network === "fantom" ? "FujiVaultFTM" : "FujiVault";
+  const contractName = networkSuffix("FujiVault");
 
   const deployed = await redeployIf(name, contractName, deployProxy, args);
 

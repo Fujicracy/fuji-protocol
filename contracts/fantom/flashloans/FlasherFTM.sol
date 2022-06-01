@@ -36,6 +36,8 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver, ICFlashloanRecei
   IFujiMappings private immutable _crMappings =
     IFujiMappings(0x1eEdE44b91750933C96d2125b6757C4F89e63E20);
 
+  bytes32 private _paramsHash;
+
   // need to be payable because of the conversion ETH <> WETH
   receive() external payable {}
 
@@ -72,6 +74,8 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver, ICFlashloanRecei
     override
     isAuthorized
   {
+    require(_paramsHash == "", "_paramsHash should be empty!");
+    _paramsHash = keccak256(abi.encode(info));
     if (_flashnum == 0) {
       _initiateGeistFlashLoan(info);
     } else if (_flashnum == 2) {
@@ -214,6 +218,7 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver, ICFlashloanRecei
     uint256 _fee,
     uint256 _value
   ) internal {
+    require( _paramsHash == keccak256(abi.encode(_info)), "False entry point!");
     if (_info.callType == FlashLoan.CallType.Switch) {
       IVault(_info.vault).executeSwitch{ value: _value }(_info.newProvider, _amount, _fee);
     } else if (_info.callType == FlashLoan.CallType.Close) {
@@ -233,6 +238,7 @@ contract FlasherFTM is IFlasher, Claimable, IFlashLoanReceiver, ICFlashloanRecei
         _fee
       );
     }
+    _paramsHash = "";
   }
 
   function _approveBeforeRepay(

@@ -81,7 +81,6 @@ function testDeposit1a(vaults, amount, aeth) {
   }
 }
 
-
 /**
  * DEPRECATED
  * Performs deposit test in native token.
@@ -159,11 +158,14 @@ function testDeposit2(mapperAddr, vaults, amount) {
  * @param {object} amount - Etherjs compatible BigNumber.
  * @param {array} assets - Array of objects defining vault assets. See core-utils.js.
  */
-function testDeposit2a(vaults, amount, assets = ASSETS) {
+function testDeposit2a(vaults, amount, assets = ASSETS, v3 = false) {
   for (let i = 0; i < vaults.length; i += 1) {
     const vault = vaults[i];
     it(`deposit ${amount} ERC20 -> ${vault.collateral.nameUp} as collateral, check ${vault.name} balance`, async function () {
-      const aToken = await getContractAt("IERC20", assets[vault.collateral.nameUp].aToken);
+      const aTokenAddress = v3
+        ? assets[vault.collateral.nameUp].aTokenV3
+        : assets[vault.collateral.nameUp].aToken;
+      const aToken = await getContractAt("IERC20", aTokenAddress);
 
       const depositAmount = parseUnits(amount, vault.collateral.decimals);
       const negdepositAmount = parseUnits(-amount, vault.collateral.decimals);

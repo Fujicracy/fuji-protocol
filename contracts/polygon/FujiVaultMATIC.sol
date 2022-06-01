@@ -764,6 +764,6 @@ contract FujiVaultMATIC is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVa
     _userFeeTimestamps[msg.sender] = block.timestamp;
     remainingProtocolFee += userFee;
 
-    emit Payback(msg.sender, vAssets.borrowAsset, debtBalance);
+    emit Payback(msg.sender, vAssets.borrowAsset, amountToPayback);
   }
 }

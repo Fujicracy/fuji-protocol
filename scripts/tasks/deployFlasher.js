@@ -1,8 +1,8 @@
-const { deploy, redeployIf, network } = require("../utils");
+const { deploy, redeployIf, networkSuffix } = require("../utils");
 
 const deployFlasher = async () => {
-  const name = network === "fantom" ? "FlasherFTM" : "Flasher";
-  const contractName = network === "fantom" ? "FlasherFTM" : "Flasher";
+  const name = networkSuffix("Flasher");
+  const contractName = networkSuffix("Flasher");
 
   const deployed = await redeployIf(name, contractName, deploy);
   return deployed;

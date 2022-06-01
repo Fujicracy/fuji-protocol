@@ -1,10 +1,11 @@
 const { ethers } = require("hardhat");
-const { callIf, network } = require("../utils");
+const { callIf, networkSuffix } = require("../utils");
 
 const updateVault = async (name, vault, params) => {
   const { providers, fujiadmin, f1155 } = params;
 
-  const contractName = network === "fantom" ? "FujiVaultFTM" : "FujiVault";
+  const contractName = networkSuffix("FujiVault");
+
   const vaultContract = await ethers.getContractAt(contractName, vault);
 
   if (providers && providers.length > 0) {

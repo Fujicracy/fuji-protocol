@@ -25,7 +25,6 @@
     "@tenderly/hardhat-tenderly": "1.0.12",
     "@uniswap/v2-core": "^1.0.1",
     "@uniswap/v2-periphery": "^1.1.0-beta.0",
-    "@widgetbot/crate": "^3.3.3",
     "chai": "^4.2.0",
     "chalk": "^4.1.0",
     "dotenv": "^8.2.0",

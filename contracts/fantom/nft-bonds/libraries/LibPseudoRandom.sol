@@ -55,7 +55,8 @@ library LibPseudoRandom {
       }
       // if the reward is a card determine the card id
       if (isCard) {
-        (rewards , aggregatedRewards) =_isCardRoutine(
+        bool mintedCard;
+        (rewards , aggregatedRewards, mintedCard) =_isCardRoutine(
           j,
           entropyValue,
           _gameInfo,
@@ -63,6 +64,10 @@ library LibPseudoRandom {
           rewards,
           aggregatedRewards
         );
+
+        if (mintedCard) {
+          _gameInfo.mintedCards++;
+        }
       }
       unchecked {
         ++j;
@@ -95,11 +100,11 @@ library LibPseudoRandom {
     uint256 basicCrateReward,
     Reward[] memory _rewards,
     uint256[] memory _aggregatedRewards
-  ) internal view returns (Reward[] memory rewards, uint256[] memory aggregatedRewards) {
+  ) internal view returns (Reward[] memory rewards, uint256[] memory aggregatedRewards, bool mintedCard) {
     rewards = _rewards;
     aggregatedRewards = _aggregatedRewards;
     if (gameInfo.mintedCards < gameInfo.numPlayers / gameInfo.cardsPerDayRatio) {
-      gameInfo.mintedCards++;
+      mintedCard = true;
       uint256 step = 1000000 / gameInfo.cardsAmount;
       uint256 randomNum = _pickProbability(0, entropyValue + jLoop);
       for (uint256 i = step; i <= randomNum; i += step) {

@@ -2,13 +2,22 @@ const chalk = require("chalk");
 const { defender } = require('hardhat');
 const { setDeploymentsPath, network, getContractAddress } = require("../utils");
 
+const { LIB_PSEUDORANDOM } = require("./consts");
+
 // ref: https://docs.openzeppelin.com/defender/guide-upgrades
 const upgrade = async () => {
-  const NFTInteractions = await ethers.getContractFactory("NFTInteractions");
+  const library = {
+    libraries: {
+      LibPseudoRandom: LIB_PSEUDORANDOM, // fantom
+    }
+  };
+  const NFTInteractions = await ethers.getContractFactory("NFTInteractions", library);
   const addr = getContractAddress("NFTInteractions");
   console.log("Creating proposal for upgrading NFTInteractions...");
-
-  const proposal = await defender.proposeUpgrade(addr, NFTInteractions);
+  const override = {
+    unsafeAllow: ['external-library-linking']
+  }
+  const proposal = await defender.proposeUpgrade(addr, NFTInteractions, override);
   console.log("Upgrade proposal created at:", proposal.url);
 };
 

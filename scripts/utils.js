@@ -216,6 +216,20 @@ const copyMinedTxParams = async (txHash) => {
   return unsignedTx;
 }
 
+
+const networkSuffix = (name) => {
+  switch (network) {
+    case "mainnet":
+      return name;
+    case "fantom":
+      return name + "FTM";
+    case "polygon":
+      return name + "MATIC";
+    default:
+      return ""
+  }
+}
+
 module.exports = {
   deploy,
   deployProxy,
@@ -229,5 +243,6 @@ module.exports = {
   redeployWithExternalLibrary,
   callIf,
   copyMinedTxParams,
+  networkSuffix,
   network,
 };

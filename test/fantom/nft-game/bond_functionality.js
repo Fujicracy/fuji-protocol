@@ -386,6 +386,9 @@ describe("Bond Functionality", function () {
       latestUserTokenBal = BigNumber.from([0]);
 
       await nftgame.setGamePhases(newPhases);
+      const dummyAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+      // Dummy address set to allow functionality tests to run.
+      await nftgame.setLockNFTDescriptor(dummyAddress);
     });
 
     after(async () => {

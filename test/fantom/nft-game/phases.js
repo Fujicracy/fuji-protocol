@@ -260,6 +260,10 @@ describe("NFT Bond Phase Tests", function () {
     });
 
     it("Should lock user final FinalScore", async function () {
+      const dummyAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+      // Dummy address set to allow functionality tests to run.
+      await this.f.nftgame.setLockNFTDescriptor(dummyAddress);
+
       const cardIdsArray = this.f.cardIds;
       const cardPreLockBalance = [];
       for (let index = 0; index < cardIdsArray.length; index++) {

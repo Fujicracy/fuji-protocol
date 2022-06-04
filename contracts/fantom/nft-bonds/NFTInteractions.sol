@@ -320,6 +320,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
     for (uint256 i = NFT_CARD_ID_START; i < cardsLimit;) {
       if (aggregatedRewards[i] > 0) {
         nftGame.mint(msg.sender, i, aggregatedRewards[i]);
+        mintedCards += aggregatedRewards[i];
       }
       unchecked {
         ++i;

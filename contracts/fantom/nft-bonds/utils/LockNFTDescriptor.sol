@@ -5,12 +5,14 @@ pragma abicoder v2;
 import "../NFTGame.sol";
 import "../interfaces/ILockNFTDescriptor.sol";
 import "../libraries/Base64.sol";
+import "../libraries/StringConvertor.sol";
 
 interface ILockNFTSVG {
   function generateSVG(uint256 tokenId_) external view returns (string memory);
 }
 
 contract LockNFTDescriptor is ILockNFTDescriptor {
+  using StringConvertor for address;
 
   // VoucherSVG
   ILockNFTSVG public lockfNFTSVG;
@@ -59,8 +61,8 @@ contract LockNFTDescriptor is ILockNFTDescriptor {
         "data:application/json;base64,",
         Base64.encode(
           abi.encodePacked(
-            '{"name":"', "name",
-            '","description":"', "description",
+            '{"name":"', "Proof Of Locking Ceremony",
+            '","description":"', "Fuji Climb: Fantom Expedition - Souvenir NFT",
             '","image":"data:image/svg+xml;base64,', Base64.encode(bytes(image)),
             '","properties":', _propertiesToken(),
             "}"
@@ -75,7 +77,7 @@ contract LockNFTDescriptor is ILockNFTDescriptor {
         "{",
           '"user":', '"address of the user"',
           '"climbed meters":', '"total locked points"',
-          '"captured gear":', '"gears"',
+          '"captured gears":', '"gears"',
         "}"
      );
   }

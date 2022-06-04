@@ -96,6 +96,9 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
   uint256 public numPlayers;
 
+  // Mapping required for Locking ceremony NFT: tokenID => owner
+  mapping(uint256 => address) public ownerOfLockNFT;
+
   modifier onlyVault() {
     require(isValidVault(msg.sender), "Not valid vault!");
     _;
@@ -134,6 +137,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     if (_id <= 3 + nftCardsAmount) {
       return string(abi.encodePacked(ERC1155Upgradeable.uri(0), _id.toString()));
     } else {
+      require(ownerOfLockNFT[_id] != address(0), GameErrors.INVALID_INPUT);
       return lockNFTdesc.lockNFTUri(_id);
     }
   }
@@ -265,6 +269,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
     // Mint the lockedNFT for user
     _mint(user, lockedNFTID, 1, "");
+    ownerOfLockNFT[lockedNFTID] = user;
 
     // Burn all remaining crates
     uint256 balance;

@@ -45,7 +45,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     uint128 accruedPoints;
     uint128 recordedDebtBalance;
     uint128 finalScore;
-    uint128 gearsCollected;
+    uint128 gearPower;
     uint256 lockedNFTID;
   }
 
@@ -279,15 +279,15 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     }
 
     // Burn 'climb gear' nft cards in deck
-    uint256 totalGears;
+    uint256 gearPower;
     for (uint256 index = 4; index < 4 + nftCardsAmount; index++) {
       balance = balanceOf(user, index);
       if (balance > 0) {
         _burn(user, index, balance);
+        gearPower += 1;
       }
-      totalGears += balance;
     }
-    userdata[user].gearsCollected = uint128(totalGears);
+    userdata[user].gearPower = uint128(gearPower);
   }
 
   function mint(

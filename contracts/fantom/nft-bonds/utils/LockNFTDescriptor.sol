@@ -4,20 +4,17 @@ pragma abicoder v2;
 
 import "../NFTGame.sol";
 import "../interfaces/ILockNFTDescriptor.sol";
+import "../interfaces/ILockSVG.sol";
 import "../libraries/Base64.sol";
 import "../libraries/StringConvertor.sol";
-
-interface ILockNFTSVG {
-  function generateSVG(uint256 tokenId_) external view returns (string memory);
-}
 
 contract LockNFTDescriptor is ILockNFTDescriptor {
   using StringConvertor for address;
 
   // VoucherSVG
-  ILockNFTSVG public lockfNFTSVG;
+  ILockSVG public lockSVG;
 
-  NFTGame private nftGame;
+  NFTGame public nftGame;
 
   bytes32 private _nftgame_GAME_ADMIN;
 
@@ -27,7 +24,7 @@ contract LockNFTDescriptor is ILockNFTDescriptor {
   ) {
     nftGame = NFTGame(_nftGame);
     _nftgame_GAME_ADMIN = nftGame.GAME_ADMIN();
-    lockfNFTSVG = ILockNFTSVG(_lockNFTSVG);
+    lockSVG = ILockSVG(_lockNFTSVG);
   }
 
   /// Admin functions
@@ -48,14 +45,14 @@ contract LockNFTDescriptor is ILockNFTDescriptor {
    */
   function setLockfNFTSVG(address _lockNFTSVG) external {
     require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
-    lockfNFTSVG = ILockNFTSVG(_lockNFTSVG);
+    lockSVG = ILockSVG(_lockNFTSVG);
     emit SetLockNFTSVG(_lockNFTSVG);
   }
 
   /// View functions
 
   function lockNFTUri(uint256 tokenId) external override view returns (string memory) {
-    string memory image = lockfNFTSVG.generateSVG(tokenId);
+    string memory image = lockSVG.generateSVG(tokenId);
     return string(
       abi.encodePacked(
         "data:application/json;base64,",
@@ -77,7 +74,7 @@ contract LockNFTDescriptor is ILockNFTDescriptor {
         "{",
           '"user":', '"address of the user"',
           '"climbed meters":', '"total locked points"',
-          '"captured gears":', '"gears"',
+          '"gear power":', '"gears"',
         "}"
      );
   }

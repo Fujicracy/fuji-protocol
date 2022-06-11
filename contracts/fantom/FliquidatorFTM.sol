@@ -436,7 +436,7 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
 
     emit FlashClose(_userAddr, _vault, _amount);
 
-    _afterDebtActionCallback(address(_userAddr), vAssets.borrowAsset, (_amount - protocolFee), true);
+    _afterDebtActionCallback(address(_userAddr), vAssets.borrowAsset, (_amount - protocolFee));
   }
 
   /**
@@ -648,7 +648,7 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
         IFujiERC1155(_f1155).burn(_addrs[i], _vAssets.borrowID, _borrowBals[i]);
         IFujiERC1155(_f1155).burn(_addrs[i], _vAssets.collateralID, collateralInPlayPerUser);
 
-        _afterDebtActionCallback(_addrs[i], _vAssets.borrowAsset, _borrowBals[i], true);
+        _afterDebtActionCallback(_addrs[i], _vAssets.borrowAsset, _borrowBals[i]);
       }
     }
   }
@@ -657,13 +657,13 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
    * @dev Internal hook function after debt change calls.
    * Used to plug functionality. 
    */
-  function _afterDebtActionCallback(address user, address debtAsset, uint256 _amount, bool _isPayback) internal {
+  function _afterDebtActionCallback(address user, address debtAsset, uint256 _amount) internal {
     if (nftGame != address(0)) {
       INFTGame game = INFTGame(nftGame);
       uint256 phase = game.getPhase();
       uint256 _borrowAssetDecimals = IERC20Extended(debtAsset).decimals();
       if (phase == 1 && game.isValidVault(address(this))) {
-        game.checkStateOfPoints(user, _amount, _isPayback, _borrowAssetDecimals);
+        game.checkStateOfPoints(user, _amount, true, _borrowAssetDecimals);
       }
     }
   }

@@ -20,6 +20,8 @@ import "./libraries/LibUniversalERC20FTM.sol";
 import "../libraries/FlashLoans.sol";
 import "../libraries/Errors.sol";
 
+import "./nft-bonds/interfaces/INFTGame.sol";
+
 /**
  * @dev Contract to execute liquidations and flash close.
  */
@@ -45,6 +47,7 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
   IFujiAdmin private _fujiAdmin;
   IFujiOracle private _oracle;
   IUniswapV2Router02 public swapper;
+  address public nftGame;
 
   /**
    * @dev Log when a user is liquidated
@@ -76,6 +79,10 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
    * @dev Log change of swapper address
    */
   event SwapperChanged(address newSwapper);
+  /**
+  * @dev Log a change in fuji admin address
+  */
+  event NFTGameChanged(address newNFTGame);
 
   /**
    * @dev Throws if caller is not 'owner'.
@@ -428,6 +435,8 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
     f1155.burn(_userAddr, vAssets.borrowID, _amount - protocolFee);
 
     emit FlashClose(_userAddr, _vault, _amount);
+
+    _afterDebtActionCallback(address(_userAddr), vAssets.borrowAsset, (_amount - protocolFee), true);
   }
 
   /**
@@ -638,6 +647,23 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
 
         IFujiERC1155(_f1155).burn(_addrs[i], _vAssets.borrowID, _borrowBals[i]);
         IFujiERC1155(_f1155).burn(_addrs[i], _vAssets.collateralID, collateralInPlayPerUser);
+
+        _afterDebtActionCallback(_addrs[i], _vAssets.borrowAsset, _borrowBals[i], true);
+      }
+    }
+  }
+
+  /**
+   * @dev Internal hook function after debt change calls.
+   * Used to plug functionality. 
+   */
+  function _afterDebtActionCallback(address user, address debtAsset, uint256 _amount, bool _isPayback) internal {
+    if (nftGame != address(0)) {
+      INFTGame game = INFTGame(nftGame);
+      uint256 phase = game.getPhase();
+      uint256 _borrowAssetDecimals = IERC20Extended(debtAsset).decimals();
+      if (phase == 1 && game.isValidVault(address(this))) {
+        game.checkStateOfPoints(user, _amount, _isPayback, _borrowAssetDecimals);
       }
     }
   }
@@ -687,5 +713,15 @@ contract FliquidatorFTM is Claimable, ReentrancyGuard {
     require(_newFujiOracle != address(0), Errors.VL_ZERO_ADDR);
     _oracle = IFujiOracle(_newFujiOracle);
     emit OracleChanged(_newFujiOracle);
+  }
+
+  /**
+  * @dev Sets the NFT Bond Logic address
+  * @param _nftgame: new NFT Game address
+  * Emits a {NFTGameChanged} event.
+  */
+  function setNFTGame(address _nftgame) external isAuthorized {
+    nftGame = _nftgame;
+    emit NFTGameChanged(_nftgame);
   }
 }

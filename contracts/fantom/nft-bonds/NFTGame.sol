@@ -75,6 +75,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   // TokenID =>  supply amount
   mapping(uint256 => uint256) public totalSupply;
 
+  // NOTE array also includes {Fliquidator}
   address[] public validVaults;
 
   // Timestamps for each game phase
@@ -144,6 +145,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
   /**
    * @notice Sets the list of vaults that count towards the game
+   * @dev array should also include {Fliquidator} address
    */
   function setValidVaults(address[] memory vaults) external {
     require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);

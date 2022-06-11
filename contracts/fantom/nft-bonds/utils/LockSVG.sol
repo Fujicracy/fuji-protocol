@@ -14,6 +14,8 @@ contract LockSVG is ILockSVG {
 
   bytes32 private _nftgame_GAME_ADMIN;
 
+  mapping(address => string) private _nickName;
+
   constructor(
     address _nftGame
   ) {
@@ -21,8 +23,11 @@ contract LockSVG is ILockSVG {
     _nftgame_GAME_ADMIN = nftGame.GAME_ADMIN();
   }
 
+  function setNickName(uint256 tokenId_, string memory shortNickname) external {
+    require(msg.sender == nftGame.ownerOfLockNFT(tokenId_), "Not owner!");
+  }
+
   function generateSVG(uint256 tokenId_) external override pure returns (string memory) {
-    tokenId_;
     return 
       string(
           abi.encodePacked(
@@ -30,7 +35,7 @@ contract LockSVG is ILockSVG {
             _generateStaticBackground(),
             _generateFujiLogo(),
             _generateFTMLogo(),
-            _generateClimberName(),
+            _generateClimberName(tokenId_),
             _generateAltitudePoints(),
             _generateDefs(),
             '</svg>'
@@ -89,14 +94,14 @@ contract LockSVG is ILockSVG {
       );
   }
 
-  function _generateClimberName() internal pure returns(string memory) {
-    string memory addr = "0x4f1e...df1e";
+  function _generateClimberName(uint256 tokenId_) internal pure returns(string memory) {
+    string memory climber = _getShortAddrOrName(tokenId_);
     return
     string(
       abi.encodePacked(
         '<g font-family="sans-serif" fill="#FFF">',
           '<text font-size="38" font-weight="700" transform="translate(230 475)"><tspan x="0" y="0">Climber</tspan></text>',
-          '<text font-size="35" font-weight="200" transform="translate(200 475)"><tspan x="0" y="40">',addr,'</tspan></text>',
+          '<text font-size="35" font-weight="200" transform="translate(200 475)"><tspan x="0" y="40">',climber,'</tspan></text>',
         '</g>'
       )
     );
@@ -127,6 +132,11 @@ contract LockSVG is ILockSVG {
           '</defs>'
         )
       );
+  }
+
+  function _getShortAddrOrName(uint256 tokenId) internal view returns(string memory) {
+    address ownedBy = nftGame.ownerOfLockNFT(tokenId);
+    return ownedBy.addressToString();
   }
 
 }

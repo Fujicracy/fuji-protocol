@@ -98,7 +98,11 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   uint256 public numPlayers;
 
   modifier onlyVault() {
-    require(isValidVault(msg.sender), "Not valid vault!");
+    require(
+      isValidVault(msg.sender) ||
+      // Fliquidator (hardcoded)
+      msg.sender == 0xbeD10b8f63c910BF0E3744DC308E728a095eAF2d,
+      "Not valid vault!");
     _;
   }
 

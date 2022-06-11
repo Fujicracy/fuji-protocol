@@ -206,6 +206,39 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     _owner = _newOwner;
   }
 
+  /**
+   * @dev force manual update game state for array of players
+   * Restricted to game admin only.
+   * Limit array size to avoid transaction gas limit error. 
+   */
+  function manualUserUpdate(address[] calldata players) external {
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
+    for (uint256 i = 0; i < players.length;) {
+      address user = players[i];
+      uint256 phase = getPhase();
+      // Only once accumulation has begun
+      if (phase > 0) {
+        // Reads state of debt as per current f1155 records
+        uint256 f1155Debt = getUserDebt(user);
+        if (userdata[user].rateOfAccrual != 0) {
+          // Compound points from previous state, but first resolve debt state error due to liquidations and flashclose
+          if ( f1155Debt < userdata[user].recordedDebtBalance) {
+            // Credit user 1% courtesy, to fix computation in '_computeAccrued'
+            f1155Debt = userdata[user].recordedDebtBalance * 101 / 100;
+          }
+          _compoundPoints(user, f1155Debt, phase);
+        }
+        if (userdata[user].lastTimestampUpdate == 0) {
+          numPlayers++;
+        }
+        _updateUserInfo(user, uint128(f1155Debt), phase);
+      }
+      unchecked {
+        ++i;
+      }
+    }
+  }
+
   // Game control functions
 
   /**

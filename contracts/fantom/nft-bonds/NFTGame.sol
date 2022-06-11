@@ -222,19 +222,25 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
       address user = players[i];
       // Reads state of debt as per current f1155 records
       uint256 f1155Debt = getUserDebt(user);
+      bool affectedUser;
       if (userdata[user].rateOfAccrual != 0) {
         // Compound points from previous state, but first resolve debt state error
         // due to liquidations and flashclose
         if (f1155Debt < userdata[user].recordedDebtBalance) {
           // Credit user 1% courtesy, to fix computation in '_computeAccrued'
           f1155Debt = userdata[user].recordedDebtBalance * 101 / 100;
+          affectedUser = true;
         }
         _compoundPoints(user, f1155Debt, phase);
       }
       if (userdata[user].lastTimestampUpdate == 0) {
         numPlayers++;
       }
-      _updateUserInfo(user, uint128(f1155Debt), phase);
+      if (affectedUser) {
+        _updateUserInfo(user, uint128(getUserDebt(user)), phase);
+      } else {
+        _updateUserInfo(user, uint128(f1155Debt), phase);
+      }
       unchecked {
         ++i;
       }

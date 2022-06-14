@@ -10,11 +10,16 @@ contract LockSVG is ILockSVG {
   using StringConvertor for address;
   using StringConvertor for uint256;
 
+  /**
+   * @dev Changing valid vaults
+   */
+  event ChangedNickname(address indexed user, string _newnickname);
+
   NFTGame public nftGame;
 
   bytes32 private _nftgame_GAME_ADMIN;
 
-  mapping(address => string) private _nickName;
+  mapping(address => string) public nicknames;
 
   constructor(
     address _nftGame
@@ -23,11 +28,14 @@ contract LockSVG is ILockSVG {
     _nftgame_GAME_ADMIN = nftGame.GAME_ADMIN();
   }
 
-  function setNickName(uint256 tokenId_, string memory shortNickname) external {
+  function setNickname(uint256 tokenId_, string calldata _shortNickname) external {
     require(msg.sender == nftGame.ownerOfLockNFT(tokenId_), "Not owner!");
+    require(_getStringByteSize(_shortNickname) <= 16, "Too long!");
+    nicknames[msg.sender] = _shortNickname;
+    emit ChangedNickname(msg.sender, _shortNickname);
   }
 
-  function generateSVG(uint256 tokenId_) external override pure returns (string memory) {
+  function generateSVG(uint256 tokenId_) external override view returns (string memory) {
     return 
       string(
           abi.encodePacked(
@@ -36,7 +44,7 @@ contract LockSVG is ILockSVG {
             _generateFujiLogo(),
             _generateFTMLogo(),
             _generateClimberName(tokenId_),
-            _generateAltitudePoints(),
+            _generateAltitudePoints(tokenId_),
             _generateDefs(),
             '</svg>'
           )
@@ -94,8 +102,8 @@ contract LockSVG is ILockSVG {
       );
   }
 
-  function _generateClimberName(uint256 tokenId_) internal pure returns(string memory) {
-    string memory climber = _getShortAddrOrName(tokenId_);
+  function _generateClimberName(uint256 tokenId_) internal view returns(string memory) {
+    string memory climber = _getOwnerAddress(tokenId_);
     return
     string(
       abi.encodePacked(
@@ -107,14 +115,13 @@ contract LockSVG is ILockSVG {
     );
   }
 
-  function _generateAltitudePoints() internal pure returns(string memory) {
-    uint256 alt = 10;
+  function _generateAltitudePoints(uint256 tokenId_) internal pure returns(string memory) {
     return
       string(
         abi.encodePacked(
           '<g font-family="sans-serif" fill="#FFF">',
             '<text font-size="28" font-weight="700" transform="translate(405 310)"><tspan x="0" y="0">Altitude</tspan></text>',
-            '<text font-size="45" font-weight="200" transform="translate(405 310)"><tspan x="0" y="40">',alt.toString(),'</tspan></text>',
+            '<text font-size="45" font-weight="200" transform="translate(405 310)"><tspan x="0" y="40">', _getAltitudePoints(tokenId_),'</tspan></text>',
          '</g>'
         )
       );
@@ -134,9 +141,36 @@ contract LockSVG is ILockSVG {
       );
   }
 
-  function _getShortAddrOrName(uint256 tokenId) internal view returns(string memory) {
+  function _getOwnerAddress(uint256 tokenId) internal view returns(string memory) {
     address ownedBy = nftGame.ownerOfLockNFT(tokenId);
     return ownedBy.addressToString();
   }
 
+  function _getAltitudePoints(uint256 tokenId) internal view returns(string memory) {
+    address ownedBy = nftGame.ownerOfLockNFT(tokenId);
+    ( , , , ,uint128 finalScore, , ) = nftGame.userdata(ownedBy);
+    return uint256(finalScore).toString();
+  }
+
+  function _hasNickname(address user) internal view returns(bool named) {
+        string memory name = nicknames[user];
+        if (bytes(name).length != 0) {
+            named = true;
+        }
+    }
+
+  function _getStringByteSize(string calldata _string) internal pure returns (uint256) {
+        return bytes(_string).length;
+  }
+
+  function _reverseString(string calldata _base) internal pure returns(string memory){
+        bytes memory _baseBytes = bytes(_base);
+        assert(_baseBytes.length > 0);
+        string memory _tempValue = new string(_baseBytes.length);
+        bytes memory _newValue = bytes(_tempValue);
+        for(uint i=0;i<_baseBytes.length;i++){
+            _newValue[ _baseBytes.length - i - 1] = _baseBytes[i];
+        }
+        return string(_newValue);
+    }
 }

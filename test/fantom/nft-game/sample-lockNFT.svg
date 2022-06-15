@@ -2,11 +2,9 @@
   <defs>
     <path id="a" d="M30 300 A100 100 0 0 1 570 300" stroke="#000" stroke-width=".5" />
   </defs>
-  <circle cx="300" cy="300" r="300" fill="none" stroke="black"/>
+  <circle cx="300" cy="300" r="300" fill="none" stroke="black" />
   <text textLength="100%" font-family="Lucida Console, Courier New, monospace" font-size="18" rotate="0" fill="#000">
-    <textPath xlink:href="#a" startOffset="15%">
-      0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
-    </textPath>
+    <textPath xlink:href="#a" startOffset="15%">0x70997970c51812dc3a010c7d01b50e0d17dc79c8</textPath>
   </text>
   <g transform="translate(460, 230) scale(.15 .15)">
     <circle cx="300" cy="300" r="235" fill="#101010" stroke="url(#paint0_linear_113_36)" stroke-width="130" />
@@ -26,18 +24,18 @@
     <path d="M301.164 241.045L197.938 296.354C196.539 297.104 196.529 299.106 197.92 299.87L299.683 355.725C301.2 356.558 303.038 356.547 304.545 355.698L403.601 299.859C404.966 299.089 404.956 297.12 403.583 296.365L303.073 241.055C302.48 240.729 301.761 240.725 301.164 241.045Z" stroke="white" stroke-width="16" />
     <path d="M302.123 239.128V354.256" stroke="white" stroke-width="16" />
   </g>
+  <g transform="translate(180, 520)">
+    <rect x="0" y="0" width="235" height="40" rx="5" fill="#D9D9D9" fill-opacity="0.5" stroke="#F22267" />
+    <rect x="60" y="5" width="170" height="30" rx="5" fill="#988C8C" fill-opacity="0.25" stroke="#F22267" />
+    <text x="6" y="25" font-family="Lucida Console, Courier New, monospace" font-size="12" font-weight="normal" fill="#000">Climber</text>
+    <text x="70" y="25" font-family="Lucida Console, Courier New, monospace" font-size="16" font-weight="normal" fill="#000">HomeDestroyer</text>
+  </g>
   <g transform="translate(400, 330)">
     <rect x="0" y="0" width="185" height="40" rx="5" fill="#D9D9D9" fill-opacity="0.5" stroke="#F22267" />
     <rect x="60" y="5" width="120" height="30" rx="5" fill="#988C8C" fill-opacity="0.25" stroke="#F22267" />
     <text x="10" y="18" font-family="Lucida Console, Courier New, monospace" font-size="12" font-weight="normal" fill="#000">Meter</text>
     <text x="10" y="32" font-family="Lucida Console, Courier New, monospace" font-size="12" font-weight="normal" fill="#000">Points</text>
-    <text x="70" y="30" font-family="Lucida Console, Courier New, monospace" font-size="24" font-weight="normal" fill="#000">9,999</text>
-    <text x="150" y="30" font-family="Lucida Console, Courier New, monospace" font-size="16" font-weight="normal" fill="#000">km</text>
-  </g>
-  <g transform="translate(180, 520)">
-    <rect x="0" y="0" width="235" height="40" rx="5" fill="#D9D9D9" fill-opacity="0.5" stroke="#F22267" />
-    <rect x="60" y="5" width="170" height="30" rx="5" fill="#988C8C" fill-opacity="0.25" stroke="#F22267" />
-    <text x="6" y="25" font-family="Lucida Console, Courier New, monospace" font-size="12" font-weight="normal" fill="#000">Climber</text>
-    <text x="70" y="25" font-family="Lucida Console, Courier New, monospace" font-size="16" font-weight="normal" fill="#000">The destroyer123</text>
+    <text x="65" y="30" font-family="Lucida Console, Courier New, monospace" font-size="22" font-weight="normal" fill="#000">1437.5</text>
+    <text x="160" y="30" font-family="Lucida Console, Courier New, monospace" font-size="14" font-weight="normal" fill="#000">km</text>
   </g>
 </svg>

@@ -5,8 +5,10 @@ pragma abicoder v2;
 import "../NFTGame.sol";
 import "../interfaces/ILockSVG.sol";
 import "../libraries/StringConvertor.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-contract LockSVG is ILockSVG {
+contract LockSVG is ILockSVG, Initializable, UUPSUpgradeable {
   using StringConvertor for address;
   using StringConvertor for uint256;
 
@@ -21,9 +23,9 @@ contract LockSVG is ILockSVG {
 
   mapping(address => string) public nicknames;
 
-  constructor(
-    address _nftGame
-  ) {
+function initialize(address _nftGame) public initializer {   
+    __UUPSUpgradeable_init();
+
     nftGame = NFTGame(_nftGame);
     _nftgame_GAME_ADMIN = nftGame.GAME_ADMIN();
   }
@@ -50,6 +52,8 @@ contract LockSVG is ILockSVG {
           )
         );
   }
+
+  /// Internal functions
 
   function _generateStaticBackground() internal pure returns(string memory) {
     return
@@ -115,7 +119,7 @@ contract LockSVG is ILockSVG {
     );
   }
 
-  function _generateAltitudePoints(uint256 tokenId_) internal pure returns(string memory) {
+  function _generateAltitudePoints(uint256 tokenId_) internal view returns(string memory) {
     return
       string(
         abi.encodePacked(
@@ -164,13 +168,18 @@ contract LockSVG is ILockSVG {
   }
 
   function _reverseString(string calldata _base) internal pure returns(string memory){
-        bytes memory _baseBytes = bytes(_base);
-        assert(_baseBytes.length > 0);
-        string memory _tempValue = new string(_baseBytes.length);
-        bytes memory _newValue = bytes(_tempValue);
-        for(uint i=0;i<_baseBytes.length;i++){
-            _newValue[ _baseBytes.length - i - 1] = _baseBytes[i];
-        }
-        return string(_newValue);
+    bytes memory _baseBytes = bytes(_base);
+    assert(_baseBytes.length > 0);
+    string memory _tempValue = new string(_baseBytes.length);
+    bytes memory _newValue = bytes(_tempValue);
+    for(uint i=0;i<_baseBytes.length;i++){
+        _newValue[ _baseBytes.length - i - 1] = _baseBytes[i];
     }
+    return string(_newValue);
+  }
+
+  function _authorizeUpgrade(address newImplementation) internal view override {
+    newImplementation;
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
+  }
 }

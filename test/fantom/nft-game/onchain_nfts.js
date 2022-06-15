@@ -113,15 +113,17 @@ describe("On-chain Metadata Generation Tests", function () {
       }
     });
 
-    it("Should console.log() base64 encoded lockedNFT metadata", async () => {
+    it("Should console.log() base64 encoded lockNFT metadata", async () => {
       const userData = await nftgame.userdata(user.address);
       const metadata = await nftgame.uri(userData.lockedNFTID);
       console.log(metadata);
     });
+
+    it("Should set nickname succesfully and console.log base64 lockNFT metadata", async () => {
+      const userData = await nftgame.userdata(user.address);
+      await lsvg.connect(user).setNickname(userData.lockedNFTID, "HomeDestroyer");
+      const metadata = await nftgame.uri(userData.lockedNFTID);
+      console.log(metadata);
+    });
   });
-
-
-
-
-
 });

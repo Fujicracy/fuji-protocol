@@ -11,6 +11,7 @@ import "../libraries/StringConvertor.sol";
 contract LockNFTDescriptor is ILockNFTDescriptor {
   using StringConvertor for address;
   using StringConvertor for uint256;
+  using StringConvertor for bytes;
 
   // VoucherSVG
   ILockSVG public lockSVG;
@@ -73,8 +74,8 @@ contract LockNFTDescriptor is ILockNFTDescriptor {
   function _propertiesToken(uint256 tokenId) internal view returns (bytes memory data) {
     return abi.encodePacked(
         "{",
-          '"owner":', _getOwnerAddress(tokenId),
-          '"climbed meters":', _getAltitudePoints(tokenId),
+          '"owner":"', _getOwnerAddress(tokenId),'",',
+          '"climbed meters":', _getAltitudePoints(tokenId),',',
           '"gear power":', _getGearPower(tokenId),
         "}"
      );
@@ -87,8 +88,10 @@ contract LockNFTDescriptor is ILockNFTDescriptor {
 
   function _getAltitudePoints(uint256 tokenId) internal view returns(string memory) {
     address ownedBy = nftGame.ownerOfLockNFT(tokenId);
+    uint8 decimals = uint8(nftGame.POINTS_DECIMALS());
     ( , , , ,uint128 finalScore, , ) = nftGame.userdata(ownedBy);
-    return uint256(finalScore).toString();
+    uint256 number = uint256(finalScore) / 10 ** decimals;
+    return number.toString();
   }
 
   function _getGearPower(uint256 tokenId) internal view returns(string memory) {
@@ -96,5 +99,4 @@ contract LockNFTDescriptor is ILockNFTDescriptor {
     ( , , , , , uint128 gearPower, ) = nftGame.userdata(ownedBy);
     return uint256(gearPower).toString();
   }
-
 }

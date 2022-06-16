@@ -114,30 +114,37 @@
     </defs>
   </g>
   <text textLength="100%" font-family="Lucida Console, Courier New, monospace" font-size="20" rotate="0" fill="white"><textPath xlink:href="#a" startOffset="15%">0x70997970c51812dc3a010c7d01b50e0d17dc79c8</textPath></text>
-  <g transform="translate(460, 230) scale(.15 .15)">
-    <circle cx="300" cy="300" r="235" fill="#101010" stroke="url(#paint0_linear_113_36)" stroke-width="130"/>
+  <g transform="translate(480, 190) scale(.15 .15)">
+    <circle cx="300" cy="300" r="235" fill="#101010" stroke="url(#f1)" stroke-width="130"/>
     <path d="M150 450.079L243.51 356.569C274.752 325.327 325.406 325.327 356.647 356.569L450 449.921L299.921 600L150 450.079Z" fill="#F5F5FD"/>
     <path d="M133.66 466C176.2 508.627 235.02 535 300 535C364.98 535 423.8 508.627 466.34 466" stroke="#E4E4EB" stroke-width="132"/>
     <defs>
-      <linearGradient id="paint0_linear_113_36" x1="300" y1="-85.5" x2="300" y2="657.5" gradientUnits="userSpaceOnUse">
-        <stop offset="0.178688" stop-color="#F60655"/>
-        <stop offset="0.882382" stop-color="#101010"/>
+      <linearGradient id="f1" x1="300" y1="-85.5" x2="300" y2="658" gradientUnits="userSpaceOnUse">
+        <stop offset="0.18" stop-color="#F60655"/>
+        <stop offset="0.88" stop-color="#101010"/>
       </linearGradient>
     </defs>
   </g>
-  <g transform="translate(50, 230) scale(.15 .15)">
+  <g transform="translate(30, 190) scale(.15 .15)">
     <circle cx="300" cy="300" r="300" fill="#13B5EC"/>
     <path d="M194.688 181.856V418.513C194.688 420.43 195.784 422.178 197.51 423.014L302.607 473.867C304.075 474.577 305.797 474.527 307.221 473.733L405.543 418.886C407.145 417.992 408.129 416.294 408.107 414.46L405.35 181.684C405.328 179.876 404.332 178.22 402.745 177.354L307.235 125.247C305.802 124.466 304.078 124.432 302.617 125.158L197.464 177.377C195.763 178.222 194.688 179.957 194.688 181.856Z" stroke="white" stroke-width="16"/>
     <path d="M194.688 184.372L299.695 240.635C301.206 241.445 303.026 241.424 304.518 240.58L403.902 184.372" stroke="white" stroke-width="16"/>
     <path d="M301.164 241.045L197.938 296.354C196.539 297.104 196.529 299.106 197.92 299.87L299.683 355.725C301.2 356.558 303.038 356.547 304.545 355.698L403.601 299.859C404.966 299.089 404.956 297.12 403.583 296.365L303.073 241.055C302.48 240.729 301.761 240.725 301.164 241.045Z" stroke="white" stroke-width="16"/>
     <path d="M302.123 239.128V354.256" stroke="white" stroke-width="16"/>
   </g>
+  <g transform="translate(200, 490)" font-family="Lucida Console, Courier New, monospace" fill="white" font-weight="normal">
+    <rect x="0" y="0" width="220" height="60" rx="5" fill="#D9D9D9" fill-opacity="0.2" stroke="#F22267"/>
+    <rect x="25" y="22" width="170" height="30" rx="5" fill="#988C8C" fill-opacity="0.1" stroke="#F22267"/>
+    <text x="85" y="15" font-size="12">Climber</text>
+    <text x="45" y="42" font-size="18">HomeDestroyer</text>
+  </g>
   <g transform="translate(400, 330)" font-family="Lucida Console, Courier New, monospace" font-size="12" font-weight="normal" fill="white">
     <rect x="0" y="0" width="185" height="40" rx="5" fill="#D9D9D9" fill-opacity="0.5" stroke="#F22267"/>
     <rect x="60" y="5" width="120" height="30" rx="5" fill="#988C8C" fill-opacity="0.25" stroke="#F22267"/>
     <text x="10" y="18">Meter</text>
     <text x="10" y="32">Points</text>
-    <text x="65" y="30" font-size="22">1437.5</text>
+    <text x="77" y="30" font-size="22">1437.5</text>
     <text x="160" y="30" font-size="14">km</text>
   </g>
+  <circle cx="300" cy="300" r="299" fill="none" stroke="#580C24" stroke-width="10"/>
 </svg>

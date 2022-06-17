@@ -103,13 +103,13 @@ const deployContracts = async () => {
       LaunchTimestamp + 10 * week,
       LaunchTimestamp + 12 * week
     ];
-    prices = [2000, 10000, 20000].map( i => parseUnits(i, POINTS_DECIMALS));
+    prices = [1000, 5000, 10000].map( i => parseUnits(i, POINTS_DECIMALS));
     rewardfactors = [
       // Note that 'standard' rewards chances are:
-      // 52.50%, 20.00%, 22.50%, 3.99%, 0.01%
+      // 50.00%, 20.00%, 20.00%, 4.99%, 0.01%. 5.00% of NFT
       [0.25, 0, 1.1, 2, 25], // CrateId = 1
-      [0.25, 0, 1.1, 4, 50], // CrateId = 2
-      [0.25, 0, 1.1, 8, 100], // CrateId = 3
+      [0.50, 0, 1.5, 4, 50], // CrateId = 2
+      [0.90, 0, 2.0, 8, 100], // CrateId = 3
     ];
   }
   

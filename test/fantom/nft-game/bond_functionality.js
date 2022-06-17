@@ -556,10 +556,23 @@ describe("Bond Functionality", function () {
       }
     });
 
-    it("Should succesfully claim tokens after 3 months", async () => {
+    it("Should not succesfully claim tokens after 3 months of bonding phase end", async () => {
       const month3TokenId = firstTokenId;
-      // Moved to 3-months ahead
+      // Moved to 3-months ahead of bonding phase end
       await timeTravel(fixtureItems.day * 90 + 1);
+
+      // Ensure 'user' is owner of token id, and that slot corresponds.
+      expect(await pretokenbond.ownerOf(month3TokenId)).to.eq(user.address);
+      expect(await pretokenbond.slotOf(month3TokenId)).to.eq(slotsIdArray[0]);
+
+      // 'user' calls claim.
+      await expect(pretokenbond.connect(user).claim(month3TokenId)).to.be.reverted;
+    });
+
+    it("Should succesfully claim tokens after 3 months of vesting start", async () => {
+      const month3TokenId = firstTokenId;
+      // Moved to 3-months ahead of vesting start
+      await timeTravel(fixtureItems.day * 30 + 1);
 
       const expectedTokensPerBond = await pretokenbond.tokensPerUnit(slotsIdArray[0]);
       const unitsInToken = await pretokenbond.unitsInToken(month3TokenId);
@@ -580,7 +593,7 @@ describe("Bond Functionality", function () {
       expect(userTokenBalance).to.eq(latestUserTokenBal);
     });
 
-    it("Should succesfully claim tokens after 6 months", async () => {
+    it("Should succesfully claim tokens after 6 months of vesting start", async () => {
       const month6TokenId = secondTokenId;
       // Move extra 3-months ahead from previous timeTravel
       await timeTravel(fixtureItems.day * 90 + 1);
@@ -602,7 +615,7 @@ describe("Bond Functionality", function () {
       expect(userTokenBalance).to.eq(latestUserTokenBal);
     });
 
-    it("Should succesfully claim tokens after 12 months", async () => {
+    it("Should succesfully claim tokens after 12 months of vesting start", async () => {
       const month12TokenId = thirdTokenId;
       // Move extra 6-months ahead from previous timeTravel
       await timeTravel(fixtureItems.day * 180 + 1);

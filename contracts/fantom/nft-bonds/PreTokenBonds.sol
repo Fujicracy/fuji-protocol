@@ -90,7 +90,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
       }
     }
     bondPrice = 10000 * 10 ** decimals;
-    vestingStartTimestamp = nftGame.gamePhaseTimestamps(3);
+    vestingStartTimestamp = nftGame.gamePhaseTimestamps(3) + 30 days;
   }
 
   /// View functions

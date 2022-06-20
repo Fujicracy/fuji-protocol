@@ -43,6 +43,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
   bytes32 private _nftgame_GAME_INTERACTOR;
 
   address public underlying;
+  uint256 public underlyingAmount;
 
   uint256[] private _bondSlotTimes;
 
@@ -100,7 +101,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    */
   function tokensPerUnit(uint256 _slot) public view returns (uint256) {
     uint256 weightedUnits = _computeWeightedUnitAmounts();
-    uint256 basicTokensPerUnit = IERC20(underlying).balanceOf(address(this)) * 10 ** _unitDecimals / weightedUnits;
+    uint256 basicTokensPerUnit = underlyingAmount * 10 ** _unitDecimals / weightedUnits;
     return basicTokensPerUnit * bondSlotMultiplier[_slot];
   }
 
@@ -265,6 +266,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
     IERC20 token = IERC20(underlying);
     require(token.allowance(msg.sender, address(this)) >= _amount, "No allowance!");
     token.transferFrom(msg.sender, address(this), _amount);
+    underlyingAmount += _amount;
   }
 
   /**

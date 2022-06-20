@@ -31,6 +31,11 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    */
   event BondPriceChanges(uint256 newBondPrice);
 
+  /**
+   * @dev Vesting start timestamp changed
+   */
+  event VestingStartTimestampChanged(uint256 newVestingStartTimestamp);
+
   address private _owner;
 
   NFTGame public nftGame;
@@ -46,6 +51,8 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
   mapping(uint256 => uint256) public bondSlotMultiplier;
 
   uint256 public bondPrice;
+
+  uint256 public vestingStartTimestamp;
 
   // Metadata for ERC3525 generated on Chain by 'voucherDescriptor'
   IVNFTDescriptor public voucherDescriptor;
@@ -84,6 +91,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
       }
     }
     bondPrice = 10000 * 10 ** decimals;
+    vestingStartTimestamp = nftGame.gamePhaseTimestamps(3) + 30 days;
   }
 
   /// View functions
@@ -198,6 +206,16 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
   }
 
   /**
+   * @notice Admin restricted function to set the vesting start timestamp
+   */
+  function setVestingStartTimeStamp(uint256 _vestingStartTimestamp) external {
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
+    require(_vestingStartTimestamp > 0, GameErrors.INVALID_INPUT);
+    vestingStartTimestamp = _vestingStartTimestamp;
+    emit VestingStartTimestampChanged(_vestingStartTimestamp);
+  }
+
+  /**
    * @notice Admin restricted function to set the {VoucherDescriptor} contract that generates:
    * ContractURI metadata.
    * Slot ID metadata.
@@ -275,7 +293,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    */
   function vestingTypeToTimestamp(uint256 _slotId) public view returns (uint256) {
     require(_checkIfSlotExists(_slotId), GameErrors.INVALID_INPUT);
-    return nftGame.gamePhaseTimestamps(3) + (30 days * _slotId);
+    return vestingStartTimestamp + (30 days * _slotId);
   }
 
   /// Internal functions

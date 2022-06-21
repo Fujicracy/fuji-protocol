@@ -108,8 +108,8 @@ const deployContracts = async () => {
       // Note that 'standard' rewards chances are:
       // 50.00%, 20.00%, 20.00%, 4.99%, 0.01%. 5.00% of NFT
       [0.25, 0, 1.1, 2, 25], // CrateId = 1
-      [0.50, 0, 1.5, 4, 50], // CrateId = 2
-      [0.90, 0, 2.0, 8, 100], // CrateId = 3
+      [0.35, 0, 1.2, 4, 50], // CrateId = 2
+      [0.45, 0, 1.3, 8, 100], // CrateId = 3
     ];
   }
   

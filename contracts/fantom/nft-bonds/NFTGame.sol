@@ -346,8 +346,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
       _mintPoints(user, amount);
     } else {
       _mint(user, id, amount, "");
+      totalSupply[id] += amount;
     }
-    totalSupply[id] += amount;
   }
 
   function burn(

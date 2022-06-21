@@ -11,6 +11,11 @@ async function main() {
     throw new Error("Please set 'NETWORK=fantom' in ./packages/hardhat/.env");
   }
   await setDeploymentsPath("core");
+
+  const nftGameAddress = getContractAddress("NFTGame");
+  const nftgame = await ethers.getContractAt("NFTGame", nftGameAddress);
+  await nftgame.setLockNFTDescriptor(nftGameAddress);
+
   await initTestWallet();
 }
 

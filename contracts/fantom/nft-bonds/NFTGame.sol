@@ -373,8 +373,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   }
 
   function awardPoints(
-    address[] users,
-    uint256[] amounts
+    address[] memory users,
+    uint256[] memory amounts
   ) external {
     require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     require(users.length == amounts.length, GameErrors.INVALID_INPUT);

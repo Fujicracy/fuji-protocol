@@ -75,6 +75,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   // TokenID =>  supply amount
   mapping(uint256 => uint256) public totalSupply;
 
+  // NOTE array also includes {Fliquidator}
   address[] public validVaults;
 
   // Timestamps for each game phase
@@ -100,7 +101,11 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   mapping(uint256 => address) public ownerOfLockNFT;
 
   modifier onlyVault() {
-    require(isValidVault(msg.sender), "Not valid vault!");
+    require(
+      isValidVault(msg.sender) ||
+      // Fliquidator (hardcoded)
+      msg.sender == 0xbeD10b8f63c910BF0E3744DC308E728a095eAF2d,
+      "Not valid vault!");
     _;
   }
 
@@ -148,6 +153,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
   /**
    * @notice Sets the list of vaults that count towards the game
+   * @dev array should also include {Fliquidator} address
    */
   function setValidVaults(address[] memory vaults) external {
     require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
@@ -206,6 +212,47 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   function setOwner(address _newOwner) public {
     require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
     _owner = _newOwner;
+  }
+
+  /**
+   * @dev force manual update game state for array of players
+   * Restricted to game admin only.
+   * Limit array size to avoid transaction gas limit error. 
+   */
+  function manualUserUpdate(address[] calldata players) external {
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
+
+    uint256 phase = getPhase();
+    // Only once accumulation has begun
+    require(phase > 0, GameErrors.WRONG_PHASE);
+
+    for (uint256 i = 0; i < players.length;) {
+      address user = players[i];
+      // Reads state of debt as per current f1155 records
+      uint256 f1155Debt = getUserDebt(user);
+      bool affectedUser;
+      if (userdata[user].rateOfAccrual != 0) {
+        // Compound points from previous state, but first resolve debt state error
+        // due to liquidations and flashclose
+        if (f1155Debt < userdata[user].recordedDebtBalance) {
+          // Credit user 1% courtesy, to fix computation in '_computeAccrued'
+          f1155Debt = userdata[user].recordedDebtBalance * 101 / 100;
+          affectedUser = true;
+        }
+        _compoundPoints(user, f1155Debt, phase);
+      }
+      if (userdata[user].lastTimestampUpdate == 0) {
+        numPlayers++;
+      }
+      if (affectedUser) {
+        _updateUserInfo(user, uint128(getUserDebt(user)), phase);
+      } else {
+        _updateUserInfo(user, uint128(f1155Debt), phase);
+      }
+      unchecked {
+        ++i;
+      }
+    }
   }
 
   // Game control functions
@@ -304,8 +351,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
       _mintPoints(user, amount);
     } else {
       _mint(user, id, amount, "");
+      totalSupply[id] += amount;
     }
-    totalSupply[id] += amount;
   }
 
   function burn(
@@ -368,6 +415,10 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
       if (validVaults[i] == vault) {
         return true;
       }
+    }
+    // Fliquidator (hardcoded)
+    if (vault == 0xbeD10b8f63c910BF0E3744DC308E728a095eAF2d) {
+      return true;
     }
     return false;
   }

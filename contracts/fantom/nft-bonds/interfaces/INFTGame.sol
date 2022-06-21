@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 interface INFTGame {
 
+  function getPhase() external view returns (uint256);
+
   function gamePhaseTimestamps(uint256) external view returns(uint256);
 
   function isValidVault(address) external view returns(bool);

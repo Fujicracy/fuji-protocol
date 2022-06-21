@@ -216,7 +216,6 @@ const copyMinedTxParams = async (txHash) => {
   return unsignedTx;
 }
 
-
 const networkSuffix = (name) => {
   switch (network) {
     case "mainnet":

@@ -4,18 +4,19 @@ pragma abicoder v2;
 
 import "../NFTGame.sol";
 import "../interfaces/ILockNFTDescriptor.sol";
+import "../interfaces/ILockSVG.sol";
 import "../libraries/Base64.sol";
-
-interface ILockNFTSVG {
-  function generateSVG(uint256 tokenId_) external view returns (string memory);
-}
+import "../libraries/StringConvertor.sol";
 
 contract LockNFTDescriptor is ILockNFTDescriptor {
+  using StringConvertor for address;
+  using StringConvertor for uint256;
+  using StringConvertor for bytes;
 
   // VoucherSVG
-  ILockNFTSVG public lockfNFTSVG;
+  ILockSVG public lockSVG;
 
-  NFTGame private nftGame;
+  NFTGame public nftGame;
 
   bytes32 private _nftgame_GAME_ADMIN;
 
@@ -25,7 +26,7 @@ contract LockNFTDescriptor is ILockNFTDescriptor {
   ) {
     nftGame = NFTGame(_nftGame);
     _nftgame_GAME_ADMIN = nftGame.GAME_ADMIN();
-    lockfNFTSVG = ILockNFTSVG(_lockNFTSVG);
+    lockSVG = ILockSVG(_lockNFTSVG);
   }
 
   /// Admin functions
@@ -46,23 +47,23 @@ contract LockNFTDescriptor is ILockNFTDescriptor {
    */
   function setLockfNFTSVG(address _lockNFTSVG) external {
     require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
-    lockfNFTSVG = ILockNFTSVG(_lockNFTSVG);
+    lockSVG = ILockSVG(_lockNFTSVG);
     emit SetLockNFTSVG(_lockNFTSVG);
   }
 
   /// View functions
 
   function lockNFTUri(uint256 tokenId) external override view returns (string memory) {
-    string memory image = lockfNFTSVG.generateSVG(tokenId);
+    string memory image = lockSVG.generateSVG(tokenId);
     return string(
       abi.encodePacked(
         "data:application/json;base64,",
         Base64.encode(
           abi.encodePacked(
-            '{"name":"', "name",
-            '","description":"', "description",
+            '{"name":"', "Proof Of Locking Ceremony",
+            '","description":"', "Fuji Climb: Fantom Expedition - Souvenir NFT",
             '","image":"data:image/svg+xml;base64,', Base64.encode(bytes(image)),
-            '","properties":', _propertiesToken(),
+            '","properties":', _propertiesToken(tokenId),
             "}"
           )
         )
@@ -70,14 +71,32 @@ contract LockNFTDescriptor is ILockNFTDescriptor {
     );
   }
 
-  function _propertiesToken() internal pure returns (bytes memory data) {
+  function _propertiesToken(uint256 tokenId) internal view returns (bytes memory data) {
     return abi.encodePacked(
         "{",
-          '"user":', '"address of the user"',
-          '"climbed meters":', '"total locked points"',
-          '"captured gear":', '"gears"',
+          '"owner":"', _getOwnerAddress(tokenId),'",',
+          '"climbed meters":', _getAltitudePoints(tokenId),',',
+          '"gear power":', _getGearPower(tokenId),
         "}"
      );
   }
 
+  function _getOwnerAddress(uint256 tokenId) internal view returns(string memory) {
+    address ownedBy = nftGame.ownerOfLockNFT(tokenId);
+    return ownedBy.addressToString();
+  }
+
+  function _getAltitudePoints(uint256 tokenId) internal view returns(string memory) {
+    address ownedBy = nftGame.ownerOfLockNFT(tokenId);
+    uint8 decimals = uint8(nftGame.POINTS_DECIMALS());
+    ( , , , ,uint128 finalScore, , ) = nftGame.userdata(ownedBy);
+    uint256 number = uint256(finalScore) / 10 ** decimals;
+    return number.toString();
+  }
+
+  function _getGearPower(uint256 tokenId) internal view returns(string memory) {
+    address ownedBy = nftGame.ownerOfLockNFT(tokenId);
+    ( , , , , , uint128 gearPower, ) = nftGame.userdata(ownedBy);
+    return uint256(gearPower).toString();
+  }
 }

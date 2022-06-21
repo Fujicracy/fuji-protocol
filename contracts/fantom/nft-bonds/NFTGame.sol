@@ -45,7 +45,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     uint128 accruedPoints;
     uint128 recordedDebtBalance;
     uint128 finalScore;
-    uint128 gearsCollected;
+    uint128 gearPower;
     uint256 lockedNFTID;
   }
 
@@ -97,6 +97,9 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
   uint256 public numPlayers;
 
+  // Mapping required for Locking ceremony NFT: tokenID => owner
+  mapping(uint256 => address) public ownerOfLockNFT;
+
   modifier onlyVault() {
     require(
       isValidVault(msg.sender) ||
@@ -139,6 +142,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     if (_id <= 3 + nftCardsAmount) {
       return string(abi.encodePacked(ERC1155Upgradeable.uri(0), _id.toString()));
     } else {
+      require(ownerOfLockNFT[_id] != address(0), GameErrors.INVALID_INPUT);
       return lockNFTdesc.lockNFTUri(_id);
     }
   }
@@ -312,6 +316,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
     // Mint the lockedNFT for user
     _mint(user, lockedNFTID, 1, "");
+    ownerOfLockNFT[lockedNFTID] = user;
 
     // Burn all remaining crates
     uint256 balance;
@@ -321,15 +326,15 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     }
 
     // Burn 'climb gear' nft cards in deck
-    uint256 totalGears;
+    uint256 gearPower;
     for (uint256 index = 4; index < 4 + nftCardsAmount; index++) {
       balance = balanceOf(user, index);
       if (balance > 0) {
         _burn(user, index, balance);
+        gearPower += 1;
       }
-      totalGears += balance;
     }
-    userdata[user].gearsCollected = uint128(totalGears);
+    userdata[user].gearPower = uint128(gearPower);
   }
 
   function mint(
@@ -346,8 +351,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
       _mintPoints(user, amount);
     } else {
       _mint(user, id, amount, "");
+      totalSupply[id] += amount;
     }
-    totalSupply[id] += amount;
   }
 
   function burn(

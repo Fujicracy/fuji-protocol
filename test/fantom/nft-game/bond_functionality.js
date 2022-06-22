@@ -15,7 +15,7 @@ const {
   timeTravel,
 } = require("../../helpers");
 
-const DEBUG = true;
+const DEBUG = false;
 
 /// ERC3525 Glossary
 
@@ -573,6 +573,7 @@ describe("Bond Functionality", function () {
       ];
 
       for (let index = 0; index < expectedTokensPerBond.length; index++) {
+        if (DEBUG) { console.log(`expectedTokensPerBond slot ${slotsIdArray[index]}:`, expectedTokensPerBond[index].toString()); }
         expect(expectedTokensPerBond[index]).to.eq(tokenReturnValue[index])
       }
     });
@@ -645,7 +646,6 @@ describe("Bond Functionality", function () {
 
       const expectedTokensPerBond = await pretokenbond.tokensPerUnit(slotsIdArray[2]);
       const unitsInToken = await pretokenbond.unitsInToken(days180TokenId);
-
       // Ensure 'user' is owner of token id, and that slot corresponds.
       await expect(await pretokenbond.ownerOf(days180TokenId)).to.eq(user.address);
       await expect(await pretokenbond.slotOf(days180TokenId)).to.eq(slotsIdArray[2]);
@@ -661,19 +661,19 @@ describe("Bond Functionality", function () {
     });
 
     it("Should succesfully claim tokens after 12 months of vesting start", async () => {
-      const days365TokenId = thirdTokenId;
+      const days360TokenId = thirdTokenId;
       // Move extra 6-months ahead from previous timeTravel
       await timeTravel(fixtureItems.day * 180 + 1);
 
       const expectedTokensPerBond = await pretokenbond.tokensPerUnit(slotsIdArray[3]);
-      const unitsInToken = await pretokenbond.unitsInToken(days365TokenId);
+      const unitsInToken = await pretokenbond.unitsInToken(days360TokenId);
 
       // Ensure 'user' is owner of token id, and that slot corresponds.
-      expect(await pretokenbond.ownerOf(days365TokenId)).to.eq(user.address);
-      expect(await pretokenbond.slotOf(days365TokenId)).to.eq(slotsIdArray[3]);
+      expect(await pretokenbond.ownerOf(days360TokenId)).to.eq(user.address);
+      expect(await pretokenbond.slotOf(days360TokenId)).to.eq(slotsIdArray[3]);
 
       // 'user' calls claim.
-      await pretokenbond.connect(user).claim(days365TokenId);
+      await pretokenbond.connect(user).claim(days360TokenId);
 
       const userTokenBalance = await mocktoken.balanceOf(user.address);
       const newExpected = unitsInToken.mul(expectedTokensPerBond).div(parseUnits(1, pointsDecimals));

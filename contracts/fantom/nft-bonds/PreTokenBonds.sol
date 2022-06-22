@@ -15,26 +15,30 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
    * @dev NFTGame contract address changed
    */
   event NFTGameChanged(address newAddress);
-
   /**
    * @dev Underlying token address changed
    */
   event UnderlyingChanged(address newAddress);
-
   /**
    * @dev Bond times changed
    */
   event BondTimesChanges(uint256 newBondTimes, uint256 newMultiplier);
-
   /**
    * @dev Bond price changed
    */
   event BondPriceChanges(uint256 newBondPrice);
-
   /**
    * @dev Vesting start timestamp changed
    */
   event VestingStartTimestampChanged(uint256 newVestingStartTimestamp);
+  /**
+   * @dev Admin deposit underlying tokens
+   */
+  event UnderlyingDeposit(uint256 amount);
+  /**
+   * @dev User claimed tokens
+   */
+  event UserClaim(address indexed user, uint256 amount);
 
   address private _owner;
 
@@ -274,6 +278,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
     require(token.allowance(msg.sender, address(this)) >= _amount, "No allowance!");
     token.transferFrom(msg.sender, address(this), _amount);
     underlyingAmount += _amount;
+    emit UnderlyingDeposit(_amount);
   }
 
   /**
@@ -290,10 +295,11 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
     uint256 units = unitsInToken(_tokenId);
     uint256 tokensPerBond = tokensPerUnit(slot);
     _burnVoucher(_tokenId);
-    
+
     uint256 amountToTransfer = units * tokensPerBond / 10 ** _unitDecimals;
     underlyingAmount -= amountToTransfer;
     IERC20(underlying).transfer(msg.sender, amountToTransfer);
+    emit UserClaim(msg.sender, amountToTransfer);
   }
 
   /**

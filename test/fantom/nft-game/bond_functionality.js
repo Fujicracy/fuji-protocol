@@ -15,7 +15,7 @@ const {
   timeTravel,
 } = require("../../helpers");
 
-const DEBUG = true;
+const DEBUG = false;
 
 /// ERC3525 Glossary
 
@@ -348,7 +348,7 @@ describe("Bond Functionality", function () {
   });
 
   describe("Fuji Bond Specific Functionality", () => {
-    
+
     let amountmocktoken;
     let endOfAccumulationTimestamp;
     let endOfTradeLockTimestamp;
@@ -361,7 +361,7 @@ describe("Bond Functionality", function () {
     let thirdTokenId;
 
     before(async () => {
-      console.log("\t"+"Tests in this block should be run in series.");
+      console.log("\t" + "Tests in this block should be run in series.");
 
       mocktoken = fixtureItems.mocktoken;
 
@@ -418,9 +418,9 @@ describe("Bond Functionality", function () {
         BigNumber.from("12")
       ];
       for (let index = 0; index < expectedDefaultVestingTimes.length; index++) {
-        expect(expectedDefaultVestingTimes[index].eq(vestingTimes[index])).to.eq(true); 
+        expect(expectedDefaultVestingTimes[index].eq(vestingTimes[index])).to.eq(true);
       }
-      
+
     });
 
     it("Should revert if user tries to mint voucher before accumulation phase ends", async () => {
@@ -442,7 +442,7 @@ describe("Bond Functionality", function () {
       // Mint the bonds
       const numberOfBondUnits = parseUnits(5, pointsDecimals);
       const month3Vesting = 3;
-      
+
       await expect(
         nftinteractions.connect(user).mintBonds(month3Vesting, numberOfBondUnits)
       ).to.be.revertedWith("G04");
@@ -544,7 +544,7 @@ describe("Bond Functionality", function () {
       
       const totalWeightedUnits = unitsPerSlot[0].add(unitsPerSlot[1].mul(multiplierValues[1])).add(unitsPerSlot[2].mul(multiplierValues[2]));
       const basicTokenPerUnit = amountmocktoken.mul(parseUnits(1, pointsDecimals)).div(totalWeightedUnits);
-      
+
       const expectedTokensPerBond = [
         basicTokenPerUnit,
         basicTokenPerUnit.mul(BigNumber.from([2])),
@@ -552,7 +552,8 @@ describe("Bond Functionality", function () {
       ];
 
       for (let index = 0; index < expectedTokensPerBond.length; index++) {
-        expect(expectedTokensPerBond[index]).to.eq(tokenReturnValue[index]) 
+        if (DEBUG) { console.log(`expectedTokensPerBond slot ${slotsIdArray[index]}:`, expectedTokensPerBond[index].toString()); }
+        expect(expectedTokensPerBond[index]).to.eq(tokenReturnValue[index])
       }
     });
 
@@ -597,17 +598,14 @@ describe("Bond Functionality", function () {
       const month6TokenId = secondTokenId;
       // Move extra 3-months ahead from previous timeTravel
       await timeTravel(fixtureItems.day * 90 + 1);
-      
       const expectedTokensPerBond = await pretokenbond.tokensPerUnit(slotsIdArray[1]);
       const unitsInToken = await pretokenbond.unitsInToken(month6TokenId);
-      
       // Ensure 'user' is owner of token id, and that slot corresponds.
       await expect(await pretokenbond.ownerOf(month6TokenId)).to.eq(user.address);
       await expect(await pretokenbond.slotOf(month6TokenId)).to.eq(slotsIdArray[1]);
 
       // 'user' calls claim.
       await pretokenbond.connect(user).claim(month6TokenId);
-      
       const userTokenBalance = await mocktoken.balanceOf(user.address);
       const newExpected = unitsInToken.mul(expectedTokensPerBond).div(parseUnits(1, pointsDecimals));
       latestUserTokenBal = latestUserTokenBal.add(newExpected);
@@ -619,17 +617,14 @@ describe("Bond Functionality", function () {
       const month12TokenId = thirdTokenId;
       // Move extra 6-months ahead from previous timeTravel
       await timeTravel(fixtureItems.day * 180 + 1);
-
       const expectedTokensPerBond = await pretokenbond.tokensPerUnit(slotsIdArray[2]);
       const unitsInToken = await pretokenbond.unitsInToken(month12TokenId);
 
       // Ensure 'user' is owner of token id, and that slot corresponds.
       expect(await pretokenbond.ownerOf(month12TokenId)).to.eq(user.address);
       expect(await pretokenbond.slotOf(month12TokenId)).to.eq(slotsIdArray[2]);
-
       // 'user' calls claim.
       await pretokenbond.connect(user).claim(month12TokenId);
-
       const userTokenBalance = await mocktoken.balanceOf(user.address);
       const newExpected = unitsInToken.mul(expectedTokensPerBond).div(parseUnits(1, pointsDecimals));
       latestUserTokenBal = latestUserTokenBal.add(newExpected);

@@ -179,7 +179,7 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
           "{",
           '"underlyingToken":"', detailed.underlying,
           '","claimType":"OneTime',
-          '","vesting time":"', detailed.slotId.toString(),' Month-expiry Bond',
+          '","vesting time":"', detailed.slotId.toString(),' Days-expiry Bond',
           '","claim date":"', detailed.claimDate,
           '","redeemable Tokens":"', detailed.redeemableTokens.toString(),
           '"}'
@@ -196,7 +196,7 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
           "{",
           '"underlyingToken":"', detailed.underlying,
           '","claimType":"OneTime"',
-          '","vesting time":"', detailed.slotId.toString(),' Month-expiry Bond',
+          '","vesting time":"', detailed.slotId.toString(),' Days-expiry Bond',
           '","claim date":"', detailed.claimDate,
           '"}'
       );

@@ -249,19 +249,17 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
     uint256 _slot,
     uint256 _units
   ) external returns (uint256 tokenID) {
+    bool isGameAdmin = nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender);
     require(
-      nftGame.hasRole(_nftgame_GAME_INTERACTOR, msg.sender) || _owner == msg.sender,
+      nftGame.hasRole(_nftgame_GAME_INTERACTOR, msg.sender) || isGameAdmin,
       GameErrors.NOT_AUTH
     );
     require(_units > 0 && _checkIfSlotExists(_slot), GameErrors.INVALID_INPUT);
-
-    if (msg.sender != _owner) {
+    if (!isGameAdmin) {
       require(_slot != _bondSlotTimes[0], GameErrors.NOT_AUTH);
-
       uint256 phase = nftGame.getPhase();
       require(phase >= 2 && phase < 4, GameErrors.WRONG_PHASE);
     }
-
     tokenID = _mint(_user, _slot, _units);
   }
 
@@ -292,8 +290,10 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
     uint256 units = unitsInToken(_tokenId);
     uint256 tokensPerBond = tokensPerUnit(slot);
     _burnVoucher(_tokenId);
-
-    IERC20(underlying).transfer(msg.sender, units * tokensPerBond / 10 ** _unitDecimals);
+    
+    uint256 amountToTransfer = units * tokensPerBond / 10 ** _unitDecimals;
+    underlyingAmount -= amountToTransfer;
+    IERC20(underlying).transfer(msg.sender, amountToTransfer);
   }
 
   /**

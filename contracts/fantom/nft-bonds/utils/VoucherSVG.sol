@@ -215,7 +215,7 @@ contract VoucherSVG is IVoucherSVG {
             '<rect fill="#000000" opacity="0.2" x="0" y="0" width="240" height="100" rx="16"></rect>',
             '<text fill-rule="nonzero" font-family="Arial" font-size="20" font-weight="500" fill="#FFFFFF"><tspan x="31" y="31">One-time</tspan></text>',
             '<text fill-rule="nonzero" font-family="Arial" font-size="14" font-weight="500" fill="#FFFFFF"><tspan x="30" y="58">Claim Date: ', params.claimDate, '</tspan></text>',
-            '<text fill-rule="nonzero" font-family="Arial" font-size="14" font-weight="500" fill="#FFFFFF"><tspan x="31" y="85">', params.slotId.toString(),' Month-expiry Bond','</tspan></text>'
+            '<text fill-rule="nonzero" font-family="Arial" font-size="14" font-weight="500" fill="#FFFFFF"><tspan x="31" y="85">', params.slotId.toString(),' Days-expiry Bond','</tspan></text>'
           '</g>'
         )
       );

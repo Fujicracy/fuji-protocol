@@ -81,7 +81,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
     VoucherCore._initialize("FujiDAO PreToken Bonds", "fjBondVoucher", decimals);
     _nftgame_GAME_ADMIN = nftGame.GAME_ADMIN();
     _nftgame_GAME_INTERACTOR = nftGame.GAME_INTERACTOR();
-    _bondSlotTimes = [1, 30, 180, 360];
+    _bondSlotTimes = [1, 90, 180, 360];
     uint8[4] memory defaultMultipliers = [1, 1, 2, 4];
     uint256 length = _bondSlotTimes.length;
     for (uint256 i = 0; i < length; ) {
@@ -176,7 +176,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
 
   /**
    * @notice Admin restricted function to push a new bond time.
-   * @dev '_newbondSlotTime' should be different than existing bond times: Defaults: [1, 30, 180, 360]
+   * @dev '_newbondSlotTime' should be different than existing bond times: Defaults: [1, 90, 180, 360]
    * @param _newbondSlotTime Value in months of new vesting time to push.
    * @param _newMultiplier Assigned multiplier for bond reward for '_newbondSlotTime'
    */

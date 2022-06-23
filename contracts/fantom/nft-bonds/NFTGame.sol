@@ -79,10 +79,10 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   address[] public validVaults;
 
   // Timestamps for each game phase
-  // 0 = start game launch
-  // 1 = end of accumulation
-  // 2 = end of trade and lock
-  // 3 = end of bond
+  // 0 = start of accumulation, trading enabled
+  // 1 = end of accumulation, start of locking, start of bonding
+  // 2 = end of trade
+  // 3 = end of bonding, end of lock
   uint256[4] public gamePhaseTimestamps;
 
   ILockNFTDescriptor public lockNFTdesc;
@@ -579,7 +579,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
   function _isCrateOrCardId(uint256[] memory ids) internal view returns (bool isSpecialID) {
     for (uint256 index = 0; index < ids.length; index++) {
-      if (ids[index] > 0 || ids[index] <= 4 + nftCardsAmount) {
+      if (ids[index] > 0 && ids[index] <= 4 + nftCardsAmount) {
         isSpecialID = true;
       }
     }

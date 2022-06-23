@@ -16,7 +16,7 @@ import "../interfaces/IFujiOracle.sol";
 import "../interfaces/IFujiERC1155.sol";
 import "../interfaces/IERC20Extended.sol";
 import "../interfaces/IFlasher.sol";
-import "./libraries/LibUniversalERC20MATIC.sol";
+import "../libraries/LibUniversalERC20.sol";
 import "../libraries/FlashLoans.sol";
 import "../libraries/Errors.sol";
 
@@ -26,7 +26,7 @@ import "../libraries/Errors.sol";
 
 contract FliquidatorMATIC is Claimable, ReentrancyGuard {
   using SafeERC20 for IERC20;
-  using LibUniversalERC20MATIC for IERC20;
+  using LibUniversalERC20 for IERC20;
 
   address public constant MATIC = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
 

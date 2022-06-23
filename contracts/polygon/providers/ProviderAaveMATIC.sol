@@ -11,10 +11,10 @@ import "../../interfaces/IWETH.sol";
 import "../../interfaces/aave/IAaveDataProvider.sol";
 import "../../interfaces/aave/IAaveLendingPool.sol";
 import "../../interfaces/aave/IAaveLendingPoolProvider.sol";
-import "../libraries/LibUniversalERC20MATIC.sol";
+import "../../libraries/LibUniversalERC20.sol";
 
 contract ProviderAaveMATIC is IProvider {
-  using LibUniversalERC20MATIC for IERC20;
+  using LibUniversalERC20 for IERC20;
 
   function _getAaveProvider() internal pure returns (IAaveLendingPoolProvider) {
     return IAaveLendingPoolProvider(0xd05e3E715d945B59290df0ae8eF85c1BdB684744);

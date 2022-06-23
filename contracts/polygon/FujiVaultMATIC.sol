@@ -18,7 +18,7 @@ import "../interfaces/IFujiOracle.sol";
 import "../interfaces/IFujiERC1155.sol";
 import "../interfaces/IProvider.sol";
 import "../libraries/Errors.sol";
-import "./libraries/LibUniversalERC20UpgradeableMATIC.sol";
+import "../libraries/LibUniversalERC20Upgradeable.sol";
 
 /**
  * @dev Contract for the interaction of Fuji users with the Fuji protocol.
@@ -28,7 +28,7 @@ import "./libraries/LibUniversalERC20UpgradeableMATIC.sol";
 
 contract FujiVaultMATIC is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   using SafeERC20Upgradeable for IERC20Upgradeable;
-  using LibUniversalERC20UpgradeableMATIC for IERC20Upgradeable;
+  using LibUniversalERC20Upgradeable for IERC20Upgradeable;
 
   address public constant MATIC = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
 

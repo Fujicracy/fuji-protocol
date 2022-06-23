@@ -16,7 +16,7 @@ import "../../interfaces/aave/IFlashLoanReceiver.sol";
 import "../../interfaces/aave/IAaveLendingPool.sol";
 import "../../interfaces/balancer/IBalancerVault.sol";
 import "../../interfaces/balancer/IFlashLoanRecipient.sol";
-import "../libraries/LibUniversalERC20MATIC.sol";
+import "../../libraries/LibUniversalERC20.sol";
 
 /**
  * @dev Contract that handles Fuji protocol flash loan logic and
@@ -24,7 +24,7 @@ import "../libraries/LibUniversalERC20MATIC.sol";
  */
 
 contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver, IFlashLoanRecipient {
-  using LibUniversalERC20MATIC for IERC20;
+  using LibUniversalERC20 for IERC20;
 
   IFujiAdmin private _fujiAdmin;
 
@@ -151,9 +151,8 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver, IFlashLoanReci
     return true;
   }
 
-
   // ===================== Balancer FlashLoan ===================================
-  
+
   /**
    * @dev Initiates a Balancer flashloan.
    * @param info: data to be passed between functions executing flashloan logic
@@ -201,12 +200,7 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver, IFlashLoanReci
     _executeAction(info, amounts[0], feeAmounts[0], _value);
 
     // Repay flashloan
-    _repay(
-      info.asset == _MATIC,
-      address(tokens[0]),
-      amounts[0] + feeAmounts[0],
-      _balancerVault
-    );
+    _repay(info.asset == _MATIC, address(tokens[0]), amounts[0] + feeAmounts[0], _balancerVault);
   }
 
   function _executeAction(
@@ -215,7 +209,7 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver, IFlashLoanReci
     uint256 _fee,
     uint256 _value
   ) internal {
-    require( _paramsHash == keccak256(abi.encode(_info)), "False entry point!");
+    require(_paramsHash == keccak256(abi.encode(_info)), "False entry point!");
     if (_info.callType == FlashLoan.CallType.Switch) {
       IVault(_info.vault).executeSwitch{ value: _value }(_info.newProvider, _amount, _fee);
     } else if (_info.callType == FlashLoan.CallType.Close) {

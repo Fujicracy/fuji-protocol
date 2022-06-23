@@ -28,7 +28,7 @@ contract FliquidatorMATIC is Claimable, ReentrancyGuard {
   using SafeERC20 for IERC20;
   using LibUniversalERC20 for IERC20;
 
-  address public constant MATIC = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+  address public constant MATIC = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
   // slippage limit to 2%
   uint256 public constant SLIPPAGE_LIMIT_NUMERATOR = 2;

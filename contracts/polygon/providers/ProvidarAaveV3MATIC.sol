@@ -11,7 +11,6 @@ import "../../interfaces/IWETH.sol";
 import "../../interfaces/aavev3/IAaveProtocolDataProvider.sol";
 import "../../interfaces/aavev3/IPool.sol";
 
-
 contract ProviderAaveV3MATIC is IProvider {
   using LibUniversalERC20 for IERC20;
 
@@ -28,7 +27,7 @@ contract ProviderAaveV3MATIC is IProvider {
   }
 
   function _getMaticAddr() internal pure returns (address) {
-    return 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+    return 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
   }
 
   function _getUnwrapper() internal pure returns (address) {

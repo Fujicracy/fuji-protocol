@@ -13,7 +13,7 @@ import "../../libraries/LibUniversalERC20.sol";
 
 contract HelperFunct {
   function _isNative(address token) internal pure returns (bool) {
-    return (token == address(0) || token == address(0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF));
+    return (token == address(0) || token == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE));
   }
 
   function _getMappingAddr() internal pure returns (address) {

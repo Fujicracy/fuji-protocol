@@ -13,7 +13,7 @@ import "../interfaces/ISwapper.sol";
  */
 
 contract SwapperMATIC is ISwapper {
-  address public constant MATIC = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+  address public constant MATIC = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
   address public constant WMATIC = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
   address public constant QUICKSWAP_ROUTER_ADDR = 0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff;
 

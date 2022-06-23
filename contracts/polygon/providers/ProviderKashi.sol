@@ -28,7 +28,7 @@ contract ProviderKashi is IProvider {
   }
 
   function _getMaticAddr() internal pure returns (address) {
-    return 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+    return 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
   }
 
   function _getUnwrapper() internal pure returns (address) {

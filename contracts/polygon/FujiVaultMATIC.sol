@@ -30,7 +30,7 @@ contract FujiVaultMATIC is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVa
   using SafeERC20Upgradeable for IERC20Upgradeable;
   using LibUniversalERC20Upgradeable for IERC20Upgradeable;
 
-  address public constant MATIC = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+  address public constant MATIC = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
   // Safety factor
   Factor public safetyF;
@@ -654,7 +654,9 @@ contract FujiVaultMATIC is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVa
     // Delegate Call Withdraw to current provider
     _withdraw(amountToWithdraw, address(activeProvider));
 
-    amountToWithdraw = IERC20Upgradeable(vAssets.collateralAsset).univBalanceOf(address(this)) - balanceBefore;
+    amountToWithdraw =
+      IERC20Upgradeable(vAssets.collateralAsset).univBalanceOf(address(this)) -
+      balanceBefore;
 
     // Collateral Management before Withdraw Operation
     IFujiERC1155(fujiERC1155).burn(msg.sender, vAssets.collateralID, amountToWithdraw);
@@ -690,7 +692,9 @@ contract FujiVaultMATIC is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVa
     // Delegate Call Borrow to current provider
     _borrow(_borrowAmount, address(activeProvider));
 
-    _borrowAmount = IERC20Upgradeable(vAssets.borrowAsset).univBalanceOf(address(this)) - balanceBefore;
+    _borrowAmount =
+      IERC20Upgradeable(vAssets.borrowAsset).univBalanceOf(address(this)) -
+      balanceBefore;
     totalBorrow = _borrowAmount + debtPrincipal;
 
     // Update timestamp for fee calculation

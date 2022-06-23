@@ -5,20 +5,18 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol";
 
-import "../abstracts/vault/VaultBaseUpgradeable.sol";
-import "../interfaces/IVault.sol";
-import "../interfaces/IHarvester.sol";
-import "../interfaces/ISwapper.sol";
-import "../interfaces/IERC20Extended.sol";
-import "../interfaces/chainlink/AggregatorV3Interface.sol";
-import "../interfaces/IFujiAdmin.sol";
-import "../interfaces/IFujiOracle.sol";
-import "../interfaces/IFujiERC1155.sol";
-import "../interfaces/IProvider.sol";
-import "../libraries/Errors.sol";
-import "../libraries/LibUniversalERC20Upgradeable.sol";
+import "./abstracts/vault/VaultBaseUpgradeable.sol";
+import "./interfaces/IVault.sol";
+import "./interfaces/IHarvester.sol";
+import "./interfaces/ISwapper.sol";
+import "./interfaces/IERC20Extended.sol";
+import "./interfaces/IFujiAdmin.sol";
+import "./interfaces/IFujiOracle.sol";
+import "./interfaces/IFujiERC1155.sol";
+import "./interfaces/IProvider.sol";
+import "./libraries/Errors.sol";
+import "./libraries/LibUniversalERC20Upgradeable.sol";
 
 /**
  * @dev Contract for the interaction of Fuji users with the Fuji protocol.
@@ -26,11 +24,11 @@ import "../libraries/LibUniversalERC20Upgradeable.sol";
  *  - Contains the fallback logic to perform a switch of providers.
  */
 
-contract FujiVaultMATIC is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
+contract F2FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault {
   using SafeERC20Upgradeable for IERC20Upgradeable;
   using LibUniversalERC20Upgradeable for IERC20Upgradeable;
 
-  address public constant MATIC = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+  address public constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
   // Safety factor
   Factor public safetyF;
@@ -120,16 +118,16 @@ contract FujiVaultMATIC is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVa
     string memory collateralSymbol;
     string memory borrowSymbol;
 
-    if (_collateralAsset == MATIC) {
-      collateralSymbol = "MATIC";
+    if (_collateralAsset == NATIVE) {
+      collateralSymbol = "NATIVE";
       _collateralAssetDecimals = 18;
     } else {
       collateralSymbol = IERC20Extended(_collateralAsset).symbol();
       _collateralAssetDecimals = IERC20Extended(_collateralAsset).decimals();
     }
 
-    if (_borrowAsset == MATIC) {
-      borrowSymbol = "MATIC";
+    if (_borrowAsset == NATIVE) {
+      borrowSymbol = "NATIVE";
       _borrowAssetDecimals = 18;
     } else {
       borrowSymbol = IERC20Extended(_borrowAsset).symbol();
@@ -547,7 +545,7 @@ contract FujiVaultMATIC is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVa
         .getSwapTransaction(tokenReturned, vAssets.collateralAsset, tokenBal);
 
       // Approve rewards
-      if (tokenReturned != MATIC) {
+      if (tokenReturned != NATIVE) {
         IERC20Upgradeable(tokenReturned).univApprove(swapTransaction.to, tokenBal);
       }
 
@@ -600,7 +598,7 @@ contract FujiVaultMATIC is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVa
    * See {deposit}
    */
   function _internalDeposit(uint256 _collateralAmount) internal {
-    if (vAssets.collateralAsset == MATIC) {
+    if (vAssets.collateralAsset == NATIVE) {
       require(msg.value == _collateralAmount && _collateralAmount != 0, Errors.VL_AMOUNT_ERROR);
     } else {
       require(_collateralAmount != 0, Errors.VL_AMOUNT_ERROR);
@@ -734,7 +732,7 @@ contract FujiVaultMATIC is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVa
     // If passed argument amount is negative do MAX
     uint256 amountToPayback = _repayAmount < 0 ? debtBalance + userFee : uint256(_repayAmount);
 
-    if (vAssets.borrowAsset == MATIC) {
+    if (vAssets.borrowAsset == NATIVE) {
       require(msg.value >= amountToPayback, Errors.VL_AMOUNT_ERROR);
       if (msg.value > amountToPayback) {
         IERC20Upgradeable(vAssets.borrowAsset).univTransfer(

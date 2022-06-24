@@ -14,8 +14,8 @@ import "./interfaces/ISwapper.sol";
 
 contract F2Swapper is ISwapper {
   address public constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-  address public wNative;
-  address public router;
+  address public immutable wNative;
+  address public immutable router;
 
   /**
   * @dev Sets the wNative and router addresses

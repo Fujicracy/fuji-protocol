@@ -377,6 +377,17 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     totalSupply[id] -= amount;
   }
 
+  function awardPoints(
+    address[] memory users,
+    uint256[] memory amounts
+  ) external {
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
+    require(users.length == amounts.length, GameErrors.INVALID_INPUT);
+    for (uint256 i = 0; i < users.length; i++) {
+      _mintPoints(users[i], amounts[i]);
+    }
+  }
+
   /**
    * @notice Claims bonus points given to user before 'gameLaunchTimestamp'.
    */

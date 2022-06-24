@@ -172,6 +172,21 @@ describe("NFT Bond Logic", function () {
       expect(await this.f.nftgame.balanceOf(this.user.address, 0)).to.be.equal(0);
     });
 
+    it("Awarding points to users", async function () {
+      const users = [this.user.address, this.users[3].address];
+      const amounts = [10000, 20000];
+
+      for (let i = 0; i < users.length; i++) {
+        expect(await this.f.nftgame.balanceOf(users[i], 0)).to.be.equal(0);
+      }
+
+      await this.f.nftgame.awardPoints(users, amounts);
+
+      for (let i = 0; i < users.length; i++) {
+        expect(await this.f.nftgame.balanceOf(users[i], 0)).to.be.equal(amounts[i]);
+      }
+    });
+
     it("Get points balance after time passed", async function () {
       const vault = this.f.vaultftmdai;
       const depositAmount = parseUnits(2500);

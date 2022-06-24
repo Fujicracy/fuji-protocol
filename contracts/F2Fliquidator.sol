@@ -8,27 +8,27 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "../abstracts/claimable/Claimable.sol";
-import "../interfaces/IVault.sol";
-import "../interfaces/IVaultControl.sol";
-import "../interfaces/IFujiAdmin.sol";
-import "../interfaces/IFujiOracle.sol";
-import "../interfaces/IFujiERC1155.sol";
-import "../interfaces/IERC20Extended.sol";
-import "../interfaces/IFlasher.sol";
-import "../libraries/LibUniversalERC20.sol";
-import "../libraries/FlashLoans.sol";
-import "../libraries/Errors.sol";
+import "./abstracts/claimable/Claimable.sol";
+import "./interfaces/IVault.sol";
+import "./interfaces/IVaultControl.sol";
+import "./interfaces/IFujiAdmin.sol";
+import "./interfaces/IFujiOracle.sol";
+import "./interfaces/IFujiERC1155.sol";
+import "./interfaces/IERC20Extended.sol";
+import "./interfaces/IFlasher.sol";
+import "./libraries/LibUniversalERC20.sol";
+import "./libraries/FlashLoans.sol";
+import "./libraries/Errors.sol";
 
 /**
  * @dev Contract to execute liquidations and flash close.
  */
 
-contract FliquidatorMATIC is Claimable, ReentrancyGuard {
+contract F2Fliquidator is Claimable, ReentrancyGuard {
   using SafeERC20 for IERC20;
   using LibUniversalERC20 for IERC20;
 
-  address public constant MATIC = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+  address public constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
   // slippage limit to 2%
   uint256 public constant SLIPPAGE_LIMIT_NUMERATOR = 2;
@@ -141,7 +141,7 @@ contract FliquidatorMATIC is Claimable, ReentrancyGuard {
     // Check there is at least one user liquidatable
     require(debtTotal > 0, Errors.VL_USER_NOT_LIQUIDATABLE);
 
-    if (vAssets.borrowAsset == MATIC) {
+    if (vAssets.borrowAsset == NATIVE) {
       require(msg.value >= debtTotal, Errors.VL_AMOUNT_ERROR);
     } else {
       // Check Liquidator Allowance
@@ -155,7 +155,7 @@ contract FliquidatorMATIC is Claimable, ReentrancyGuard {
     }
 
     // Repay BaseProtocol debt
-    uint256 _value = vAssets.borrowAsset == MATIC ? debtTotal : 0;
+    uint256 _value = vAssets.borrowAsset == NATIVE ? debtTotal : 0;
     IVault(_vault).paybackLiq{ value: _value }(addrs, debtTotal);
 
     // Compute liquidator's bonus: bonusL
@@ -251,7 +251,7 @@ contract FliquidatorMATIC is Claimable, ReentrancyGuard {
     IVaultControl.VaultAssets memory vAssets = IVaultControl(_vault).vAssets();
 
     // Repay BaseProtocol debt to release collateral
-    uint256 _value = vAssets.borrowAsset == MATIC ? _amount : 0;
+    uint256 _value = vAssets.borrowAsset == NATIVE ? _amount : 0;
     IVault(_vault).paybackLiq{ value: _value }(_addrs, _amount);
 
     // Compute liquidator's bonus
@@ -383,7 +383,7 @@ contract FliquidatorMATIC is Claimable, ReentrancyGuard {
     );
 
     // Repay BaseProtocol debt
-    uint256 _value = vAssets.borrowAsset == MATIC ? _amount : 0;
+    uint256 _value = vAssets.borrowAsset == NATIVE ? _amount : 0;
     address[] memory _addrs = new address[](1);
     _addrs[0] = _userAddr;
     IVault(_vault).paybackLiq{ value: _value }(_addrs, _amount);
@@ -447,12 +447,12 @@ contract FliquidatorMATIC is Claimable, ReentrancyGuard {
     if (_checkSlippage) {
       uint8 _collateralAssetDecimals;
       uint8 _borrowAssetDecimals;
-      if (_collateralAsset == MATIC) {
+      if (_collateralAsset == NATIVE) {
         _collateralAssetDecimals = 18;
       } else {
         _collateralAssetDecimals = IERC20Extended(_collateralAsset).decimals();
       }
-      if (_borrowAsset == MATIC) {
+      if (_borrowAsset == NATIVE) {
         _borrowAssetDecimals = 18;
       } else {
         _borrowAssetDecimals = IERC20Extended(_borrowAsset).decimals();
@@ -480,7 +480,7 @@ contract FliquidatorMATIC is Claimable, ReentrancyGuard {
     address[] memory path;
     uint256[] memory swapperAmounts;
 
-    if (_collateralAsset == MATIC) {
+    if (_collateralAsset == NATIVE) {
       path = new address[](2);
       path[0] = weth;
       path[1] = _borrowAsset;
@@ -492,7 +492,7 @@ contract FliquidatorMATIC is Claimable, ReentrancyGuard {
         // solhint-disable-next-line
         block.timestamp
       );
-    } else if (_borrowAsset == MATIC) {
+    } else if (_borrowAsset == NATIVE) {
       path = new address[](2);
       path[0] = _collateralAsset;
       path[1] = weth;
@@ -545,11 +545,11 @@ contract FliquidatorMATIC is Claimable, ReentrancyGuard {
   ) internal view returns (uint256) {
     address weth = swapper.WETH();
     address[] memory path;
-    if (_collateralAsset == MATIC || _collateralAsset == weth) {
+    if (_collateralAsset == NATIVE || _collateralAsset == weth) {
       path = new address[](2);
       path[0] = weth;
       path[1] = _borrowAsset;
-    } else if (_borrowAsset == MATIC || _borrowAsset == weth) {
+    } else if (_borrowAsset == NATIVE || _borrowAsset == weth) {
       path = new address[](2);
       path[0] = _collateralAsset;
       path[1] = weth;

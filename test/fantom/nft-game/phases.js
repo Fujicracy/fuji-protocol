@@ -111,7 +111,7 @@ describe("NFT Bond Phase Tests", function () {
     });
   });
 
-  describe("After Accumulation Phase start", function () {
+  describe("Accumulation Phase (transfer/trading enabled)", function () {
 
     before(async function () {
       const time = 60 * 60 * 24 * 2; // 2 days fater last time travel
@@ -195,7 +195,7 @@ describe("NFT Bond Phase Tests", function () {
     });
   });
 
-  describe("After Trading Phase starts", function () {
+  describe("Trading Phase (no more point accumulation, lock enabled, bonding enabled)", function () {
     before(async function () {
       const time = 60 * 60 * 24 * 3; // 3 days after the last times travel
       await timeTravel(time);
@@ -285,7 +285,7 @@ describe("NFT Bond Phase Tests", function () {
     });
   });
 
-  describe("After Bonding Phase starts", function () {
+  describe("Locking Phase (no more trading)", function () {
     before(async function () {
       const time = 60 * 60 * 24 * 3; // 3 days after last time travel
       await timeTravel(time);
@@ -312,11 +312,6 @@ describe("NFT Bond Phase Tests", function () {
 
       const userPointsFwd = await this.f.nftgame.balanceOf(this.user.address, 0);
       await expect(userPointsInitial).to.eq(userPointsFwd);
-    });
-
-    it("Should revert if ulocked user tries to buy crates", async function () {
-      await expect(this.f.nftinteractions.connect(this.user).mintCrates(this.f.crateIds[0], 1))
-        .to.be.revertedWith("G01");
     });
 
     it("Should revert if unlocked user tries to transfer crates", async function () {

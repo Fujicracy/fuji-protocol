@@ -56,15 +56,21 @@ library StringConvertor {
     if (self.length <= 6) {
       return self;
     }
-
     newString = new bytes(self.length + (self.length - 4) / 3);
     uint256 oriIndex = self.length - 1;
     uint256 newIndex = newString.length - 1;
-    for (uint256 i = 0; i < self.length; i++) {
-      if (i >= 6 && i % 3 == 0) {
-        newString[newIndex--] = ",";
-      }
-      newString[newIndex--] = self[oriIndex--];
+    for(uint256 i = 0; i < newString.length;){
+      unchecked{
+        newString[newIndex] = self[oriIndex];
+        if( i >= 5 && i % 4 == 1 && newString.length - i > 1) {
+          newIndex--;
+          newString[newIndex] = 0x2c;
+          i++;
+        }
+        i++;
+        newIndex--;
+        oriIndex--;
+        }
     }
   }
 

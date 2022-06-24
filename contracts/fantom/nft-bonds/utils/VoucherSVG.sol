@@ -174,7 +174,6 @@ contract VoucherSVG is IVoucherSVG {
       string(
         abi.encodePacked(
           '<g transform="translate(40, 40)" fill="#FFFFFF" fill-rule="nonzero">',
-              '<image width="40" height="40" x="0" y="0" xlink:href="https://storageapi.fleek.co/705abd20-4ff5-4a50-95e6-50bd81b501bb-bucket/FujiLogo.png"></image>',
               '<text font-family="Arial" font-size="32">',
                   abi.encodePacked(
                       '<tspan x="', tokenIdLeftMargin.toString(), '" y="29"># ', tokenIdStr, '</tspan>'
@@ -215,7 +214,7 @@ contract VoucherSVG is IVoucherSVG {
             '<rect fill="#000000" opacity="0.2" x="0" y="0" width="240" height="100" rx="16"></rect>',
             '<text fill-rule="nonzero" font-family="Arial" font-size="20" font-weight="500" fill="#FFFFFF"><tspan x="31" y="31">One-time</tspan></text>',
             '<text fill-rule="nonzero" font-family="Arial" font-size="14" font-weight="500" fill="#FFFFFF"><tspan x="30" y="58">Claim Date: ', params.claimDate, '</tspan></text>',
-            '<text fill-rule="nonzero" font-family="Arial" font-size="14" font-weight="500" fill="#FFFFFF"><tspan x="31" y="85">', params.slotId.toString(),' Month-expiry Bond','</tspan></text>'
+            '<text fill-rule="nonzero" font-family="Arial" font-size="14" font-weight="500" fill="#FFFFFF"><tspan x="31" y="85">', params.slotId.toString(),' Days-expiry Bond','</tspan></text>'
           '</g>'
         )
       );
@@ -227,7 +226,7 @@ contract VoucherSVG is IVoucherSVG {
         abi.encodePacked(
           '<g transform="translate(300, 310)">',
             '<rect fill="#000000" opacity="0.2" x="0" y="0" width="240" height="50" rx="16"></rect>',
-            '<text fill-rule="nonzero" font-family="Arial" font-size="16" font-weight="500" fill="#FFFFFF"><tspan x="31" y="31">',
+            '<text fill-rule="nonzero" font-family="Arial" font-size="16" font-weight="500" fill="#FFFFFF"><tspan x="10" y="31">',
             '1 Bond Unit = ', _formatValue(params.redemptionRate, params.underlyingDecimals),' tokens</tspan></text>',
           '</g>'
         )

@@ -45,7 +45,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     uint128 accruedPoints;
     uint128 recordedDebtBalance;
     uint128 finalScore;
-    uint128 gearsCollected;
+    uint128 gearPower;
     uint256 lockedNFTID;
   }
 
@@ -79,10 +79,10 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   address[] public validVaults;
 
   // Timestamps for each game phase
-  // 0 = start game launch
-  // 1 = end of accumulation
-  // 2 = end of trade and lock
-  // 3 = end of bond
+  // 0 = start of accumulation, trading enabled
+  // 1 = end of accumulation, start of locking, start of bonding
+  // 2 = end of trade
+  // 3 = end of bonding, end of lock
   uint256[4] public gamePhaseTimestamps;
 
   ILockNFTDescriptor public lockNFTdesc;
@@ -96,6 +96,9 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
   address private _owner;
 
   uint256 public numPlayers;
+
+  // Mapping required for Locking ceremony NFT: tokenID => owner
+  mapping(uint256 => address) public ownerOfLockNFT;
 
   modifier onlyVault() {
     require(
@@ -139,6 +142,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     if (_id <= 3 + nftCardsAmount) {
       return string(abi.encodePacked(ERC1155Upgradeable.uri(0), _id.toString()));
     } else {
+      require(ownerOfLockNFT[_id] != address(0), GameErrors.INVALID_INPUT);
       return lockNFTdesc.lockNFTUri(_id);
     }
   }
@@ -312,6 +316,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
     // Mint the lockedNFT for user
     _mint(user, lockedNFTID, 1, "");
+    ownerOfLockNFT[lockedNFTID] = user;
 
     // Burn all remaining crates
     uint256 balance;
@@ -321,15 +326,15 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     }
 
     // Burn 'climb gear' nft cards in deck
-    uint256 totalGears;
+    uint256 gearPower;
     for (uint256 index = 4; index < 4 + nftCardsAmount; index++) {
       balance = balanceOf(user, index);
       if (balance > 0) {
         _burn(user, index, balance);
+        gearPower += 1;
       }
-      totalGears += balance;
     }
-    userdata[user].gearsCollected = uint128(totalGears);
+    userdata[user].gearPower = uint128(gearPower);
   }
 
   function mint(
@@ -346,8 +351,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
       _mintPoints(user, amount);
     } else {
       _mint(user, id, amount, "");
+      totalSupply[id] += amount;
     }
-    totalSupply[id] += amount;
   }
 
   function burn(
@@ -370,6 +375,17 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
       _burn(user, id, amount);
     }
     totalSupply[id] -= amount;
+  }
+
+  function awardPoints(
+    address[] memory users,
+    uint256[] memory amounts
+  ) external {
+    require(hasRole(GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
+    require(users.length == amounts.length, GameErrors.INVALID_INPUT);
+    for (uint256 i = 0; i < users.length; i++) {
+      _mintPoints(users[i], amounts[i]);
+    }
   }
 
   /**
@@ -410,10 +426,6 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
       if (validVaults[i] == vault) {
         return true;
       }
-    }
-    // Fliquidator (hardcoded)
-    if (vault == 0xbeD10b8f63c910BF0E3744DC308E728a095eAF2d) {
-      return true;
     }
     return false;
   }
@@ -578,7 +590,7 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
 
   function _isCrateOrCardId(uint256[] memory ids) internal view returns (bool isSpecialID) {
     for (uint256 index = 0; index < ids.length; index++) {
-      if (ids[index] > 0 || ids[index] <= 4 + nftCardsAmount) {
+      if (ids[index] > 0 && ids[index] <= 4 + nftCardsAmount) {
         isSpecialID = true;
       }
     }

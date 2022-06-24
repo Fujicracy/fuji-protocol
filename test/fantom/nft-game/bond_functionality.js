@@ -15,7 +15,7 @@ const {
   timeTravel,
 } = require("../../helpers");
 
-const DEBUG = true;
+const DEBUG = false;
 
 /// ERC3525 Glossary
 
@@ -39,12 +39,14 @@ describe("Bond Functionality", function () {
   let mocktoken;
 
   let evmSnapshot0;
+  let evmSnapshot1;
   let initialPoints;
   let cardIds;
   let slotsIdArray;
   let pointsDecimals;
 
   before(async () => {
+    evmSnapshot0 = await evmSnapshot();
     users = await ethers.getSigners();
 
     admin = users[0];
@@ -75,7 +77,7 @@ describe("Bond Functionality", function () {
     await timeTravel(fixtureItems.day + 1);
 
     slotsIdArray = await pretokenbond.getBondVestingTimes();
-    evmSnapshot0 = await evmSnapshot();
+    evmSnapshot1 = await evmSnapshot();
   });
 
   after(async () => {
@@ -100,7 +102,7 @@ describe("Bond Functionality", function () {
     });
 
     after(async () => {
-      evmRevert(evmSnapshot0);
+      evmRevert(evmSnapshot1);
     });
 
     it("Return value when calling 'balanceOf'", async () => {
@@ -171,6 +173,7 @@ describe("Bond Functionality", function () {
     let numberOfBondUnits;
     let splitterUser;
     let dummytokenIDtoSplit;
+    let dummyAmountToSplit;
     let newTokenId;
 
     before(async () => {
@@ -185,7 +188,7 @@ describe("Bond Functionality", function () {
     });
 
     after(async () => {
-      evmRevert(evmSnapshot0);
+      evmRevert(evmSnapshot1);
     });
 
     it("Returns 'slot' type for each token Id", async () => {
@@ -219,8 +222,10 @@ describe("Bond Functionality", function () {
       // Returns the token id for the `_index`th token in the token list 
       // of the slot 'tokenOfSlotByIndex(uint256 _slot, uint256 _index)'
       const dummyIndex = 0;
-      const month3Vesting = 3;
-      expect(await pretokenbond.tokenOfSlotByIndex(month3Vesting, dummyIndex)).to.eq(1);
+      const days1Vesting = 1;
+      const days90Vesting = 90;
+      expect(await pretokenbond.tokenOfSlotByIndex(days1Vesting, dummyIndex)).to.eq(1);
+      expect(await pretokenbond.tokenOfSlotByIndex(days90Vesting, dummyIndex)).to.eq(2);
     });
 
     it("Should return bond 'units' when token Id is passed", async () => {
@@ -234,11 +239,11 @@ describe("Bond Functionality", function () {
       // transferFrom(address _from, address _to, uint256 _tokenId, uint256 _targetTokenId, uint256 _units) external;
 
       // New voucher minted by admin directly from 'PreTokenBonds.sol' to 'otherUser'. Type 3-months
-      const month3Vesting = 3;
-      const receiverDumbTokenId = await pretokenbond.callStatic.mint(otherUser.address, month3Vesting, numberOfBondUnits);
-      await pretokenbond.mint(otherUser.address, month3Vesting, numberOfBondUnits);
+      const days90Vesting = 90;
+      const receiverDumbTokenId = await pretokenbond.callStatic.mint(otherUser.address, days90Vesting, numberOfBondUnits);
+      await pretokenbond.mint(otherUser.address, days90Vesting, numberOfBondUnits);
 
-      const dummyApprovertokenID = 1;
+      const dummyApprovertokenID = 2;
       const dumbAmountOfUnitsToApprove = BigNumber.from([2]);
 
       let approver = user;
@@ -284,7 +289,7 @@ describe("Bond Functionality", function () {
     it("Should split token Id and 'units' should match split amount", async () => {
       // Split a token into several by separating its units and assigning each portion to a new created token.
       dummytokenIDtoSplit = 2;
-      const dummyAmountToSplit = 3;
+      dummyAmountToSplit = 3;
       splitterUser = await pretokenbond.ownerOf(dummytokenIDtoSplit);
       splitterUser = splitterUser == user.address ? user : otherUser;
       newTokenId = await pretokenbond.nextTokenId();
@@ -314,7 +319,7 @@ describe("Bond Functionality", function () {
       expect(
         await pretokenbond.unitsInToken(finalMergeTokenId)
       ).to.eq(
-        BigNumber.from([numberOfBondUnits + 1])
+        BigNumber.from([dummyAmountToSplit + 1])
       );
       expect(
         await pretokenbond.unitsInToken(tokenIDToMergeFrom)
@@ -348,7 +353,7 @@ describe("Bond Functionality", function () {
   });
 
   describe("Fuji Bond Specific Functionality", () => {
-    
+
     let amountmocktoken;
     let endOfAccumulationTimestamp;
     let endOfTradeLockTimestamp;
@@ -359,9 +364,10 @@ describe("Bond Functionality", function () {
     let firstTokenId;
     let secondTokenId;
     let thirdTokenId;
+    let specialTokenId;
 
     before(async () => {
-      console.log("\t"+"Tests in this block should be run in series.");
+      console.log("\t" + "Tests in this block should be run in series.");
 
       mocktoken = fixtureItems.mocktoken;
 
@@ -392,7 +398,7 @@ describe("Bond Functionality", function () {
     });
 
     after(async () => {
-      evmRevert(evmSnapshot0);
+      evmRevert(evmSnapshot1);
     });
 
     it("Should return a value for price per bond 'units'", async () => {
@@ -413,23 +419,24 @@ describe("Bond Functionality", function () {
       // Vesting times are used to check internally claiming.
       const vestingTimes = await pretokenbond.getBondVestingTimes();
       const expectedDefaultVestingTimes = [
-        BigNumber.from("3"),
-        BigNumber.from("6"),
-        BigNumber.from("12")
+        BigNumber.from("1"),
+        BigNumber.from("90"),
+        BigNumber.from("180"),
+        BigNumber.from("360")
       ];
       for (let index = 0; index < expectedDefaultVestingTimes.length; index++) {
-        expect(expectedDefaultVestingTimes[index].eq(vestingTimes[index])).to.eq(true); 
+        expect(expectedDefaultVestingTimes[index].eq(vestingTimes[index])).to.eq(true);
       }
-      
+
     });
 
     it("Should revert if user tries to mint voucher before accumulation phase ends", async () => {
       const numberOfBondUnits = parseUnits(5, pointsDecimals);
-      const month3Vesting = 3;
+      const days90Vesting = 90;
       const phase = await nftgame.getPhase();
       expect(phase).to.eq(1);
       await expect(
-        nftinteractions.connect(user).mintBonds(month3Vesting, numberOfBondUnits)
+        nftinteractions.connect(user).mintBonds(days90Vesting, numberOfBondUnits)
       ).to.be.reverted;
     });
 
@@ -441,10 +448,10 @@ describe("Bond Functionality", function () {
 
       // Mint the bonds
       const numberOfBondUnits = parseUnits(5, pointsDecimals);
-      const month3Vesting = 3;
-      
+      const days90Vesting = 90;
+
       await expect(
-        nftinteractions.connect(user).mintBonds(month3Vesting, numberOfBondUnits)
+        nftinteractions.connect(user).mintBonds(days90Vesting, numberOfBondUnits)
       ).to.be.revertedWith("G04");
 
       // 'user' locks in points.
@@ -454,8 +461,8 @@ describe("Bond Functionality", function () {
       // 'user' mints voucher.
       const lnftinteractions = nftinteractions.connect(user);
       // 'firstTokenId' is required in future tests. 
-      firstTokenId = await lnftinteractions.callStatic.mintBonds(month3Vesting, numberOfBondUnits);
-      await lnftinteractions.mintBonds(month3Vesting, numberOfBondUnits);
+      firstTokenId = await lnftinteractions.callStatic.mintBonds(days90Vesting, numberOfBondUnits);
+      await lnftinteractions.mintBonds(days90Vesting, numberOfBondUnits);
       const owner = await pretokenbond.ownerOf(firstTokenId);
       expect(owner).to.eq(user.address);
 
@@ -468,24 +475,36 @@ describe("Bond Functionality", function () {
 
     it("Should revert if user tries to mint directly from 'PreTokenBonds.sol' contract", async () => {
       const numberOfBondUnits = parseUnits(5, pointsDecimals);
-      const month3Vesting = 3;
+      const days90Vesting = 90;
       await expect(
-        pretokenbond.connect(user).mint(user.address, month3Vesting, numberOfBondUnits)
+        pretokenbond.connect(user).mint(user.address, days90Vesting, numberOfBondUnits)
       ).to.be.reverted;
+    });
+
+    it("Only admin should be able to mint 1 day vesting-bonds", async () => {
+      const numberOfBondUnits = parseUnits(5, pointsDecimals);
+      const days1Vesting = 1;
+      // 'user' tries to mints voucher with 1 day vesting slotId.
+      const lnftinteractions = nftinteractions.connect(user);
+      await expect(lnftinteractions.mintBonds(days1Vesting, numberOfBondUnits)).to.be.reverted;
+
+      // 'specialTokenId' is required in future tests.
+      specialTokenId = await pretokenbond.nextTokenId();
+      await pretokenbond.mint(user.address, days1Vesting, numberOfBondUnits);
     });
 
     it("Should not be able to mint voucher after bonding phase ends", async () => {
       // Mint 1 voucher of each type before moving to trading phase.
       const numberOfBondUnits = parseUnits(5, pointsDecimals);
-      const month6Vesting = 6;
-      const month12Vesting = 12;
+      const days180Vesting = 180;
+      const days360Vesting = 360;
       const lnftinteractions = nftinteractions.connect(user);
 
       // 'secondTokenId' and 'thirdTokenId' are required in future tests.
-      secondTokenId = await lnftinteractions.callStatic.mintBonds(month6Vesting, numberOfBondUnits);
-      await lnftinteractions.mintBonds(month6Vesting, numberOfBondUnits);
-      thirdTokenId = await lnftinteractions.callStatic.mintBonds(month12Vesting, numberOfBondUnits);
-      await lnftinteractions.mintBonds(month12Vesting, numberOfBondUnits);
+      secondTokenId = await lnftinteractions.callStatic.mintBonds(days180Vesting, numberOfBondUnits);
+      await lnftinteractions.mintBonds(days180Vesting, numberOfBondUnits);
+      thirdTokenId = await lnftinteractions.callStatic.mintBonds(days360Vesting, numberOfBondUnits);
+      await lnftinteractions.mintBonds(days360Vesting, numberOfBondUnits);
 
       // Moved to end bonding phase
       await timeTravel(fixtureItems.day * 3 + 1);
@@ -494,12 +513,13 @@ describe("Bond Functionality", function () {
 
       // Revert expected now in bonding phase.
       await expect(
-        lnftinteractions.mintBonds(month6Vesting, numberOfBondUnits)
+        lnftinteractions.mintBonds(days180Vesting, numberOfBondUnits)
       ).to.be.reverted;
     });
 
     it("Should return expected default multipliers", async () => {
       const expectedMultipliers = [
+        BigNumber.from([1]),
         BigNumber.from([1]),
         BigNumber.from([2]),
         BigNumber.from([4])
@@ -541,37 +561,54 @@ describe("Bond Functionality", function () {
         unitsPerSlot.push(await pretokenbond.unitsInSlot(slotsIdArray[index]));
         multiplierValues.push(await pretokenbond.bondSlotMultiplier(slotsIdArray[index]));
       }
-      
-      const totalWeightedUnits = unitsPerSlot[0].add(unitsPerSlot[1].mul(multiplierValues[1])).add(unitsPerSlot[2].mul(multiplierValues[2]));
+
+      const totalWeightedUnits = unitsPerSlot[0].add(unitsPerSlot[1].mul(multiplierValues[1])).add(unitsPerSlot[2].mul(multiplierValues[2])).add(unitsPerSlot[3].mul(multiplierValues[3]));
       const basicTokenPerUnit = amountmocktoken.mul(parseUnits(1, pointsDecimals)).div(totalWeightedUnits);
-      
+
       const expectedTokensPerBond = [
+        basicTokenPerUnit,
         basicTokenPerUnit,
         basicTokenPerUnit.mul(BigNumber.from([2])),
         basicTokenPerUnit.mul(BigNumber.from([4]))
       ];
 
       for (let index = 0; index < expectedTokensPerBond.length; index++) {
-        expect(expectedTokensPerBond[index]).to.eq(tokenReturnValue[index]) 
+        if (DEBUG) { console.log(`expectedTokensPerBond slot ${slotsIdArray[index]}:`, expectedTokensPerBond[index].toString()); }
+        expect(expectedTokensPerBond[index]).to.eq(tokenReturnValue[index])
       }
     });
 
-    it("Should succesfully claim tokens after 3 months", async () => {
-      const month3TokenId = firstTokenId;
-      // Moved to 3-months ahead
-      await timeTravel(fixtureItems.day * 90 + 1);
-
-      const expectedTokensPerBond = await pretokenbond.tokensPerUnit(slotsIdArray[0]);
-      const unitsInToken = await pretokenbond.unitsInToken(month3TokenId);
+    it("Should revert if trying to claim tokens immediately after bonding phase end", async () => {
+      const days90TokenId = firstTokenId;
 
       // Ensure 'user' is owner of token id, and that slot corresponds.
-      expect(await pretokenbond.ownerOf(month3TokenId)).to.eq(user.address);
-      expect(await pretokenbond.slotOf(month3TokenId)).to.eq(slotsIdArray[0]);
+      expect(await pretokenbond.ownerOf(days90TokenId)).to.eq(user.address);
+      expect(await pretokenbond.slotOf(days90TokenId)).to.eq(slotsIdArray[1]);
+
+      // 'user' calls claim.
+      await expect(pretokenbond.connect(user).claim(days90TokenId)).to.be.reverted;
+    });
+
+    it("Should succesfully claim tokens after 1 day of vesting start", async () => {
+      const days1TokenId = specialTokenId;
+
+      const now = (await provider.getBlock("latest")).timestamp;
+      const vestingStart = await pretokenbond.vestingStartTimestamp();
+      const deltaDays = (vestingStart.toNumber() - now) / (60 * 60 * 24);
+      // Moved to 1 day ahead of vesting start
+      await timeTravel(fixtureItems.day * deltaDays + 1);
+
+      const expectedTokensPerBond = await pretokenbond.tokensPerUnit(slotsIdArray[0]);
+      const unitsInToken = await pretokenbond.unitsInToken(days1TokenId);
+
+      // Ensure 'user' is owner of token id, and that slot corresponds.
+      expect(await pretokenbond.ownerOf(days1TokenId)).to.eq(user.address);
+      expect(await pretokenbond.slotOf(days1TokenId)).to.eq(slotsIdArray[0]);
       // balance of mocktoken should be zero.
       expect(await mocktoken.balanceOf(user.address)).to.eq(0);
 
       // 'user' calls claim.
-      await pretokenbond.connect(user).claim(month3TokenId);
+      await pretokenbond.connect(user).claim(days1TokenId);
 
       const userTokenBalance = await mocktoken.balanceOf(user.address);
       const newExpected = unitsInToken.mul(expectedTokensPerBond).div(parseUnits(1, pointsDecimals));
@@ -580,21 +617,21 @@ describe("Bond Functionality", function () {
       expect(userTokenBalance).to.eq(latestUserTokenBal);
     });
 
-    it("Should succesfully claim tokens after 6 months", async () => {
-      const month6TokenId = secondTokenId;
-      // Move extra 3-months ahead from previous timeTravel
+    it("Should succesfully claim tokens after 3 months of vesting start", async () => {
+      const days90TokenId = firstTokenId;
+      // Moved to 3-months ahead of vesting start
       await timeTravel(fixtureItems.day * 90 + 1);
-      
+
       const expectedTokensPerBond = await pretokenbond.tokensPerUnit(slotsIdArray[1]);
-      const unitsInToken = await pretokenbond.unitsInToken(month6TokenId);
-      
+      const unitsInToken = await pretokenbond.unitsInToken(days90TokenId);
+
       // Ensure 'user' is owner of token id, and that slot corresponds.
-      await expect(await pretokenbond.ownerOf(month6TokenId)).to.eq(user.address);
-      await expect(await pretokenbond.slotOf(month6TokenId)).to.eq(slotsIdArray[1]);
+      expect(await pretokenbond.ownerOf(days90TokenId)).to.eq(user.address);
+      expect(await pretokenbond.slotOf(days90TokenId)).to.eq(slotsIdArray[1]);
 
       // 'user' calls claim.
-      await pretokenbond.connect(user).claim(month6TokenId);
-      
+      await pretokenbond.connect(user).claim(days90TokenId);
+
       const userTokenBalance = await mocktoken.balanceOf(user.address);
       const newExpected = unitsInToken.mul(expectedTokensPerBond).div(parseUnits(1, pointsDecimals));
       latestUserTokenBal = latestUserTokenBal.add(newExpected);
@@ -602,20 +639,41 @@ describe("Bond Functionality", function () {
       expect(userTokenBalance).to.eq(latestUserTokenBal);
     });
 
-    it("Should succesfully claim tokens after 12 months", async () => {
-      const month12TokenId = thirdTokenId;
+    it("Should succesfully claim tokens after 6 months of vesting start", async () => {
+      const days180TokenId = secondTokenId;
+      // Move extra 3-months ahead from previous timeTravel
+      await timeTravel(fixtureItems.day * 90 + 1);
+
+      const expectedTokensPerBond = await pretokenbond.tokensPerUnit(slotsIdArray[2]);
+      const unitsInToken = await pretokenbond.unitsInToken(days180TokenId);
+      // Ensure 'user' is owner of token id, and that slot corresponds.
+      await expect(await pretokenbond.ownerOf(days180TokenId)).to.eq(user.address);
+      await expect(await pretokenbond.slotOf(days180TokenId)).to.eq(slotsIdArray[2]);
+
+      // 'user' calls claim.
+      await pretokenbond.connect(user).claim(days180TokenId);
+
+      const userTokenBalance = await mocktoken.balanceOf(user.address);
+      const newExpected = unitsInToken.mul(expectedTokensPerBond).div(parseUnits(1, pointsDecimals));
+      latestUserTokenBal = latestUserTokenBal.add(newExpected);
+
+      expect(userTokenBalance).to.eq(latestUserTokenBal);
+    });
+
+    it("Should succesfully claim tokens after 12 months of vesting start", async () => {
+      const days360TokenId = thirdTokenId;
       // Move extra 6-months ahead from previous timeTravel
       await timeTravel(fixtureItems.day * 180 + 1);
 
-      const expectedTokensPerBond = await pretokenbond.tokensPerUnit(slotsIdArray[2]);
-      const unitsInToken = await pretokenbond.unitsInToken(month12TokenId);
+      const expectedTokensPerBond = await pretokenbond.tokensPerUnit(slotsIdArray[3]);
+      const unitsInToken = await pretokenbond.unitsInToken(days360TokenId);
 
       // Ensure 'user' is owner of token id, and that slot corresponds.
-      expect(await pretokenbond.ownerOf(month12TokenId)).to.eq(user.address);
-      expect(await pretokenbond.slotOf(month12TokenId)).to.eq(slotsIdArray[2]);
+      expect(await pretokenbond.ownerOf(days360TokenId)).to.eq(user.address);
+      expect(await pretokenbond.slotOf(days360TokenId)).to.eq(slotsIdArray[3]);
 
       // 'user' calls claim.
-      await pretokenbond.connect(user).claim(month12TokenId);
+      await pretokenbond.connect(user).claim(days360TokenId);
 
       const userTokenBalance = await mocktoken.balanceOf(user.address);
       const newExpected = unitsInToken.mul(expectedTokensPerBond).div(parseUnits(1, pointsDecimals));

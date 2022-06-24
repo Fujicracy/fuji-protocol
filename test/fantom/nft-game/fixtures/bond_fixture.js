@@ -209,6 +209,36 @@ const bondFixture = async ([wallet]) => {
   // Override for testing only: change to low bond price
   await pretokenbond.setBondPrice(parseUnits(1, pointsDecimals));
 
+  /**
+   * Step 7
+   * Deploy metadata and svg generation contracts and setup
+   * 
+   */
+  const VoucherDescriptor = await getContractFactory("VoucherDescriptor");
+  const VoucherSVG = await getContractFactory("VoucherSVG");
+  const LockNFTDescriptor = await getContractFactory("LockNFTDescriptor");
+  const LockSVG = await getContractFactory("LockSVG");
+
+  const vsvg = await VoucherSVG.deploy(nftgame.address);
+  const vdescriptor = await VoucherDescriptor.deploy(
+    nftgame.address,
+    pretokenbond.address,
+    vsvg.address
+  );
+
+  const proxyOpts = {
+    kind: 'uups'
+  };
+  const lsvg = await upgrades.deployProxy(LockSVG, [nftgame.address], proxyOpts);
+  const ldescriptor = await LockNFTDescriptor.deploy(
+    nftgame.address,
+    lsvg.address
+  );
+
+  // Metadata and svg generation setup
+  await nftgame.setLockNFTDescriptor(ldescriptor.address);
+  await pretokenbond.setVoucherDescriptor(vdescriptor.address);
+
   return {
     vault,
     scream,
@@ -219,6 +249,10 @@ const bondFixture = async ([wallet]) => {
     oracle,
     fujiadmin,
     f1155,
+    vdescriptor,
+    vsvg,
+    ldescriptor,
+    lsvg,
     pointsDecimals,
     now,
     day,

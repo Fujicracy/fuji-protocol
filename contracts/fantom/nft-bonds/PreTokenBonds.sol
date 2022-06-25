@@ -67,7 +67,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
   function supportsInterface(bytes4 interfaceId)
     public
     view
-    override(AccessControlUpgradeable, ERC721Upgradeable)
+    override(AccessControlUpgradeable, ERC721EnumerableUpgradeable)
     returns (bool)
   {
     return

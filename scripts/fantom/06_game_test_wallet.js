@@ -12,10 +12,6 @@ async function main() {
   }
   await setDeploymentsPath("core");
 
-  const nftGameAddress = getContractAddress("NFTGame");
-  const nftgame = await ethers.getContractAt("NFTGame", nftGameAddress);
-  await nftgame.setLockNFTDescriptor(nftGameAddress);
-
   await initTestWallet();
 }
 

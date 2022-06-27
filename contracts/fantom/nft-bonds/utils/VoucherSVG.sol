@@ -180,7 +180,7 @@ contract VoucherSVG is IVoucherSVG {
                   ),
               '</text>',
               '<text font-family="Arial" font-size="36"><tspan x="0" y="100">', _formatValue(params.bondsAmount, params.bondsDecimals),'</tspan></text>',
-              '<text font-family="Arial" font-size="24"><tspan x="0" y="130">Bond Units</tspan></text>',
+              '<text font-family="Arial" font-size="24"><tspan x="0" y="130">Units</tspan></text>',
               '<text font-family="Arial" font-size="24" font-weight="500"><tspan x="50" y="26"> Fuji Pre-Token Bond Voucher</tspan></text>',
           '</g>'
         )

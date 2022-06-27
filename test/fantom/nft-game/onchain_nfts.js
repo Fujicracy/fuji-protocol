@@ -22,6 +22,7 @@ describe("On-chain Metadata Generation Tests", function () {
 
   let evmSnapshot0;
   let evmSnapshot1;
+  let evmSnapshot2;
   let fixtureItems;
 
   let now;
@@ -39,6 +40,8 @@ describe("On-chain Metadata Generation Tests", function () {
   let lsvg;
 
   before(async () => {
+    evmSnapshot0 = await evmSnapshot();
+
     users = await ethers.getSigners();
     admin = users[0];
     user = users[1];
@@ -73,6 +76,12 @@ describe("On-chain Metadata Generation Tests", function () {
 
     // Perform lock user
     await nftinteractions.connect(user).lockFinalScore();
+
+    evmSnapshot1 = await evmSnapshot();
+  });
+
+  after(async () => {
+    evmRevert(evmSnapshot0);
   });
 
   describe("Lock NFT metadata and image", async () => {
@@ -86,12 +95,12 @@ describe("On-chain Metadata Generation Tests", function () {
     });
 
     beforeEach(async function () {
-      if (evmSnapshot1) await evmRevert(evmSnapshot1);
-      evmSnapshot1 = await evmSnapshot();
+      if (evmSnapshot2) await evmRevert(evmSnapshot2);
+      evmSnapshot2 = await evmSnapshot();
     });
 
     after(async () => {
-      evmRevert(evmSnapshot0);
+      evmRevert(evmSnapshot1);
     });
 
     it("Should confirm user is succesfully locked", async () => {
@@ -123,6 +132,50 @@ describe("On-chain Metadata Generation Tests", function () {
       const userData = await nftgame.userdata(user.address);
       await lsvg.connect(user).setNickname(userData.lockedNFTID, "HomeDestroyer");
       const metadata = await nftgame.uri(userData.lockedNFTID);
+      console.log(metadata);
+    });
+  });
+
+  describe.only("PreTokenBonds NFT metadata and image", async () => {
+
+    let mocktoken;
+    let amountmocktoken;
+    let tokenId;
+
+    before(async() => {
+      mocktoken = fixtureItems.mocktoken;
+      amountmocktoken = parseUnits(500);
+
+      // Mint mock token for game admin
+      await mocktoken.mint(mocktoken.signer.address, amountmocktoken);
+
+      // Game admin approves mock tokens for deposit
+      await mocktoken.approve(pretokenbond.address, amountmocktoken);
+
+      // Game admin succesfully deposits token
+      await pretokenbond.deposit(amountmocktoken);
+
+      // 'User' mints a bond-voucher.
+      const numberOfBondUnits = parseUnits(5, pointsDecimals);
+      const days90Vesting = 90;
+      const lnftinteractions = nftinteractions.connect(user);
+      tokenId = await lnftinteractions.callStatic.mintBonds(days90Vesting, numberOfBondUnits);
+      await lnftinteractions.mintBonds(days90Vesting, numberOfBondUnits);
+      console.log("tokenId", tokenId);
+    });
+
+    it("Should confirm user succesfully minted voucher", async () => {
+      const owner = await pretokenbond.ownerOf(tokenId);
+      expect(owner).to.eq(user.address);
+    });
+
+    it("Should revert when passing a wrong tokenId to pretokenbonds.tokenURI()", async () => {
+      const fakeLockNFTId = 1256489;
+      await expect(pretokenbond.tokenURI(fakeLockNFTId)).to.be.reverted;
+    });
+
+    it("Should console.log() base64 encoded pretokenbond voucher metadata", async () => {
+      const metadata = await pretokenbond.tokenURI(tokenId);
       console.log(metadata);
     });
   });

@@ -18,6 +18,6 @@ contract ProxyReceiver {
     require(_cToken.redeemUnderlying(_amount) == 0, "Withdraw-failed");
 
     (bool sent, ) = msg.sender.call{ value: _amount }("");
-    require(sent, "Failed to send nativd");
+    require(sent, "Failed to send native");
   }
 }

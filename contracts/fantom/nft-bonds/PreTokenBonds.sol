@@ -72,7 +72,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
   {
     return
       interfaceId == type(IVNFT).interfaceId ||
-      interfaceId == type(IERC721Upgradeable).interfaceId ||
+      interfaceId == type(IERC721EnumerableUpgradeable).interfaceId ||
       interfaceId == type(IERC721MetadataUpgradeable).interfaceId ||
       // 'super.supportsInterface()' will read from  {AccessControlUpgradeable}
       super.supportsInterface(interfaceId);

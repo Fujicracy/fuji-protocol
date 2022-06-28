@@ -136,7 +136,7 @@ describe("On-chain Metadata Generation Tests", function () {
     });
   });
 
-  describe.only("PreTokenBonds NFT metadata and image", async () => {
+  describe("PreTokenBonds NFT metadata and image", async () => {
 
     let mocktoken;
     let amountmocktoken;
@@ -161,7 +161,15 @@ describe("On-chain Metadata Generation Tests", function () {
       const lnftinteractions = nftinteractions.connect(user);
       tokenId = await lnftinteractions.callStatic.mintBonds(days90Vesting, numberOfBondUnits);
       await lnftinteractions.mintBonds(days90Vesting, numberOfBondUnits);
-      console.log("tokenId", tokenId);
+    });
+
+    beforeEach(async function () {
+      if (evmSnapshot2) await evmRevert(evmSnapshot2);
+      evmSnapshot2 = await evmSnapshot();
+    });
+    
+    after(async () => {
+      evmRevert(evmSnapshot1);
     });
 
     it("Should confirm user succesfully minted voucher", async () => {

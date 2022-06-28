@@ -109,6 +109,9 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     _;
   }
 
+  /// @custom:oz-upgrades-unsafe-allow constructor
+  constructor() initializer {}
+
   function initialize(uint256[4] memory phases) external initializer {
     __ERC1155_init("");
     __AccessControl_init();

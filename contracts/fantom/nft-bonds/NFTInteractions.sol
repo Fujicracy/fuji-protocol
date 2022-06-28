@@ -96,6 +96,9 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
   // The maximum number of NFT cards minted per day in relation to the amount of users
   uint256 public cardsPerDayRatio;
 
+  /// @custom:oz-upgrades-unsafe-allow constructor
+  constructor() initializer {}
+
   function initialize(address _nftGame) external initializer {
     __ReentrancyGuard_init();
     isRedstoneOracleOn = true;

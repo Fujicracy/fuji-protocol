@@ -21,6 +21,9 @@ contract FujiAdmin is IFujiAdmin, OwnableUpgradeable {
 
   address private _swapper;
 
+  /// @custom:oz-upgrades-unsafe-allow constructor
+  constructor() initializer {}
+
   /**
    * @dev Initializes the contract setting the deployer as the initial owner.
    */

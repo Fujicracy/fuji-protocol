@@ -136,7 +136,7 @@ describe("On-chain Metadata Generation Tests", function () {
     });
   });
 
-  describe("PreTokenBonds NFT metadata and image", async () => {
+  describe("PreTokenBonds NFT metadata and image after TGE", async () => {
 
     let mocktoken;
     let amountmocktoken;
@@ -180,6 +180,39 @@ describe("On-chain Metadata Generation Tests", function () {
     it("Should revert when passing a wrong tokenId to pretokenbonds.tokenURI()", async () => {
       const fakeLockNFTId = 1256489;
       await expect(pretokenbond.tokenURI(fakeLockNFTId)).to.be.reverted;
+    });
+
+    it("Should console.log() base64 encoded pretokenbond voucher metadata", async () => {
+      const metadata = await pretokenbond.tokenURI(tokenId);
+      console.log(metadata);
+    });
+  });
+
+  describe.only("PreTokenBonds NFT metadata and image before TGE", async () => {
+
+    let tokenId;
+
+    before(async() => {
+      // 'User' mints a bond-voucher.
+      const numberOfBondUnits = parseUnits(5, pointsDecimals);
+      const days90Vesting = 90;
+      const lnftinteractions = nftinteractions.connect(user);
+      tokenId = await lnftinteractions.callStatic.mintBonds(days90Vesting, numberOfBondUnits);
+      await lnftinteractions.mintBonds(days90Vesting, numberOfBondUnits);
+    });
+
+    beforeEach(async function () {
+      if (evmSnapshot2) await evmRevert(evmSnapshot2);
+      evmSnapshot2 = await evmSnapshot();
+    });
+    
+    after(async () => {
+      evmRevert(evmSnapshot1);
+    });
+
+    it("Should confirm user succesfully minted voucher", async () => {
+      const owner = await pretokenbond.ownerOf(tokenId);
+      expect(owner).to.eq(user.address);
     });
 
     it("Should console.log() base64 encoded pretokenbond voucher metadata", async () => {

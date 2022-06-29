@@ -58,6 +58,8 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
 
   uint256 public vestingStartTimestamp;
 
+  bool public tgeActive;
+
   // Metadata for ERC3525 generated on Chain by 'voucherDescriptor'
   IVNFTDescriptor public voucherDescriptor;
 
@@ -95,7 +97,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
       }
     }
     bondPrice = 10000 * 10 ** decimals;
-    vestingStartTimestamp = nftGame.gamePhaseTimestamps(3) + 30 days;
+    vestingStartTimestamp = nftGame.gamePhaseTimestamps(3) + 3650 days; 
   }
 
   /// View functions
@@ -220,6 +222,14 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
   }
 
   /**
+   * @notice Admin restricted function to set state of tgeActive
+   */
+  function setTgeActive(bool _isActive) external {
+    require(nftGame.hasRole(_nftgame_GAME_ADMIN, msg.sender), GameErrors.NOT_AUTH);
+    tgeActive = _isActive;
+  }
+
+  /**
    * @notice Admin restricted function to set the {VoucherDescriptor} contract that generates:
    * ContractURI metadata.
    * Slot ID metadata.
@@ -278,6 +288,7 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
     require(token.allowance(msg.sender, address(this)) >= _amount, "No allowance!");
     token.transferFrom(msg.sender, address(this), _amount);
     underlyingAmount += _amount;
+    tgeActive = true;
     emit UnderlyingDeposit(_amount);
   }
 

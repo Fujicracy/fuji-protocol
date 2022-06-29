@@ -146,15 +146,19 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
     detailed.name = abi.encodePacked(_pretokenbondName, " #", _tokenId.toString());
     detailed.tokenDescription = _tokenDescription();
     detailed.slotId = voucher.slotOf(_tokenId);
-    detailed.underlying = voucher.underlying().addressToString();
-    detailed.claimDate = voucher.vestingTypeToTimestamp(detailed.slotId).dateToString();
-    detailed.redeemableTokens = voucher.tokensPerUnit(detailed.slotId) * voucher.unitsInToken(_tokenId);
+    if(voucher.tgeActive()) {
+      detailed.underlying = voucher.underlying().addressToString();
+      detailed.claimDate = voucher.vestingTypeToTimestamp(detailed.slotId).dateToString();
+      detailed.redeemableTokens = voucher.tokensPerUnit(detailed.slotId) * voucher.unitsInToken(_tokenId);
+    }
   }
 
   function _buildDetailsSlot(uint256 _slotId) internal view returns(Details memory detailed) {
-    detailed.underlying = voucher.underlying().addressToString();
     detailed.slotId = _slotId;
-    detailed.claimDate = voucher.vestingTypeToTimestamp(_slotId).dateToString();
+    if(voucher.tgeActive()) {
+      detailed.underlying = voucher.underlying().addressToString();
+      detailed.claimDate = voucher.vestingTypeToTimestamp(detailed.slotId).dateToString();
+    }
   }
 
   function _tokenDescription() private view returns (bytes memory) {
@@ -171,10 +175,11 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
 
   function _propertiesToken(Details memory detailed)
     internal
-    pure
+    view
     returns (bytes memory data)
   {
-    return
+    if (voucher.tgeActive()) {
+      return
       abi.encodePacked(
           "{",
           '"underlyingToken":"', detailed.underlying,
@@ -184,6 +189,16 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
           '","redeemable Tokens":"', detailed.redeemableTokens.toString(),
           '"}'
       );
+    } else {
+      return
+      abi.encodePacked(
+          "{",
+          '"claimType":"OneTime',
+          '","claim date":"', detailed.slotId.toString(),' Days after Token Generation Event',
+          '"}'
+      );
+
+    }
   }
 
   function _propertiesSlot(Details memory detailed)
@@ -197,7 +212,6 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
           '"underlyingToken":"', detailed.underlying,
           '","claimType":"OneTime"',
           '","vesting time":"', detailed.slotId.toString(),' Days-expiry Bond',
-          '","claim date":"', detailed.claimDate,
           '"}'
       );
   }

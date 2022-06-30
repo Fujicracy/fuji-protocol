@@ -327,11 +327,6 @@ describe("NFT Bond Phase Tests", function () {
       ).to.be.revertedWith("G06");
     });
 
-    it("Should revert if admin tries to force mint cards", async function () {
-      await expect(this.f.nftgame.mint(this.user.address, this.f.cardIds[0], 1))
-        .to.be.revertedWith("G06");
-    });
-
     it("Should revert if unlocked user tries to transfer cards", async function () {
       await expect(await this.f.nftgame.balanceOf(this.otherUser.address, this.f.cardIds[0])).to.be.gt(0);
       await expect(

@@ -33,6 +33,9 @@ contract FujiERC1155 is IFujiERC1155, FujiBaseERC1155, F1155Manager {
   // AssetId => Liquidity index for asset ID
   mapping(uint256 => uint256) public indexes;
 
+  /// @custom:oz-upgrades-unsafe-allow constructor
+  constructor() initializer {}
+
   /**
    * @dev Sets the deployer as the initial owner in {Claimable}
    */

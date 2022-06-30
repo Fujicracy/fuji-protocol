@@ -378,20 +378,21 @@ describe("Bond Functionality", function () {
 
       // Extending the accumulating phase
 
-      endOfAccumulationTimestamp = fixtureItems.phases[0] + fixtureItems.day * 2;
+      endOfAccumulationTimestamp = fixtureItems.gameTimestamps[0] + fixtureItems.day * 2;
       endOfTradeLockTimestamp = endOfAccumulationTimestamp + fixtureItems.day;
       endOfBondTimestamp = endOfTradeLockTimestamp + fixtureItems.day;
 
-      const newPhases = [
-        fixtureItems.phases[0],     // 0 = start game launch
-        endOfAccumulationTimestamp, // 1 = end of accumulation
-        endOfTradeLockTimestamp,    // 2 = end of trade and lock
-        endOfBondTimestamp          // 3 = end of bond
+      // Refer to NFTGame.sol for timestamp descriptions.
+      const newGameTimestamps = [
+        fixtureItems.gameTimestamps[0],
+        endOfAccumulationTimestamp,
+        endOfTradeLockTimestamp,
+        endOfBondTimestamp
       ];
 
       latestUserTokenBal = BigNumber.from([0]);
 
-      await nftgame.setGamePhases(newPhases);
+      await nftgame.setGamePhases(newGameTimestamps);
       const dummyAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
       // Dummy address set to allow functionality tests to run.
       await nftgame.setLockNFTDescriptor(dummyAddress);

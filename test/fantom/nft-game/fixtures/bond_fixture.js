@@ -127,14 +127,15 @@ const bondFixture = async ([wallet]) => {
   const now = (await provider.getBlock("latest")).timestamp;
   const day = 60 * 60 * 24;
 
-  const phases = [
-    now,            // 0 = start game launch
-    now + day,      // 1 = end of accumulation
-    now + 2 * day,  // 2 = end of trade and lock
-    now + 3 * day   // 3 = end of bond
+  // Refer to NFTGame.sol for timestamp descriptions.
+  const gameTimestamps = [
+    now,            
+    now + day,      
+    now + 2 * day,
+    now + 3 * day
   ];
   
-  await nftgame.setGamePhases(phases);
+  await nftgame.setGamePhases(gameTimestamps);
 
   const crateIds = [
     await nftinteractions.CRATE_COMMON_ID(),
@@ -258,7 +259,7 @@ const bondFixture = async ([wallet]) => {
     day,
     crateIds,
     cardIds,
-    phases
+    gameTimestamps
   };
 };
 

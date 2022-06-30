@@ -24,6 +24,9 @@ contract LockSVG is ILockSVG, Initializable, UUPSUpgradeable {
 
   mapping(address => string) public nicknames;
 
+  /// @custom:oz-upgrades-unsafe-allow constructor
+  constructor() initializer {}
+
   function initialize(address _nftGame) public initializer {
     __UUPSUpgradeable_init();
 

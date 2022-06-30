@@ -61,6 +61,9 @@ contract PreTokenBonds is VoucherCore, AccessControlUpgradeable {
   // Metadata for ERC3525 generated on Chain by 'voucherDescriptor'
   IVNFTDescriptor public voucherDescriptor;
 
+  /// @custom:oz-upgrades-unsafe-allow constructor
+  constructor() initializer {}
+
   /**
    * @dev See {IERC165-supportsInterface}.
    */

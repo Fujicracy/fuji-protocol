@@ -90,7 +90,7 @@ const deployContracts = async () => {
 
   const now = (await provider.getBlock("latest")).timestamp;
   const day = 60 * 60 * 24;
-  const phases = [
+  const gameTimestamps = [
     now,
     now + 7 * day,
     now + 9 * day,
@@ -108,7 +108,7 @@ const deployContracts = async () => {
   const merkleRoot = "0xc0decc3b3577dcfe4ac5930eb46aa7201451ebf2e525c6321ef559a079c69482";
 
   // Functions below return string addresses
-  let nftgame = await deployNFTGame([phases]);
+  let nftgame = await deployNFTGame([gameTimestamps]);
   const library = {
     libraries: {
       LibPseudoRandom: LIB_PSEUDORANDOM, // rinkeby

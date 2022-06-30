@@ -158,14 +158,14 @@ const quickFixture = async ([wallet]) => {
 
   const now = (await provider.getBlock("latest")).timestamp;
   const week = 60 * 60 * 24 * 7;
-  const phases = [
+  const gameTimestamps = [
     now + week,
     now + 2 * week,
     now + 3 * week,
     now + 4 *week
   ];
 
-  await nftgame.setGamePhases(phases);
+  await nftgame.setGamePhases(gameTimestamps);
 
   const crateIds = [
     await nftinteractions.CRATE_COMMON_ID(),

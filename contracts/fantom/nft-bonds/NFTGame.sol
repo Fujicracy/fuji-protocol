@@ -321,20 +321,20 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     _mint(user, lockedNFTID, 1, "");
     ownerOfLockNFT[lockedNFTID] = user;
 
-    // Burn all remaining crates
+    // Burn remaining crates and 'climb gear' nft cards in deck
+    // and record unique climb gears in userdata.gearPower
     uint256 balance;
-    for (uint256 index = 1; index < 4; index++) {
-      balance = balanceOf(user, index);
-      _burn(user, index, balance);
-    }
-
-    // Burn 'climb gear' nft cards in deck
     uint256 gearPower;
-    for (uint256 index = 4; index < 4 + nftCardsAmount; index++) {
-      balance = balanceOf(user, index);
+    for (uint256 i = 1; i < 4 + nftCardsAmount;) {
+      balance = balanceOf(user, i);
       if (balance > 0) {
-        _burn(user, index, balance);
-        gearPower += 1;
+        _burn(user, i, balance);
+        if(i >= 4) {
+          gearPower++;
+        }
+      }
+      unchecked {
+        ++i;
       }
     }
     userdata[user].gearPower = uint128(gearPower);
@@ -623,7 +623,8 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
     if (_isPointsId(ids)) {
       revert(GameErrors.NOT_TRANSFERABLE);
     }
-    if (getPhase() >= 3) {
+    bool isKeyCaller = hasRole(GAME_ADMIN, msg.sender) || hasRole(GAME_INTERACTOR, msg.sender);
+    if (getPhase() >= 3 && !isKeyCaller) {
       require(!_isCrateOrCardId(ids), GameErrors.NOT_TRANSFERABLE);
     }
   }

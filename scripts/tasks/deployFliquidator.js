@@ -8,6 +8,15 @@ const deployFliquidator = async () => {
   return deployed;
 };
 
+const deployF2Fliquidator = async () => {
+  const name = networkSuffix("F2Fliquidator");
+  const contractName = "F2Fliquidator";
+
+  const deployed = await redeployIf(name, contractName, deploy);
+  return deployed;
+};
+
 module.exports = {
   deployFliquidator,
+  deployF2Fliquidator,
 };

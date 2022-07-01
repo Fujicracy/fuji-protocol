@@ -4,7 +4,7 @@ const { callIf, networkSuffix } = require("../utils");
 const updateVault = async (name, vault, params) => {
   const { providers, fujiadmin, f1155 } = params;
 
-  const contractName = networkSuffix("FujiVault");
+  const contractName = "F2FujiVault";
 
   const vaultContract = await ethers.getContractAt(contractName, vault);
 

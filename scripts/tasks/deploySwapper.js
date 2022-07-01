@@ -8,6 +8,15 @@ const deploySwapper = async () => {
   return deployed;
 };
 
+const deployF2Swapper = async (args) => {
+  const name = networkSuffix("F2Swapper");
+  const contractName = "F2Swapper";
+
+  const deployed = await redeployIf(name, contractName, deploy, args);
+  return deployed;
+};
+
 module.exports = {
   deploySwapper,
+  deployF2Swapper,
 };

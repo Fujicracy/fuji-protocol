@@ -23,8 +23,8 @@ contract ProviderAaveV3FTM is IProvider {
     return IPool(0x794a61358D6845594F94dc1DB02A252b5b4814aD);
   }
 
-  function _getWmaticAddr() internal pure returns (address) {
-    return 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
+  function _getWrappedNativeAddr() internal pure returns (address) {
+    return 0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83;
   }
 
   function _getNativeAddr() internal pure returns (address) {
@@ -32,7 +32,7 @@ contract ProviderAaveV3FTM is IProvider {
   }
 
   function _getUnwrapper() internal pure returns (address) {
-    return 0x03E074BB834F7C4940dFdE8b29e63584b3dE3a87;
+    return 0xee94A39D185329d8c46dEA726E01F91641E57346;
   }
 
   /**
@@ -43,7 +43,7 @@ contract ProviderAaveV3FTM is IProvider {
     IAaveProtocolDataProvider aaveData = _getAaveProtocolDataProvider();
 
     (, , , , uint256 variableBorrowRate, , , , , , , ) = aaveData.getReserveData(
-      _asset == _getNativeAddr() ? _getWmaticAddr() : _asset
+      _asset == _getNativeAddr() ? _getWrappedNativeAddr() : _asset
     );
 
     return variableBorrowRate;
@@ -57,7 +57,7 @@ contract ProviderAaveV3FTM is IProvider {
     IAaveProtocolDataProvider aaveData = _getAaveProtocolDataProvider();
 
     bool isEth = _asset == _getNativeAddr();
-    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
+    address _tokenAddr = isEth ? _getWrappedNativeAddr() : _asset;
 
     (, , uint256 variableDebt, , , , , , ) = aaveData.getUserReserveData(_tokenAddr, msg.sender);
 
@@ -78,7 +78,7 @@ contract ProviderAaveV3FTM is IProvider {
     IAaveProtocolDataProvider aaveData = _getAaveProtocolDataProvider();
 
     bool isEth = _asset == _getNativeAddr();
-    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
+    address _tokenAddr = isEth ? _getWrappedNativeAddr() : _asset;
 
     (, , uint256 variableDebt, , , , , , ) = aaveData.getUserReserveData(_tokenAddr, _who);
 
@@ -93,7 +93,7 @@ contract ProviderAaveV3FTM is IProvider {
     IAaveProtocolDataProvider aaveData = _getAaveProtocolDataProvider();
 
     bool isEth = _asset == _getNativeAddr();
-    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
+    address _tokenAddr = isEth ? _getWrappedNativeAddr() : _asset;
 
     (uint256 atokenBal, , , , , , , , ) = aaveData.getUserReserveData(_tokenAddr, msg.sender);
 
@@ -109,7 +109,7 @@ contract ProviderAaveV3FTM is IProvider {
     IPool aave = _getPool();
 
     bool isEth = _asset == _getNativeAddr();
-    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
+    address _tokenAddr = isEth ? _getWrappedNativeAddr() : _asset;
 
     // convert ETH to WETH
     if (isEth) IWETH(_tokenAddr).deposit{ value: _amount }();
@@ -130,7 +130,7 @@ contract ProviderAaveV3FTM is IProvider {
     IPool aave = _getPool();
 
     bool isEth = _asset == _getNativeAddr();
-    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
+    address _tokenAddr = isEth ? _getWrappedNativeAddr() : _asset;
 
     aave.borrow(_tokenAddr, _amount, 2, 0, address(this));
 
@@ -151,7 +151,7 @@ contract ProviderAaveV3FTM is IProvider {
     IPool aave = _getPool();
 
     bool isEth = _asset == _getNativeAddr();
-    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
+    address _tokenAddr = isEth ? _getWrappedNativeAddr() : _asset;
 
     aave.withdraw(_tokenAddr, _amount, address(this));
 
@@ -173,7 +173,7 @@ contract ProviderAaveV3FTM is IProvider {
     IPool aave = _getPool();
 
     bool isEth = _asset == _getNativeAddr();
-    address _tokenAddr = isEth ? _getWmaticAddr() : _asset;
+    address _tokenAddr = isEth ? _getWrappedNativeAddr() : _asset;
 
     // convert ETH to WETH
     if (isEth) IWETH(_tokenAddr).deposit{ value: _amount }();

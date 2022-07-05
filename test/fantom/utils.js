@@ -8,7 +8,7 @@ const { WrapperBuilder } = require("redstone-evm-connector");
 const SPOOKY_ROUTER_ADDR = "0xF491e7B69E4244ad4002BC14e878a34207E38c29";
 const TREASURY_ADDR = "0xb98d4D4e205afF4d4755E9Df19BD0B8BD4e0f148"; // Deployer
 
-const LIB_PSEUDORANDOM = "0x2B14eBE4C9F17d8424AAE34a76CF375DB0029b15";
+const LIB_PSEUDORANDOM = "0x4E2024595E04Fe0ed66f82552b1a2D057Bb11794"; //updated July 4, 2022
 
 const DEBUG = false;
 
@@ -137,7 +137,7 @@ const fixture = async ([wallet]) => {
 
   const NFTInteractions = await getContractFactory("NFTInteractions", {
     libraries: {
-      LibPseudoRandom: "0x63E978f8C647bAA71184b9eCcB39e0509C09D681", // fantom
+      LibPseudoRandom: LIB_PSEUDORANDOM, // fantom
     }
   });
   const nftinteractions = await upgrades.deployProxy(

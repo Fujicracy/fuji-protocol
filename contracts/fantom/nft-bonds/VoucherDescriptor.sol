@@ -104,8 +104,8 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
         abi.encodePacked(
           'data:application/json;{"unitsInSlot":"', voucher.unitsInSlot(_slot).toString(),
           '","tokensInSlot":"', voucher.tokensInSlot(_slot).toString(),
-          '","properties":', _propertiesSlot(slotIdDetails),
-          '}'
+          '","properties":[', _propertiesSlot(slotIdDetails),
+          ']}'
         )
       );
   }
@@ -121,10 +121,11 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
             '{"name":"', tokenIdDetails.name,
             '","description":"', tokenIdDetails.tokenDescription,
             '","image":"data:image/svg+xml;base64,', Base64.encode(bytes(image)),
-            '","bond units":"', voucher.unitsInToken(_tokenId).toString(),
+            '","balance":"', voucher.unitsInToken(_tokenId).toString(),
             '","slot":"', tokenIdDetails.slotId.toString(),
-            '","properties":', _propertiesToken(tokenIdDetails),
-            "}"
+            '","external_url":"https://www.fujidao.org',
+            '","properties":[', _propertiesToken(tokenIdDetails),
+            "]}"
           )
         )
       )
@@ -173,47 +174,48 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
       );
   }
 
-  function _propertiesToken(Details memory detailed)
-    internal
-    view
-    returns (bytes memory data)
-  {
+  function _propertiesToken(Details memory detailed) internal view returns (bytes memory data) {
     if (voucher.tgeActive()) {
-      return
-      abi.encodePacked(
-          "{",
-          '"underlyingToken":"', detailed.underlying,
-          '","claimType":"OneTime',
-          '","vesting time":"', detailed.slotId.toString(),' Days-expiry Bond',
-          '","claim date":"', detailed.claimDate,
-          '","redeemable Tokens":"', detailed.redeemableTokens.toString(),
-          '"}'
+      data = abi.encodePacked(
+        _buildTrait("underlying_token", detailed.underlying, "address of redeemable token", "string", 1),
+        ',', _buildTrait("claim_type", "one-time", "one time redeemable bond", "string", 2),
+        ',', _buildTrait("vesting_time", detailed.slotId.toString(), "days-expiry Bond", "string", 3),
+        ',', _buildTrait("claim_date", detailed.claimDate, "bond vest time", "date", 4),
+        ',', _buildTrait("redeemable_tokens",
+          string(_formatValue(detailed.redeemableTokens, 18)), "bond vest time", "date", 5)
       );
     } else {
-      return
-      abi.encodePacked(
-          "{",
-          '"claimType":"OneTime',
-          '","claim date":"', detailed.slotId.toString(),' Days after Token Generation Event',
-          '"}'
+      data = abi.encodePacked(
+        _buildTrait("claim_type", "one-time", "one time redeemable bond", "string", 1),
+        ',', _buildTrait("claim_date", detailed.slotId.toString(), "days after Token Generation Event", "string", 2)
       );
-
     }
   }
 
-  function _propertiesSlot(Details memory detailed)
-    internal
-    pure
-    returns (bytes memory data)
-  {
-    return
-      abi.encodePacked(
-          "{",
-          '"underlyingToken":"', detailed.underlying,
-          '","claimType":"OneTime"',
-          '","vesting time":"', detailed.slotId.toString(),' Days-expiry Bond',
-          '"}'
-      );
+  function _propertiesSlot(Details memory detailed)internal pure returns (bytes memory data) {
+    data = abi.encodePacked(
+      _buildTrait("underlying_token", detailed.underlying, "address of redeemable token", "string", 1),
+      ',', _buildTrait("claim_type", "one-time", "one time redeemable bond", "string", 2),
+      ',', _buildTrait("vesting_time", detailed.slotId.toString(), "days-expiry Bond", "string", 3)
+    );
+  }
+
+  function _buildTrait(
+    string memory traitName,
+    string memory traitValue,
+    string memory description,
+    string memory displayType,
+    uint256 displayOrder
+  ) private pure returns(bytes memory data) {
+    data = abi.encodePacked(
+      "{",
+      '"trait_type":"', traitName,
+      '","value":"', traitValue,
+      '","description":"', description,
+      '","display_type":"', displayType,
+      '","display_order":', displayOrder.toString(),
+      "}"
+    );
   }
 
   function _descAlert() private pure returns (string memory) {
@@ -229,5 +231,9 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
   function _descProtocol() private pure returns (string memory) {
     return
       "[Fuji](https://fujidao.org) is a protocol that aggregates lending-borrowing crypto markets. The protocol value-add proposition is to optimize interest rates for its users (both borrowers and lenders) by automating routing and movement of funds across lending-borrowing protocols and blockchain networks in search of the best APR.";
+  }
+
+  function _formatValue(uint256 value, uint256 decimals) private pure returns (bytes memory) {
+    return value.uint2decimal(uint8(decimals)).trim(decimals - 2).addThousandsSeparator();
   }
 }

@@ -81,7 +81,7 @@ describe("On-chain Metadata Generation Tests", function () {
   });
 
   after(async () => {
-    evmRevert(evmSnapshot0);
+    await evmRevert(evmSnapshot0);
   });
 
   describe("Lock NFT metadata and image", async () => {
@@ -100,7 +100,7 @@ describe("On-chain Metadata Generation Tests", function () {
     });
 
     after(async () => {
-      evmRevert(evmSnapshot1);
+      await evmRevert(evmSnapshot1);
     });
 
     it("Should confirm user is succesfully locked", async () => {
@@ -169,7 +169,7 @@ describe("On-chain Metadata Generation Tests", function () {
     });
     
     after(async () => {
-      evmRevert(evmSnapshot1);
+      await evmRevert(evmSnapshot1);
     });
 
     it("Should confirm user succesfully minted voucher", async () => {
@@ -188,9 +188,10 @@ describe("On-chain Metadata Generation Tests", function () {
     });
   });
 
-  describe.only("PreTokenBonds NFT metadata and image before TGE", async () => {
+  describe("PreTokenBonds NFT metadata and image before TGE", async () => {
 
     let tokenId;
+    console.log("tokenId describe", tokenId);
 
     before(async() => {
       // 'User' mints a bond-voucher.
@@ -198,19 +199,16 @@ describe("On-chain Metadata Generation Tests", function () {
       const days90Vesting = 90;
       const lnftinteractions = nftinteractions.connect(user);
       tokenId = await lnftinteractions.callStatic.mintBonds(days90Vesting, numberOfBondUnits);
+      console.log("tokenId callStatic", tokenId);
       await lnftinteractions.mintBonds(days90Vesting, numberOfBondUnits);
     });
-
-    beforeEach(async function () {
-      if (evmSnapshot2) await evmRevert(evmSnapshot2);
-      evmSnapshot2 = await evmSnapshot();
-    });
-    
+   
     after(async () => {
-      evmRevert(evmSnapshot1);
+      await evmRevert(evmSnapshot1);
     });
 
     it("Should confirm user succesfully minted voucher", async () => {
+      console.log("minted tokenId", tokenId);
       const owner = await pretokenbond.ownerOf(tokenId);
       expect(owner).to.eq(user.address);
     });

@@ -186,6 +186,16 @@ describe("On-chain Metadata Generation Tests", function () {
       const metadata = await pretokenbond.tokenURI(tokenId);
       console.log(metadata);
     });
+
+    it("Should console.log() contract metadata", async () => {
+      const metadata = await pretokenbond.contractURI();
+      console.log(metadata);
+    });
+
+    it("Should console.log() slot metadata", async () => {
+      const metadata = await pretokenbond.slotURI(90);
+      console.log(metadata);
+    });
   });
 
   describe("PreTokenBonds NFT metadata and image before TGE", async () => {

@@ -42,8 +42,6 @@ const deployContracts = async () => {
 
   // Provider Contracts
   const aaveMATIC = await deployProvider("ProviderAaveMATIC");
-  const kashi = await deployProvider("ProviderKashi");
-  const wepiggy = await deployProvider("ProviderWepiggy");
   const aaveV3MATIC = await deployProvider("ProviderAaveV3MATIC");
 
   // Deploy Core Money Handling Contracts
@@ -133,45 +131,45 @@ const deployContracts = async () => {
 
   // Vault Set-up
   await updateVault("VaultMATICDAI", vaultmaticdai, {
-    providers: [aaveMATIC, kashi, wepiggy, aaveV3MATIC],
+    providers: [aaveMATIC, aaveV3MATIC],
     fujiadmin,
     f1155,
   });
   await updateVault("VaultMATICUSDC", vaultmaticusdc, {
-    providers: [aaveMATIC, kashi, wepiggy, aaveV3MATIC],
+    providers: [aaveMATIC, aaveV3MATIC],
     fujiadmin,
     f1155,
   });
 
   await updateVault("VaultWBTCDAI", vaultwbtcdai, {
-    providers: [aaveMATIC, kashi, wepiggy, aaveV3MATIC],
+    providers: [aaveMATIC, aaveV3MATIC],
     fujiadmin,
     f1155,
   });
   await updateVault("VaultWBTCUSDC", vaultwbtcusdc, {
-    providers: [aaveMATIC, kashi, wepiggy, aaveV3MATIC],
+    providers: [aaveMATIC, aaveV3MATIC],
     fujiadmin,
     f1155,
   });
 
   await updateVault("VaultWETHDAI", vaultwethdai, {
-    providers: [aaveMATIC, kashi, wepiggy, aaveV3MATIC],
+    providers: [aaveMATIC, aaveV3MATIC],
     fujiadmin,
     f1155,
   });
   await updateVault("VaultWETHUSDC", vaultwethusdc, {
-    providers: [aaveMATIC, kashi, wepiggy, aaveV3MATIC],
+    providers: [aaveMATIC, aaveV3MATIC],
     fujiadmin,
     f1155,
   });
 
   await updateVault("VaultUSDCWETH", vaultusdcweth, {
-    providers: [aaveMATIC, kashi, wepiggy, aaveV3MATIC],
+    providers: [aaveMATIC, aaveV3MATIC],
     fujiadmin,
     f1155,
   });
   await updateVault("VaultUSDCWBTC", vaultusdcwbtc, {
-    providers: [aaveMATIC, kashi, wepiggy, aaveV3MATIC],
+    providers: [aaveMATIC, aaveV3MATIC],
     fujiadmin,
     f1155,
   });

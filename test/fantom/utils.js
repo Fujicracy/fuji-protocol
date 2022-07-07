@@ -7,7 +7,8 @@ const { WrapperBuilder } = require("redstone-evm-connector");
 
 const SPOOKY_ROUTER_ADDR = "0xF491e7B69E4244ad4002BC14e878a34207E38c29";
 const TREASURY_ADDR = "0xb98d4D4e205afF4d4755E9Df19BD0B8BD4e0f148"; // Deployer
-const LIB_PSEUDORANDOM = "0x2B14eBE4C9F17d8424AAE34a76CF375DB0029b15"; // Used in NFTInteractions.sol
+
+const LIB_PSEUDORANDOM = "0x4E2024595E04Fe0ed66f82552b1a2D057Bb11794"; //updated July 4, 2022
 
 const DEBUG = false;
 
@@ -26,7 +27,7 @@ const ASSETS = {
     nameUp: "DAI",
     address: "0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E", // fantom
     storageSlots: {
-      balanceOf: 2
+      balanceOf: 2,
     },
     oracle: "0x91d5DEFAFfE2854C7D02F50c80FA1fdc8A721e52",
     aToken: "0x07E6332dD090D287d3489245038daF987955DCFB",
@@ -38,7 +39,7 @@ const ASSETS = {
     nameUp: "USDC",
     address: "0x04068DA6C83AFCFA0e13ba15A6696662335D5B75", // fantom
     storageSlots: {
-      balanceOf: 2
+      balanceOf: 2,
     },
     oracle: "0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c",
     aToken: "0xe578C856933D8e1082740bf7661e379Aa2A30b26",
@@ -50,7 +51,7 @@ const ASSETS = {
     nameUp: "WFTM",
     address: "0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83", // fantom
     storageSlots: {
-      balanceOf: 0
+      balanceOf: 0,
     },
     oracle: "0xf4766552D15AE4d256Ad41B6cf2933482B0680dc",
     aToken: "0x39B3bd37208CBaDE74D0fcBDBb12D606295b430a",
@@ -62,7 +63,7 @@ const ASSETS = {
     nameUp: "WETH",
     address: "0x74b23882a30290451A17c44f4F05243b6b58C76d", // fantom
     storageSlots: {
-      balanceOf: 2
+      balanceOf: 2,
     },
     oracle: "0x11DdD3d147E5b83D01cee7070027092397d63658",
     aToken: "0x25c130B2624CF12A4Ea30143eF50c5D68cEFA22f",
@@ -74,7 +75,7 @@ const ASSETS = {
     nameUp: "WBTC",
     address: "0x321162Cd933E2Be498Cd2267a90534A804051b11", // fantom
     storageSlots: {
-      balanceOf: 2
+      balanceOf: 2,
     },
     oracle: "0x8e94C22142F4A64b99022ccDd994f4e9EC86E4B4",
     aToken: "0x38aCa5484B8603373Acc6961Ecd57a6a594510A3",
@@ -106,7 +107,7 @@ const getVaults = () => {
 const syncTime = async function () {
   const now = Math.ceil(new Date().getTime() / 1000);
   try {
-    await ethers.provider.send('evm_setNextBlockTimestamp', [now]);
+    await ethers.provider.send("evm_setNextBlockTimestamp", [now]);
   } catch (error) {
     //Skipping time sync - block is ahead of current time
   }
@@ -157,22 +158,21 @@ const fixture = async ([wallet]) => {
 
   const NFTInteractions = await getContractFactory("NFTInteractions", {
     libraries: {
-      LibPseudoRandom: "0x63E978f8C647bAA71184b9eCcB39e0509C09D681", // fantom
-    }
+      LibPseudoRandom: LIB_PSEUDORANDOM, // fantom
+    },
   });
-  const nftinteractions = await upgrades.deployProxy(
-    NFTInteractions,
-    [nftgame.address],
-    {
-      unsafeAllow: ['external-library-linking']
-    }
+  const nftinteractions = await upgrades.deployProxy(NFTInteractions, [nftgame.address], {
+    unsafeAllow: ["external-library-linking"],
+  });
+
+  const wrappednftinteractions = WrapperBuilder.wrapLite(nftinteractions).usingPriceFeed(
+    "redstone",
+    { asset: "ENTROPY" }
   );
 
-  const wrappednftinteractions = WrapperBuilder
-    .wrapLite(nftinteractions)
-    .usingPriceFeed("redstone", { asset: "ENTROPY" });
-
-  await wrappednftinteractions.authorizeSignerEntropyFeed("0x0C39486f770B26F5527BBBf942726537986Cd7eb");
+  await wrappednftinteractions.authorizeSignerEntropyFeed(
+    "0x0C39486f770B26F5527BBBf942726537986Cd7eb"
+  );
 
   // Step 2: Providers
   const ProviderCream = await getContractFactory("ProviderCream");
@@ -223,14 +223,7 @@ const fixture = async ([wallet]) => {
     await vault.setFujiERC1155(f1155.address);
     await vault.setNFTGame(nftgame.address);
     await fujiadmin.allowVault(vault.address, true);
-    await vault.setProviders(
-      [
-        cream.address,
-        geist.address,
-        hundred.address,
-        aaveV3.address
-      ]
-    );
+    await vault.setProviders([cream.address, geist.address, hundred.address, aaveV3.address]);
 
     vaults[name] = vault;
   }
@@ -281,34 +274,30 @@ const setStorageAt = async (address, index, value) => {
 
 const getStorageSlot = (address, method) => {
   const assets = Object.values(ASSETS);
-  const asset = assets.find( e => e.address == address);
+  const asset = assets.find((e) => e.address == address);
   const slot = asset.storageSlots[method];
-  if(!slot) {
+  if (!slot) {
     throw "Set storage slot in 'ASSETS' object; Refer to https://github.com/kendricktan/slot20 on how get slot number.";
   }
   return asset.storageSlots[method];
-}
+};
 
 /**
  * Sets ERC20 balance for testing purposes
- * @param {string} userAddr 
- * @param {string} erc20address 
+ * @param {string} userAddr
+ * @param {string} erc20address
  * @param {Object} BNbalance in ethers.BigNumber format
  */
 const setERC20UserBalance = async (userAddr, erc20address, BNbalance) => {
   // Get storage slot index
-  const slot = getStorageSlot(erc20address, 'balanceOf');
+  const slot = getStorageSlot(erc20address, "balanceOf");
   const solidityIndex = ethers.utils.solidityKeccak256(
     ["uint256", "uint256"],
     [userAddr, slot] // key, slot
   );
   // Manipulate local balance (needs to be bytes32 string)
-  await setStorageAt(
-    erc20address,
-    solidityIndex.toString(),
-    toBytes32(BNbalance).toString()
-  );
-}
+  await setStorageAt(erc20address, solidityIndex.toString(), toBytes32(BNbalance).toString());
+};
 
 module.exports = {
   syncTime,
@@ -316,5 +305,5 @@ module.exports = {
   setERC20UserBalance,
   ASSETS,
   VAULTS: getVaults(),
-  LIB_PSEUDORANDOM
+  LIB_PSEUDORANDOM,
 };

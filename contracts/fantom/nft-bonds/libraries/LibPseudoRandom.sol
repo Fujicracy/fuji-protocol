@@ -112,6 +112,7 @@ library LibPseudoRandom {
       }
       aggregatedRewards[gameInfo.nftCardIdStart]++;
       rewards[jLoop].tokenId = gameInfo.nftCardIdStart;
+      rewards[jLoop].amount = 1;
     } else {
       aggregatedRewards[gameInfo.pointsID] += basicCrateReward;
       rewards[jLoop].amount = basicCrateReward;

@@ -11,6 +11,7 @@ async function main() {
     throw new Error("Please set 'NETWORK=fantom' in ./packages/hardhat/.env");
   }
   await setDeploymentsPath("core");
+
   await initTestWallet();
 }
 

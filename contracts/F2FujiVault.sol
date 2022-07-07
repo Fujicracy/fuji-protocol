@@ -87,6 +87,9 @@ contract F2FujiVault is VaultBaseUpgradeable, ReentrancyGuardUpgradeable, IVault
     _;
   }
 
+  /// @custom:oz-upgrades-unsafe-allow constructor
+  constructor() initializer {}
+
   /**
    * @dev Initializes the contract by setting:
    * - Type of collateral and borrow asset of this vault.

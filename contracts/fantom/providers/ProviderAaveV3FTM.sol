@@ -42,7 +42,7 @@ contract ProviderAaveV3FTM is IProvider {
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
     IAaveProtocolDataProvider aaveData = _getAaveProtocolDataProvider();
 
-    (, , , , uint256 variableBorrowRate, , , , , , , ) = aaveData.getReserveData(
+    (, , , , , , uint256 variableBorrowRate, , , , , ) = aaveData.getReserveData(
       _asset == _getNativeAddr() ? _getWrappedNativeAddr() : _asset
     );
 

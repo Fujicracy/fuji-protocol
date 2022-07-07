@@ -176,6 +176,14 @@ describe("Polygon Fuji Instance", function () {
         BORROW_STABLE,
         FLASHLOAN.BALANCER
       );
+      testRefinance1(
+        [vaultmaticdai, vaultmaticusdc],
+        "wepiggy",
+        "aave",
+        DEPOSIT_MATIC,
+        BORROW_STABLE,
+        FLASHLOAN.AAVEV3
+      );
     });
 
     describe("ERC20 token as collateral, ERC20 as borrow asset.", function () {
@@ -212,6 +220,14 @@ describe("Polygon Fuji Instance", function () {
             BORROW_STABLE,
             FLASHLOAN.BALANCER
         );
+        testRefinance2(
+            [vaultwbtcdai, vaultwbtcusdc],
+            "wepiggy",
+            "aave",
+            DEPOSIT_WBTC,
+            BORROW_STABLE,
+            FLASHLOAN.AAVEV3
+        );
     });
 
     describe("ERC20 token as collateral, native token as borrow asset.", function () {
@@ -224,6 +240,14 @@ describe("Polygon Fuji Instance", function () {
             DEPOSIT_WETH,
             BORROW_MATIC,
             FLASHLOAN.BALANCER
+        );
+        testRefinance3(
+            [vaultwethmatic],
+            "wepiggy",
+            "aave",
+            DEPOSIT_WETH,
+            BORROW_MATIC,
+            FLASHLOAN.AAVEV3
         );
     });
   });

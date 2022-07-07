@@ -62,10 +62,10 @@ const {
 const [DEPOSIT_STABLE, DEPOSIT_MATIC, DEPOSIT_WETH, DEPOSIT_WBTC] = [80, 48, 0.02, 0.0015];
 
 const [BORROW_STABLE, BORROW_MATIC, BORROW_WETH, BORROW_WBTC] = [
-    DEPOSIT_STABLE / 2,
-    DEPOSIT_MATIC / 4,
-    DEPOSIT_WETH / 2,
-    DEPOSIT_WBTC / 2,
+    DEPOSIT_STABLE / 8,
+    DEPOSIT_MATIC / 8,
+    DEPOSIT_WETH / 8,
+    DEPOSIT_WBTC / 8,
   ];
 
 describe("Polygon Fuji Instance", function () {
@@ -176,6 +176,14 @@ describe("Polygon Fuji Instance", function () {
         BORROW_STABLE,
         FLASHLOAN.BALANCER
       );
+      testRefinance1(
+        [vaultmaticdai, vaultmaticusdc],
+        "wepiggy",
+        "aave",
+        DEPOSIT_MATIC,
+        BORROW_STABLE,
+        FLASHLOAN.AAVEV3
+      );
     });
 
     describe("ERC20 token as collateral, ERC20 as borrow asset.", function () {
@@ -212,6 +220,14 @@ describe("Polygon Fuji Instance", function () {
             BORROW_STABLE,
             FLASHLOAN.BALANCER
         );
+        testRefinance2(
+            [vaultwbtcdai, vaultwbtcusdc],
+            "wepiggy",
+            "aave",
+            DEPOSIT_WBTC,
+            BORROW_STABLE,
+            FLASHLOAN.AAVEV3
+        );
     });
 
     describe("ERC20 token as collateral, native token as borrow asset.", function () {
@@ -224,6 +240,14 @@ describe("Polygon Fuji Instance", function () {
             DEPOSIT_WETH,
             BORROW_MATIC,
             FLASHLOAN.BALANCER
+        );
+        testRefinance3(
+            [vaultwethmatic],
+            "wepiggy",
+            "aave",
+            DEPOSIT_WETH,
+            BORROW_MATIC,
+            FLASHLOAN.AAVEV3
         );
     });
   });

@@ -58,10 +58,10 @@ const {
 const [DEPOSIT_STABLE, DEPOSIT_MATIC, DEPOSIT_WETH, DEPOSIT_WBTC] = [80, 48, 0.02, 0.0015];
 
 const [BORROW_STABLE, BORROW_MATIC, BORROW_WETH, BORROW_WBTC] = [
-  DEPOSIT_STABLE / 10,
-  DEPOSIT_MATIC / 2,
-  DEPOSIT_WETH / 2,
-  DEPOSIT_WBTC / 2,
+  DEPOSIT_STABLE / 8,
+  DEPOSIT_MATIC / 8,
+  DEPOSIT_WETH / 8,
+  DEPOSIT_WBTC / 8,
 ];
 
 describe("Polygon Fuji Instance", function () {
@@ -190,6 +190,7 @@ describe("Polygon Fuji Instance", function () {
 
       testRefinance2([vaultwethdai], "aavev3", "kashi", DEPOSIT_WETH, BORROW_STABLE, 0);
       testRefinance2([vaultwethdai], "aavev3", "kashi", DEPOSIT_WETH, BORROW_STABLE, 3);
+      testRefinance2([vaultwethdai], "aavev3", "kashi", DEPOSIT_WETH, BORROW_STABLE, 4);
     });
 
     describe("ERC20 token as collateral, native token as borrow asset.", function () {

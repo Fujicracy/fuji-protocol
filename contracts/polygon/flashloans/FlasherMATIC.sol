@@ -16,23 +16,26 @@ import "../../interfaces/aave/IFlashLoanReceiver.sol";
 import "../../interfaces/aave/IAaveLendingPool.sol";
 import "../../interfaces/balancer/IBalancerVault.sol";
 import "../../interfaces/balancer/IFlashLoanRecipient.sol";
-import "../libraries/LibUniversalERC20MATIC.sol";
+import "../../interfaces/aavev3/IFlashLoanSimpleReceiver.sol";
+import "../../interfaces/aavev3/IPool.sol";
+import "../../libraries/LibUniversalERC20.sol";
 
 /**
  * @dev Contract that handles Fuji protocol flash loan logic and
  * the specific logic of all active flash loan providers used by Fuji protocol.
  */
 
-contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver, IFlashLoanRecipient {
-  using LibUniversalERC20MATIC for IERC20;
+contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver, IFlashLoanRecipient, IFlashLoanSimpleReceiver {
+  using LibUniversalERC20 for IERC20;
 
   IFujiAdmin private _fujiAdmin;
 
-  address private constant _MATIC = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+  address private constant _MATIC = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
   address private constant _WMATIC = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
 
   address private immutable _aaveLendingPool = 0x8dFf5E27EA6b7AC08EbFdf9eB090F32ee9a30fcf;
   address private immutable _balancerVault = 0xBA12222222228d8Ba445958a75a0704d566BF2C8;
+  address private immutable _aaveV3Pool = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
 
   bytes32 private _paramsHash;
 
@@ -78,6 +81,8 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver, IFlashLoanReci
       _initiateGeistFlashLoan(info);
     } else if (_flashnum == 3) {
       _initiateBalancerFlashLoan(info);
+    } else if (_flashnum == 4) {
+      _initiateAaveV3FlashLoan(info);
     } else {
       revert(Errors.VL_INVALID_FLASH_NUMBER);
     }
@@ -151,9 +156,8 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver, IFlashLoanReci
     return true;
   }
 
-
   // ===================== Balancer FlashLoan ===================================
-  
+
   /**
    * @dev Initiates a Balancer flashloan.
    * @param info: data to be passed between functions executing flashloan logic
@@ -201,12 +205,65 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver, IFlashLoanReci
     _executeAction(info, amounts[0], feeAmounts[0], _value);
 
     // Repay flashloan
-    _repay(
+    _repay(info.asset == _MATIC, address(tokens[0]), amounts[0] + feeAmounts[0], _balancerVault);
+  }
+
+  // ===================== AaveV3 FlashLoan ===================================
+
+  /**
+   * @dev Initiates an AaveV3 flashloan.
+   * @param info: data to be passed between functions executing flashloan logic
+   */
+  function _initiateAaveV3FlashLoan(FlashLoan.Info calldata info) internal {
+    //Initialize Instance of AaveV3 Lending Pool
+    IPool aave = IPool(_aaveV3Pool);
+
+    //Passing arguments to construct AaveV3 flashloan
+    address receiverAddress = address(this);
+    address asset = info.asset == _MATIC ? _WMATIC : info.asset;
+    uint256 amount = info.amount;
+
+    //AaveV3 Flashloan initiated.
+    aave.flashLoanSimple(receiverAddress, asset, amount, abi.encode(info), 0);
+  }
+
+  /**
+   * @dev Executes AaveV3 Flashloan, this operation is required
+   * and called by Aavev3flashloan when sending loaned amount
+   */
+  function executeOperation(
+    address asset,
+    uint256 amount,
+    uint256 premium,
+    address initiator,
+    bytes calldata params
+  ) external override returns (bool) {
+    require(msg.sender == _aaveV3Pool && initiator == address(this), Errors.VL_NOT_AUTHORIZED);
+
+    FlashLoan.Info memory info = abi.decode(params, (FlashLoan.Info));
+
+    uint256 _value;
+    if (info.asset == _MATIC) {
+      // Convert WETH to ETH and assign amount to be set as msg.value
+      _convertWethToEth(amount);
+      _value = info.amount;
+    } else {
+      // Transfer to Vault the flashloan Amount
+      // _value is 0
+      IERC20(asset).univTransfer(payable(info.vault), amount);
+    }
+
+    _executeAction(info, amount, premium, _value);
+
+    //Approve aavev3LP to spend to repay flashloan
+    _approveBeforeRepay(
       info.asset == _MATIC,
-      address(tokens[0]),
-      amounts[0] + feeAmounts[0],
-      _balancerVault
+      asset,
+      amount + premium,
+      _aaveV3Pool
     );
+
+    return true;
   }
 
   function _executeAction(
@@ -215,7 +272,7 @@ contract FlasherMATIC is IFlasher, Claimable, IFlashLoanReceiver, IFlashLoanReci
     uint256 _fee,
     uint256 _value
   ) internal {
-    require( _paramsHash == keccak256(abi.encode(_info)), "False entry point!");
+    require(_paramsHash == keccak256(abi.encode(_info)), "False entry point!");
     if (_info.callType == FlashLoan.CallType.Switch) {
       IVault(_info.vault).executeSwitch{ value: _value }(_info.newProvider, _amount, _fee);
     } else if (_info.callType == FlashLoan.CallType.Close) {

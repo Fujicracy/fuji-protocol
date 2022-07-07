@@ -9,11 +9,11 @@ import "../../interfaces/compound/IGenCToken.sol";
 import "../../interfaces/compound/ICErc20.sol";
 import "../../interfaces/compound/ICEth.sol";
 import "../../interfaces/compound/IComptroller.sol";
-import "../libraries/LibUniversalERC20MATIC.sol";
+import "../../libraries/LibUniversalERC20.sol";
 
 contract HelperFunct {
   function _isNative(address token) internal pure returns (bool) {
-    return (token == address(0) || token == address(0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF));
+    return (token == address(0) || token == address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE));
   }
 
   function _getMappingAddr() internal pure returns (address) {
@@ -52,7 +52,7 @@ contract HelperFunct {
 }
 
 contract ProviderWepiggy is IProvider, HelperFunct {
-  using LibUniversalERC20MATIC for IERC20;
+  using LibUniversalERC20 for IERC20;
 
   // Provider Core Functions
 
@@ -119,7 +119,7 @@ contract ProviderWepiggy is IProvider, HelperFunct {
 
     // Create a reference to the corresponding cToken contract
     IGenCToken cToken = IGenCToken(cTokenAddr);
- 
+
     // Compound Protocol Borrow Process, throw errow if not.
     require(cToken.borrow(_amount) == 0, "borrow-failed");
   }
@@ -168,9 +168,9 @@ contract ProviderWepiggy is IProvider, HelperFunct {
   }
 
   /**
-  * @dev Returns the current deposit rate (APR) of '_asset', in ray(1e27).
-  * @param _asset: token address to query the current deposit rate.
-  */
+   * @dev Returns the current deposit rate (APR) of '_asset', in ray(1e27).
+   * @param _asset: token address to query the current deposit rate.
+   */
   function getDepositRateFor(address _asset) external view returns (uint256) {
     address cTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 

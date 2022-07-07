@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "../libraries/LibUniversalERC20MATIC.sol";
+import "../../libraries/LibUniversalERC20.sol";
 import "../../interfaces/IProvider.sol";
 import "../../interfaces/IUnwrapper.sol";
 import "../../interfaces/IWETH.sol";
@@ -11,9 +11,8 @@ import "../../interfaces/IWETH.sol";
 import "../../interfaces/aavev3/IAaveProtocolDataProvider.sol";
 import "../../interfaces/aavev3/IPool.sol";
 
-
 contract ProviderAaveV3MATIC is IProvider {
-  using LibUniversalERC20MATIC for IERC20;
+  using LibUniversalERC20 for IERC20;
 
   function _getAaveProtocolDataProvider() internal pure returns (IAaveProtocolDataProvider) {
     return IAaveProtocolDataProvider(0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654);
@@ -28,7 +27,7 @@ contract ProviderAaveV3MATIC is IProvider {
   }
 
   function _getMaticAddr() internal pure returns (address) {
-    return 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+    return 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
   }
 
   function _getUnwrapper() internal pure returns (address) {
@@ -42,7 +41,7 @@ contract ProviderAaveV3MATIC is IProvider {
   function getBorrowRateFor(address _asset) external view override returns (uint256) {
     IAaveProtocolDataProvider aaveData = _getAaveProtocolDataProvider();
 
-    (, , , , uint256 variableBorrowRate, , , , , , , ) = aaveData.getReserveData(
+    (, , , , , , uint256 variableBorrowRate, , , , , ) = aaveData.getReserveData(
       _asset == _getMaticAddr() ? _getWmaticAddr() : _asset
     );
 

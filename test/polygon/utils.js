@@ -12,7 +12,7 @@ const ASSETS = {
   MATIC: {
     name: "matic",
     nameUp: "MATIC",
-    address: "0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF", // polygon
+    address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
     oracle: "0xAB594600376Ec9fD91F8e885dADF0CE036862dE0",
     aToken: "0x8dF3aad3a84da6b69A4DA8aeC3eA40d9091B2Ac4",
     aTokenV3: "0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97",
@@ -101,7 +101,7 @@ const fixture = async ([wallet]) => {
   const FujiAdmin = await getContractFactory("FujiAdmin");
   const fujiadmin = await upgrades.deployProxy(FujiAdmin, []);
 
-  const Fliquidator = await getContractFactory("FliquidatorMATIC");
+  const Fliquidator = await getContractFactory("F2Fliquidator");
   const fliquidator = await Fliquidator.deploy([]);
 
   const Flasher = await getContractFactory("FlasherMATIC");
@@ -144,11 +144,11 @@ const fixture = async ([wallet]) => {
   }
 
   // Setp 3: Vaults
-  const FujiVaultMATIC = await getContractFactory("FujiVaultMATIC");
+  const FujiVault = await getContractFactory("F2FujiVault");
   // deploy a vault for each entry in ASSETS
   const vaults = {};
   for (const { name, collateral, debt } of getVaults()) {
-    const vault = await upgrades.deployProxy(FujiVaultMATIC, [
+    const vault = await upgrades.deployProxy(FujiVault, [
       fujiadmin.address,
       oracle.address,
       collateral.address,

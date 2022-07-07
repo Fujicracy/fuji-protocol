@@ -5,20 +5,20 @@ pragma solidity ^0.8.0;
 import { IERC20Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import { SafeERC20Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 
-library LibUniversalERC20UpgradeableMATIC {
+library LibUniversalERC20Upgradeable {
   using SafeERC20Upgradeable for IERC20Upgradeable;
 
-  IERC20Upgradeable private constant _MATIC_ADDRESS =
-    IERC20Upgradeable(0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF);
+  IERC20Upgradeable private constant _NATIVE_ADDRESS =
+    IERC20Upgradeable(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
   IERC20Upgradeable private constant _ZERO_ADDRESS =
     IERC20Upgradeable(0x0000000000000000000000000000000000000000);
 
-  function isMATIC(IERC20Upgradeable token) internal pure returns (bool) {
-    return (token == _ZERO_ADDRESS || token == _MATIC_ADDRESS);
+  function isNative(IERC20Upgradeable token) internal pure returns (bool) {
+    return (token == _ZERO_ADDRESS || token == _NATIVE_ADDRESS);
   }
 
   function univBalanceOf(IERC20Upgradeable token, address account) internal view returns (uint256) {
-    if (isMATIC(token)) {
+    if (isNative(token)) {
       return account.balance;
     } else {
       return token.balanceOf(account);
@@ -31,9 +31,9 @@ library LibUniversalERC20UpgradeableMATIC {
     uint256 amount
   ) internal {
     if (amount > 0) {
-      if (isMATIC(token)) {
+      if (isNative(token)) {
         (bool sent, ) = to.call{ value: amount }("");
-        require(sent, "Failed to send Ether");
+        require(sent, "Failed to send Native");
       } else {
         token.safeTransfer(to, amount);
       }
@@ -45,7 +45,7 @@ library LibUniversalERC20UpgradeableMATIC {
     address to,
     uint256 amount
   ) internal {
-    require(!isMATIC(token), "Approve called on MATIC");
+    require(!isNative(token), "Approve called on Native");
 
     if (amount == 0) {
       token.safeApprove(to, 0);

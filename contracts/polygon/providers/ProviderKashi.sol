@@ -14,10 +14,10 @@ import "../../interfaces/aave/IAaveLendingPool.sol";
 import "../../interfaces/IFujiKashiMapping.sol";
 import "../../interfaces/kashi/IKashiPair.sol";
 import "../../interfaces/kashi/IBentoBox.sol";
-import "../libraries/LibUniversalERC20MATIC.sol";
+import "../../libraries/LibUniversalERC20.sol";
 
 contract ProviderKashi is IProvider {
-  using LibUniversalERC20MATIC for IERC20;
+  using LibUniversalERC20 for IERC20;
 
   function _getKashiMapping() internal pure returns (IFujiKashiMapping) {
     return IFujiKashiMapping(0xb41fD44a65BB5e974726cFe061B6d20f224b2671);
@@ -28,7 +28,7 @@ contract ProviderKashi is IProvider {
   }
 
   function _getMaticAddr() internal pure returns (address) {
-    return 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+    return 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
   }
 
   function _getUnwrapper() internal pure returns (address) {
@@ -47,16 +47,20 @@ contract ProviderKashi is IProvider {
 
   /**
    * @dev Returns the current borrowing rate (APR) of a borrowing asset, in ray(1e27).
-   * @dev First argument '_collateralAsset' is required to get kashi market from mapping. 
-   * @dev Kashi provider required a different function signature for getBorrowRateFor() 
+   * @dev First argument '_collateralAsset' is required to get kashi market from mapping.
+   * @dev Kashi provider required a different function signature for getBorrowRateFor()
    * @param _collateralAsset required to get kashi market from mapping.
    * @param _borrowAsset to query the borrowing rate.
    */
-  function getBorrowRateFor(address _collateralAsset, address _borrowAsset) external view returns (uint256) {
+  function getBorrowRateFor(address _collateralAsset, address _borrowAsset)
+    external
+    view
+    returns (uint256)
+  {
     IFujiKashiMapping kashiMapper = _getKashiMapping();
     IKashiPair kashiPair = IKashiPair(kashiMapper.addressMapping(_collateralAsset, _borrowAsset));
 
-    (uint256 interestPerSecond,,) = kashiPair.accrueInfo();
+    (uint256 interestPerSecond, , ) = kashiPair.accrueInfo();
     return interestPerSecond * 52 weeks * 10**9;
   }
 
@@ -69,7 +73,7 @@ contract ProviderKashi is IProvider {
 
   /**
    * @dev Return borrow balance of 'borrowAsset' of caller vault address.
-   * @dev Caller must be a vault address. 
+   * @dev Caller must be a vault address.
    * @dev First address argument is not needed.
    */
   function getBorrowBalance(address) external view override returns (uint256 amount) {
@@ -86,7 +90,12 @@ contract ProviderKashi is IProvider {
    * @dev First address argument is not needed.
    * @param _who Must be a vault address.
    */
-  function getBorrowBalanceOf(address, address _who) external view override returns (uint256 amount) {
+  function getBorrowBalanceOf(address, address _who)
+    external
+    view
+    override
+    returns (uint256 amount)
+  {
     IKashiPair kashiPair = _getKashiPair(_who);
 
     uint256 part = kashiPair.userBorrowPart(_who);

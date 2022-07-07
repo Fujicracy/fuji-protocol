@@ -89,6 +89,19 @@ const deployContracts = async () => {
     ASSETS.USDC.address,
   ]);
 
+  const vaultusdcweth = await deployF2Vault("VaultUSDCWETH", [
+    fujiadmin,
+    oracle,
+    ASSETS.WETH.address,
+    ASSETS.DAI.address,
+  ]);
+  const vaultusdcwbtc = await deployF2Vault("VaultUSDCWBTC", [
+    fujiadmin,
+    oracle,
+    ASSETS.WETH.address,
+    ASSETS.USDC.address,
+  ]);
+
   // General Plug-ins and Set-up Transactions
   await updateFujiAdmin(fujiadmin, {
     flasher,
@@ -113,6 +126,8 @@ const deployContracts = async () => {
     vaultwbtcusdc,
     vaultwethdai,
     vaultwethusdc,
+    vaultusdcweth,
+    vaultusdcwbtc,
     fliquidator,
   ]);
 
@@ -145,6 +160,17 @@ const deployContracts = async () => {
     f1155,
   });
   await updateVault("VaultWETHUSDC", vaultwethusdc, {
+    providers: [aaveMATIC, kashi, wepiggy, aaveV3MATIC],
+    fujiadmin,
+    f1155,
+  });
+
+  await updateVault("VaultUSDCWETH", vaultusdcweth, {
+    providers: [aaveMATIC, kashi, wepiggy, aaveV3MATIC],
+    fujiadmin,
+    f1155,
+  });
+  await updateVault("VaultUSDCWBTC", vaultusdcwbtc, {
     providers: [aaveMATIC, kashi, wepiggy, aaveV3MATIC],
     fujiadmin,
     f1155,

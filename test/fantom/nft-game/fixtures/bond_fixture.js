@@ -1,6 +1,6 @@
 const { ethers, upgrades } = require("hardhat");
 
-const { getContractAt, getContractFactory, provider } = ethers;
+const { getContractFactory, provider } = ethers;
 
 const { WrapperBuilder } = require("redstone-evm-connector");
 
@@ -202,7 +202,10 @@ const bondFixture = async ([wallet]) => {
 
   // Deploy of mock tocken to be used in bond testing.
   const MockToken = await getContractFactory("MockToken");
-  const mocktoken = await upgrades.deployProxy(MockToken, []);
+  const proxyOpts = {
+    kind: 'uups'
+  };
+  const mocktoken = await upgrades.deployProxy(MockToken, [], proxyOpts);
 
   // Set underlying in pretokenbond contract
   await pretokenbond.setUnderlying(mocktoken.address);
@@ -227,9 +230,6 @@ const bondFixture = async ([wallet]) => {
     vsvg.address
   );
 
-  const proxyOpts = {
-    kind: 'uups'
-  };
   const lsvg = await upgrades.deployProxy(LockSVG, [nftgame.address], proxyOpts);
   const ldescriptor = await LockNFTDescriptor.deploy(
     nftgame.address,

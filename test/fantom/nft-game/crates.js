@@ -65,7 +65,7 @@ describe("NFT Bond Crate System", function () {
 
   describe("Crate Prices", function () {
     it("Set crate prices", async function () {
-      const prices = [2500, 10000, 20000].map((e) => parseUnits(e, this.pointsDecimals));
+      const prices = [250, 1000, 2000].map((e) => parseUnits(e, this.pointsDecimals));
 
       for (let i = 0; i < prices.length; i++) {
         await this.f.nftinteractions.setCratePrice(this.crateIds[i], prices[i]);
@@ -105,7 +105,7 @@ describe("NFT Bond Crate System", function () {
 
       await this.f.nftgame.setGamePhases(phases);
 
-      const prices = [2500, 10000, 20000].map((e) => parseUnits(e, this.pointsDecimals));
+      const prices = [250, 1000, 2000].map((e) => parseUnits(e, this.pointsDecimals));
       for (let i = 0; i < prices.length; i++) {
         await this.f.nftinteractions.setCratePrice(this.crateIds[i], prices[i]);
       }
@@ -126,8 +126,8 @@ describe("NFT Bond Crate System", function () {
 
     it("Successfuly buying crate", async function () {
       const vault = this.f.vaultftmdai;
-      const depositAmount = parseUnits(4500);
-      const borrowAmount = parseUnits(1000);
+      const depositAmount = parseUnits(8000);
+      const borrowAmount = parseUnits(500);
       const amount = 2;
 
       await vault.connect(this.user).depositAndBorrow(depositAmount, borrowAmount, {
@@ -149,10 +149,10 @@ describe("NFT Bond Crate System", function () {
 
     it("Points balance after buying crates", async function () {
       const vault = this.f.vaultftmdai;
-      const depositAmount = parseUnits(4500);
-      const borrowAmount = parseUnits(1000);
+      const depositAmount = parseUnits(8000);
+      const borrowAmount = parseUnits(500);
       const amount = 2;
-      const prices = [2500, 10000, 20000].map((e) => parseUnits(e, this.pointsDecimals));
+      const prices = [250, 1000, 2000].map((e) => parseUnits(e, this.pointsDecimals));
 
       await vault.connect(this.user).depositAndBorrow(depositAmount, borrowAmount, {
         value: depositAmount,
@@ -193,7 +193,7 @@ describe("NFT Bond Crate System", function () {
 
       await this.f.nftgame.setGamePhases(phases);
 
-      const prices = [2500, 10000, 20000].map((e) => parseUnits(e, this.pointsDecimals));
+      const prices = [250, 1000, 2000].map((e) => parseUnits(e, this.pointsDecimals));
       for (let i = 0; i < prices.length; i++) {
         await this.f.nftinteractions.setCratePrice(this.crateIds[i], prices[i]);
       }

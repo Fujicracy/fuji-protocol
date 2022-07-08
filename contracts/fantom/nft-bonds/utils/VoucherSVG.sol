@@ -79,21 +79,33 @@ contract VoucherSVG is IVoucherSVG {
     uint128 slotId = uint128(voucher.slotOf(_tokenId));
 
     SVGParams memory svgParams;
-    svgParams.claimDate = voucher.vestingTypeToTimestamp(slotId).dateToString();
     svgParams.bondsAmount = voucher.unitsInToken(_tokenId);
-    svgParams.redemptionRate = voucher.tokensPerUnit(slotId);
     svgParams.tokenId = uint128(_tokenId);
     svgParams.slotId = slotId;
     svgParams.bondsDecimals = uint8(nftGame.POINTS_DECIMALS());
-    svgParams.underlyingDecimals = uint8(underlyingToken.decimals());
-    
-    return _generateSVG(svgParams);
+
+    if(voucher.tgeActive()) {
+      svgParams.claimDate = voucher.vestingTypeToTimestamp(slotId).dateToString();
+      svgParams.redemptionRate = voucher.tokensPerUnit(slotId);
+      svgParams.underlyingDecimals = uint8(underlyingToken.decimals());
+    }
+
+    return _generateSVG(svgParams, _voucher);
     // return '';
   }
 
   /// Internal functions
 
-  function _generateSVG(SVGParams memory params) internal view virtual returns (string memory) {
+  function _generateSVG(SVGParams memory params, address _voucher) internal view virtual returns (string memory) {
+    PreTokenBonds voucher = PreTokenBonds(_voucher);
+    string memory claimDisplayHandler;
+    string memory redemptionHandler;
+    if(voucher.tgeActive()) {
+      claimDisplayHandler = _generateClaimType(params);
+      redemptionHandler = _generateRedemption(params);
+    } else {
+      claimDisplayHandler = _generateBeforeTGEClaim(params);
+    }
     return
       string(
         abi.encodePacked(
@@ -103,8 +115,8 @@ contract VoucherSVG is IVoucherSVG {
           _generateBackground(),
           _generateTitle(params),
           _generateFujiLogo(),
-          _generateClaimType(params),
-          _generateRedemption(params),
+          claimDisplayHandler,
+          redemptionHandler,
           "</g>",
           "</svg>"
         )
@@ -180,7 +192,7 @@ contract VoucherSVG is IVoucherSVG {
                   ),
               '</text>',
               '<text font-family="Arial" font-size="36"><tspan x="0" y="100">', _formatValue(params.bondsAmount, params.bondsDecimals),'</tspan></text>',
-              '<text font-family="Arial" font-size="24"><tspan x="0" y="130">Bond Units</tspan></text>',
+              '<text font-family="Arial" font-size="24"><tspan x="0" y="130">Units</tspan></text>',
               '<text font-family="Arial" font-size="24" font-weight="500"><tspan x="50" y="26"> Fuji Pre-Token Bond Voucher</tspan></text>',
           '</g>'
         )
@@ -215,6 +227,20 @@ contract VoucherSVG is IVoucherSVG {
             '<text fill-rule="nonzero" font-family="Arial" font-size="20" font-weight="500" fill="#FFFFFF"><tspan x="31" y="31">One-time</tspan></text>',
             '<text fill-rule="nonzero" font-family="Arial" font-size="14" font-weight="500" fill="#FFFFFF"><tspan x="30" y="58">Claim Date: ', params.claimDate, '</tspan></text>',
             '<text fill-rule="nonzero" font-family="Arial" font-size="14" font-weight="500" fill="#FFFFFF"><tspan x="31" y="85">', params.slotId.toString(),' Days-expiry Bond','</tspan></text>'
+          '</g>'
+        )
+      );
+  }
+
+  function _generateBeforeTGEClaim(SVGParams memory params) internal pure returns (string memory) {
+    return 
+      string(
+        abi.encodePacked(
+          '<g transform="translate(40, 260)">',
+            '<rect fill="#000000" opacity="0.2" x="0" y="0" width="240" height="100" rx="16"></rect>',
+            '<text fill-rule="nonzero" font-family="Arial" font-size="20" font-weight="500" fill="#FFFFFF"><tspan x="31" y="31">One-time</tspan></text>',
+            '<text fill-rule="nonzero" font-family="Arial" font-size="14" font-weight="500" fill="#FFFFFF"><tspan x="30" y="58">Claim Date: ', params.slotId.toString(), ' days</tspan></text>',
+            '<text fill-rule="nonzero" font-family="Arial" font-size="14" font-weight="500" fill="#FFFFFF"><tspan x="31" y="85">After Token Generation Event</tspan></text>'
           '</g>'
         )
       );

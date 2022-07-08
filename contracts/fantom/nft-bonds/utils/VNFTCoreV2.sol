@@ -2,13 +2,13 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "../interfaces/IVNFT.sol";
 import "../interfaces/IVNFTMetadata.sol";
 
-abstract contract VNFTCoreV2 is IVNFT, IVNFTMetadata, ERC721Upgradeable {
+abstract contract VNFTCoreV2 is IVNFT, IVNFTMetadata, ERC721EnumerableUpgradeable {
     using SafeMathUpgradeable for uint256;
     using AddressUpgradeable for address;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
@@ -302,7 +302,7 @@ abstract contract VNFTCoreV2 is IVNFT, IVNFTMetadata, ERC721Upgradeable {
         address to_,
         uint256 tokenId_
     ) internal virtual override {
-        to_;
+        super._beforeTokenTransfer(from_, to_, tokenId_);
         if (from_ != address(0)) {
             _clearApproveUnits(tokenId_);
         }

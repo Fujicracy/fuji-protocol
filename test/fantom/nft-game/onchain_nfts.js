@@ -12,7 +12,7 @@ const {
   timeTravel
 } = require("../../helpers");
 
-const DEBUG = true;
+const DEBUG = false;
 
 describe("On-chain Metadata Generation Tests", function () {
 
@@ -144,7 +144,7 @@ describe("On-chain Metadata Generation Tests", function () {
 
     before(async() => {
       mocktoken = fixtureItems.mocktoken;
-      amountmocktoken = parseUnits(500);
+      amountmocktoken = parseUnits(500, 18);
 
       // Mint mock token for game admin
       await mocktoken.mint(mocktoken.signer.address, amountmocktoken);
@@ -201,7 +201,6 @@ describe("On-chain Metadata Generation Tests", function () {
   describe("PreTokenBonds NFT metadata and image before TGE", async () => {
 
     let tokenId;
-    console.log("tokenId describe", tokenId);
 
     before(async() => {
       // 'User' mints a bond-voucher.
@@ -209,7 +208,6 @@ describe("On-chain Metadata Generation Tests", function () {
       const days90Vesting = 90;
       const lnftinteractions = nftinteractions.connect(user);
       tokenId = await lnftinteractions.callStatic.mintBonds(days90Vesting, numberOfBondUnits);
-      console.log("tokenId callStatic", tokenId);
       await lnftinteractions.mintBonds(days90Vesting, numberOfBondUnits);
     });
    
@@ -218,7 +216,6 @@ describe("On-chain Metadata Generation Tests", function () {
     });
 
     it("Should confirm user succesfully minted voucher", async () => {
-      console.log("minted tokenId", tokenId);
       const owner = await pretokenbond.ownerOf(tokenId);
       expect(owner).to.eq(user.address);
     });

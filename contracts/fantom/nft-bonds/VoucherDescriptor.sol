@@ -150,7 +150,7 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
     if(voucher.tgeActive()) {
       detailed.underlying = voucher.underlying().addressToString();
       detailed.claimDate = voucher.vestingTypeToTimestamp(detailed.slotId).dateToString();
-      detailed.redeemableTokens = voucher.tokensPerUnit(detailed.slotId) * voucher.unitsInToken(_tokenId);
+      detailed.redeemableTokens = (voucher.tokensPerUnit(detailed.slotId) * voucher.unitsInToken(_tokenId)) / 10**nftGame.POINTS_DECIMALS();
     }
   }
 
@@ -175,14 +175,14 @@ contract VoucherDescriptor is IVNFTDescriptor, Context {
   }
 
   function _propertiesToken(Details memory detailed) internal view returns (bytes memory data) {
+    string memory redeemFormated = string(_formatValue(detailed.redeemableTokens, 18));
     if (voucher.tgeActive()) {
       data = abi.encodePacked(
         _buildTrait("underlying_token", detailed.underlying, "address of redeemable token", "string", 1),
         ',', _buildTrait("claim_type", "one-time", "one time redeemable bond", "string", 2),
         ',', _buildTrait("vesting_time", detailed.slotId.toString(), "days-expiry Bond", "string", 3),
         ',', _buildTrait("claim_date", detailed.claimDate, "bond vest time", "date", 4),
-        ',', _buildTrait("redeemable_tokens",
-          string(_formatValue(detailed.redeemableTokens, 18)), "bond vest time", "date", 5)
+        ',', _buildTrait("redeemable_tokens", redeemFormated, "bond vest time", "date", 5)
       );
     } else {
       data = abi.encodePacked(

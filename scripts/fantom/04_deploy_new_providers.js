@@ -10,10 +10,20 @@ global.console.log = (...args) => {
   progress.text = `${progressPrefix}: ${args.join(" ")}`;
 }
 
-const deployContracts = async () => {
+const NEW_PROVIDERS = [
+  "ProviderHundred",
+  "ProviderAaveV3FTM"
+  // Add new provider smart contract name to this array
+];
+
+const deployContracts = async ()   => {
   console.log("📡 Deploying...");
 
-  const hundred = await deployProvider("ProviderHundred");
+  // Script will skip providers that have not changed and have already been deployed.
+  for (let index = 0; index < NEW_PROVIDERS.length; index++) {
+    const address = await deployProvider(NEW_PROVIDERS[index]);
+    console.debug(NEW_PROVIDERS[index], address);
+  }
 
   progress.succeed(progressPrefix);
 };

@@ -90,14 +90,14 @@ const deployContracts = async () => {
   const vaultusdcweth = await deployF2Vault("VaultUSDCWETH", [
     fujiadmin,
     oracle,
+    ASSETS.USDC.address,
     ASSETS.WETH.address,
-    ASSETS.DAI.address,
   ]);
   const vaultusdcwbtc = await deployF2Vault("VaultUSDCWBTC", [
     fujiadmin,
     oracle,
-    ASSETS.WETH.address,
     ASSETS.USDC.address,
+    ASSETS.WBTC.address,
   ]);
 
   // General Plug-ins and Set-up Transactions

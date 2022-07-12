@@ -21,7 +21,7 @@ contract HelperFunct {
   }
 
   function _getComptrollerAddress() internal pure returns (address) {
-    return 0xaa87715E858b482931eB2f6f92E504571588390b; // WePiggy Polygon
+    return 0xaa87715E858b482931eB2f6f92E504571588390b; // WePiggy Arbitrum
   }
 
   // WePiggy functions

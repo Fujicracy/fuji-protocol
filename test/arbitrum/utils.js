@@ -20,7 +20,7 @@ const ASSETS = {
   DAI: {
     name: "dai",
     nameUp: "DAI",
-    address: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1", // polygon
+    address: "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
     oracle: "0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB",
     aTokenV3: "0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE",
     decimals: 18,
@@ -28,7 +28,7 @@ const ASSETS = {
   USDC: {
     name: "usdc",
     nameUp: "USDC",
-    address: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8", // polygon
+    address: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
     oracle: "0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3",
     aTokenV3: "0x625E7708f30cA75bfd92586e17077590C60eb4cD",
     decimals: 6,
@@ -44,7 +44,7 @@ const ASSETS = {
   WBTC: {
     name: "wbtc",
     nameUp: "WBTC",
-    address: "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f", // polygon
+    address: "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f",
     oracle: "0x6ce185860a4963106506C203335A2910413708e9",
     aTokenV3: "0x078f358208685046a11C85e8ad32895DED33A249",
     decimals: 8,

@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import "./interfaces/IWETH.sol";
 
-contract WFTMUnwrapper {
+contract WNativeUnwrapper {
   address public immutable wNative;
 
   constructor(address _wNative) {

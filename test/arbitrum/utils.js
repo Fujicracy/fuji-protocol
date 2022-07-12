@@ -106,14 +106,10 @@ const fixture = async ([wallet]) => {
   );
 
   // Step 2: Providers
-  const ProviderAaveMATIC = await getContractFactory("ProviderAaveMATIC");
-  const aave = await ProviderAaveMATIC.deploy([]);
-  const ProviderKashi = await getContractFactory("ProviderKashi");
-  const kashi = await ProviderKashi.deploy([]);
-  const ProviderWepiggy = await getContractFactory("ProviderWepiggy");
-  const wepiggy = await ProviderWepiggy.deploy([]);
-  const ProviderAaveV3MATIC = await getContractFactory("ProviderAaveV3MATIC");
-  const aavev3 = await ProviderAaveV3MATIC.deploy([]);
+  const ProviderAaveV3Arbitrum = await getContractFactory("ProviderAaveV3Arbitrum");
+  const aavev3 = await ProviderAaveV3Arbitrum.deploy([]);
+  const ProviderWepiggyArbitrum = await getContractFactory("ProviderWepiggyArbitrum");
+  const wepiggy = await ProviderWepiggyArbitrum.deploy([]);
 
   // Log if debug is set true
   if (DEBUG) {
@@ -123,10 +119,8 @@ const fixture = async ([wallet]) => {
     console.log("controller", controller.address);
     console.log("f1155", f1155.address);
     console.log("oracle", oracle.address);
-    console.log("aave", aave.address);
-    console.log("kashi", kashi.address);
     console.log("wepiggy", wepiggy.address);
-    console.log("aave", aavev3.address);
+    console.log("aavev3", aavev3.address);
   }
 
   // Setp 3: Vaults
@@ -148,14 +142,7 @@ const fixture = async ([wallet]) => {
     await f1155.setPermit(vault.address, true);
     await vault.setFujiERC1155(f1155.address);
     await fujiadmin.allowVault(vault.address, true);
-    await vault.setProviders(
-      [
-        aave.address,
-        kashi.address,
-        wepiggy.address,
-        aavev3.address
-      ]
-    );
+    await vault.setProviders([wepiggy.address, aavev3.address]);
 
     vaults[name] = vault;
   }
@@ -174,8 +161,6 @@ const fixture = async ([wallet]) => {
   return {
     ...tokens,
     ...vaults,
-    aave,
-    kashi,
     wepiggy,
     aavev3,
     oracle,

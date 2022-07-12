@@ -17,7 +17,7 @@ contract HelperFunct {
   }
 
   function _getMappingAddr() internal pure returns (address) {
-    return 0xe596335ffea393afd6370e540321f81888520d6d; // Fuji WePiggy Arbitrum Mapping
+    return 0xE596335ffea393afD6370e540321F81888520d6d; // Fuji WePiggy Arbitrum Mapping
   }
 
   function _getComptrollerAddress() internal pure returns (address) {

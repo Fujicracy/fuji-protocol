@@ -78,9 +78,9 @@ const fixture = async ([wallet]) => {
     tokens[`${ASSETS[asset].name}`] = await getContractAt("IERC20", ASSETS[asset].address);
   }
   const swapper = await getContractAt("IUniswapV2Router02", SUSHISWAP_ROUTER_ADDR);
-  const maticWrapper = await getContractAt(
+  const arbitrumWrapper = await getContractAt(
     "contracts/interfaces/IWETH.sol:IWETH",
-    ASSETS.WMATIC.address
+    ASSETS.WETH.address
   );
 
   // Step 1: Base Contracts
@@ -90,7 +90,7 @@ const fixture = async ([wallet]) => {
   const Fliquidator = await getContractFactory("F2Fliquidator");
   const fliquidator = await Fliquidator.deploy([]);
 
-  const Flasher = await getContractFactory("FlasherMATIC");
+  const Flasher = await getContractFactory("FlasherArbitrum");
   const flasher = await Flasher.deploy([]);
 
   const Controller = await getContractFactory("Controller");
@@ -170,7 +170,7 @@ const fixture = async ([wallet]) => {
     controller,
     f1155,
     swapper,
-    maticWrapper,
+    arbitrumWrapper,
   };
 };
 

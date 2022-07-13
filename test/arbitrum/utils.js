@@ -108,8 +108,8 @@ const fixture = async ([wallet]) => {
   // Step 2: Providers
   const ProviderAaveV3Arbitrum = await getContractFactory("ProviderAaveV3Arbitrum");
   const aavev3 = await ProviderAaveV3Arbitrum.deploy([]);
-  const ProviderWepiggyArbitrum = await getContractFactory("ProviderWepiggyArbitrum");
-  const wepiggy = await ProviderWepiggyArbitrum.deploy([]);
+  const ProviderWePiggyArbitrum = await getContractFactory("ProviderWePiggyArbitrum");
+  const wepiggy = await ProviderWePiggyArbitrum.deploy([]);
 
   // Log if debug is set true
   if (DEBUG) {

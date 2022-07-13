@@ -51,7 +51,7 @@ contract HelperFunct {
   }
 }
 
-contract ProviderWepiggy is IProvider, HelperFunct {
+contract ProviderWePiggyArbitrum is IProvider, HelperFunct {
   using LibUniversalERC20 for IERC20;
 
   // Provider Core Functions

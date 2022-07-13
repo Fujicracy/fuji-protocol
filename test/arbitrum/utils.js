@@ -36,7 +36,7 @@ const ASSETS = {
   WETH: {
     name: "weth",
     nameUp: "WETH",
-    address: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+    address: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
     oracle: "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
     aTokenV3: "0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8",
     decimals: 18,

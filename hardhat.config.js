@@ -28,7 +28,9 @@ const forkUrl =
       ? "https://bsc-dataseed.binance.org/"
       : network === "polygon"
         ? `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_ID}`
-        : mainnetUrl
+        : network === "arbitrum"
+          ? `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_ID}`
+          : mainnetUrl
 
 //
 // Select the network you want to deploy to here:

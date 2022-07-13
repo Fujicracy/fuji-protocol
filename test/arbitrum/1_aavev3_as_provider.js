@@ -159,8 +159,8 @@ describe("Arbitrum Fuji Instance", function () {
       testPaybackAndWithdraw2([vaultdaiweth, vaultusdcweth], DEPOSIT_STABLE, BORROW_ETH);
       testPaybackAndWithdraw2([vaultdaiwbtc, vaultusdcwbtc], DEPOSIT_STABLE, BORROW_WBTC);
 
-      //testRefinance2([vaultwethdai], "aavev3", "kashi", DEPOSIT_ETH, BORROW_STABLE, 3);
-      //testRefinance2([vaultwethdai], "aavev3", "kashi", DEPOSIT_ETH, BORROW_STABLE, 4);
+      testRefinance2([vaultwbtcusdc], "aavev3", "wepiggy", DEPOSIT_WBTC, BORROW_STABLE, 3);
+      testRefinance2([vaultwbtcusdc], "aavev3", "wepiggy", DEPOSIT_WBTC, BORROW_STABLE, 4);
     });
 
     describe("ERC20 token as collateral, native token as borrow asset.", function () {

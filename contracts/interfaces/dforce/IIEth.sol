@@ -4,9 +4,9 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "./IGenCToken.sol";
+import "./IGenIToken.sol";
 
-interface IIEth is IGenCToken {
+interface IIEth is IGenIToken {
   function mint(address _recipient) external payable;
 
   function mintForSelfAndEnterMarket() external payable;

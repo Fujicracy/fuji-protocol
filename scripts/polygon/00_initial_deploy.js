@@ -17,7 +17,7 @@ const { updateFujiERC1155 } = require("../tasks/updateFujiERC1155");
 const { updateFujiFliquidator } = require("../tasks/updateFujiFliquidator");
 const { updateVault } = require("../tasks/updateVault");
 const { setDeploymentsPath, network } = require("../utils");
-const { ASSETS, QUICK_ROUTER_ADDR } = require("./consts");
+const { ASSETS, TREASURY, QUICK_ROUTER_ADDR } = require("./consts");
 
 global.progressPrefix = __filename.split("/").pop();
 global.progress = ora().start(progressPrefix + ": Starting...");
@@ -28,7 +28,6 @@ global.progress = ora().start(progressPrefix + ": Starting...");
 const deployContracts = async () => {
   console.log("📡 Deploying...");
 
-  const treasury = "0x40578F7902304e0e34d7069Fb487ee57F841342e";
   // Functional Contracts
   const fujiadmin = await deployFujiAdmin();
   const fliquidator = await deployF2Fliquidator();
@@ -104,7 +103,7 @@ const deployContracts = async () => {
   await updateFujiAdmin(fujiadmin, {
     flasher,
     fliquidator,
-    treasury,
+    TREASURY,
     controller,
     // vaultharvester,
     swapper,

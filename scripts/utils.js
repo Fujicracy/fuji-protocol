@@ -224,6 +224,8 @@ const networkSuffix = (name) => {
       return name + "FTM";
     case "polygon":
       return name + "MATIC";
+    case "arbitrum":
+      return name + "Arbitrum";
     default:
       return ""
   }

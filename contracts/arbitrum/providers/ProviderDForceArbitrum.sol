@@ -8,6 +8,7 @@ import "../../interfaces/IProvider.sol";
 import "../../interfaces/dforce/IGenIToken.sol";
 import "../../interfaces/dforce/IIErc20.sol";
 import "../../interfaces/dforce/IIEth.sol";
+import "../../interfaces/dforce/IController.sol";
 import "../../libraries/LibUniversalERC20.sol";
 
 contract HelperFunct {
@@ -17,6 +18,38 @@ contract HelperFunct {
 
   function _getMappingAddr() internal pure returns (address) {
     return 0x410f9179eD194b8b3583abfEbB5C3ef2aCD62A34; // Fuji dForce Arbitrum Mapping
+  }
+
+  function _getControllerAddress() internal pure returns (address) {
+    return 0x8E7e9eA9023B81457Ae7E6D2a51b003D421E5408; // dForce Arbitrum
+  }
+
+  // dForce functions
+
+  /**
+   * @dev Approves vault's assets as collateral for dForce Protocol.
+   * @param _iTokenAddress: asset type to be approved as collateral.
+   */
+  function _enterCollatMarket(address _iTokenAddress) internal {
+    // Create a reference to the corresponding network Comptroller
+    IController controller = IController(_getControllerAddress());
+
+    address[] memory iTokenMarkets = new address[](1);
+    iTokenMarkets[0] = _iTokenAddress;
+    controller.enterMarkets(iTokenMarkets);
+  }
+
+  /**
+   * @dev Removes vault's assets as collateral for dForce Protocol.
+   * @param _iTokenAddress: asset type to be removed as collateral.
+   */
+  function _exitCollatMarket(address _iTokenAddress) internal {
+    // Create a reference to the corresponding network Comptroller
+    IController controller = IController(_getControllerAddress());
+
+    address[] memory iTokenMarkets = new address[](1);
+    iTokenMarkets[0] = _iTokenAddress;
+    controller.exitMarkets(iTokenMarkets);
   }
 }
 
@@ -34,12 +67,15 @@ contract ProviderDForceArbitrum is IProvider, HelperFunct {
     // Get iToken address from mapping
     address iTokenAddr = IFujiMappings(_getMappingAddr()).addressMapping(_asset);
 
+    // Enter and/or ensure collateral market is enacted
+    _enterCollatMarket(iTokenAddr);
+
     if (_isNative(_asset)) {
       // Create a reference to the iToken contract
       IIEth iToken = IIEth(iTokenAddr);
 
       // dForce protocol Mints iTokens, ETH method
-      iToken.mintForSelfAndEnterMarket{ value: _amount }();
+      iToken.mint{ value: _amount }(address(this));
     } else {
       // Create reference to the ERC20 contract
       IERC20 erc20token = IERC20(_asset);
@@ -54,7 +90,7 @@ contract ProviderDForceArbitrum is IProvider, HelperFunct {
       erc20token.univApprove(address(iTokenAddr), _amount);
 
       // dForce Protocol mints iTokens
-      iToken.mintForSelfAndEnterMarket(_amount);
+      iToken.mint(address(this), _amount);
     }
   }
 

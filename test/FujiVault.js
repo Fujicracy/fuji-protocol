@@ -82,6 +82,44 @@ function testDeposit1a(vaults, amount, aeth) {
 }
 
 /**
+ * Performs deposit test in native token.
+ * Provider should have dForce-like compatible smartcontracts interfaces.
+ * @param {string} mapperAddr - Address of the deployed instance FujiMapping.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amount - Etherjs compatible BigNumber.
+ */
+function testDeposit1dForce(mapperAddr, vaults, amount) {
+  for (let i = 0; i < vaults.length; i += 1) {
+    const vault = vaults[i];
+    it(`deposit ${amount} Native Token as collateral, check ${vault.name} balance`, async function () {
+      const fujimapper = await getContractAt("FujiMapping", mapperAddr);
+      const vAssets = await this.f[vault.name].vAssets();
+      const iTokenAddr = await fujimapper.addressMapping(vAssets.collateralAsset);
+      const iETH = await getContractAt("IIEth", iTokenAddr);
+
+      const depositAmount = parseUnits(amount);
+      const negdepositAmount = parseUnits(-amount);
+
+      await checkEthChange(
+        this.f[vault.name].connect(this.user1).deposit(depositAmount, { value: depositAmount }),
+        this.user1.address,
+        negdepositAmount
+      );
+
+      let vaultBal = await iETH.balanceOf(this.f[vault.name].address);
+      vaultBal = await formatUnitsOfCurrency(iETH.address, vaultBal);
+
+      const rate = await iETH.exchangeRateStored();
+
+      let tokenAmount = depositAmount.mul(toBN(1e18)).div(rate);
+      tokenAmount = await formatUnitsOfCurrency(iETH.address, tokenAmount);
+
+      await expect(vaultBal).to.be.equal(tokenAmount);
+    });
+  }
+}
+
+/**
  * DEPRECATED
  * Performs deposit test in native token.
  * Provider should have Dydx compatible smartcontracts interfaces.
@@ -184,6 +222,49 @@ function testDeposit2a(vaults, amount, assets = ASSETS, v3 = false) {
       const vaultBal = await aToken.balanceOf(this.f[vault.name].address);
 
       expect(vaultBal).to.be.equal(depositAmount);
+    });
+  }
+}
+
+/**
+ * Performs deposit test in ERC20 token.
+ * Provider should have dForce-like compatible smartcontracts interfaces.
+ * @param {string} mapperAddr - Address of the deployed instance FujiMapping.
+ * @param {array} vaults - An array of vault objects.
+ * @param {object} amount - Etherjs compatible BigNumber.
+ */
+function testDeposit2dForce(mapperAddr, vaults, amount) {
+  for (let i = 0; i < vaults.length; i += 1) {
+    const vault = vaults[i];
+    it(`deposit ${amount} ERC20 -> ${vault.collateral.nameUp} as collateral, check ${vault.name} balance`, async function () {
+      const fujimapper = await getContractAt("FujiMapping", mapperAddr);
+      const vAssets = await this.f[vault.name].vAssets();
+      const iTokenAddr = await fujimapper.addressMapping(vAssets.collateralAsset);
+      const iToken = await getContractAt("IIErc20", iTokenAddr);
+
+      const depositAmount = parseUnits(amount, vault.collateral.decimals);
+      const negdepositAmount = parseUnits(-amount, vault.collateral.decimals);
+
+      await this.f[vault.collateral.name]
+        .connect(this.user1)
+        .approve(this.f[vault.name].address, depositAmount);
+
+      await checkTokenChange(
+        this.f[vault.name].connect(this.user1).deposit(depositAmount),
+        this.f[vault.collateral.name],
+        this.user1.address,
+        negdepositAmount
+      );
+
+      let vaultBal = await iToken.balanceOf(this.f[vault.name].address);
+      vaultBal = await formatUnitsOfCurrency(iToken.address, vaultBal);
+
+      const rate = await iToken.exchangeRateStored();
+
+      let tokenAmount = depositAmount.mul(toBN(1e18)).div(rate);
+      tokenAmount = await formatUnitsOfCurrency(iToken.address, tokenAmount);
+
+      expect(vaultBal).to.be.equal(tokenAmount);
     });
   }
 }
@@ -574,9 +655,11 @@ function testPaybackAndWithdraw3(vaults, amountToDeposit, amountToBorrow) {
 module.exports = {
   testDeposit1,
   testDeposit1a,
+  testDeposit1dForce,
   testDeposit1b,
   testDeposit2,
   testDeposit2a,
+  testDeposit2dForce,
   testBorrow1,
   testBorrow2,
   testBorrow2k,

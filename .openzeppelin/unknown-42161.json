@@ -1,0 +1,155 @@
+{
+  "manifestVersion": "3.2",
+  "admin": {
+    "address": "0x9912854363Ea1eFe626b721262B9c02fD4c9F01A",
+    "txHash": "0x3ae750e28cae72b6bf090fbc11a8f4bcb0b96bdda745a7fbdcb55a82b21011a2"
+  },
+  "proxies": [
+    {
+      "address": "0xBe399538040A6E1592E09ebcdA92aDe727d37Bd5",
+      "txHash": "0x2e76517f394dbfa2739d98a8d8f1da7cfd0c59bb47720ccdeaf7d058b17006f3",
+      "kind": "transparent"
+    }
+  ],
+  "impls": {
+    "b254816d498e7d52e47954eba8b90a51dac78d58c0fc0d205595f952c35e8337": {
+      "address": "0xBC1928c57f09b1Fa635d4C07483E79093d807fFA",
+      "txHash": "0x28f09f4c7e5dbb15637e2b3f9ce54319d0f75dd4e5eeaa1ec833a8149e7fd2c9",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:87"
+          },
+          {
+            "label": "_flasher",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_address",
+            "contract": "FujiAdmin",
+            "src": "contracts/FujiAdmin.sol:14"
+          },
+          {
+            "label": "_fliquidator",
+            "offset": 0,
+            "slot": "102",
+            "type": "t_address",
+            "contract": "FujiAdmin",
+            "src": "contracts/FujiAdmin.sol:15"
+          },
+          {
+            "label": "_ftreasury",
+            "offset": 0,
+            "slot": "103",
+            "type": "t_address_payable",
+            "contract": "FujiAdmin",
+            "src": "contracts/FujiAdmin.sol:16"
+          },
+          {
+            "label": "_controller",
+            "offset": 0,
+            "slot": "104",
+            "type": "t_address",
+            "contract": "FujiAdmin",
+            "src": "contracts/FujiAdmin.sol:17"
+          },
+          {
+            "label": "_vaultHarvester",
+            "offset": 0,
+            "slot": "105",
+            "type": "t_address",
+            "contract": "FujiAdmin",
+            "src": "contracts/FujiAdmin.sol:18"
+          },
+          {
+            "label": "validVault",
+            "offset": 0,
+            "slot": "106",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "FujiAdmin",
+            "src": "contracts/FujiAdmin.sol:20"
+          },
+          {
+            "label": "_swapper",
+            "offset": 0,
+            "slot": "107",
+            "type": "t_address",
+            "contract": "FujiAdmin",
+            "src": "contracts/FujiAdmin.sol:22"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_address_payable": {
+            "label": "address payable",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    }
+  }
+}

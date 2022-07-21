@@ -4,7 +4,7 @@ const { expect } = require("chai");
 const { getContractAt, getContractFactory } = ethers;
 
 const SUSHISWAP_ROUTER_ADDR = "0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506";
-const TREASURY_ADDR = "0x89c1E94F47c4e3a374B5a98455468f27CA2b2544""; // Deployer
+const TREASURY_ADDR = "0x89c1E94F47c4e3a374B5a98455468f27CA2b2544"; // Deployer
 
 const DEBUG = false;
 

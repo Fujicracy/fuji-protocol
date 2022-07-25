@@ -23,8 +23,9 @@ const updatePreTokenBonds = async (
     }
 
   if (TEST_PARAM) {
-    // Override for testing only: change to low bond price
-    let tx4 = await pretokenbonds.setBondPrice(parseUnits(1, POINTS_DECIMALS));
+    // Override for testing only: change to low bond price if needed
+    // Contract default is 10,000 meter points per bond.
+    let tx4 = await pretokenbonds.setBondPrice(parseUnits(10000, POINTS_DECIMALS));
     await tx4.wait();
   }
 }

@@ -41,4 +41,5 @@ const deployNFTGame = async (args) => {
 
 module.exports = {
   deployNFTGame,
+  deployLockNFTDescriptor
 };

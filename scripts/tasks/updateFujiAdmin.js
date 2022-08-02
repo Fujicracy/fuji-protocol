@@ -10,7 +10,8 @@ const updateFujiAdmin = async (fujiadmin, params) => {
       "setFlasher",
       async () => (await fujiadminContract.getFlasher()) !== flasher,
       async () => {
-        await fujiadminContract.setFlasher(flasher);
+        let tx = await fujiadminContract.setFlasher(flasher);
+        await tx.wait();
       }
     );
   }
@@ -20,7 +21,8 @@ const updateFujiAdmin = async (fujiadmin, params) => {
       "setFliquidator",
       async () => (await fujiadminContract.getFliquidator()) !== fliquidator,
       async () => {
-        await fujiadminContract.setFliquidator(fliquidator);
+        let tx = await fujiadminContract.setFliquidator(fliquidator);
+        await tx.wait();
       }
     );
   }
@@ -30,7 +32,8 @@ const updateFujiAdmin = async (fujiadmin, params) => {
       "setTreasury",
       async () => (await fujiadminContract.getTreasury()) !== treasury,
       async () => {
-        await fujiadminContract.setTreasury(treasury);
+        let tx = await fujiadminContract.setTreasury(treasury);
+        await tx.wait();
       }
     );
   }
@@ -40,7 +43,8 @@ const updateFujiAdmin = async (fujiadmin, params) => {
       "setController",
       async () => (await fujiadminContract.getController()) !== controller,
       async () => {
-        await fujiadminContract.setController(controller);
+        let tx = await fujiadminContract.setController(controller);
+        await tx.wait();
       }
     );
   }
@@ -50,7 +54,8 @@ const updateFujiAdmin = async (fujiadmin, params) => {
       "setVaultHarvester",
       async () => (await fujiadminContract.getVaultHarvester()) !== vaultharvester,
       async () => {
-        await fujiadminContract.setVaultHarvester(vaultharvester);
+        let tx = await fujiadminContract.setVaultHarvester(vaultharvester);
+        await tx.wait();
       }
     );
   }
@@ -60,7 +65,8 @@ const updateFujiAdmin = async (fujiadmin, params) => {
       "setSwapper",
       async () => (await fujiadminContract.getSwapper()) !== swapper,
       async () => {
-        await fujiadminContract.setSwapper(swapper);
+        let tx = await fujiadminContract.setSwapper(swapper);
+        await tx.wait();
       }
     );
   }

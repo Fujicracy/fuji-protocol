@@ -10,7 +10,8 @@ const updateFujiERC1155 = async (f1155, permitAddresses) => {
       "setPermit - " + permitAddress,
       async () => !(await f1155Contract.addrPermit(permitAddress)),
       async () => {
-        await f1155Contract.setPermit(permitAddress, true);
+        let tx = await f1155Contract.setPermit(permitAddress, true);
+        await tx.wait();
       }
     );
   }

@@ -13,7 +13,8 @@ const updateVault = async (name, vault, params) => {
       name + " setProviders",
       async () => JSON.stringify(await vaultContract.getProviders()) !== JSON.stringify(providers),
       async () => {
-        await vaultContract.setProviders(providers);
+        let tx = await vaultContract.setProviders(providers);
+        await tx.wait();
       }
     );
   }
@@ -23,7 +24,8 @@ const updateVault = async (name, vault, params) => {
       name + " setActiveProvider",
       async () => (await vaultContract.activeProvider()) !== providers[0],
       async () => {
-        await vaultContract.setActiveProvider(providers[0]);
+        let tx = await vaultContract.setActiveProvider(providers[0]);
+        await tx.wait();
       }
     );
   }
@@ -33,7 +35,8 @@ const updateVault = async (name, vault, params) => {
       name + " setFujiERC1155",
       async () => (await vaultContract.fujiERC1155()) !== f1155,
       async () => {
-        await vaultContract.setFujiERC1155(f1155);
+        let tx = await vaultContract.setFujiERC1155(f1155);
+        await tx.wait();
       }
     );
   }
@@ -44,7 +47,8 @@ const updateVault = async (name, vault, params) => {
       name + " allowVault",
       async () => !(await fujiadminContract.validVault(vault)),
       async () => {
-        await fujiadminContract.allowVault(vault, true);
+        let tx = await fujiadminContract.allowVault(vault, true);
+        await tx.wait();
       }
     );
   }

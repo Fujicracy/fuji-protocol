@@ -9,7 +9,8 @@ const updateController = async (controller, fujiadmin) => {
       "setFujiAdmin",
       () => true,
       async () => {
-        await controllerContract.setFujiAdmin(fujiadmin);
+        let tx = await controllerContract.setFujiAdmin(fujiadmin);
+        await tx.wait();
       }
     );
   }

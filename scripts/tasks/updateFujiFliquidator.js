@@ -12,7 +12,8 @@ const updateFujiFliquidator = async (fliquidator, params) => {
       "setFujiAdmin",
       () => true,
       async () => {
-        await fliquidatorContract.setFujiAdmin(fujiadmin);
+        let tx = await fliquidatorContract.setFujiAdmin(fujiadmin);
+        await tx.wait();
       }
     );
   }
@@ -22,7 +23,8 @@ const updateFujiFliquidator = async (fliquidator, params) => {
       "setFujiOracle",
       () => true,
       async () => {
-        await fliquidatorContract.setFujiOracle(oracle);
+        let tx = await fliquidatorContract.setFujiOracle(oracle);
+        await tx.wait();
       }
     );
   }
@@ -32,7 +34,8 @@ const updateFujiFliquidator = async (fliquidator, params) => {
       "setFujiOracle",
       async () => (await fliquidatorContract.swapper()) !== swapper,
       async () => {
-        await fliquidatorContract.setSwapper(swapper);
+        let tx = await fliquidatorContract.setSwapper(swapper);
+        await tx.wait();
       }
     );
   }

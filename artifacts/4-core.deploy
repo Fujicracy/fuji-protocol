@@ -3557,6 +3557,11 @@
     "address": "0x1eEdE44b91750933C96d2125b6757C4F89e63E20",
     "abi": [
       {
+        "inputs": [],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+      },
+      {
         "anonymous": false,
         "inputs": [
           {
@@ -3592,6 +3597,32 @@
           }
         ],
         "name": "CardAmountChanged",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "internalType": "uint8",
+            "name": "version",
+            "type": "uint8"
+          }
+        ],
+        "name": "Initialized",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "newAddress",
+            "type": "address"
+          }
+        ],
+        "name": "LockNFTDesriptorChanged",
         "type": "event"
       },
       {
@@ -3851,6 +3882,24 @@
           }
         ],
         "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address[]",
+            "name": "users",
+            "type": "address[]"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "amounts",
+            "type": "uint256[]"
+          }
+        ],
+        "name": "awardPoints",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function"
       },
       {
@@ -4191,6 +4240,32 @@
       },
       {
         "inputs": [],
+        "name": "lockNFTdesc",
+        "outputs": [
+          {
+            "internalType": "contract ILockNFTDescriptor",
+            "name": "",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address[]",
+            "name": "players",
+            "type": "address[]"
+          }
+        ],
+        "name": "manualUserUpdate",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [],
         "name": "merkleRoot",
         "outputs": [
           {
@@ -4254,6 +4329,25 @@
       {
         "inputs": [],
         "name": "owner",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "name": "ownerOfLockNFT",
         "outputs": [
           {
             "internalType": "address",
@@ -4426,6 +4520,19 @@
       {
         "inputs": [
           {
+            "internalType": "address",
+            "name": "_newLockNFTDescriptor",
+            "type": "address"
+          }
+        ],
+        "name": "setLockNFTDescriptor",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
             "internalType": "bytes32",
             "name": "_merkleRoot",
             "type": "bytes32"
@@ -4587,6 +4694,16 @@
             "type": "uint128"
           },
           {
+            "internalType": "uint128",
+            "name": "finalScore",
+            "type": "uint128"
+          },
+          {
+            "internalType": "uint128",
+            "name": "gearPower",
+            "type": "uint128"
+          },
+          {
             "internalType": "uint256",
             "name": "lockedNFTID",
             "type": "uint256"
@@ -4620,6 +4737,11 @@
   "NFTInteractions": {
     "address": "0x1Cf24e4eC41DA581bEe223E1affEBB62a5A95484",
     "abi": [
+      {
+        "inputs": [],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+      },
       {
         "anonymous": false,
         "inputs": [
@@ -4738,12 +4860,25 @@
               }
             ],
             "indexed": false,
-            "internalType": "struct NFTInteractions.Reward[]",
+            "internalType": "struct LibPseudoRandom.Reward[]",
             "name": "rewards",
             "type": "tuple[]"
           }
         ],
         "name": "CratesOpened",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "internalType": "uint8",
+            "name": "version",
+            "type": "uint8"
+          }
+        ],
+        "name": "Initialized",
         "type": "event"
       },
       {
@@ -5300,6 +5435,11 @@
     "address": "0x6E16394cBF840fc599FA3d9e5D1E90949c32a4F5",
     "abi": [
       {
+        "inputs": [],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+      },
+      {
         "anonymous": false,
         "inputs": [
           {
@@ -5404,6 +5544,19 @@
           }
         ],
         "name": "BondTimesChanges",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "internalType": "uint8",
+            "name": "version",
+            "type": "uint8"
+          }
+        ],
+        "name": "Initialized",
         "type": "event"
       },
       {
@@ -5629,6 +5782,51 @@
           }
         ],
         "name": "UnderlyingChanged",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "name": "UnderlyingDeposit",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": true,
+            "internalType": "address",
+            "name": "user",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          }
+        ],
+        "name": "UserClaim",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "newVestingStartTimestamp",
+            "type": "uint256"
+          }
+        ],
+        "name": "VestingStartTimestampChanged",
         "type": "event"
       },
       {
@@ -5908,11 +6106,6 @@
       {
         "inputs": [
           {
-            "internalType": "uint8",
-            "name": "_unitDecimals",
-            "type": "uint8"
-          },
-          {
             "internalType": "address",
             "name": "_nftGame",
             "type": "address"
@@ -6015,6 +6208,19 @@
             "internalType": "uint32",
             "name": "",
             "type": "uint32"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "nftGame",
+        "outputs": [
+          {
+            "internalType": "contract NFTGame",
+            "name": "",
+            "type": "address"
           }
         ],
         "stateMutability": "view",
@@ -6237,32 +6443,6 @@
       {
         "inputs": [
           {
-            "internalType": "string",
-            "name": "_URI",
-            "type": "string"
-          }
-        ],
-        "name": "setBaseSlotURI",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "string",
-            "name": "_URI",
-            "type": "string"
-          }
-        ],
-        "name": "setBaseTokenURI",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
             "internalType": "uint256",
             "name": "_bondPrice",
             "type": "uint256"
@@ -6287,19 +6467,6 @@
           }
         ],
         "name": "setBondVestingTimes",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "string",
-            "name": "_URI",
-            "type": "string"
-          }
-        ],
-        "name": "setContractURI",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -6333,12 +6500,51 @@
       {
         "inputs": [
           {
+            "internalType": "bool",
+            "name": "_isActive",
+            "type": "bool"
+          }
+        ],
+        "name": "setTgeActive",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
             "internalType": "address",
             "name": "_underlying",
             "type": "address"
           }
         ],
         "name": "setUnderlying",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_vestingStartTimestamp",
+            "type": "uint256"
+          }
+        ],
+        "name": "setVestingStartTimeStamp",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "_voucherDescriptorAddr",
+            "type": "address"
+          }
+        ],
+        "name": "setVoucherDescriptor",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -6374,7 +6580,7 @@
         "outputs": [
           {
             "internalType": "string",
-            "name": "_uri",
+            "name": "",
             "type": "string"
           }
         ],
@@ -6432,6 +6638,62 @@
             "internalType": "string",
             "name": "",
             "type": "string"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "tgeActive",
+        "outputs": [
+          {
+            "internalType": "bool",
+            "name": "",
+            "type": "bool"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "index",
+            "type": "uint256"
+          }
+        ],
+        "name": "tokenByIndex",
+        "outputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "owner",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "index",
+            "type": "uint256"
+          }
+        ],
+        "name": "tokenOfOwnerByIndex",
+        "outputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
           }
         ],
         "stateMutability": "view",
@@ -6508,6 +6770,19 @@
           }
         ],
         "name": "tokensPerUnit",
+        "outputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "totalSupply",
         "outputs": [
           {
             "internalType": "uint256",
@@ -6623,6 +6898,19 @@
       },
       {
         "inputs": [],
+        "name": "underlyingAmount",
+        "outputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [],
         "name": "unitDecimals",
         "outputs": [
           {
@@ -6667,6 +6955,51 @@
             "internalType": "uint256",
             "name": "",
             "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "vestingStartTimestamp",
+        "outputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_slotId",
+            "type": "uint256"
+          }
+        ],
+        "name": "vestingTypeToTimestamp",
+        "outputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "voucherDescriptor",
+        "outputs": [
+          {
+            "internalType": "contract IVNFTDescriptor",
+            "name": "",
+            "type": "address"
           }
         ],
         "stateMutability": "view",

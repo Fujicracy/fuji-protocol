@@ -391,7 +391,7 @@ contract NFTInteractions is FujiPriceAware, ReentrancyGuardUpgradeable {
    * @notice returns true if user is already locked.
    */
   function _isLocked(address user) internal view returns (bool locked) {
-    (, , , , uint256 lockedID, ,) = nftGame.userdata(user);
+    (, , , , , ,uint256 lockedID) = nftGame.userdata(user);
     if (lockedID != 0) {
       locked = true;
     }

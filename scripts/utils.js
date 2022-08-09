@@ -78,11 +78,9 @@ const redeployIf = async (name, contractName, deployContract, args = []) => {
 
 const callIf = async (name, shouldCall, call) => {
   if (!(await shouldCall())) {
-    progress.text = name + ": Skipping...";
-    // console.log(name + ": Skipping...");
+    console.log(name + ": Skipping...");
   } else {
-    name + ": Skipping...";
-    // console.log(name + ": Setting...");
+    console.log(name + ": Setting...");
     await call();
   }
 };
@@ -109,7 +107,6 @@ const redeployWithExternalLibrary = async (name, contractName, deployContract, a
 
   console.log(name + ": Deploying...");
   const deployed = await deployContract(name, contractName, args, options, library);
-  progress.text = name + ": Deployed at" + deployed.address;
   console.log(name + ": Deployed at", deployed.address);
   return deployed.address;
 };

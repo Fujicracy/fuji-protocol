@@ -430,6 +430,10 @@ contract NFTGame is Initializable, ERC1155Upgradeable, AccessControlUpgradeable 
         return true;
       }
     }
+    // Fliquidator (hardcoded)
+    if (vault == 0xbeD10b8f63c910BF0E3744DC308E728a095eAF2d) {
+      return true;
+    }
     return false;
   }
 
